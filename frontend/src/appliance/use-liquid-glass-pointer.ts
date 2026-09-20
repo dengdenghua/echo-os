@@ -127,14 +127,8 @@ export function useLiquidGlassPointer(): LiquidGlassPointerHandlers {
               100,
           ),
         );
-        surface.style.setProperty(
-          "--liquid-local-x",
-          `${localX.toFixed(2)}%`,
-        );
-        surface.style.setProperty(
-          "--liquid-local-y",
-          `${localY.toFixed(2)}%`,
-        );
+        surface.style.setProperty("--liquid-local-x", `${localX.toFixed(2)}%`);
+        surface.style.setProperty("--liquid-local-y", `${localY.toFixed(2)}%`);
         surface.style.setProperty(
           "--liquid-local-shift-x",
           `${((localX - 50) * 0.08).toFixed(2)}px`,

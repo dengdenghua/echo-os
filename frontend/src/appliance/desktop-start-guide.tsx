@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, CompassIcon } from "lucide-react";
 
 type Phase = "new" | "started" | "done" | "review";
 export const OPEN_DESKTOP_START_GUIDE_EVENT = "echo:open-desktop-start-guide";
@@ -50,6 +51,7 @@ export function DesktopStartGuide({
 
 function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
   const key = `echo:desktop-start.v2:${props.identity}`;
+  const [collapsed, setCollapsed] = useState(false);
   const [phase, setPhase] = useState<Phase>(() => {
     try {
       const value = localStorage.getItem(key);
@@ -67,23 +69,126 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
     }
   };
   useEffect(() => {
-    const openGuide = () => setPhase("review");
+    const openGuide = () => {
+      setPhase("review");
+      setCollapsed(false);
+    };
     window.addEventListener(OPEN_DESKTOP_START_GUIDE_EVENT, openGuide);
     return () =>
       window.removeEventListener(OPEN_DESKTOP_START_GUIDE_EVENT, openGuide);
   }, []);
+  const [guideOffset, setGuideOffset] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const guideDragRef = useRef<{
+    startX: number;
+    startY: number;
+    initX: number;
+    initY: number;
+  } | null>(null);
+
+  const handleGuideDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      (e.target as HTMLElement).closest(
+        "button, a, input, select, textarea, [role='button']",
+      )
+    ) {
+      return;
+    }
+    if (e.button !== 0) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    guideDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: guideOffset.x,
+      initY: guideOffset.y,
+    };
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!guideDragRef.current) return;
+      const dx = moveEvent.clientX - guideDragRef.current.startX;
+      const dy = moveEvent.clientY - guideDragRef.current.startY;
+      setGuideOffset({
+        x: Math.round(guideDragRef.current.initX + dx),
+        y: Math.round(guideDragRef.current.initY + dy),
+      });
+    };
+
+    const onPointerUp = () => {
+      guideDragRef.current = null;
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
   if (phase === "done" || (phase === "new" && props.completedTasks > 0))
     return props.children;
   const finished = phase === "started" && props.completedTasks > 0;
+
+  if (collapsed) {
+    return (
+      <aside
+        className="mac-widget-stack"
+        data-desktop-interactive
+        style={{
+          transform: `translate3d(${guideOffset.x}px, ${guideOffset.y}px, 0)`,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          className="group flex items-center gap-1.5 rounded-full border border-black/10 bg-background/90 px-3 py-1.5 text-xs font-semibold shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-background dark:border-white/15"
+          title="点击展开新手使用向导"
+          aria-label="展开新手引导"
+        >
+          <CompassIcon className="size-3.5 text-blue-500" />
+          <span>新手引导</span>
+          <span className="rounded-full bg-blue-500/10 px-1.5 py-0.2 text-[10px] text-blue-600 dark:text-blue-400">
+            {finished ? "已完成" : "3步"}
+          </span>
+          <ChevronRightIcon className="size-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="mac-widget-stack" data-desktop-interactive>
+    <aside
+      className="mac-widget-stack"
+      data-desktop-interactive
+      style={{
+        transform: `translate3d(${guideOffset.x}px, ${guideOffset.y}px, 0)`,
+      }}
+    >
       <section
         aria-label="开始使用 Echo"
         className="rounded-2xl border border-white/40 bg-background/95 p-4 text-foreground shadow-lg"
       >
-        <h2 className="text-base font-semibold">
-          {finished ? "结果出来后，接着这样用" : "从第一个任务开始"}
-        </h2>
+        <div
+          onPointerDown={handleGuideDragStart}
+          className="flex cursor-grab active:cursor-grabbing select-none items-center justify-between"
+          title="按住标题栏可自由移动新手向导"
+        >
+          <h2 className="text-base font-semibold">
+            {finished ? "结果出来后，接着这样用" : "从第一个任务开始"}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+            title="收起引导至小标签"
+            aria-label="收起新手引导"
+          >
+            <ChevronLeftIcon className="size-4" />
+          </button>
+        </div>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
           {finished
             ? "在任务面板查看完成结果。本地数据库管理文件，应用中心可以把常用应用添加到侧栏。"

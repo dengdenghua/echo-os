@@ -264,3 +264,200 @@ PYSEC-2026-2858 且上游暂无修复版本**。该 extra 不在 CI 任何 job �
 - 本机 `.venv` 与 `uv.lock` 的残余漂移（`jiter` 0.16.0 vs 0.14.0、
   `pywin32` 312 vs 311），需停掉占用进程后才能收敛。
 
+---
+
+## 7. CI run 35517059098 的 step 级诊断（2026-09-20 22:40–23:10）
+
+### 7.1 失败面（公开 API 实证）
+
+`/actions/runs/{id}/jobs` 在公开仓库上**无需鉴权**即可读到 **step 级 conclusion**
+（job 日志仍需鉴权）。本次 12 个 job 的结论：
+
+| job | 结论 | 失败 / 跳过的 step |
+|---|---|---|
+| `Public source contract (3.11.9)` | failure | step 08 `Test the OS-owned release and delivery contracts` |
+| `Public source contract (3.12.11)` | failure | step 08（同上） |
+| `Frontend quality and production build` | failure | step 07 `Verify frontend source quality` |
+| `Full suite (3.12, observation)` | failure | step 07 `Run the whole suite`（`continue-on-error: true`） |
+| `Lint + Test` ×2 | **skipped** | `needs: public-source-contract` → 级联 |
+| `Docker build test` | **skipped** | `needs: public-source-contract` → 级联 |
+| 其余 6 个 | success | — |
+
+两点要紧：
+
+- `Public source contract` 的 **step 01–07 全部 success**，其中含
+  `Ruff check and format`。故本次 red 与 ruff / source policy / 依赖锁**均无关**，
+  纯粹落在 step 08 的 pytest 门禁上。
+- **级联放大**：`public-source-contract` 是 `lint-and-test` 与 `docker-build` 的 `needs`，
+  它一红，两个最重的 job（完整 pytest、全栈冒烟、覆盖率、延迟门禁）**整体跳过**。
+  换言之当前 CI 只在跑源契约切片，主干测试根本没执行。
+
+### 7.2 前端 step 07 的确切原因（已定位）
+
+step 07 的内容是：
+
+```yaml
+run: |
+  pnpm format      # = prettier --check .        ← check 模式，非写入
+  pnpm lint        # = eslint . --ext .ts,.tsx --max-warnings=0
+  pnpm typecheck   # = tsc --noEmit
+```
+
+第一条 `pnpm format` 失败即终止，后两条不执行。
+
+用干净 worktree 检出 `03d8a281`（+ junction 复用主仓 `node_modules`），
+在**未被工作区未提交改动污染**的 HEAD 树上跑 CI 原命令：
+
+```
+[warn] … Code style issues found in 15 files. Run Prettier with --write to fix.
+```
+
+即 **HEAD 自身就有 15 个文件不符合 prettier**。`frontend/` 下无 `.prettierrc`
+（只有 `.prettierignore`），故走 prettier 默认配置。
+
+> 数字校正（2026-09-21 实测）：在并入全部工作区改动**之前**、`--write` 之前跑
+> `prettier --check .`，实测为 **11 个**违规文件（不是 7）：`agent-pip-monitor.{tsx,test.tsx}`、
+> `ai-network-pulse.{tsx,test.tsx}`、`desktop-start-guide.{tsx,test.tsx}`、
+> `intent-desktop-surface.{tsx,test.tsx}`、`macos-shell.{tsx,test.tsx}`、`styles/macos-desktop.css`。
+> 即这 11 个**全部**落在 §7.3 的第二类（外部在途）文件上——所以"只提交第一类"的方案
+> 一开始就不可能让 step 07 转绿。§7.3 里"15 个中的 7 个"这一说法据此作废。
+
+> 方法说明：worktree + `New-Item -ItemType Junction` 复用 node_modules，
+> 可在不碰主工作区的前提下复现 CI 的任意"对 HEAD 求值"命令。
+> 这比 `git stash` 安全，适合存在大量未提交改动时使用。
+
+### 7.3 工作区未提交改动的两类来源（必须分开处理）
+
+`git diff --stat`：19 个文件、2381 插入 / 503 删除，但性质完全不同：
+
+| 来源 | 文件 | 规模 | 结论 |
+|---|---|---|---|
+| 本会话上轮重构 + 顺带修格式 | `page.tsx`、`use-desktop-appearance.{ts,test.ts}`、`use-liquid-glass-pointer.ts`、`use-system-controls.{ts,test.ts}`、`use-system-updates.ts`、`file-shares.test.ts`、`dock.test.tsx`（9 个） | 4–52 行/文件 | 可提交 |
+| **外部在途的功能开发** | `intent-desktop-surface.{tsx,test.tsx}`（1275/159）、`macos-shell.{tsx,test.tsx}`（447/171）、`agent-pip-monitor.{tsx,test.tsx}`（262/71）、`ai-network-pulse.{tsx,test.tsx}`（19/12）、`desktop-start-guide.{tsx,test.tsx}`（105/15）、`styles/macos-desktop.css`（201） | 合计约 2100 行 | **未动，待确认归属** |
+
+**阻塞点**：HEAD 的 15 个格式违规中有 **7 个落在第二类文件上**。
+不碰它们 → step 07 必红；碰它们 → 会把尚未完成的开发改动一并提交。
+必须由作者确认后才能推进。
+
+### 7.4 本地 skip 基线（= Linux 侧真跑清单）
+
+Windows 上跑 `tests/appliance` 中含平台 marker 的 10 个文件：
+
+```
+160 passed, 34 skipped in 23.45s
+```
+
+其中在 Linux（CI 的 `ubuntu-24.04`）上**会新增真跑 29 个**：
+
+| 文件 | Linux 新增 | skip 原因 |
+|---|---|---|
+| `test_document_worker_environment.py` | 9 | real Linux ownership and mode |
+| `test_document_process_linux.py` | 4 | real Linux /proc, rlimit, parent-death signal |
+| `test_docker_credential.py` | 4 | root-owned POSIX credential contract |
+| `test_file_organization_io.py` | 3 | Linux renameat2 / name-capture race / pathname race |
+| `test_file_rollback_io.py` | 3 | POSIX permissions, xattrs, symlinks |
+| `test_document_process_limits.py` | 2 | real Linux rlimit/prctl |
+| `test_nas_backup_recovery.py` | 2 | POSIX ownership and modes |
+| `test_file_organization_directories.py` | 1 | Linux dirfd and mode |
+| `test_docker_proxy.py` | 1 | POSIX unix socket |
+
+`test_iso_workspace_admission.py` 的 5 个在 CI 上**仍会 skip**（需要 `xorriso`/`cpio`，
+而该 job 只做 `uv sync`，不安装系统包），可排除。
+
+这就是"本地全绿、CI 红"的结构性来源：**近 30 个 POSIX 契约断言在 Windows 上从不执行**。
+它们的实现其实相当谨慎——用 `monkeypatch.setattr(os, "geteuid", …)` 伪造 euid、
+`monkeypatch.setattr(Path, "stat", …)` 伪造 owner，并不依赖真 root——
+所以**失败点无法靠静态阅读推定**，必须在真 Linux 上实测。
+
+### 7.5 结算：step 07 三条命令转绿（2026-09-20 23:5x）
+
+§7.3 第二类改动的归属已确认（作者批准一并提交），三条命令的并前/并后对照：
+
+| 命令 | HEAD（并入前） | 工作区（并入后） |
+|---|---|---|
+| `pnpm format` = `prettier --check .` | 15 文件违规 | **0** — `All matched files use Prettier code style!` |
+| `pnpm lint` = `eslint . --ext .ts,.tsx --max-warnings=0` | 未执行（被上一条挡住） | **0**（原 21 warnings） |
+| `pnpm typecheck` = `tsc --noEmit` | **exit 2**（6 错，全在 `page.tsx`） | **0** |
+
+**核心结论：HEAD 自身不可编译。** `page.tsx` 引用了 `macos-shell.tsx` 尚未导出的
+`MacWorkspaceDropdown`，而工作区那批在途改动正是补齐它的另一半。即
+"HEAD 是一个半成品提交 + 另一半从未提交"——这正是此前"本地全绿、CI 红"并存的机制之一。
+
+21 条 eslint warning 全部落在 4 个文件、且全部是死代码：
+
+| 文件 | 条数 | 处置 |
+|---|---|---|
+| `agent-pip-monitor.tsx` | 4 | 删未使用图标 import：`BotIcon`/`CheckIcon`/`ExternalLinkIcon`/`Minimize2Icon` |
+| `ai-network-pulse.tsx` | 7 | 同上（`ActivityIcon`/`BotIcon`/`CpuIcon`/`GlobeIcon`/`ShieldCheckIcon`/`SparklesIcon`/`ZapIcon`） |
+| `intent-desktop-surface.tsx` | 9 | 6 个未使用图标 import；死 `useMemo`（`filteredTasks`，下方 IIFE 内有等价活计算）；`useEffect` 补漏声明的 `inspectingAsset` 依赖 |
+| `macos-shell.tsx` | 1 | 删死变量 `isSecondaryMenu`（`index === 0` 已内联进 className） |
+
+> **踩坑记录（会重犯）**：`eslint` 与 `prettier --write` **并发执行**时，eslint 可能读到
+> 格式化**前**的快照，其报告行号会整体偏移（本例 react import 被折行，偏移 +5）。
+> 若按行号去对应标识符，就会删掉仍在使用的 import。本次即因此误删了
+> `appliance/agent-pip-monitor.tsx` 的 `Maximize2Icon`（实际用于第 373 行），由 `tsc` 兜住。
+> **正确做法：按标识符名映射，且两条命令串行跑。**
+
+> **踩坑记录之二：工作区 CRLF 会造成 `git status` 假 ` M`。**
+> 本仓库 `core.autocrlf=true`，且 `.gitattributes` 对源码声明 `text=auto, eol=lf`。
+> 实测（受控实验，见下）：把工作区文件转成 CRLF 后
+>
+> | 操作 | `git status --porcelain` | `git diff` |
+> |---|---|---|
+> | 工作区为 CRLF | ` M <file>` | **空** |
+> | 再 `git add` | **空（变干净）** | 空 |
+>
+> 且 git 自己会警告 `CRLF will be replaced by LF the next time Git touches it`。
+> 即**纯行尾差异既不出现在 `git diff --stat` 里，又会让 `git status` 报修改，一 `add` 就消失**。
+> 判据：`git status` 的条目数比 `git diff --stat` 的文件数多出的那一个，就是它。
+>
+> 本次即如此：会话开始时 `git status` 列 21 个 `M`，`git diff --stat` 只有 20 个文件——
+> 差额正是 `appliance/dock.test.tsx`。`git cat-file blob HEAD:<file>` 的原始字节与该文件
+> 逐字节相同（`git hash-object --no-filters` 两侧均为 `30582c0f…`），故**无任何内容丢失**，
+> 只是行尾差异。该文件因此不在本次提交范围内（它本就没有实质改动）。
+> 另：`git grep -l -P '\r$' HEAD -- frontend/src` = **0 / 1530**，即仓库内并无 CRLF 入库的
+> blob，不需要 `git add --renormalize`。
+
+#### 一处仍未接线（非门禁问题，未擅自补实现）
+
+`IntentDesktopSurfaceProps.onOpenApp` 在 `page.tsx:1604` 有真实接线（查 `visibleDesktopApps`
+后调 `openApp`），但 `intent-desktop-surface.tsx` 内**零调用点**——对比 `onOpenWorkbench`
+有 6 处调用——且该组件内并无 app 网格。本次只在解构处摘除以免 lint 报错，
+**接口声明与父侧接线均保留**，待组件补上 app 入口时再接回。
+
+### 7.6 Linux 侧 step 08 复现结论（WSL2，与 CI 等价）
+
+本机装好 WSL2（免重启，方法见 skill `win-wsl-install-no-reboot`）后，在 **ext4** 上克隆同一
+commit 并执行 `deploy/appliance/run_public_source_tests.py`：
+
+| 运行身份 | 结果 |
+|---|---|
+| root | 32 failed，其中 25 个是 `HostInstallError: Echo OMV group GID must be a positive integer` ——**root 组 GID = 0，不是正整数**，属伪失败 |
+| `runner`（uid 1000） | **130 failed** ← 与 CI 等价的那次 |
+
+根因单一且集中：`appliance/native_btrfs.py:110` 的 `_safe_directory` **硬编码 `st_uid == 0`**：
+
+```python
+if os.name == "posix" and (info.st_uid != 0 or info.st_mode & 0o022):
+    raise OSError(f"{description} ownership or mode is unsafe")
+```
+
+测试在 pytest `tmp_path` 下造目录，属主是当前用户而非 root，故必然失败。同一模式散落在
+storage / mdadm / fstab / operations bundle / systemd unit / firewall / webdav /
+docker credential 等处。
+
+**结论：这批 POSIX 契约测试从未在 Linux 上通过过。** §7.4 的"近 30 个 POSIX 断言在 Windows
+上从不执行"只解释了覆盖面差异，真实失败面是 130 个，且原因不是环境差异，而是
+**实现假定了进程以 root 运行**。
+
+处置方向（三选一，**未决，需拍板**）：
+
+1. CI 以 `sudo -E` 运行 step 08——改动最小，但等于把"必须以 root 运行"固化为契约；
+2. 非 root 时把这批测试标记 skip——诚实，但等于放弃 Linux 覆盖面；
+3. 改判定逻辑：仅在路径确属系统目录时要求 root 属主，`tmp_path` 场景放宽——改的是实现而非测试，收益最实但风险最高。
+
+> 复现方法上的硬约束：**必须克隆到 ext4**。`/mnt/d` 为 DrvFs，`chmod`/`chown`/xattr/
+> `renameat2` 语义不全，会在同一批 POSIX 测试上制造**假失败**，反而误导结论。
+> 另：`uv sync --locked` 不要设 `UV_DEFAULT_INDEX` 指向镜像——`uv.lock` 记录了包来源，
+> 换索引会被判为 lockfile 过期（CI 上这步是绿的）。
+

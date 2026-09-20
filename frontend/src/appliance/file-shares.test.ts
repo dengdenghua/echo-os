@@ -23,7 +23,13 @@ describe("file share API", () => {
 
     await listFileShares();
     await planFileShare("family/report.pdf", 300, 2);
-    await applyFileShare("family/report.pdf", "a".repeat(64), "approval-once", 300, 2);
+    await applyFileShare(
+      "family/report.pdf",
+      "a".repeat(64),
+      "approval-once",
+      300,
+      2,
+    );
     await planFileShareRevocation("b".repeat(24));
     await revokeFileShare("b".repeat(24), "c".repeat(64), "approval-revoke");
 

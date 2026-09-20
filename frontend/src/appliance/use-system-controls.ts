@@ -90,7 +90,9 @@ export function useSystemControls(options?: {
         }
         await refreshSystemControls();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : `${label}设置失败`);
+        toast.error(
+          error instanceof Error ? error.message : `${label}设置失败`,
+        );
       }
     },
     [refreshSystemControls],

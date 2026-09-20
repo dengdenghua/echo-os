@@ -345,8 +345,13 @@
   filter: blur(68px) saturate(90%);
 }
 
-/* Menu bar */
-.mac-menu-bar {
+/* Menu bar - Solid / Dark Black */
+.mac-menu-bar,
+.macos-desktop-root .mac-menu-bar,
+.macos-desktop-root.mac-liquid-crystal .mac-menu-bar,
+.macos-desktop-root.mac-liquid-softlight .mac-menu-bar,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface],
+.macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit .mac-menu-bar {
   position: absolute;
   inset: 0 0 auto;
   z-index: 100;
@@ -355,17 +360,44 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 0 10px;
-  color: var(--mac-text);
-  background: rgba(247, 248, 251, 0.63);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  color: rgba(255, 255, 255, 0.94) !important;
+  background: #000000 !important;
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   font-size: 13px;
   line-height: 1;
 }
 
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::before,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::after {
+  display: none !important;
+}
+
+.mac-menu-bar .mac-menu-logo,
+.mac-menu-bar .mac-menu-button,
+.mac-menu-bar .mac-status-icon,
+.mac-menu-bar .mac-clock {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.mac-menu-bar .mac-menu-logo:hover,
+.mac-menu-bar .mac-menu-logo.is-active,
+.mac-menu-bar .mac-menu-button:hover,
+.mac-menu-bar .mac-menu-button.is-active,
+.mac-menu-bar .mac-status-icon:hover,
+.mac-menu-bar .mac-status-icon.is-active,
+.mac-menu-bar .mac-clock:hover,
+.mac-menu-bar .mac-clock.is-active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
 .mac-menu-left,
+.mac-menu-center,
 .mac-menu-right {
   display: flex;
   height: 100%;
@@ -373,9 +405,15 @@
 }
 
 .mac-menu-left {
+  flex-shrink: 0;
   gap: 1px;
 }
+.mac-menu-center {
+  justify-content: center;
+  pointer-events: auto;
+}
 .mac-menu-right {
+  flex-shrink: 0;
   gap: 3px;
 }
 
@@ -1693,6 +1731,9 @@
   display: none;
 }
 
+/* 覆盖层：globals.css 的 .dock-item 是基础定义（170ms 曲线，供寄生/非 mac-dock
+   场景用），这里是 macOS 桌面专用的更紧致版本（145ms + place-items: end center）。
+   改缩放曲线时两处都要动，否则两种形态手感不一致。 */
 .mac-dock .dock-item {
   position: relative;
   display: grid;
@@ -1756,12 +1797,12 @@
   width: 4px;
   height: 4px;
   pointer-events: none;
-  background: rgba(213, 239, 255, 0.94);
-  border: 0.5px solid rgba(10, 25, 48, 0.58);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 50%;
   box-shadow:
-    0 0 4px rgba(93, 190, 255, 0.54),
-    0 1px 2px rgba(2, 9, 26, 0.34);
+    0 0 5px rgba(255, 255, 255, 0.85),
+    0 0 9px rgba(56, 189, 248, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.5);
   transform: translateX(-50%);
 }
 .mac-dock .dock-item:hover::before {
@@ -2975,34 +3016,56 @@
   border-radius: 50% 38% 56% 44% / 42% 58% 40% 60%;
 }
 
+/* 象牙白环境专属暖晨光与羊脂玉流光焦散 */
+html.theme-white,
+.theme-white {
+  --liquid-prism-a: rgba(255, 238, 215, 0.7);
+  --liquid-prism-b: rgba(240, 245, 255, 0.6);
+  --liquid-prism-c: rgba(255, 228, 195, 0.45);
+  --liquid-caustic-opacity: 0.55;
+  --liquid-grain-opacity: 0.08;
+}
+
+html.theme-white .mac-liquid-caustic {
+  mix-blend-mode: multiply;
+  filter: blur(60px) saturate(120%);
+}
+
+html.theme-white .mac-liquid-caustic.is-a {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 238, 210, 0.7),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(255, 225, 185, 0.4),
+      transparent 50%
+    );
+}
+
+html.theme-white .mac-liquid-caustic.is-b {
+  background:
+    radial-gradient(
+      circle at 40% 40%,
+      rgba(225, 238, 252, 0.6),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(252, 242, 228, 0.5),
+      transparent 60%
+    );
+}
+
 /* Ultra-thin material: menu bar. */
 .macos-desktop-root .mac-menu-bar {
-  background-color: var(--liquid-surface-ultra-thin);
-  background-image:
-    radial-gradient(
-      360px 70px at var(--liquid-pointer-x) -10%,
-      var(--liquid-specular),
-      transparent 72%
-    ),
-    linear-gradient(
-      110deg,
-      var(--liquid-prism-a),
-      transparent 32%,
-      var(--liquid-prism-b)
-    );
-  border-bottom-color: var(--liquid-edge-soft);
-  box-shadow:
-    inset 0 1px 0 var(--liquid-edge),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
-    0 5px 22px rgba(5, 10, 28, 0.08);
-  backdrop-filter: blur(var(--liquid-blur-ultra-thin))
-    saturate(var(--liquid-saturation));
-  -webkit-backdrop-filter: blur(var(--liquid-blur-ultra-thin))
-    saturate(var(--liquid-saturation));
-  transition:
-    background-color var(--liquid-transition),
-    border-color var(--liquid-transition),
-    backdrop-filter var(--liquid-transition);
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
 }
 
 /* Thick material: menus and floating panes. */
@@ -4634,23 +4697,36 @@
 
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:trash"] {
-  color: rgba(65, 81, 103, 0.9);
+  color: rgba(235, 245, 255, 0.92);
   background:
     linear-gradient(
       90deg,
-      transparent 0 22%,
-      rgba(91, 130, 164, 0.12) 23% 27%,
+      transparent 0 20%,
+      rgba(255, 255, 255, 0.08) 22% 26%,
       transparent 28% 72%,
-      rgba(91, 130, 164, 0.12) 73% 77%,
-      transparent 78%
+      rgba(255, 255, 255, 0.08) 74% 78%,
+      transparent 80%
     ),
-    linear-gradient(155deg, rgba(255, 255, 255, 0.98), #b9c8d5);
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.04)
+    ),
+    linear-gradient(180deg, rgba(40, 52, 70, 0.6), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:trash"]
   .mac-app-icon-glyph {
-  filter: none;
+  color: rgba(225, 238, 255, 0.9);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-spotlight-overlay {
@@ -7763,10 +7839,7 @@
 
 .macos-desktop-root
   :is(.mac-desktop-icon, .mac-dock, .mac-launchpad-app, .mac-spotlight-result)
-  .mac-app-icon:is(
-    [data-app-id="system:launchpad"],
-    [data-app-id="system:trash"]
-  )
+  .mac-app-icon[data-app-id="system:launchpad"]
   .mac-app-icon-glyph {
   color: #667085 !important;
 }
@@ -7971,10 +8044,7 @@
 
   .macos-desktop-root
     .mac-dock
-    .mac-app-icon:is(
-      [data-app-id="system:launchpad"],
-      [data-app-id="system:trash"]
-    )
+    .mac-app-icon[data-app-id="system:launchpad"]
     .mac-app-icon-glyph {
     color: #667085 !important;
   }
@@ -8017,4 +8087,52 @@
     filter: none !important;
     transform: none !important;
   }
+}
+
+/* ==========================================================================
+ * TOP MENU BAR - ABSOLUTE BLACK SOLID STRIP
+ * ========================================================================== */
+header.mac-menu-bar,
+.mac-menu-bar,
+.macos-desktop-root .mac-menu-bar,
+.macos-desktop-root.mac-liquid-crystal .mac-menu-bar,
+.macos-desktop-root.mac-liquid-softlight .mac-menu-bar,
+.macos-desktop-root.mac-wallpaper-orbit .mac-menu-bar,
+.macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit .mac-menu-bar,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface] {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+  color: rgba(255, 255, 255, 0.94) !important;
+  opacity: 1 !important;
+}
+
+.macos-desktop-root .mac-menu-bar::before,
+.macos-desktop-root .mac-menu-bar::after,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::before,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::after {
+  display: none !important;
+  opacity: 0 !important;
+  content: none !important;
+}
+
+.mac-menu-bar .mac-menu-button,
+.mac-menu-bar .mac-status-icon,
+.mac-menu-bar .mac-clock,
+.mac-menu-bar .mac-menu-logo {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.mac-menu-bar .mac-menu-button:hover,
+.mac-menu-bar .mac-menu-button.is-active,
+.mac-menu-bar .mac-status-icon:hover,
+.mac-menu-bar .mac-status-icon.is-active,
+.mac-menu-bar .mac-clock:hover,
+.mac-menu-bar .mac-clock.is-active,
+.mac-menu-bar .mac-menu-logo:hover,
+.mac-menu-bar .mac-menu-logo.is-active {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
 }

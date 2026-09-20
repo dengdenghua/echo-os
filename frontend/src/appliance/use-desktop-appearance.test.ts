@@ -90,9 +90,9 @@ it("writes the unified key and mirrors the legacy keys for existing readers", ()
   const { result } = renderHook(useDesktopAppearance);
   act(() => result.current.setWallpaper("aurora"));
 
-  expect(JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? "{}")).toMatchObject(
-    { wallpaper: "aurora" },
-  );
+  expect(
+    JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? "{}"),
+  ).toMatchObject({ wallpaper: "aurora" });
   expect(localStorage.getItem("echo:desktop-wallpaper")).toBe("aurora");
 });
 

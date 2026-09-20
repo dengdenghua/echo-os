@@ -57,7 +57,11 @@ export function useSystemUpdates(options: {
   useEffect(() => {
     if (!options.surfaceOpen) return;
     void refresh();
-    if (!busy && status?.state !== "checking" && status?.state !== "installing") {
+    if (
+      !busy &&
+      status?.state !== "checking" &&
+      status?.state !== "installing"
+    ) {
       return;
     }
     const timer = window.setInterval(() => {

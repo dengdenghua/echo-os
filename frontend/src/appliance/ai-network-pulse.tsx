@@ -1,20 +1,12 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ActivityIcon,
-  BotIcon,
-  CheckIcon,
-  CpuIcon,
-  GlobeIcon,
-  RadioIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-  ZapIcon,
-} from "lucide-react";
+import { CheckIcon, RadioIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +25,37 @@ export type ModelOption = {
 };
 
 export const AVAILABLE_MODELS: ModelOption[] = [
-  { id: "auto", name: "自动智能路由", provider: "Echo Routing", tag: "智能自适应" },
-  { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", tag: "架构/代码" },
+  {
+    id: "auto",
+    name: "自动智能路由",
+    provider: "Echo Routing",
+    tag: "智能自适应",
+  },
+  {
+    id: "claude-3-5-sonnet",
+    name: "Claude 3.5 Sonnet",
+    provider: "Anthropic",
+    tag: "架构/代码",
+  },
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", tag: "全模态旗舰" },
-  { id: "deepseek-v3", name: "DeepSeek-V3", provider: "DeepSeek", tag: "深度推理" },
-  { id: "gemini-1-5-pro", name: "Gemini 1.5 Pro", provider: "Google", tag: "超长上下文" },
-  { id: "echo-local-npu", name: "Echo Local NPU", provider: "Station (私有)", tag: "100% 私有免流" },
+  {
+    id: "deepseek-v3",
+    name: "DeepSeek-V3",
+    provider: "DeepSeek",
+    tag: "深度推理",
+  },
+  {
+    id: "gemini-1-5-pro",
+    name: "Gemini 1.5 Pro",
+    provider: "Google",
+    tag: "超长上下文",
+  },
+  {
+    id: "echo-local-npu",
+    name: "Echo Local NPU",
+    provider: "Station (私有)",
+    tag: "100% 私有免流",
+  },
 ];
 
 export interface AiNetworkPulseProps {
@@ -61,6 +78,10 @@ export function AiNetworkPulse({
   const [policy, setPolicy] = useState<RoutingPolicy>("local-first");
   const [activeModel, setActiveModel] = useState(selectedModel);
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    setActiveModel(selectedModel);
+  }, [selectedModel]);
 
   const policyLabels: Record<RoutingPolicy, { name: string; desc: string }> = {
     "local-first": {
@@ -111,22 +132,22 @@ export function AiNetworkPulse({
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className={cn(
-            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-black/10 bg-white/60 px-2.5 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/80 dark:border-white/15 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20",
-            open &&
-              "scale-[1.02] bg-white/90 ring-1 ring-black/15 dark:bg-white/20 dark:ring-white/30",
-            className
+            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 text-[11px] font-medium text-slate-100 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/20",
+            open && "scale-[1.02] bg-white/20 ring-1 ring-white/30",
+            className,
           )}
           aria-label="打开 AI Network 实时脉搏"
+          title="AI Network · 32% Local 本地算力"
         >
           <span className="relative flex size-2 items-center justify-center">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
             <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
           </span>
-          <span className="font-semibold tracking-tight">AI Network</span>
+          <span className="font-semibold tracking-tight">AI</span>
           <span className="opacity-40">·</span>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+          <span className="text-[10px] text-slate-300">
             {activeModelObj.id === "auto"
-              ? "32% Local"
+              ? "32%"
               : activeModelObj.name.split(" ")[0]}
           </span>
         </button>
@@ -217,7 +238,7 @@ export function AiNetworkPulse({
                   "rounded-lg border border-black/5 py-1 text-[10px] font-medium transition-all dark:border-white/10",
                   policy === item
                     ? "bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900"
-                    : "bg-white/60 text-slate-600 hover:bg-white hover:text-slate-900 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10"
+                    : "bg-white/60 text-slate-600 hover:bg-white hover:text-slate-900 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10",
                 )}
               >
                 {item === "local-first" && "Local"}
@@ -250,7 +271,7 @@ export function AiNetworkPulse({
                     "flex items-center justify-between rounded-lg border p-2 text-left transition-all",
                     isSelected
                       ? "border-blue-500/50 bg-blue-50/80 font-medium text-blue-900 shadow-sm dark:border-blue-400/50 dark:bg-blue-950/50 dark:text-blue-200"
-                      : "border-black/5 bg-white/50 text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+                      : "border-black/5 bg-white/50 text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
                   )}
                 >
                   <div className="min-w-0 pr-1">

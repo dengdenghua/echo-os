@@ -81,3 +81,19 @@ it("lets an existing user reopen and close the guide on demand", () => {
   fireEvent.click(screen.getByRole("button", { name: "关闭引导" }));
   expect(screen.getByText("桌面小组件")).toBeInTheDocument();
 });
+
+it("allows collapsing the guide card into a compact bookmark pill and restoring it", () => {
+  render(<DesktopStartGuide {...props()} />);
+  expect(screen.getByText("从第一个任务开始")).toBeInTheDocument();
+
+  // Click collapse button
+  fireEvent.click(screen.getByRole("button", { name: "收起新手引导" }));
+  expect(screen.queryByText("从第一个任务开始")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "展开新手引导" }),
+  ).toBeInTheDocument();
+
+  // Click bookmark pill to expand again
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
+  expect(screen.getByText("从第一个任务开始")).toBeInTheDocument();
+});

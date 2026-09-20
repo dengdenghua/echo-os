@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echo OS 前端架构图</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel2: #171c27;
+    --border: #232a38;
+    --text: #e6e9f0;
+    --muted: #8b93a5;
+    --accent: #5b8cff;
+    --green: #3ecf8e;
+    --amber: #f5a524;
+    --purple: #b78cff;
+    --red: #ff6b6b;
+    --cyan: #4cc9f0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+  header h1 { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  header .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .stat .num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  section { margin-top: 40px; }
+  h2 {
+    font-size: 17px; font-weight: 650; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2::before { content: ""; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  /* ---- route tree ---- */
+  ul.tree { list-style: none; }
+  ul.tree ul { list-style: none; padding-left: 22px; border-left: 1px dashed var(--border); margin-left: 8px; }
+  li.node { margin: 3px 0; }
+  .row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 4px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .row:hover { background: var(--panel2); }
+  .caret { width: 14px; color: var(--muted); font-size: 11px; transition: transform .15s; flex: none; }
+  .caret.open { transform: rotate(90deg); }
+  .caret.leaf { visibility: hidden; }
+  code.path {
+    font-family: "JetBrains Mono", Consolas, monospace; font-size: 12.5px;
+    background: var(--panel2); border: 1px solid var(--border);
+    padding: 1px 8px; border-radius: 6px;
+  }
+  .tag {
+    font-size: 11px; padding: 1px 8px; border-radius: 20px; font-weight: 600;
+  }
+  .t-lazy { background: rgba(91,140,255,.15); color: var(--accent); }
+  .t-remote { background: rgba(62,207,142,.15); color: var(--green); }
+  .t-redirect { background: rgba(245,165,36,.15); color: var(--amber); }
+  .t-legacy { background: rgba(255,107,107,.13); color: var(--red); }
+  .t-guard { background: rgba(183,140,255,.15); color: var(--purple); }
+  .desc { color: var(--muted); font-size: 12.5px; }
+  .hidden { display: none; }
+  /* ---- flow diagram ---- */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; }
+  .flow .box {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; text-align: center; min-width: 110px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .flow .box b { font-size: 13.5px; }
+  .flow .box small { color: var(--muted); font-size: 11.5px; }
+  .flow .arrow { align-self: center; color: var(--muted); padding: 0 8px; font-size: 16px; }
+  /* ---- bars ---- */
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 70px; align-items: center; gap: 10px; margin: 5px 0; font-size: 12.5px; }
+  .bar-row .name { color: var(--text); font-family: Consolas, monospace; }
+  .bar-track { background: var(--panel2); border-radius: 6px; height: 18px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--cyan)); transition: width .8s ease; }
+  .bar-fill.gen { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+  .bar-row .val { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .hosts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .host-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .host-card h3 { font-size: 14.5px; margin-bottom: 6px; }
+  .host-card p { color: var(--muted); font-size: 12.5px; }
+  .stack-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 12.5px; padding: 4px 12px; border-radius: 20px;
+    background: var(--panel2); border: 1px solid var(--border);
+  }
+  .chip b { color: var(--accent); font-weight: 600; }
+  footer { margin-top: 60px; color: var(--muted); font-size: 12px; text-align: center; }
+  .toggle-all { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 2px 10px; margin-left: 10px; }
+  .toggle-all:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Echo OS 前端架构图</h1>
+  <div class="sub">echo-os/frontend · Vite 7 + React 19 + TypeScript · 单壳多宿主（浏览器 / Electron / 原生整机镜像）</div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="num">998</div><div class="lbl">源文件 (TS/TSX)</div></div>
+  <div class="stat"><div class="num">513</div><div class="lbl">测试文件（占比 51%）</div></div>
+  <div class="stat"><div class="num">11.1 万</div><div class="lbl">总行数</div></div>
+  <div class="stat"><div class="num">60+</div><div class="lbl">core 领域模块</div></div>
+  <div class="stat"><div class="num">6</div><div class="lbl">内建远程工作台</div></div>
+  <div class="stat"><div class="num">900 KiB</div><div class="lbl">单 chunk 硬上限</div></div>
+</div>
+
+<section>
+  <h2>技术栈</h2>
+  <div class="panel">
+    <div class="stack-chips">
+      <span class="chip"><b>React 19</b> + react-router 7 (HashRouter)</span>
+      <span class="chip"><b>Vite 7</b> + pnpm 10.26.2</span>
+      <span class="chip"><b>Tailwind 4</b> + Radix UI + shadcn 风格</span>
+      <span class="chip"><b>TanStack Query 5</b> 服务端状态</span>
+      <span class="chip"><b>streamdown</b> + Shiki + KaTeX + Mermaid 富文本</span>
+      <span class="chip"><b>CodeMirror 6</b> 编辑器</span>
+      <span class="chip"><b>xterm.js</b> 终端</span>
+      <span class="chip"><b>Three.js</b> / GSAP / Motion 动效</span>
+      <span class="chip"><b>DOMPurify</b> + rehype-sanitize 安全</span>
+      <span class="chip"><b>Electron 34</b> + electron-builder</span>
+      <span class="chip"><b>Vitest</b> + Testing Library + Playwright</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>宿主形态（同一构建产物）</h2>
+  <div class="hosts">
+    <div class="host-card"><h3>🌐 浏览器</h3><p>开发期 Vite dev server（:3000），/api/* 代理到 Agent 后端 gateway（:8000），SSE/WebSocket 流式端点 keep-alive 且无超时。</p></div>
+    <div class="host-card"><h3>🖥️ Electron 桌面</h3><p>electron/ 主进程：agent-service、desktop-updater、native-liquid-glass（C++ 原生插件）、system-* IPC 能力层，preload bridge 隔离。</p></div>
+    <div class="host-card"><h3>📦 原生整机镜像</h3><p>配合 packaging/ 构建 OS 镜像；6 个 workbench 由 build-workbenches.mjs 独立构建后嵌入同一产物。</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>启动与数据流</h2>
+  <div class="panel">
+    <div class="flow">
+      <div class="box"><b>main.tsx</b><small>bootstrap</small></div><span class="arrow">→</span>
+      <div class="box"><b>存储迁移</b><small>migrateLegacyEchoStorage</small></div><span class="arrow">→</span>
+      <div class="box"><b>i18n 检测</b><small>locale + cookie</small></div><span class="arrow">→</span>
+      <div class="box"><b>HashRouter</b><small>适配 Electron 静态加载</small></div><span class="arrow">→</span>
+      <div class="box"><b>Provider 链</b><small>Query · Theme · I18n · Auth</small></div><span class="arrow">→</span>
+      <div class="box"><b>AppRouter</b><small>懒加载 + ErrorBoundary</small></div><span class="arrow">→</span>
+      <div class="box"><b>core/api</b><small>OpenAPI 类型化客户端</small></div><span class="arrow">→</span>
+      <div class="box"><b>core/realtime</b><small>envelope·reducer·replay</small></div><span class="arrow">→</span>
+      <div class="box"><b>Agent 后端</b><small>127.0.0.1:8000</small></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>路由树（点击节点展开/收起）<button class="toggle-all" id="expandBtn">全部展开</button></h2>
+  <div class="panel">
+    <div class="legend">
+      <span><i class="dot" style="background:var(--accent)"></i>懒加载页面</span>
+      <span><i class="dot" style="background:var(--green)"></i>远程工作台 (RemoteWorkbenchSurface)</span>
+      <span><i class="dot" style="background:var(--amber)"></i>重定向（含参数改写）</span>
+      <span><i class="dot" style="background:var(--red)"></i>旧版路径迁移</span>
+      <span><i class="dot" style="background:var(--purple)"></i>受保护 / 守卫逻辑</span>
+    </div>
+    <ul class="tree" id="routeTree"></ul>
+  </div>
+</section>
+
+<section>
+  <h2>core/ 模块规模（按代码行数 Top 20）</h2>
+  <div class="panel" id="bars"></div>
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">注：api 模块 49,689 行中 48,689 行为 OpenAPI 生成的 openapi-types.ts（灰色）；i18n 模块大头为翻译数据。真实手写业务代码集中在 threads、realtime、agents 等模块。</p>
+</section>
+
+<section>
+  <h2>构建与质量门禁链</h2>
+  <div class="panel">
+    <div class="flow" style="flex-wrap:wrap">
+      <div class="box"><b>build:workbenches</b><small>6 个内建应用独立 Vite 构建</small></div><span class="arrow">→</span>
+      <div class="box"><b>vite build</b><small>chunk ≤ 900 KiB，超限即失败</small></div><span class="arrow">→</span>
+      <div class="box"><b>manualChunks</b><small>chunk-policy.mjs 手工切分 vendor</small></div><span class="arrow">→</span>
+      <div class="box"><b>format / lint</b><small>prettier + eslint 0 警告</small></div><span class="arrow">→</span>
+      <div class="box"><b>typecheck</b><small>tsc --noEmit</small></div><span class="arrow">→</span>
+      <div class="box"><b>自研审计</b><small>as-casts · JSON.parse · 孤儿导出 · storage</small></div>
+    </div>
+  </div>
+</section>
+
+<footer>数据来源：echo-os/frontend 静态统计 · 生成于 2026-09-20 · 仅含 src/ 目录</footer>
+</div>
+
+<script>
+const ROUTES = {
+  path: "/", label: "HashRouter 根", tag: "guard", tagText: "ProtectedRoute + ErrorBoundary",
+  desc: "懒加载 + 8s 慢加载提示",
+  children: [
+    { path: "/", label: "落地页", tag: "lazy", tagText: "懒加载" },
+    { path: "/about /terms /privacy", label: "静态页", tag: "lazy", tagText: "懒加载" },
+    { path: "/login /register", label: "认证页", tag: "lazy", tagText: "懒加载" },
+    { path: "/share/:token", label: "公开会话分享", tag: "lazy", tagText: "懒加载" },
+    { path: "/desktop", label: "桌面主壳", tag: "lazy", tagText: "懒加载", desc: "旧 /account 重定向至此" },
+    { path: "/browser", label: "顶层浏览器", tag: "lazy", tagText: "懒加载" },
+    { path: "/apps/media · /apps/photos", label: "媒体应用", tag: "lazy", tagText: "懒加载" },
+    { path: "/settings /plugins", label: "旧路径", tag: "legacy", tagText: "迁移" },
+    {
+      path: "/workspace", label: "工作台布局 WorkspaceLayout", tag: "guard", tagText: "保留式路由 RetainedShellRoutes", desc: "默认重定向 realtime/new",
+      children: [
+        { path: "realtime/:threadId", label: "Agent 对话页（核心）", tag: "lazy", tagText: "懒加载" },
+        { path: "team/join", label: "团队加入", tag: "lazy", tagText: "懒加载" },
+        { path: "computer", label: "电脑控制（原 mobile）", tag: "lazy", tagText: "懒加载" },
+        { path: "desktop-organizer", label: "桌面整理", tag: "lazy", tagText: "懒加载" },
+        { path: "agents · agents/new", label: "Hub / Agent 市场", tag: "lazy", tagText: "懒加载" },
+        { path: "channels", label: "消息渠道", tag: "lazy", tagText: "懒加载" },
+        { path: "architecture", label: "架构视图", tag: "lazy", tagText: "懒加载" },
+        { path: "observability · diagnostics", label: "可观测 / 诊断", tag: "lazy", tagText: "懒加载" },
+        { path: "knowledge", label: "知识库", tag: "lazy", tagText: "懒加载" },
+        { path: "storage", label: "文件 / NAS / 数据库统一入口", tag: "lazy", tagText: "懒加载", desc: "nas、database 重定向至此" },
+        { path: "projects", label: "项目", tag: "lazy", tagText: "懒加载" },
+        { path: "web-app", label: "Web 应用", tag: "lazy", tagText: "懒加载" },
+        { path: "reflex · reflex/edit", label: "Reflex 监控 / 编辑", tag: "lazy", tagText: "懒加载" },
+        { path: "community", label: "社区", tag: "remote", tagText: "远程工作台" },
+        { path: "intelligence", label: "智能体", tag: "remote", tagText: "远程工作台" },
+        { path: "design", label: "设计", tag: "remote", tagText: "远程工作台" },
+        { path: "narrative", label: "叙事工作室", tag: "remote", tagText: "远程工作台" },
+        { path: "paper-trading", label: "模拟交易", tag: "remote", tagText: "远程工作台" },
+        { path: "evolution", label: "自我进化", tag: "remote", tagText: "远程工作台" },
+        { path: "settings", label: "设置", tag: "redirect", tagText: "重定向", desc: "→ realtime/new + 弹设置面板" },
+        { path: "browser", label: "内嵌浏览器", tag: "redirect", tagText: "重定向", desc: "→ /browser 或唤起原生窗口" },
+        { path: "skills · plugins", label: "资产页", tag: "redirect", tagText: "参数改写", desc: "→ agents?surface=chat&tab=…" },
+        { path: "mcp", label: "MCP", tag: "redirect", tagText: "重定向", desc: "→ settings?section=tools" },
+        { path: "mobile · store · replay · workflows", label: "旧版路径", tag: "legacy", tagText: "迁移", desc: "→ computer / agents / observability" }
+      ]
+    }
+  ]
+};
+
+const MODULES = [
+  { name: "api", lines: 49634, note: "98% 为生成代码", gen: true },
+  { name: "i18n", lines: 48529, note: "翻译数据为主", gen: true },
+  { name: "threads", lines: 6173 },
+  { name: "realtime", lines: 5998 },
+  { name: "agents", lines: 2439 },
+  { name: "agent-trace", lines: 2009 },
+  { name: "tentacle", lines: 1435 },
+  { name: "narrative", lines: 1191 },
+  { name: "cowork", lines: 1187 },
+  { name: "messages", lines: 1159 },
+  { name: "artifacts", lines: 1009 },
+  { name: "workbench", lines: 995 },
+  { name: "storage", lines: 978 },
+  { name: "sharing", lines: 923 },
+  { name: "observability", lines: 874 },
+  { name: "workspace", lines: 850 },
+  { name: "settings", lines: 850 },
+  { name: "evolution", lines: 780 },
+  { name: "plugins", lines: 701 },
+  { name: "modules", lines: 701 }
+];
+
+function renderNode(node) {
+  const li = document.createElement("li");
+  li.className = "node";
+  const hasKids = node.children && node.children.length;
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML =
+    `<span class="caret ${hasKids ? "" : "leaf"}">▶</span>` +
+    `<code class="path">${node.path}</code>` +
+    (node.tag ? `<span class="tag t-${node.tag}">${node.tagText}</span>` : "") +
+    (node.desc ? `<span class="desc">${node.desc}</span>` : "");
+  li.appendChild(row);
+  if (hasKids) {
+    const ul = document.createElement("ul");
+    ul.className = "hidden";
+    node.children.forEach(c => ul.appendChild(renderNode(c)));
+    li.appendChild(ul);
+    row.addEventListener("click", () => {
+      ul.classList.toggle("hidden");
+      row.querySelector(".caret").classList.toggle("open");
+    });
+    row.querySelector(".caret").classList.add("open");
+    ul.classList.remove("hidden"); // 默认展开第一层由调用控制
+  }
+  return li;
+}
+
+const tree = document.getElementById("routeTree");
+tree.appendChild(renderNode(ROUTES));
+// 默认只展开根节点
+const rootUl = tree.querySelector("ul ul");
+if (rootUl) { rootUl.classList.add("hidden"); tree.querySelector(".row .caret").classList.remove("open"); }
+
+let expanded = false;
+document.getElementById("expandBtn").addEventListener("click", e => {
+  expanded = !expanded;
+  document.querySelectorAll("#routeTree ul").forEach(ul => ul.classList.toggle("hidden", !expanded));
+  document.querySelectorAll("#routeTree .caret:not(.leaf)").forEach(c => c.classList.toggle("open", expanded));
+  e.target.textContent = expanded ? "全部收起" : "全部展开";
+});
+
+// bars
+const max = Math.max(...MODULES.map(m => m.lines));
+const bars = document.getElementById("bars");
+MODULES.forEach(m => {
+  const row = document.createElement("div");
+  row.className = "bar-row";
+  const w = Math.max(1.5, (m.lines / max) * 100);
+  row.innerHTML =
+    `<span class="name">${m.name}</span>` +
+    `<div class="bar-track"><div class="bar-fill ${m.gen ? "gen" : ""}" style="width:0%" data-w="${w}"></div></div>` +
+    `<span class="val">${m.lines.toLocaleString()} 行</span>`;
+  bars.appendChild(row);
+});
+setTimeout(() => document.querySelectorAll(".bar-fill").forEach(b => b.style.width = b.dataset.w + "%"), 100);
+</script>
+</body>
+</html>

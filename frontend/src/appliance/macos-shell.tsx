@@ -18,7 +18,9 @@ import {
   BellIcon,
   BluetoothIcon,
   BotIcon,
+  CheckIcon,
   CheckCircle2Icon,
+  ChevronDownIcon,
   ChevronRightIcon,
   CommandIcon,
   DropletsIcon,
@@ -28,6 +30,7 @@ import {
   LockIcon,
   Loader2Icon,
   MoonIcon,
+  PaletteIcon,
   SearchIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -55,6 +58,11 @@ import {
   LIQUID_GLASS_TINTS,
   type LiquidGlassTuning,
 } from "@/appliance/liquid-glass-settings";
+import {
+  OPEN_ROOMS,
+  type DesktopMode,
+  type OpenRoomType,
+} from "@/appliance/intent-desktop-surface";
 import "@/styles/macos-desktop.css";
 
 type MacIcon = typeof SearchIcon;
@@ -113,7 +121,7 @@ const ECHO_APP_ICON_PALETTES: Record<string, EchoAppIconPalette> = {
   "system:tasks": ECHO_SIGNAL_GLASS.slate,
   "system:activity-monitor": ECHO_SIGNAL_GLASS.signal,
   "system:settings": ECHO_SIGNAL_GLASS.gunmetal,
-  "system:trash": ECHO_SIGNAL_GLASS.glacier,
+  "system:trash": ECHO_SIGNAL_GLASS.gunmetal,
 };
 
 const ECHO_TECH_FIELD_APP_IDS = new Set([
@@ -292,6 +300,160 @@ function MacMenuDropdown({
   );
 }
 
+export interface MacWorkspaceDropdownProps {
+  desktopMode: DesktopMode;
+  onToggleMode: () => void;
+  activeRoom: OpenRoomType;
+  onSelectRoom: (room: OpenRoomType) => void;
+}
+
+export function MacWorkspaceDropdown({
+  desktopMode,
+  onToggleMode,
+  activeRoom,
+  onSelectRoom,
+}: MacWorkspaceDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const currentRoom =
+    OPEN_ROOMS.find((r) => r.id === activeRoom) ?? OPEN_ROOMS[0]!;
+
+  return (
+    <div ref={containerRef} className="relative select-none">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-label="空间与模式控制"
+        className={cn(
+          "flex items-center gap-1.5 h-[22px] px-2.5 rounded-full text-xs transition-all border cursor-pointer",
+          open
+            ? "bg-white/25 text-white border-white/30 shadow-xs"
+            : "bg-white/10 text-white/90 border-white/15 hover:bg-white/20 hover:text-white",
+        )}
+        title="桌面空间与模式控制 (点击切换协作空间或纯净态)"
+      >
+        <span
+          className={cn(
+            "size-1.5 rounded-full transition-transform",
+            desktopMode === "pure"
+              ? "bg-emerald-400 animate-pulse"
+              : "bg-blue-400",
+          )}
+        />
+        <span className="text-[11px] font-medium tracking-tight">
+          {desktopMode === "pure"
+            ? "意图纯净态"
+            : `${currentRoom.icon} ${currentRoom.title.split(" ")[0]}`}
+        </span>
+        <ChevronDownIcon
+          className={cn(
+            "size-3 text-white/50 transition-transform duration-150",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="mac-menu-dropdown w-52 left-1/2 -translate-x-1/2 top-[25px]"
+          data-liquid-surface="thick"
+        >
+          <div className="px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-white/50 tracking-wider">
+            桌面模式
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (desktopMode !== "pure") onToggleMode();
+              setOpen(false);
+            }}
+            className="mac-menu-item"
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  desktopMode === "pure"
+                    ? "bg-emerald-500"
+                    : "bg-slate-300 dark:bg-white/20",
+                )}
+              />
+              <span>意图纯净态</span>
+            </span>
+            <span className="mac-menu-shortcut">Space</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (desktopMode !== "workspace") onToggleMode();
+              setOpen(false);
+            }}
+            className="mac-menu-item"
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  desktopMode === "workspace"
+                    ? "bg-blue-500"
+                    : "bg-slate-300 dark:bg-white/20",
+                )}
+              />
+              <span>多窗口工作台</span>
+            </span>
+            <span className="mac-menu-shortcut">Space</span>
+          </button>
+
+          <div className="mac-menu-separator" />
+
+          <div className="px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-white/50 tracking-wider">
+            协作空间 (OpenRoom)
+          </div>
+          {OPEN_ROOMS.map((room) => {
+            const isSelected =
+              activeRoom === room.id && desktopMode === "workspace";
+            return (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => {
+                  onSelectRoom(room.id);
+                  if (desktopMode === "pure") onToggleMode();
+                  setOpen(false);
+                }}
+                className="mac-menu-item"
+              >
+                <span className="flex items-center gap-2">
+                  <span>{room.icon}</span>
+                  <span
+                    className={isSelected ? "font-semibold" : "font-normal"}
+                  >
+                    {room.title.split(" ")[0]}
+                  </span>
+                </span>
+                {isSelected && <CheckIcon className="size-3.5 text-blue-500" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MacMenuBar({
   activeApp = "文件管理器",
   controlCenterOpen,
@@ -313,6 +475,10 @@ export function MacMenuBar({
   onSystemAction,
   notificationCount = 0,
   modelStatus,
+  centerContent,
+  desktopTheme = "theme-white",
+  onToggleTheme,
+  showBattery = false,
 }: {
   activeApp?: string;
   controlCenterOpen: boolean;
@@ -321,7 +487,7 @@ export function MacMenuBar({
   onOpenSpotlight: () => void;
   onToggleControlCenter: () => void;
   onToggleNotifications: () => void;
-  onToggleLiquidGlass: () => void;
+  onToggleLiquidGlass?: () => void;
   onOpenAbout: () => void;
   onOpenFiles: () => void;
   onOpenSettings: () => void;
@@ -334,6 +500,10 @@ export function MacMenuBar({
   onSystemAction: (action: MacSystemAction) => void;
   notificationCount?: number;
   modelStatus?: ReactNode;
+  centerContent?: ReactNode;
+  desktopTheme?: "theme-white" | "theme-glass" | "theme-dark";
+  onToggleTheme?: () => void;
+  showBattery?: boolean;
 }) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -383,26 +553,22 @@ export function MacMenuBar({
           shortcut: "Ctrl+N",
           onSelect: () => select(onOpenFiles),
         },
-        { label: "新建文件夹", shortcut: "Ctrl+Shift+N", disabled: true },
-        { divider: true },
         {
-          label: "打开",
+          label: "打开…",
           shortcut: "Ctrl+O",
           onSelect: () => select(onOpenFiles),
         },
-        { label: "关闭窗口", shortcut: "Ctrl+W", disabled: true },
-      ],
-    },
-    {
-      label: "编辑",
-      key: "edit",
-      items: [
-        { label: "撤销", shortcut: "Ctrl+Z", disabled: true },
-        { label: "重做", shortcut: "Ctrl+Shift+Z", disabled: true },
         { divider: true },
-        { label: "剪切", shortcut: "Ctrl+X", disabled: true },
-        { label: "拷贝", shortcut: "Ctrl+C", disabled: true },
-        { label: "粘贴", shortcut: "Ctrl+V", disabled: true },
+        {
+          label: "桌面",
+          shortcut: "Ctrl+Shift+D",
+          onSelect: () => select(onOpenFiles),
+        },
+        {
+          label: "个人主目录",
+          shortcut: "Ctrl+Shift+H",
+          onSelect: () => select(onOpenFiles),
+        },
       ],
     },
     {
@@ -414,40 +580,8 @@ export function MacMenuBar({
           shortcut: "F4",
           onSelect: () => select(onOpenLaunchpad),
         },
-        { label: "显示边栏", shortcut: "Ctrl+Shift+S", disabled: true },
         { divider: true },
         { label: "进入全屏幕", shortcut: "Ctrl+Shift+F", disabled: true },
-      ],
-    },
-    {
-      label: "前往",
-      key: "go",
-      items: [
-        {
-          label: "个人",
-          shortcut: "Ctrl+Shift+H",
-          onSelect: () => select(onOpenFiles),
-        },
-        {
-          label: "桌面",
-          shortcut: "Ctrl+Shift+D",
-          onSelect: () => select(onOpenFiles),
-        },
-        {
-          label: "应用程序",
-          shortcut: "Ctrl+Shift+A",
-          onSelect: () => select(onOpenLaunchpad),
-        },
-      ],
-    },
-    {
-      label: "窗口",
-      key: "window",
-      items: [
-        { label: "最小化", shortcut: "Ctrl+M", disabled: true },
-        { label: "缩放", disabled: true },
-        { divider: true },
-        { label: "前置全部窗口", disabled: true },
       ],
     },
     {
@@ -455,7 +589,7 @@ export function MacMenuBar({
       key: "help",
       items: [
         { label: "Echo OS 帮助", onSelect: () => select(onOpenAbout) },
-        { label: "键盘快捷键", disabled: true },
+        { label: "系统设置…", onSelect: () => select(onOpenSettings) },
       ],
     },
   ];
@@ -484,8 +618,14 @@ export function MacMenuBar({
     <header
       ref={menuRef}
       data-desktop-interactive
-      data-liquid-surface="ultra-thin"
       className="mac-menu-bar"
+      style={{
+        backgroundColor: "#000000",
+        backgroundImage: "none",
+        color: "#ffffff",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
+      }}
     >
       <div className="mac-menu-left">
         <div className="relative">
@@ -549,47 +689,87 @@ export function MacMenuBar({
             />
           )}
         </div>
-        {menus.map((menu, index) => (
-          <div key={menu.key} className="relative">
-            <button
-              type="button"
-              className={cn(
-                "mac-menu-button",
-                index === 0 && "font-semibold",
-                activeMenu === menu.key && "is-active",
-              )}
-              onClick={() =>
-                setActiveMenu((value) => (value === menu.key ? null : menu.key))
-              }
-              onPointerEnter={() => activeMenu && setActiveMenu(menu.key)}
+        {menus.map((menu, index) => {
+          return (
+            <div
+              key={menu.key}
+              className={cn("relative", index === 0 && "mr-1")}
             >
-              {menu.label}
-            </button>
-            {activeMenu === menu.key && <MacMenuDropdown items={menu.items} />}
-          </div>
-        ))}
+              <button
+                type="button"
+                className={cn(
+                  "mac-menu-button",
+                  index === 0
+                    ? "font-bold text-white tracking-wide"
+                    : "text-white/85 font-normal",
+                  activeMenu === menu.key && "is-active",
+                )}
+                onClick={() =>
+                  setActiveMenu((value) =>
+                    value === menu.key ? null : menu.key,
+                  )
+                }
+                onPointerEnter={() => activeMenu && setActiveMenu(menu.key)}
+              >
+                {menu.label}
+              </button>
+              {activeMenu === menu.key && (
+                <MacMenuDropdown items={menu.items} />
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {centerContent && (
+        <div className="mac-menu-center mx-auto flex items-center justify-center pointer-events-auto">
+          {centerContent}
+        </div>
+      )}
 
       <div className="mac-menu-right">
         {modelStatus}
-        <button
-          type="button"
-          className={cn("mac-status-icon", liquidGlassOpen && "is-active")}
-          onClick={onToggleLiquidGlass}
-          aria-label="流光玻璃设置"
-          aria-pressed={liquidGlassOpen}
-        >
-          <DropletsIcon className="size-[15px]" />
-        </button>
-        <button
-          type="button"
-          className="mac-status-icon"
-          aria-label={batteryLabel}
-          title={batteryLabel}
-          onClick={onToggleControlCenter}
-        >
-          <BatteryFullIcon className="size-[15px]" />
-        </button>
+        {onToggleLiquidGlass && (
+          <button
+            type="button"
+            className={cn("mac-status-icon", liquidGlassOpen && "is-active")}
+            onClick={onToggleLiquidGlass}
+            aria-label="流光玻璃设置"
+            title="流光玻璃设置"
+            aria-pressed={liquidGlassOpen}
+          >
+            <DropletsIcon className="size-[15px]" />
+          </button>
+        )}
+        {onToggleTheme && (
+          <button
+            type="button"
+            className="mac-status-icon"
+            onClick={onToggleTheme}
+            aria-label="快速切换桌面主题"
+            title={`当前主题：${desktopTheme === "theme-white" ? "象牙白" : desktopTheme === "theme-glass" ? "液态玻璃" : "暗夜黑"} · 点击快速切换`}
+          >
+            {desktopTheme === "theme-white" ? (
+              <SunIcon className="size-[15px] text-amber-500" />
+            ) : desktopTheme === "theme-glass" ? (
+              <PaletteIcon className="size-[15px] text-cyan-400" />
+            ) : (
+              <MoonIcon className="size-[15px] text-purple-400" />
+            )}
+          </button>
+        )}
+        {(showBattery ||
+          (systemControls?.nativeShell && systemControls.battery.present)) && (
+          <button
+            type="button"
+            className="mac-status-icon"
+            aria-label={batteryLabel}
+            title={batteryLabel}
+            onClick={onToggleControlCenter}
+          >
+            <BatteryFullIcon className="size-[15px]" />
+          </button>
+        )}
         <button
           type="button"
           className={cn(
@@ -633,8 +813,10 @@ export function MacMenuBar({
               ? `通知中心，${notificationCount} 条通知`
               : "通知中心"
           }
+          title={`${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 周${"日一二三四五六"[now.getDay()]} ${timeText}`}
         >
-          <span className="hidden sm:inline">{dateText}</span>
+          <span className="hidden 2xl:inline">{dateText}</span>
+          <span className="hidden sm:inline 2xl:hidden">{`周${"日一二三四五六"[now.getDay()]}`}</span>
           <span>{timeText}</span>
           {notificationCount > 0 && (
             <span className="mac-notification-count" aria-hidden>
@@ -721,6 +903,8 @@ export function MacLiquidGlassPanel({
   onTuningChange,
   onResetTuning,
   onClose,
+  desktopTheme = "theme-white",
+  onDesktopThemeChange,
 }: {
   open: boolean;
   style: MacLiquidGlassStyle;
@@ -731,6 +915,10 @@ export function MacLiquidGlassPanel({
   onTuningChange: (patch: Partial<LiquidGlassTuning>) => void;
   onResetTuning: () => void;
   onClose: () => void;
+  desktopTheme?: "theme-white" | "theme-glass" | "theme-dark";
+  onDesktopThemeChange?: (
+    theme: "theme-white" | "theme-glass" | "theme-dark",
+  ) => void;
 }) {
   if (!open) return null;
 
@@ -775,6 +963,66 @@ export function MacLiquidGlassPanel({
           </span>
           <small>{style === "crystal" ? "Crystal Flow" : "Soft Aurora"}</small>
         </div>
+
+        {/* 桌面环境主题预设 (象牙白 / 液态玻璃 / 暗夜黑) */}
+        <fieldset className="mac-glass-fieldset">
+          <legend>桌面环境主题</legend>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-white"
+                  ? "border-amber-500/60 bg-amber-500/15 text-amber-900 shadow-sm dark:bg-amber-400/20 dark:text-amber-200 ring-1 ring-amber-500/40"
+                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-white")}
+              aria-pressed={desktopTheme === "theme-white"}
+            >
+              <SunIcon className="size-4 text-amber-500" />
+              <span>象牙白</span>
+              <small className="text-[10px] font-normal text-slate-400">
+                轻柔晨光
+              </small>
+            </button>
+
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-glass"
+                  ? "border-blue-500/60 bg-blue-500/15 text-blue-900 shadow-sm dark:bg-blue-400/20 dark:text-blue-200 ring-1 ring-blue-500/40"
+                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-glass")}
+              aria-pressed={desktopTheme === "theme-glass"}
+            >
+              <DropletsIcon className="size-4 text-blue-500" />
+              <span>液态玻璃</span>
+              <small className="text-[10px] font-normal text-slate-400">
+                澄澈流光
+              </small>
+            </button>
+
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-dark"
+                  ? "border-purple-500/60 bg-purple-500/15 text-purple-900 shadow-sm dark:bg-purple-400/20 dark:text-purple-200 ring-1 ring-purple-500/40"
+                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-dark")}
+              aria-pressed={desktopTheme === "theme-dark"}
+            >
+              <MoonIcon className="size-4 text-purple-400" />
+              <span>暗夜黑</span>
+              <small className="text-[10px] font-normal text-slate-400">
+                纯粹暗夜
+              </small>
+            </button>
+          </div>
+        </fieldset>
 
         <fieldset className="mac-glass-fieldset">
           <legend>材质模式</legend>
@@ -1022,9 +1270,12 @@ function MacIconLiquidBackdrop() {
       className="mac-app-icon-liquid-backdrop"
       aria-hidden
     >
-      <img src={DESKTOP_WALLPAPER_URL}
-      srcSet={DESKTOP_WALLPAPER_SRCSET}
-      sizes={DESKTOP_WALLPAPER_SIZES} alt="" />
+      <img
+        src={DESKTOP_WALLPAPER_URL}
+        srcSet={DESKTOP_WALLPAPER_SRCSET}
+        sizes={DESKTOP_WALLPAPER_SIZES}
+        alt=""
+      />
     </span>
   );
 }
@@ -1300,6 +1551,7 @@ export function MacControlCenter({
   open,
   onClose,
   onOpenSettings,
+  onOpenLiquidGlass,
   systemControls,
   onSetWifiEnabled,
   onSetBluetoothEnabled,
@@ -1309,6 +1561,7 @@ export function MacControlCenter({
   open: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
+  onOpenLiquidGlass?: () => void;
   systemControls?: SystemControlState | null;
   onSetWifiEnabled?: (enabled: boolean) => Promise<unknown> | unknown;
   onSetBluetoothEnabled?: (enabled: boolean) => Promise<unknown> | unknown;
@@ -1450,17 +1703,35 @@ export function MacControlCenter({
             </span>
             <strong>专注模式</strong>
           </button>
-          <button
-            type="button"
-            className="mac-control-tile"
-            data-liquid-surface="thick"
-            onClick={onOpenSettings}
-          >
-            <span className="mac-control-round">
-              <SettingsIcon />
-            </span>
-            <strong>系统设置</strong>
-          </button>
+          {onOpenLiquidGlass ? (
+            <button
+              type="button"
+              className="mac-control-tile"
+              data-liquid-surface="thick"
+              onClick={() => {
+                onClose();
+                onOpenLiquidGlass();
+              }}
+              title="调节流光玻璃材质与光泽"
+            >
+              <span className="mac-control-round">
+                <DropletsIcon />
+              </span>
+              <strong>流光玻璃</strong>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mac-control-tile"
+              data-liquid-surface="thick"
+              onClick={onOpenSettings}
+            >
+              <span className="mac-control-round">
+                <SettingsIcon />
+              </span>
+              <strong>系统设置</strong>
+            </button>
+          )}
         </div>
         <label className="mac-control-slider" data-liquid-surface="thick">
           <span>

@@ -22,7 +22,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     expect(screen.getByText("RK3576 驱动装配与编译")).toBeInTheDocument();
     expect(screen.getByText("68%")).toBeInTheDocument();
     expect(
-      screen.getByText(/正在执行交叉编译: aarch64-linux-gnu-gcc/i)
+      screen.getByText(/正在执行交叉编译: aarch64-linux-gnu-gcc/i),
     ).toBeInTheDocument();
   });
 
@@ -45,7 +45,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
 
     expect(toast.success).toHaveBeenCalledWith(
       "已批准执行高危操作",
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -56,7 +56,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     fireEvent.click(rejectBtn);
 
     expect(onReject).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "pip-task-live" })
+      expect.objectContaining({ id: "pip-task-live" }),
     );
     expect(toast.error).toHaveBeenCalledWith("已拦截并拒绝高危操作");
   });
@@ -78,11 +78,11 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     fireEvent.click(approveBtn);
 
     expect(onApprove).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "pip-task-live" })
+      expect.objectContaining({ id: "pip-task-live" }),
     );
     expect(toast.success).toHaveBeenCalledWith(
       "已批准执行高危操作",
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -95,5 +95,89 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     fireEvent.keyDown(pill, { key: "Enter" });
 
     expect(screen.getByTestId("agent-pip-monitor")).toBeInTheDocument();
+  });
+
+  it("supports device casting via AI Hotspot", () => {
+    const onCast = vi.fn();
+    render(<AgentPipMonitor onCastDevice={onCast} />);
+
+    const castBtn = screen.getByRole("button", { name: /投屏至其他设备/i });
+    fireEvent.click(castBtn);
+
+    const iphoneBtn = screen.getByText(/iPhone 16 Pro · 随身/i);
+    fireEvent.click(iphoneBtn);
+
+    expect(onCast).toHaveBeenCalledWith("iPhone 16 Pro");
+    expect(screen.getByText(/已投屏监视: iPhone 16 Pro/i)).toBeInTheDocument();
+  });
+
+  it("supports dragging the PiP monitor window across the screen", () => {
+    render(<AgentPipMonitor />);
+    const monitor = screen.getByTestId("agent-pip-monitor");
+    const dragHandle = screen.getByTestId("pip-drag-handle");
+
+    // Mock getBoundingClientRect
+    vi.spyOn(monitor, "getBoundingClientRect").mockReturnValue({
+      left: 100,
+      top: 200,
+      width: 320,
+      height: 240,
+      right: 420,
+      bottom: 440,
+      x: 100,
+      y: 200,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(dragHandle, {
+      clientX: 150,
+      clientY: 210,
+      button: 0,
+    });
+    fireEvent(
+      window,
+      new MouseEvent("pointermove", { clientX: 250, clientY: 310 }),
+    );
+    fireEvent(window, new MouseEvent("pointerup"));
+
+    // Expect custom left/top styles applied
+    expect(monitor.style.left).toBe("200px");
+    expect(monitor.style.top).toBe("300px");
+  });
+
+  it("resets position to default bottom-right on double-clicking drag handle", () => {
+    render(<AgentPipMonitor />);
+    const monitor = screen.getByTestId("agent-pip-monitor");
+    const dragHandle = screen.getByTestId("pip-drag-handle");
+
+    // First drag it somewhere
+    vi.spyOn(monitor, "getBoundingClientRect").mockReturnValue({
+      left: 100,
+      top: 200,
+      width: 320,
+      height: 240,
+      right: 420,
+      bottom: 440,
+      x: 100,
+      y: 200,
+      toJSON: () => {},
+    });
+
+    fireEvent.pointerDown(dragHandle, {
+      clientX: 150,
+      clientY: 210,
+      button: 0,
+    });
+    fireEvent(
+      window,
+      new MouseEvent("pointermove", { clientX: 250, clientY: 310 }),
+    );
+    fireEvent(window, new MouseEvent("pointerup"));
+    expect(monitor.style.left).toBe("200px");
+
+    // Double click to reset
+    fireEvent.doubleClick(dragHandle);
+    expect(monitor.style.left).toBe("");
+    expect(toast.info).toHaveBeenCalledWith("画中画已还原至默认位置");
   });
 });

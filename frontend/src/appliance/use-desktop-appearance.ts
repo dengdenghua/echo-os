@@ -57,11 +57,26 @@ const THEME_NAMES: Record<DesktopTheme, string> = {
 /** 主题与玻璃参数的联动预设：切主题时把玻璃调到视觉协调的组合，并联动壁纸。 */
 const THEME_GLASS_PRESETS: Record<
   DesktopTheme,
-  Pick<DesktopAppearance, "liquidGlassStyle" | "liquidGlassIntensity" | "wallpaper">
+  Pick<
+    DesktopAppearance,
+    "liquidGlassStyle" | "liquidGlassIntensity" | "wallpaper"
+  >
 > = {
-  "theme-white": { liquidGlassStyle: "softlight", liquidGlassIntensity: "weak", wallpaper: "orbit" },
-  "theme-glass": { liquidGlassStyle: "crystal", liquidGlassIntensity: "balanced", wallpaper: "aurora" },
-  "theme-dark": { liquidGlassStyle: "crystal", liquidGlassIntensity: "strong", wallpaper: "midnight" },
+  "theme-white": {
+    liquidGlassStyle: "softlight",
+    liquidGlassIntensity: "weak",
+    wallpaper: "orbit",
+  },
+  "theme-glass": {
+    liquidGlassStyle: "crystal",
+    liquidGlassIntensity: "balanced",
+    wallpaper: "aurora",
+  },
+  "theme-dark": {
+    liquidGlassStyle: "crystal",
+    liquidGlassIntensity: "strong",
+    wallpaper: "midnight",
+  },
 };
 
 function normalizeWallpaper(value: string | null): WallpaperVariant {
@@ -139,7 +154,10 @@ function persistAppearance(appearance: DesktopAppearance) {
     localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(appearance));
     // 同步旧键，保证还在读旧键的组件（如 liquid-glass-settings 面板）一致
     localStorage.setItem("echo-desktop-theme", appearance.theme);
-    localStorage.setItem("echo:liquid-glass-style", appearance.liquidGlassStyle);
+    localStorage.setItem(
+      "echo:liquid-glass-style",
+      appearance.liquidGlassStyle,
+    );
     localStorage.setItem(
       "echo:liquid-glass-intensity",
       appearance.liquidGlassIntensity,
@@ -165,7 +183,8 @@ function applyThemeClass(theme: DesktopTheme) {
 }
 
 export function useDesktopAppearance() {
-  const [appearance, setAppearance] = useState<DesktopAppearance>(loadAppearance);
+  const [appearance, setAppearance] =
+    useState<DesktopAppearance>(loadAppearance);
 
   const update = useCallback((patch: Partial<DesktopAppearance>) => {
     setAppearance((current) => {
@@ -185,7 +204,10 @@ export function useDesktopAppearance() {
   }, []);
 
   const setTheme = useCallback(
-    (theme: DesktopTheme, options?: { linkGlass?: boolean; silent?: boolean }) => {
+    (
+      theme: DesktopTheme,
+      options?: { linkGlass?: boolean; silent?: boolean },
+    ) => {
       const linkGlass = options?.linkGlass ?? true;
       update({
         theme,
@@ -243,7 +265,8 @@ export function useDesktopAppearance() {
   }, [update]);
 
   const liquidGlassVariables = useMemo(
-    () => liquidGlassCssVariables(appearance.liquidGlassTuning) as CSSProperties,
+    () =>
+      liquidGlassCssVariables(appearance.liquidGlassTuning) as CSSProperties,
     [appearance.liquidGlassTuning],
   );
   const liquidGlassUsesNativeDefaults = isDefaultLiquidGlassTuning(

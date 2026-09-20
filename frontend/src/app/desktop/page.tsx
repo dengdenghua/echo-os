@@ -26,13 +26,7 @@ import {
   type OpenRoomType,
 } from "@/appliance/intent-desktop-surface";
 import { LocalDatabaseApp } from "@/appliance/local-database-app";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AppWindowIcon,
@@ -463,7 +457,8 @@ export default function DesktopShellPage() {
     selectedPath?: string;
   } | null>(null);
   const [desktopMode, setDesktopMode] = useState<DesktopMode>("workspace");
-  const [desktopActiveRoom, setDesktopActiveRoom] = useState<OpenRoomType>("all");
+  const [desktopActiveRoom, setDesktopActiveRoom] =
+    useState<OpenRoomType>("all");
   const {
     theme: desktopTheme,
     setTheme: handleSelectDesktopTheme,
@@ -719,7 +714,8 @@ export default function DesktopShellPage() {
     apply: applySystemUpdate,
   } = useSystemUpdates({
     surfaceOpen:
-      aboutOpen || (accountSecurityOpen && accountSecuritySection === "general"),
+      aboutOpen ||
+      (accountSecurityOpen && accountSecuritySection === "general"),
   });
 
   const refreshNativeNotifications = useCallback(async () => {
@@ -1606,7 +1602,9 @@ export default function DesktopShellPage() {
               openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt }))
             }
             onOpenApp={(appId) => {
-              const app = visibleDesktopApps.find((entry) => entry.route === appId);
+              const app = visibleDesktopApps.find(
+                (entry) => entry.route === appId,
+              );
               if (app) openApp(app);
             }}
           >
@@ -1615,7 +1613,9 @@ export default function DesktopShellPage() {
               completedTasks={taskProjection?.counts.completed ?? 0}
               onStorage={() => openSystemSettingsSection("sharing")}
               onModel={() => openSystemAgentSettings("models")}
-              onPermissions={() => openSystemAgentSettings("automationSecurity")}
+              onPermissions={() =>
+                openSystemAgentSettings("automationSecurity")
+              }
               onStart={(prompt) =>
                 openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt }))
               }

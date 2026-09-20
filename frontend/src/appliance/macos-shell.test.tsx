@@ -16,6 +16,7 @@ import {
   MacNotificationCenter,
   MacSpotlight,
   MacSystemActionDialog,
+  MacWorkspaceDropdown,
   type MacShellApp,
 } from "./macos-shell";
 import { DEFAULT_LIQUID_GLASS_TUNING } from "./liquid-glass-settings";
@@ -419,6 +420,28 @@ describe("Echo desktop shell", () => {
     expect(focusControl).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("invokes onOpenLiquidGlass and closes control center when liquid glass tile is clicked", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const onOpenLiquidGlass = vi.fn();
+
+    render(
+      <MacControlCenter
+        open
+        onClose={onClose}
+        onOpenSettings={vi.fn()}
+        onOpenLiquidGlass={onOpenLiquidGlass}
+      />,
+    );
+
+    const glassTile = screen.getByRole("button", { name: /流光玻璃/ });
+    expect(glassTile).toBeInTheDocument();
+    await user.click(glassTile);
+
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onOpenLiquidGlass).toHaveBeenCalledOnce();
+  });
+
   it("projects native Linux radios and invokes the real control bridge", async () => {
     const user = userEvent.setup();
     const onSetWifiEnabled = vi.fn().mockResolvedValue(undefined);
@@ -544,6 +567,7 @@ describe("Echo desktop shell", () => {
 
     render(
       <MacMenuBar
+        showBattery
         controlCenterOpen={false}
         notificationsOpen={false}
         liquidGlassOpen={false}
@@ -573,6 +597,38 @@ describe("Echo desktop shell", () => {
     await user.click(screen.getByRole("button", { name: "电池" }));
 
     expect(onToggleControlCenter).toHaveBeenCalledTimes(2);
+  });
+
+  it("hides battery icon by default on desktop/NAS when showBattery is omitted", () => {
+    render(
+      <MacMenuBar
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "电池" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wi-Fi" })).toBeInTheDocument();
   });
 
   it("keeps the active application name distinct from the File menu", () => {
@@ -799,5 +855,124 @@ describe("Echo desktop shell", () => {
 
     await user.click(screen.getByRole("button", { name: "流光玻璃设置" }));
     expect(onToggleLiquidGlass).toHaveBeenCalledOnce();
+  });
+
+  it("switches desktop atmosphere themes from the liquid glass panel", async () => {
+    const user = userEvent.setup();
+    const onDesktopThemeChange = vi.fn();
+
+    render(
+      <MacLiquidGlassPanel
+        open={true}
+        style="crystal"
+        intensity="regular"
+        tuning={DEFAULT_LIQUID_GLASS_TUNING}
+        desktopTheme="theme-white"
+        onDesktopThemeChange={onDesktopThemeChange}
+        onStyleChange={vi.fn()}
+        onIntensityChange={vi.fn()}
+        onTuningChange={vi.fn()}
+        onResetTuning={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "桌面环境主题" })).toBeVisible();
+    const whiteBtn = screen.getByRole("button", { name: /象牙白/ });
+    const glassBtn = screen.getByRole("button", { name: /液态玻璃/ });
+    const darkBtn = screen.getByRole("button", { name: /暗夜黑/ });
+
+    expect(whiteBtn).toHaveAttribute("aria-pressed", "true");
+    expect(glassBtn).toHaveAttribute("aria-pressed", "false");
+    expect(darkBtn).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(glassBtn);
+    expect(onDesktopThemeChange).toHaveBeenCalledWith("theme-glass");
+
+    await user.click(darkBtn);
+    expect(onDesktopThemeChange).toHaveBeenCalledWith("theme-dark");
+  });
+
+  it("provides a quick desktop theme toggle in the menu bar", async () => {
+    const user = userEvent.setup();
+    const onToggleTheme = vi.fn();
+
+    render(
+      <MacMenuBar
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        desktopTheme="theme-glass"
+        onToggleTheme={onToggleTheme}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onToggleLiquidGlass={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    const themeToggle = screen.getByRole("button", {
+      name: "快速切换桌面主题",
+    });
+    expect(themeToggle).toBeVisible();
+    await user.click(themeToggle);
+    expect(onToggleTheme).toHaveBeenCalledOnce();
+  });
+
+  it("renders collapsed workspace capsule and toggles options via dropdown", async () => {
+    const user = userEvent.setup();
+    const onToggleMode = vi.fn();
+    const onSelectRoom = vi.fn();
+
+    const { rerender } = render(
+      <MacWorkspaceDropdown
+        desktopMode="workspace"
+        onToggleMode={onToggleMode}
+        activeRoom="researcher"
+        onSelectRoom={onSelectRoom}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "空间与模式控制" });
+    expect(trigger).toBeVisible();
+    expect(trigger).toHaveTextContent("调研室");
+
+    // Open dropdown
+    await user.click(trigger);
+    expect(screen.getByText("桌面模式")).toBeVisible();
+    expect(screen.getByText("协作空间 (OpenRoom)")).toBeVisible();
+
+    // Select a room
+    const builderBtn = screen.getByRole("button", { name: /工坊/ });
+    await user.click(builderBtn);
+    expect(onSelectRoom).toHaveBeenCalledWith("builder");
+
+    // Re-render in pure mode
+    rerender(
+      <MacWorkspaceDropdown
+        desktopMode="pure"
+        onToggleMode={onToggleMode}
+        activeRoom="all"
+        onSelectRoom={onSelectRoom}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "空间与模式控制" }),
+    ).toHaveTextContent("意图纯净态");
   });
 });

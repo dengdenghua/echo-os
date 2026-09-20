@@ -22,8 +22,8 @@ describe("AiNetworkPulse", () => {
       name: /打开 AI Network 实时脉搏/i,
     });
     expect(trigger).toBeInTheDocument();
-    expect(screen.getByText("AI Network")).toBeInTheDocument();
-    expect(screen.getByText("32% Local")).toBeInTheDocument();
+    expect(screen.getByText("AI")).toBeInTheDocument();
+    expect(screen.getByText("32%")).toBeInTheDocument();
   });
 
   it("opens popover menu and displays Agents, Plans, and Policy sections", () => {
@@ -50,7 +50,9 @@ describe("AiNetworkPulse", () => {
     expect(
       screen.getByText("2. 状态栏主选模型 (Model Switcher)"),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Claude 3.5 Sonnet").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText("Claude 3.5 Sonnet").length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("GPT-4o")).toBeInTheDocument();
     expect(screen.getByText("DeepSeek-V3")).toBeInTheDocument();
 
@@ -130,5 +132,17 @@ describe("AiNetworkPulse", () => {
     const settingsBtn = screen.getByText("连接设置");
     fireEvent.click(settingsBtn);
     expect(onOpenSettings).toHaveBeenCalledOnce();
+  });
+
+  it("syncs activeModel when selectedModel prop changes", () => {
+    const { rerender } = render(
+      <AiNetworkPulse selectedModel="auto" defaultOpen />,
+    );
+    expect(
+      screen.getAllByText("Claude 3.5 Sonnet").length,
+    ).toBeGreaterThanOrEqual(1);
+
+    rerender(<AiNetworkPulse selectedModel="deepseek-v3" defaultOpen />);
+    expect(screen.getAllByText("DeepSeek-V3").length).toBeGreaterThanOrEqual(1);
   });
 });
