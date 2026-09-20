@@ -67,6 +67,23 @@
 
 **门禁**：prettier / eslint / tsc 三条本地复跑，结果见本节提交前的最近一次运行。
 
+### P1 轮询优化（2026-09-21 01:09，「继续继续」）
+
+已修 **P1-1 / P1-2 / P1-3**（三处 `setInterval`），统一加 `document.hidden` 节流 ——
+页面不可见时跳过 tick（省 CPU/网络），回到前台时下一次 tick 立即补一帧（防数据过期）。
+纯增量、不改任何数据语义、不动轮询周期：
+
+| 位置 | 原状 | 改后 |
+|---|---|---|
+| `page.tsx:741` 通知轮询 | 周期 1.5s/5s 随 `notificationsOpen` 跳变 | tick 内 `if (document.hidden) return` |
+| `page.tsx:1234` systemInfo | 无条件 `setInterval(poll, 3000)` | tick 内 `if (document.hidden) return` |
+| `macos-shell.tsx:513` 时钟 | 每秒 `setNow(new Date())` | tick 内 `if (document.hidden) return` |
+
+**未动**：周期数值本身（通知 1.5s/5s 跳变是产品决策，非纯性能问题，若要固定需产品确认）。
+`page.tsx:43` 的 43 个 `useState` 拆 reducer（P1-5）与偏好边界收口（P1-4）面较大，单列。
+
+**验证**：prettier / eslint / tsc `rc=0`；`macos-shell.test.tsx` 35 + `intent-desktop-surface.test.tsx` 16 = 51 passed。
+
 ## §6 待办（验证缺口）
 
 - [ ] 可访问性扫描（axe / Lighthouse）跑一遍 `macos-shell` + `intent-desktop-surface`

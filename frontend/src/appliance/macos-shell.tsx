@@ -510,7 +510,11 @@ export function MacMenuBar({
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    // 页面不可见时暂停时钟，回到前台立即刷新，避免后台每秒空转 setState
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      setNow(new Date());
+    }, 1000);
     return () => window.clearInterval(timer);
   }, []);
 

@@ -738,12 +738,12 @@ export default function DesktopShellPage() {
   useEffect(() => {
     if (!window.echo?.notifications) return;
     void refreshNativeNotifications();
-    const timer = window.setInterval(
-      () => {
-        void refreshNativeNotifications();
-      },
-      notificationsOpen ? 1_500 : 5_000,
-    );
+    const tick = () => {
+      // 页面不可见时暂停轮询，回到前台立即补一次，避免后台空转
+      if (document.hidden) return;
+      void refreshNativeNotifications();
+    };
+    const timer = window.setInterval(tick, notificationsOpen ? 1_500 : 5_000);
     return () => window.clearInterval(timer);
   }, [notificationsOpen, refreshNativeNotifications]);
 
@@ -1230,8 +1230,13 @@ export default function DesktopShellPage() {
         if (alive) setSystemInfoStatus("error");
       }
     };
+    const tick = () => {
+      // 页面不可见时暂停 systemInfo 轮询，回到前台立即补一次
+      if (document.hidden) return;
+      void poll();
+    };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(tick, 3000);
     return () => {
       alive = false;
       clearInterval(id);
