@@ -11,9 +11,20 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// `currentActorId()` 在测试模式下恒为 "anonymous"（canUseBrowserStorage 会因
+// import.meta.env.MODE === "test" 短路），因此必须注入 actor 才能验证账号作用域。
+// 用 hoisted 状态避免 vi.mock 工厂被提升到 `let` 初始化之前而触发 TDZ。
+const authState = vi.hoisted(() => ({ actor: "alice" }));
+vi.mock("@/core/auth/api", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, currentActorId: () => authState.actor };
+});
+
 describe("IntentDesktopSurface", () => {
   beforeEach(() => {
     localStorage.clear();
+    // 每个用例从确定的身份起步，避免作用域用例之间互相串账号
+    authState.actor = "anonymous";
     vi.clearAllMocks();
   });
 
@@ -294,5 +305,74 @@ describe("IntentDesktopSurface", () => {
     const card = header.closest("[data-task-card='true']") as HTMLElement;
     expect(card).toBeInTheDocument();
     expect(card.style.transform).toContain("translate3d(150px, 100px, 0)");
+  });
+
+  // 桌面形态（pure / workspace）按账号作用域保存 —— 边界依据见
+  // docs/desktop-workbench-ux-optimization.md：设备级只保留"硬件桌面外观"，
+  // "工作形态"类偏好一律 actor 作用域。
+  describe("desktop mode storage scope", () => {
+    const setActor = (id: string) => {
+      authState.actor = id;
+    };
+
+    it("persists the mode under the actor-scoped key, not the bare device key", () => {
+      setActor("alice");
+      render(<IntentDesktopSurface initialMode="workspace" />);
+
+      fireEvent.click(screen.getByRole("button", { name: /多窗口工作台/i }));
+      expect(screen.getByText("意图纯净态")).toBeInTheDocument();
+
+      expect(localStorage.getItem("echo-desktop-mode:alice")).toBe("pure");
+      expect(localStorage.getItem("echo-desktop-mode")).toBeNull();
+    });
+
+    it("isolates the mode between two accounts on the same device", () => {
+      setActor("alice");
+      const { rerender } = render(
+        <IntentDesktopSurface initialMode="workspace" />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /多窗口工作台/i }));
+      expect(localStorage.getItem("echo-desktop-mode:alice")).toBe("pure");
+
+      // bob 在同一台设备上不该继承 alice 的形态
+      setActor("bob");
+      rerender(<IntentDesktopSurface initialMode="workspace" />);
+      fireEvent.click(screen.getByRole("button", { name: /多窗口工作台/i }));
+      fireEvent.click(screen.getByRole("button", { name: /意图纯净态/i }));
+
+      expect(localStorage.getItem("echo-desktop-mode:bob")).toBe("workspace");
+      // alice 的记录未被 bob 的操作覆盖
+      expect(localStorage.getItem("echo-desktop-mode:alice")).toBe("pure");
+    });
+
+    it("migrates the legacy device-wide key to the current actor once", () => {
+      setActor("alice");
+      localStorage.setItem("echo-desktop-mode", "pure");
+
+      render(<IntentDesktopSurface initialMode="workspace" />);
+
+      // 读到旧设备值即归属当前账号，并删除旧键（迁移助手语义）
+      expect(screen.getByText("意图纯净态")).toBeInTheDocument();
+      expect(localStorage.getItem("echo-desktop-mode:alice")).toBe("pure");
+      expect(localStorage.getItem("echo-desktop-mode")).toBeNull();
+    });
+
+    it("reloads the mode on actor change instead of leaking the previous account's posture", () => {
+      setActor("alice");
+      localStorage.setItem("echo-desktop-mode:alice", "pure");
+
+      const { rerender } = render(
+        <IntentDesktopSurface initialMode="workspace" />,
+      );
+      expect(screen.getByText("意图纯净态")).toBeInTheDocument();
+
+      // 切到 bob：他没有自己的形态记录，应回落到 initialMode，
+      // 而不是继续沿用 alice 的"意图纯净态"。
+      setActor("bob");
+      rerender(<IntentDesktopSurface initialMode="workspace" />);
+
+      expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
+      expect(screen.queryByText("意图纯净态")).not.toBeInTheDocument();
+    });
   });
 });

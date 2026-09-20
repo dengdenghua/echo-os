@@ -22,7 +22,7 @@
 | P1-1 | `page.tsx:741` | 通知轮询周期在 1.5s/5s 间随 `notificationsOpen` 跳变 | `setInterval(..., notificationsOpen ? 1_500 : 5_000)` | **已修**（加 `document.hidden` 节流；周期数值未动，属产品决策） |
 | P1-2 | `page.tsx:1234` | `setInterval(poll, 3000)` 无条件 3s 轮询 `systemInfo` | `:1234` | **已修**（tick 内 `document.hidden` 直接 return） |
 | P1-3 | `macos-shell.tsx:513` | `setInterval(() => setNow(new Date()), 1000)` 每秒 setState | `:513` | **已修**（同上；未改 `requestAnimationFrame`，避免引入新调度复杂度） |
-| P1-4 | `intent-desktop-surface.tsx:236/248/292/504/654` | 桌面 mode/theme 偏好直存 `localStorage`（用户级），与同仓其它账号级偏好（`docs/desktop-workbench-ux-optimization.md` 大量"账号作用域"条目）**边界不一** | 直接证据 | 待定：统一"哪些偏好账号级 / 哪些设备级"，避免同一台机器多账号互相覆盖。**这是产品口径问题，需先定边界再动代码** |
+| P1-4 | `intent-desktop-surface.tsx:236/248/292/504/654` | 桌面 mode/theme 偏好直存 `localStorage`（用户级），与同仓其它账号级偏好**边界不一** | 直接证据 | **部分已修**：`echo-desktop-mode` → 账号级（详见 `docs/preference-scope-audit-2026-09-21.md`）。该轮实测推翻"口径待定"的判断：**边界已有明文依据**，真缺口是**作用域命名三套并存**导致无法核查。`echo-desktop-theme` 保持设备级（属"硬件桌面外观"，且已被测试锁定） |
 | P1-5 | `page.tsx:43` | 单组件 43 个 `useState` | grep 计数 | **已修**：8 个互斥浮层开关收敛为 `useDesktopOverlays`（见下"状态收敛"节）。剩余 `useState` 分属账号/通知/工作台/任务投影等独立域，无内聚簇，**不继续硬拆** |
 
 ## P2 — 代码健康（防腐蚀）
@@ -123,8 +123,33 @@
 `use-desktop-overlays`(5) + `intent-desktop-surface.keyboard`(4) + `desktop/organizer-flow`(1) +
 `desktop/organizer-result`(10) = 20 passed。
 
-## §6 待办（验证缺口）
+### P1-4 偏好作用域实测（2026-09-21 02:3x）
 
+完整报告见 **`docs/preference-scope-audit-2026-09-21.md`**。三点要点：
+
+1. **"口径待定"是误判。** 边界早有明文：设备级 = 硬件桌面外观（`desktop-workbench-ux-optimization.md:418`），
+   其余内容/身份/工作形态偏好 = 账号级（同文件 `:531`、`AGENT_OS_POLISH_STATUS.md:944/1046`）。
+   共享机制 `core/auth/scoped-storage.ts` 已被 **31 个生产文件**采用，含旧设备键一次性迁移。
+2. **真缺口是"作用域不可核查"**：命名约定三套并存 —— 共享助手 `prefix:actor`、
+   `enabled-modules.ts` 手写 `key:actor:actor`（且**手抄了一份迁移逻辑**）、
+   `composer-draft.ts` / `desktop-start-guide.tsx` 把身份拼进中段。
+   反证：用"未 import scoped-storage"作判据筛出 28 个设备级候选，复核发现其中 3 个其实已隔离 → 判据失效。
+3. **本轮只改一处**：`echo-desktop-mode`（意图纯净态 ↔ 多窗口工作台）→ 账号级。
+   它是桌面键里唯一"工作形态却设备级"的；引用面 3 处全在单文件内且无测试锁定其设备级语义。
+   补了账号切换重载（照 `local-brain-setup.tsx:59-68` 范式），删掉 `handleSubmitIntent` 里
+   重复的第二处写入。
+
+**明确未动**：`echo-desktop-theme` + 液态玻璃 + 壁纸（`use-desktop-appearance.ts`）保持设备级 ——
+属"硬件桌面外观"，且已被 `use-desktop-appearance.test.ts:31/62` 锁定，改动面与风险都不对等。
+
+**测试环境陷阱（已记入 skill）**：`core/auth/api.ts:55` 的 `canUseBrowserStorage()`
+在 `import.meta.env.MODE === "test"` 时恒为 false，导致 `currentActorId()` 在 vitest 里
+**永远是 `"anonymous"`** —— 靠 sessionStorage 造不出真实 actor。这也是仓库把 actor 设计成
+可注入参数的原因。本轮测试用 `vi.hoisted` + 局部 mock `@/core/auth/api` 解决。
+
+**验证**：新增 4 条作用域契约测试；**负向突变**（实现改回裸设备键）后 4 条全部失败，确认非空转。
+
+## §6 待办（验证缺口）
 - [x] 交互契约测试锁定键盘新行为（P0-1/2）—— `intent-desktop-surface.keyboard.test.tsx` 4 条：
   Cmd/Ctrl+K 聚焦、主键盘 `/` 聚焦 vs 小键盘 `/` 不聚焦、输入框聚焦时 `/`/`Space` 不拦截、
   按钮聚焦时 Space 不切换模式。**已提交。**
@@ -132,5 +157,8 @@
 - [ ] `page.tsx` 组件级冒烟测试（当前该 2653 行文件**零专属测试**，P1-5 只能抽 hook 单测，
   覆盖面受限）—— 若要继续动 `page.tsx`，建议先补一条"挂载后按 Escape / Cmd+Space 不崩"的冒烟测试
 - [ ] 可访问性扫描（axe / Lighthouse）跑一遍 `macos-shell` + `intent-desktop-surface`（P0-4 已判误报，扫描仅作运行期佐证）
-- [ ] 多账号下桌面偏好隔离的行为实测（P1-4）
+- [ ] 多账号下桌面偏好隔离的行为实测（P1-4）—— **代码侧已具备**（`echo-desktop-mode` 账号级 +
+  单测覆盖迁移与账号切换）；仍缺的是**真机 / 浏览器人工验证**：两个账号来回切换，确认形态与外观各归其位
+- [ ] P1-4 报告 §6 的四项待处理：`community-subscribe.ts` 漏网、三套命名收敛（含 `enabled-modules.ts`
+  重复迁移逻辑）、工作区外观族补明文口径、28 个设备级候选逐个定级
 - [ ] `untracked_source_check` 覆盖范围复核（`docs/`、`nul`、根目录杂文件）

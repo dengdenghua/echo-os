@@ -27,11 +27,51 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import {
   AgentPipMonitor,
   DEFAULT_PIP_TASK,
   type PipTask,
 } from "./agent-pip-monitor";
+
+/**
+ * 桌面形态（pure / workspace）按**账号作用域**保存。
+ *
+ * 依据仓库既定的偏好边界（`docs/desktop-workbench-ux-optimization.md`）：
+ * 设备级只保留"硬件桌面外观"（主题 / 壁纸 / 液态玻璃 / 圆角密度），
+ * 而"工作形态"类偏好一律 actor 作用域 —— 与聊天模式覆盖 `echo:modeOverride`、
+ * 侧栏折叠与面板宽度、Design 工作区布局属同一侧。
+ *
+ * 桌面形态记录的是"这个账号想怎么工作"（沉浸意图态 vs 多窗口工作台），
+ * 不是这台设备的硬件外观，因此按账号隔离；共享设备上多账号不会再互相覆盖。
+ * 旧设备级键由 `readActorScopedStorageValue` 按当前账号做一次性迁移。
+ */
+const DESKTOP_MODE_STORAGE_KEY = "echo-desktop-mode";
+
+function readPersistedDesktopMode(): DesktopMode | null {
+  try {
+    const saved = readActorScopedStorageValue(DESKTOP_MODE_STORAGE_KEY);
+    return saved === "pure" || saved === "workspace" ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistDesktopMode(mode: DesktopMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      actorScopedStorageKey(DESKTOP_MODE_STORAGE_KEY),
+      mode,
+    );
+  } catch {
+    // 存储不可用时静默降级为会话内状态
+  }
+}
 
 const OPERATOR_BG_PIP_TASK: PipTask = {
   id: "pip-task-operator-bg",
@@ -232,14 +272,8 @@ export const INTENT_TEMPLATES: IntentTemplate[] = [
 
 function getSafeInitialMode(initialMode: DesktopMode): DesktopMode {
   if (typeof window === "undefined") return initialMode;
-  try {
-    const saved = localStorage.getItem(
-      "echo-desktop-mode",
-    ) as DesktopMode | null;
-    return saved === "pure" || saved === "workspace" ? saved : initialMode;
-  } catch {
-    return initialMode;
-  }
+  const saved = readPersistedDesktopMode();
+  return saved ?? initialMode;
 }
 
 function getSafeInitialTheme(initialTheme: DesktopTheme): DesktopTheme {
@@ -272,12 +306,22 @@ export function IntentDesktopSurface({
   children,
   className,
 }: IntentDesktopSurfaceProps) {
+  const actor = currentActorId();
   const [internalMode, setInternalMode] = useState<DesktopMode>(() =>
     getSafeInitialMode(initialMode),
   );
   const [internalTheme, setInternalTheme] = useState<DesktopTheme>(() =>
     getSafeInitialTheme(initialTheme),
   );
+
+  // 账号切换：先重载新账号的桌面形态，避免旧账号的 pure/workspace 泄漏到新账号。
+  // （与 local-brain-setup / 侧栏折叠态等 actor 作用域偏好的既有范式一致。）
+  const [modeActor, setModeActor] = useState(actor);
+  useEffect(() => {
+    if (modeActor === actor) return;
+    setModeActor(actor);
+    setInternalMode(readPersistedDesktopMode() ?? initialMode);
+  }, [actor, modeActor, initialMode]);
 
   const theme = controlledTheme ?? internalTheme;
 
@@ -287,13 +331,7 @@ export function IntentDesktopSurface({
       const next = typeof nextOrFn === "function" ? nextOrFn(mode) : nextOrFn;
       setInternalMode(next);
       onModeChange?.(next);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("echo-desktop-mode", next);
-        } catch {
-          // ignore
-        }
-      }
+      persistDesktopMode(next);
     },
     [mode, onModeChange],
   );
@@ -671,13 +709,6 @@ export function IntentDesktopSurface({
     // 自动切换为多窗口工作台模式以展示任务执行
     if (mode === "pure") {
       setMode("workspace");
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("echo-desktop-mode", "workspace");
-        } catch {
-          // ignore — 与 setMode 内联的写入一致，存储不可用时静默降级
-        }
-      }
     }
 
     toast.success(`新任务已创建并分派给 ${agentNames[selectedAgent]}`, {
