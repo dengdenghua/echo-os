@@ -578,13 +578,24 @@ export function IntentDesktopSurface({
   useEffect(() => {
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       const activeTag = document.activeElement?.tagName?.toLowerCase();
-      const isInput = activeTag === "input" || activeTag === "textarea";
+      // Cmd/Ctrl+K 是本组件的"聚焦意图输入框"快捷键，最先判定并保留；
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        return;
+      }
+      // 其余组合键（Cmd/Ctrl/Alt）一律放行，交给系统/输入框默认行为，避免误吞粘贴、快捷键等
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const isInput =
+        activeTag === "input" ||
+        activeTag === "textarea" ||
+        (document.activeElement as HTMLElement | null)?.isContentEditable ===
+          true;
 
       // Cmd+K / Ctrl+K 或 '/' 快速聚焦意图输入框
-      if (
-        (e.key === "k" && (e.metaKey || e.ctrlKey)) ||
-        (e.key === "/" && !isInput)
-      ) {
+      // 仅主键区 '/'（排除小键盘 NumpadDivide），且不位于任何可聚焦控件内——
+      // 否则小键盘 '/' 会吃掉输入、按钮内 '/' 会误触发聚焦。
+      if (e.key === "/" && e.code !== "NumpadDivide" && !isInput) {
         e.preventDefault();
         inputRef.current?.focus();
         return;
@@ -610,7 +621,16 @@ export function IntentDesktopSurface({
         return;
       }
 
-      if (!isInput && e.code === "Space") {
+      // Space 双态互换；仅当焦点在 body 上（即无控件聚焦）时才全局响应——
+      // Space 是按钮/链接的原生激活键，若焦点在可聚焦元素上须让位给默认行为。
+      if (
+        e.code === "Space" &&
+        !isInput &&
+        activeTag !== "button" &&
+        activeTag !== "a" &&
+        activeTag !== "select" &&
+        activeTag !== "summary"
+      ) {
         e.preventDefault();
         toggleMode();
       }
@@ -651,7 +671,13 @@ export function IntentDesktopSurface({
     // 自动切换为多窗口工作台模式以展示任务执行
     if (mode === "pure") {
       setMode("workspace");
-      localStorage.setItem("echo-desktop-mode", "workspace");
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("echo-desktop-mode", "workspace");
+        } catch {
+          // ignore — 与 setMode 内联的写入一致，存储不可用时静默降级
+        }
+      }
     }
 
     toast.success(`新任务已创建并分派给 ${agentNames[selectedAgent]}`, {
