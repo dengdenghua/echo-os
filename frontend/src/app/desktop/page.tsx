@@ -81,6 +81,7 @@ import { useDesktopAppearance } from "@/appliance/use-desktop-appearance";
 import { useLiquidGlassPointer } from "@/appliance/use-liquid-glass-pointer";
 import { useSystemControls } from "@/appliance/use-system-controls";
 import { useSystemUpdates } from "@/appliance/use-system-updates";
+import { useDesktopOverlays } from "@/appliance/use-desktop-overlays";
 import { MacNativeLiquidGlass } from "@/appliance/native-liquid-glass";
 import {
   findNativeFileManagerApp,
@@ -329,25 +330,30 @@ export default function DesktopShellPage() {
     isBackendStarting,
     retryAuth,
   } = useAuth();
+  const {
+    spotlightOpen,
+    launchpadOpen,
+    controlCenterOpen,
+    notificationsOpen,
+    liquidGlassOpen,
+    aboutOpen,
+    accountSecurityOpen,
+    taskSpaceOpen,
+    setOverlay,
+    toggleOverlay,
+    closeTransient,
+  } = useDesktopOverlays();
   const [query, setQuery] = useState("");
-  const [spotlightOpen, setSpotlightOpen] = useState(false);
-  const [launchpadOpen, setLaunchpadOpen] = useState(false);
   const [appOpenChoice, setAppOpenChoice] = useState<DesktopApp | null>(null);
-  const [controlCenterOpen, setControlCenterOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [nativeNotifications, setNativeNotifications] = useState<
     NativeNotification[]
   >([]);
   const [notificationServiceAvailable, setNotificationServiceAvailable] =
     useState(false);
-  const [liquidGlassOpen, setLiquidGlassOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [accountSecurityOpen, setAccountSecurityOpen] = useState(false);
   const [accountSecuritySection, setAccountSecuritySection] =
     useState<AccountSecuritySection>("account");
   const [agentSettingsSection, setAgentSettingsSection] =
     useState<OsAgentSettingsSection>("models");
-  const [taskSpaceOpen, setTaskSpaceOpen] = useState(false);
   const [desktopMenu, setDesktopMenu] = useState<{
     x: number;
     y: number;
@@ -507,43 +513,45 @@ export default function DesktopShellPage() {
     else if (isElectronShell) setDesktopDrawerOpen(true);
     else setFileManagerOpen(true);
   };
-  const openSpotlight = () => {
-    setControlCenterOpen(false);
-    setNotificationsOpen(false);
-    setLiquidGlassOpen(false);
-    setLaunchpadOpen(false);
-    setSpotlightOpen(true);
-  };
+  // useCallback：本函数被窗口快捷键 effect 依赖，且作为 onOpenSpotlight 下传。
+  // 记忆化后引用稳定，effect 不会每次渲染都重挂监听，子组件也不会被无谓刷新。
+  const openSpotlight = useCallback(() => {
+    setOverlay("controlCenter", false);
+    setOverlay("notifications", false);
+    setOverlay("liquidGlass", false);
+    setOverlay("launchpad", false);
+    setOverlay("spotlight", true);
+  }, [setOverlay]);
   const toggleControlCenter = () => {
-    setNotificationsOpen(false);
-    setSpotlightOpen(false);
-    setLiquidGlassOpen(false);
-    setControlCenterOpen((value) => !value);
+    setOverlay("notifications", false);
+    setOverlay("spotlight", false);
+    setOverlay("liquidGlass", false);
+    toggleOverlay("controlCenter");
   };
   const toggleNotifications = () => {
-    setControlCenterOpen(false);
-    setSpotlightOpen(false);
-    setLiquidGlassOpen(false);
-    setNotificationsOpen((value) => !value);
+    setOverlay("controlCenter", false);
+    setOverlay("spotlight", false);
+    setOverlay("liquidGlass", false);
+    toggleOverlay("notifications");
   };
   // 打开流光玻璃面板前先收起其他浮层，避免出现多层浮层叠加。
   const openLiquidGlass = () => {
-    setControlCenterOpen(false);
-    setNotificationsOpen(false);
-    setSpotlightOpen(false);
-    setLiquidGlassOpen(true);
+    setOverlay("controlCenter", false);
+    setOverlay("notifications", false);
+    setOverlay("spotlight", false);
+    setOverlay("liquidGlass", true);
   };
   const openSystemSettingsSection = (section: AccountSecuritySection) => {
     if (!isDeviceOperator) {
       toast.info("家庭成员不能修改设备级设置");
       return;
     }
-    setControlCenterOpen(false);
-    setNotificationsOpen(false);
-    setAboutOpen(false);
+    setOverlay("controlCenter", false);
+    setOverlay("notifications", false);
+    setOverlay("about", false);
     const openEchoSettings = () => {
       setAccountSecuritySection(section);
-      setAccountSecurityOpen(true);
+      setOverlay("accountSecurity", true);
     };
     const nativeAppsApi = window.echo?.apps;
     if (
@@ -578,9 +586,9 @@ export default function DesktopShellPage() {
     (section: OsAgentSettingsSection = "models") => {
       setAgentSettingsSection(section);
       setAccountSecuritySection(section === "models" ? "models" : "agent");
-      setAccountSecurityOpen(true);
+      setOverlay("accountSecurity", true);
     },
-    [],
+    [setOverlay],
   );
 
   useEffect(() => {
@@ -697,13 +705,7 @@ export default function DesktopShellPage() {
     confirmSystemAction,
   } = useSystemControls({
     closeTransientPanels: () => {
-      setSpotlightOpen(false);
-      setLaunchpadOpen(false);
-      setControlCenterOpen(false);
-      setNotificationsOpen(false);
-      setAboutOpen(false);
-      setAccountSecurityOpen(false);
-      setTaskSpaceOpen(false);
+      closeTransient();
     },
   });
   const {
@@ -781,7 +783,7 @@ export default function DesktopShellPage() {
     const onSystemShortcut = (event: globalThis.KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.code === "Space") {
         event.preventDefault();
-        if (spotlightOpen) setSpotlightOpen(false);
+        if (spotlightOpen) setOverlay("spotlight", false);
         else openSpotlight();
         return;
       }
@@ -795,17 +797,11 @@ export default function DesktopShellPage() {
         return;
       }
       if (event.key !== "Escape") return;
-      setSpotlightOpen(false);
-      setLaunchpadOpen(false);
-      setControlCenterOpen(false);
-      setNotificationsOpen(false);
-      setAboutOpen(false);
-      setAccountSecurityOpen(false);
-      setTaskSpaceOpen(false);
+      closeTransient();
     };
     window.addEventListener("keydown", onSystemShortcut);
     return () => window.removeEventListener("keydown", onSystemShortcut);
-  }, [spotlightOpen, lockScreen]);
+  }, [spotlightOpen, lockScreen, openSpotlight, setOverlay, closeTransient]);
 
   const openApp = (app: DesktopApp, routeOverride?: string) => {
     const registeredApp = findWorkbenchApp(app.route);
@@ -828,8 +824,8 @@ export default function DesktopShellPage() {
       setStorageCenterOpen(false);
       setDeviceLinkOpen(false);
       setHubOpen(false);
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/storage-center") {
@@ -837,8 +833,8 @@ export default function DesktopShellPage() {
       setPhotosOpen(false);
       setDeviceLinkOpen(false);
       setHubOpen(false);
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/device-link") {
@@ -846,8 +842,8 @@ export default function DesktopShellPage() {
       setPhotosOpen(false);
       setStorageCenterOpen(false);
       setHubOpen(false);
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/hub") {
@@ -855,8 +851,8 @@ export default function DesktopShellPage() {
       setPhotosOpen(false);
       setStorageCenterOpen(false);
       setDeviceLinkOpen(false);
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     if (workbenchRoutePath(app.route) === "/workspace") {
@@ -876,15 +872,15 @@ export default function DesktopShellPage() {
           />
         ),
       });
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     // Agent 工作台类应用直接作为 React 内容开进桌面窗口。
     if (app.windowed) {
       openWorkspace(routeOverride || app.route, { title: app.name });
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       return;
     }
     navigate(app.route);
@@ -892,8 +888,8 @@ export default function DesktopShellPage() {
 
   const chooseAppPresentation = (app: DesktopApp) => {
     if (findWorkbenchApp(app.route)) {
-      setLaunchpadOpen(false);
-      setSpotlightOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
       setAppOpenChoice(app);
     } else openApp(app);
   };
@@ -1401,11 +1397,11 @@ export default function DesktopShellPage() {
       );
     });
     if (app) {
-      setSpotlightOpen(false);
+      setOverlay("spotlight", false);
       chooseAppPresentation(app);
       return;
     }
-    setSpotlightOpen(false);
+    setOverlay("spotlight", false);
     navigate(`/browser?q=${encodeURIComponent(query.trim())}`);
   };
 
@@ -1549,12 +1545,12 @@ export default function DesktopShellPage() {
           onToggleNotifications={toggleNotifications}
           desktopTheme={desktopTheme}
           onToggleTheme={handleToggleDesktopTheme}
-          onOpenAbout={() => setAboutOpen(true)}
+          onOpenAbout={() => setOverlay("about", true)}
           onOpenFiles={openFinder}
           onOpenSettings={openSystemSettings}
           appStoreAvailable
           onOpenAppStore={openAppStore}
-          onOpenLaunchpad={() => setLaunchpadOpen(true)}
+          onOpenLaunchpad={() => setOverlay("launchpad", true)}
           systemCapabilities={availableSystemActions}
           systemControls={systemControls}
           onLockScreen={lockScreen}
@@ -1624,7 +1620,7 @@ export default function DesktopShellPage() {
               onStart={(prompt) =>
                 openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt }))
               }
-              onResults={() => setTaskSpaceOpen(true)}
+              onResults={() => setOverlay("taskSpace", true)}
               onDatabase={() => {
                 const app = visibleDesktopApps.find((entry) =>
                   isLocalDatabaseRoute(entry.route),
@@ -1950,7 +1946,7 @@ export default function DesktopShellPage() {
               新建文件夹<span>Ctrl+Shift+N</span>
             </button>
             <div />
-            <button type="button" onClick={() => setAboutOpen(true)}>
+            <button type="button" onClick={() => setOverlay("about", true)}>
               显示简介<span>Ctrl+I</span>
             </button>
             <button type="button" onClick={cycleWallpaper}>
@@ -1971,10 +1967,13 @@ export default function DesktopShellPage() {
                 </button>
               </>
             )}
-            <button type="button" onClick={() => setLaunchpadOpen(true)}>
+            <button type="button" onClick={() => setOverlay("launchpad", true)}>
               显示应用库
             </button>
-            <button type="button" onClick={() => setControlCenterOpen(true)}>
+            <button
+              type="button"
+              onClick={() => setOverlay("controlCenter", true)}
+            >
               查看显示选项
             </button>
           </div>
@@ -2059,7 +2058,10 @@ export default function DesktopShellPage() {
               appId="system:finder"
             />
           </DockItem>
-          <DockItem onClick={() => setLaunchpadOpen(true)} title="应用库">
+          <DockItem
+            onClick={() => setOverlay("launchpad", true)}
+            title="应用库"
+          >
             <MacAppIcon
               icon={MAC_SYSTEM_APPS.launchpad.icon}
               gradient={MAC_SYSTEM_APPS.launchpad.gradient}
@@ -2171,7 +2173,7 @@ export default function DesktopShellPage() {
             </>
           )}
           <DockItem
-            onClick={() => setTaskSpaceOpen(true)}
+            onClick={() => setOverlay("taskSpace", true)}
             title="任务空间"
             running={taskSpaceOpen}
           >
@@ -2445,7 +2447,7 @@ export default function DesktopShellPage() {
         query={query}
         apps={macShellApps}
         onQueryChange={setQuery}
-        onClose={() => setSpotlightOpen(false)}
+        onClose={() => setOverlay("spotlight", false)}
         onSubmit={submit}
       />
       <AppOpenChoice
@@ -2475,11 +2477,11 @@ export default function DesktopShellPage() {
       <MacLaunchpad
         open={launchpadOpen}
         apps={macShellApps}
-        onClose={() => setLaunchpadOpen(false)}
+        onClose={() => setOverlay("launchpad", false)}
       />
       <MacControlCenter
         open={controlCenterOpen}
-        onClose={() => setControlCenterOpen(false)}
+        onClose={() => setOverlay("controlCenter", false)}
         onOpenSettings={openSystemSettings}
         onOpenLiquidGlass={openLiquidGlass}
         systemControls={systemControls}
@@ -2515,11 +2517,11 @@ export default function DesktopShellPage() {
         onIntensityChange={setLiquidGlassIntensity}
         onTuningChange={patchLiquidGlassTuning}
         onResetTuning={resetLiquidGlass}
-        onClose={() => setLiquidGlassOpen(false)}
+        onClose={() => setOverlay("liquidGlass", false)}
       />
       <MacNotificationCenter
         open={notificationsOpen}
-        onClose={() => setNotificationsOpen(false)}
+        onClose={() => setOverlay("notifications", false)}
         notifications={nativeNotifications}
         nativeServiceAvailable={notificationServiceAvailable}
         onDismiss={(notificationId) => {
@@ -2531,7 +2533,7 @@ export default function DesktopShellPage() {
       />
       <MacAboutDialog
         open={aboutOpen}
-        onClose={() => setAboutOpen(false)}
+        onClose={() => setOverlay("about", false)}
         onOpenSettings={openSystemSettings}
         agentHealth={agentDesktopHealth}
         updateStatus={systemUpdateStatus}
@@ -2577,20 +2579,20 @@ export default function DesktopShellPage() {
               ),
             onWallpaperChange: setWallpaper,
             onOpenNotifications: () => {
-              setAccountSecurityOpen(false);
-              setNotificationsOpen(true);
+              setOverlay("accountSecurity", false);
+              setOverlay("notifications", true);
             },
             onLock: () => void lockScreen(),
             onRefreshUpdate: () => void refreshSystemUpdate(),
             onApplyUpdate: () => void applySystemUpdate(),
             onOpenGettingStarted: () => {
-              setAccountSecurityOpen(false);
+              setOverlay("accountSecurity", false);
               window.dispatchEvent(new Event(OPEN_DESKTOP_START_GUIDE_EVENT));
             },
           }}
-          onClose={() => setAccountSecurityOpen(false)}
+          onClose={() => setOverlay("accountSecurity", false)}
           onSessionEnded={(message) => {
-            setAccountSecurityOpen(false);
+            setOverlay("accountSecurity", false);
             setApplianceRole(null);
             setApplianceAuthed(false);
             toast.success(message);
@@ -2602,13 +2604,13 @@ export default function DesktopShellPage() {
         projection={taskProjection}
         loading={taskProjectionLoading}
         error={taskProjectionError}
-        onClose={() => setTaskSpaceOpen(false)}
+        onClose={() => setOverlay("taskSpace", false)}
         onRefresh={refreshTaskProjection}
         onTakeover={takeoverTaskProjection}
         onResumeExecution={resumeTaskProjection}
         onApprovalDecision={decideTaskApproval}
         onOpenWorkspace={(task, artifact) => {
-          setTaskSpaceOpen(false);
+          setOverlay("taskSpace", false);
           if (task?.threadId) {
             const route = taskWorkspaceRoute({
               threadId: task.threadId,
