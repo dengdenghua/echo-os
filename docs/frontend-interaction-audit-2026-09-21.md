@@ -86,7 +86,9 @@
 
 ## §6 待办（验证缺口）
 
-- [ ] 可访问性扫描（axe / Lighthouse）跑一遍 `macos-shell` + `intent-desktop-surface`
-- [ ] 契约测试：`/` 键、`Space` 键在输入框 / 按钮聚焦时**不**误触发
+- [x] 交互契约测试锁定键盘新行为（P0-1/2）—— `intent-desktop-surface.keyboard.test.tsx` 4 条：
+  Cmd/Ctrl+K 聚焦、主键盘 `/` 聚焦 vs 小键盘 `/` 不聚焦、输入框聚焦时 `/`/`Space` 不拦截、
+  按钮聚焦时 Space 不切换模式。**已提交。**
+- [ ] 可访问性扫描（axe / Lighthouse）跑一遍 `macos-shell` + `intent-desktop-surface`（P0-4 已判误报，扫描仅作运行期佐证）
 - [ ] 多账号下桌面偏好隔离的行为实测（P1-4）
 - [ ] `untracked_source_check` 覆盖范围复核（`docs/`、`nul`、根目录杂文件）
