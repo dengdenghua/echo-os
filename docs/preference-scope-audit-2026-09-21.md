@@ -10,11 +10,39 @@
 |---|---|---|
 | A | 账号级作用域**有既定机制**：`core/auth/scoped-storage.ts`，含"旧设备键一次性迁移" | 直接证据（代码 + 单测） |
 | B | 账号级 vs 设备级的**边界有明文口径**，不需要重新拍板 | 直接证据（两处文档） |
-| C | 但命名约定**三套并存**，同一概念有三种键格式 | 直接证据（逐文件复核） |
+| C | 命名约定**至少四套并存**，同一概念有多种键格式 | 直接证据（逐文件复核） |
 | D | 迁移逻辑被**手抄了一份**（含注释都近似），已出现与助手不一致的风险 | 直接证据（逐行比对） |
-| E | 用"是否 import scoped-storage"作判据会**误判 3 个已隔离的文件** | 反证：实证复核推翻了该判据 |
-| F | `community-subscribe.ts` 是真漏网：**订阅状态设备级**，而同域点赞/收藏已账号级 | 直接证据 |
+| E | 用"是否 import scoped-storage"作判据会**误判已隔离的文件** | 反证：实证复核推翻了该判据 |
+| F | ~~`community-subscribe.ts` 是真漏网~~ **更正：误报** —— 见下方"本轮更正" | 见 §1.1 |
 | G | 本轮修掉 `echo-desktop-mode`（唯一"工作形态却设备级"的桌面键） | 直接证据 + 负向突变验证 |
+| H | 次轮修掉活动组展开/折叠态（无前缀裸键 `groupId`） | 直接证据 + 负向突变验证 |
+
+### 1.1 本轮更正：F 是误报，我踩了自己写下的坑
+
+上轮把 `community-subscribe.ts` 判为"真漏网"，**是错的**。它的读写**全部**经
+`communityStorageKey` / `readCommunityValue`（`community-subscribe.ts:29/38/64/73`），
+而这两个是 `community-data.ts:30/34` 对共享助手的**领域包装** —— 订阅**早已是账号级**。
+
+我犯的正是本报告 §4 亲手写下的那个错误：**用"文件有没有直接 import scoped-storage"
+粗筛，忽略了键可能经由领域包装函数间接作用域化**。同一个坑，写下来之后转头又踩了一次。
+
+**教训（已回灌 skill）：判据必须落到"键表达式"，而不是"文件导入什么"。**
+正确做法是解析每个 `localStorage.*Item(...)` 的**第一个实参**：
+- 实参是 `xxxKey(...)` 调用 → 继续追溯该函数到底走没走 actor
+- 实参是字符串字面量 → 才是真的裸键
+上轮的粗筛把"领域包装"这一层整个漏掉了。
+
+### 1.2 两个"看起来该改、实际不该改"的反例
+
+作用域判定不能只看"这像不像偏好"，要看**它描述的到底是什么**：
+
+| 键 | 表面像 | 实际 | 结论 |
+|---|---|---|---|
+| `echo.storage.clip-autodownload.v1`（`local-database-content.tsx:493/501`） | 一次性提示 dismissed → 应账号级 | 门闩记录"**设备上的视觉模型已启动下载**"。模型装在设备上、装一次够；改账号级会让每个新账号都重新触发一次下载 | **保持设备级** |
+| `echo:app-mode`（`browser-store.tsx:596/602`） | 浏览器应用模式 → 工作形态 | 待定（本轮未动，见 §6） | 候选 |
+
+`automation/target.ts:6-12` 也是**已作用域化**（`${prefix}${actor}:${threadId}`），
+属第 4 例手写约定，不是漏网。
 
 ## 2. 机制：账号级作用域是怎么做的
 
@@ -132,17 +160,81 @@ function canUseBrowserStorage(): boolean {
 的原因 —— 便于测试传显式 actor。本轮测试改用对 `@/core/auth/api` 的**局部 mock**
 （`vi.hoisted` 持有可变 actor，避免 `vi.mock` 工厂提升导致的 TDZ）。
 
-## 6. 仍待处理（本轮未动）
+## 6. 可信普查结果（按"键表达式"而非"文件导入"）
+
+用脚本解析每个 `localStorage.*Item(...)` 的**第一个实参**，得到
+**17 处真·裸键**（字面量实参）+ 96 处经变量/包装的调用点。17 处逐一归类：
+
+| 归类 | 键 | 位置 | 判定 |
+|---|---|---|---|
+| 桌面外观 | `echo-desktop-theme` | `intent-desktop-surface.tsx:282/542`、`use-desktop-appearance.ts:131/156` | 设备级 ✅ 符合"硬件桌面外观" |
+| 桌面外观 | `echo:liquid-glass-style` | `use-desktop-appearance.ts:133/157` | 设备级 ✅ |
+| 桌面外观 | `echo:liquid-glass-intensity` | `use-desktop-appearance.ts:136/161` | 设备级 ✅ |
+| 桌面外观 | `echo:desktop-wallpaper` | `use-desktop-appearance.ts:142/169` | 设备级 ✅ |
+| 工作区外观 | `echo-theme` | `hooks/use-appearance.ts:148` | 设备级 ✅（但文档未提，见待办 3） |
+| 缓存 | `echo:cache-workbench` | `agent-workbench-panel.tsx:215` | 设备级 ✅ |
+| 缓存 | `echo:incremental-snapshot` | `agent-workbench-snapshot.ts:75` | 设备级 ✅ |
+| 端点配置 | `echo.squareBaseUrl` | `community-data.ts:1142` | 设备级 ✅ |
+| 调试开关 | `echo:debug:streaming` | `streaming-debugger.tsx:29/58` | 设备级 ✅ |
+| 调试开关 | `echo:perf:tracking` | `performance-tracker.ts:263` | 设备级 ✅ |
+| 设备资源门闩 | `echo.storage.clip-autodownload.v1` | `local-database-content.tsx:493/501` | 设备级 ✅（见 §1.2 反例） |
+
+**结论：17 处裸键全部判定为"设备级合理"，没有一处属于被遗忘的漏网。**
+
+剩余 96 处变量键里，已确认作用域化的包括
+`core/settings/local.ts`、`core/agents/active.ts`、`core/workbench/apps.ts`、
+`core/settings/automation-preferences.ts`、`core/browser/agent-permissions.ts`
+（均 `scopedKey` + legacy 迁移同行）、`core/threads/composer-draft.ts`、
+`core/automation/target.ts`、`core/modules/enabled-modules.ts`、
+`appliance/desktop-start-guide.tsx`、`components/workspace/community/community-subscribe.ts`（经领域包装）。
+
+## 7. 仍待处理（未动）
 
 | # | 项 | 建议 |
 |---|---|---|
-| 1 | `community-subscribe.ts`（`:25` `echo.community.subscribe-topics.v1`、`:60` `…subscribe-authors.v1`）设备级，而同域点赞/收藏/评论已账号级（`community-data.ts:30`） | **真漏网**，建议纳入账号级；需确认"主题/作者订阅"是否属个人内容 |
-| 2 | 三套命名并存（§4） | 建议收敛到共享助手；最少先给 `enabled-modules.ts` 的手写迁移换成 `readActorScopedStorageValue`，删掉重复实现。**注意键格式变化需一次性兼容**（`key:actor:x` → `key:x`） |
-| 3 | 工作区外观族 `echo-theme` / `echo-corner-scale` / `echo-density` / `echo-palette` / `echo-custom-color`（`hooks/use-appearance.ts:27-30`）为设备级，**但文档从未提及这一族** | 按第 3 节口径属"外观"侧、可保留设备级，但建议**补一句明文**，否则下一轮还会被当成漏网 |
-| 4 | 28 个"未 import scoped-storage 的生产文件"清单（§4 判据副产品） | 逐个按语义定级；本轮已验证其中 3 个属误判、1 个真漏网，其余未评 |
+| 1 | **`echo:app-mode`**（`browser-store.tsx:596/602`）—— 浏览器应用模式，字面量裸键 | 候选：属"工作形态"侧。同文件其他键已走 `actorScopedStorageKey`，只有这一个漏了，改法一致 |
+| 2 | **`DESKTOP_ORGANIZER_ENABLED_KEY`**（`desktop-organizer/page.tsx:36/46`）—— 桌面整理器启用开关 | 候选：工作形态开关。但值存在 React state 里由 effect 读取，需配套账号切换重载 |
+| 3 | 命名至少四套并存（§4） | 建议收敛到共享助手；最少先给 `enabled-modules.ts` 的手写迁移换成 `readActorScopedStorageValue`，删掉重复实现。**注意键格式变化需一次性兼容**（`key:actor:x` → `key:x`） |
+| 4 | 工作区外观族 `echo-theme` / `echo-corner-scale` / `echo-density` / `echo-palette` / `echo-custom-color`（`hooks/use-appearance.ts:27-30`）为设备级，**但文档从未提及这一族** | 按第 3 节口径属"外观"侧、可保留设备级，但建议**补一句明文**，否则下一轮还会被当成漏网 |
+| 5 | ~~`community-subscribe.ts` 真漏网~~ | **已更正为误报**（§1.1） |
 
-## 7. 验证
+### 次轮改动：活动组展开/折叠态 → 账号级
+
+`components/workspace/messages/collapsible-activity-group.tsx` 原先直接用
+**无前缀的 `groupId`**（`activity-${kind}-${id}`）当 localStorage 键
+（`:223` 读、`:244` 写），共享设备上多账号会互相串。
+
+依据是**最硬的一处明文**：`docs/desktop-workbench-ux-optimization.md:483`
+> 工作台侧栏的项目分组开关、项目区展开状态和对话区展开状态统一改为 actor 作用域
+
+本组件记录的"用户显式展开/折叠了这一组"属同一类布局偏好。
+
+改法：抽出可注入 actor 的纯函数
+`readActivityGroupOpenState(groupId, actor)` / `persistActivityGroupOpenState(groupId, open, actor)`，
+内置旧裸键一次性迁移。**不需要账号切换重载 effect** —— 键随会话重建，
+账号切换时组件整体重挂载会重新读取（这与 `intent-desktop-surface` 的情况不同）。
+
+配套发现：该组件的 `useEffect` 会在**每次挂载都写回当前值**，因此"显式偏好"与
+"按 detail level 推出的默认值"在首次渲染后就不再可区分。这是既有行为，本轮未改，
+仅记录（若将来要区分"用户没选过"，得改成显式点击才写）。
+
+4 条单测；**负向突变**（改回裸键）后 3 条作用域断言失败，1 条 null 契约测试两种实现都过 ——
+符合预期，因为它测的是"没存过就返回 null"这一契约，与作用域正交。
+
+## 8. 验证
 
 - prettier `--check .` → `rc=0`；eslint `--max-warnings=0` → `rc=0`；`tsc --noEmit` → `rc=0`
 - 定向：`intent-desktop-surface.test.tsx` 20 + `intent-desktop-surface.keyboard.test.tsx` 4 = **24 passed**
 - 全量 vitest：**520 文件 / 3674 passed / 2 skipped / 0 failed**
+
+**次轮（2026-09-22）**
+
+- `collapsible-activity-group.test.ts`：**8 passed**（4 既有 + 4 新增）
+- 负向突变：改回裸键后 3 条作用域断言失败，null 契约测试照常通过（正交）→ 非空转
+- 门禁 **仅对本次改动的两个文件**复核：prettier `rc=0` / eslint `--max-warnings=0` `rc=0`；
+  `tsc --noEmit` 全项目 `rc=0`
+
+⚠️ 次轮开工时工作区已含 **42 个他人并行改动**（`ci.yml`、`electron/`、`package.json`、
+`page.tsx`、`runtime/*.py` 等），导致全仓 `prettier --check .` / `eslint .` 复跑失败
+（报 `ai-network-pulse.tsx` 等我从未接触的文件）。故本次**只提交自己的 4 个文件**，
+门禁改为对改动文件定向复核；全仓门禁需等并行改动落地后再跑。

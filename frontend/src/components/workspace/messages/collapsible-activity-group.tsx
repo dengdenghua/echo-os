@@ -13,7 +13,54 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import { useConversationDetailLevel } from "./use-conversation-detail-level";
+
+/**
+ * 活动组展开/折叠态按**账号作用域**保存。
+ *
+ * 依据 `docs/desktop-workbench-ux-optimization.md:483`：侧栏项目区/对话区的
+ * 展开状态已统一改为 actor 作用域。本组件记录的是"用户显式展开/折叠了这一组"，
+ * 属同一类布局偏好 —— 共享设备上多个账号不该互相串。
+ *
+ * 原先这里直接用无前缀的 `groupId` 当键；改走共享助手后，旧裸键由
+ * `readActorScopedStorageValue` 按当前账号一次性迁移。
+ *
+ * actor 做成可注入参数：既是本仓库 actor 作用域模块的通行约定，也让测试能脱离
+ * 测试环境限制（vitest 下 `currentActorId()` 恒为 "anonymous"）直接断言隔离行为。
+ */
+export function readActivityGroupOpenState(
+  groupId: string | null,
+  actor = currentActorId(),
+): boolean | null {
+  if (!groupId || typeof window === "undefined") return null;
+  try {
+    const stored = readActorScopedStorageValue(groupId, actor);
+    return stored === null ? null : stored === "true";
+  } catch {
+    return null;
+  }
+}
+
+export function persistActivityGroupOpenState(
+  groupId: string | null,
+  open: boolean,
+  actor = currentActorId(),
+): void {
+  if (!groupId || typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      actorScopedStorageKey(groupId, actor),
+      open.toString(),
+    );
+  } catch {
+    // 存储不可用时静默降级为会话内状态
+  }
+}
 
 export type ActivityKind = "think" | "plan" | "file_ops" | "tool_calls";
 
@@ -219,12 +266,8 @@ export function CollapsibleActivityGroup({
     if (defaultOpen !== undefined) return defaultOpen;
 
     // Check localStorage for user's explicit preference for this group
-    if (groupId && typeof window !== "undefined") {
-      const stored = localStorage.getItem(groupId);
-      if (stored !== null) {
-        return stored === "true";
-      }
-    }
+    const stored = readActivityGroupOpenState(groupId);
+    if (stored !== null) return stored;
 
     // In "low" detail, collapse everything
     if (detailConfig.level === "low") return false;
@@ -240,9 +283,7 @@ export function CollapsibleActivityGroup({
 
   // Persist user's expand/collapse choice to localStorage
   useEffect(() => {
-    if (groupId && typeof window !== "undefined") {
-      localStorage.setItem(groupId, open.toString());
-    }
+    persistActivityGroupOpenState(groupId, open);
   }, [open, groupId]);
 
   const header = useMemo(

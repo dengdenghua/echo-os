@@ -159,6 +159,10 @@
 - [ ] 可访问性扫描（axe / Lighthouse）跑一遍 `macos-shell` + `intent-desktop-surface`（P0-4 已判误报，扫描仅作运行期佐证）
 - [ ] 多账号下桌面偏好隔离的行为实测（P1-4）—— **代码侧已具备**（`echo-desktop-mode` 账号级 +
   单测覆盖迁移与账号切换）；仍缺的是**真机 / 浏览器人工验证**：两个账号来回切换，确认形态与外观各归其位
-- [ ] P1-4 报告 §6 的四项待处理：`community-subscribe.ts` 漏网、三套命名收敛（含 `enabled-modules.ts`
-  重复迁移逻辑）、工作区外观族补明文口径、28 个设备级候选逐个定级
+- [ ] P1-4 报告 §7 的待处理项：`echo:app-mode`（`browser-store.tsx:596/602`）与
+  `DESKTOP_ORGANIZER_ENABLED_KEY`（`desktop-organizer/page.tsx:36/46`）两个候选项、
+  四套命名收敛（含 `enabled-modules.ts` 重复迁移逻辑）、工作区外观族补明文口径
+- [x] ~~`community-subscribe.ts` 漏网~~ **已更正为误报**：它经 `communityStorageKey`
+  领域包装，早已账号级。误判根因是"未直接 import scoped-storage"这个判据忽略了
+  **领域包装层**——已改用"解析键实参"的可信普查法
 - [ ] `untracked_source_check` 覆盖范围复核（`docs/`、`nul`、根目录杂文件）
