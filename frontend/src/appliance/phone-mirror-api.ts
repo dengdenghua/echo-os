@@ -7,6 +7,7 @@ export type PhoneFrame = {
   capturedAt: number;
 };
 export type ExchangeFile = { name: string; size: number };
+export type TransferAttempt = { attemptId: string; expectedSha256?: string };
 export const CHUNK_BYTES = 12 * 1024;
 export const MAX_FILE_BYTES = 100 * 1024 * 1024;
 
@@ -51,6 +52,7 @@ export async function uploadPhoneFile(
   progress: (bytes: number) => void,
   signal: AbortSignal,
   transferId?: string,
+  attempt?: TransferAttempt,
 ): Promise<void> {
   const request = <T>(
     target: string,
@@ -61,13 +63,20 @@ export async function uploadPhoneFile(
     phoneRequest<T>(
       target,
       operation,
-      { ...args, ...(transferId ? { _transferId: transferId } : {}) },
+      {
+        ...args,
+        ...(transferId ? { _transferId: transferId } : {}),
+        ...(attempt ? { _transferAttempt: attempt.attemptId } : {}),
+      },
       abort,
     );
   if (file.size > MAX_FILE_BYTES) throw new Error("单文件上限为 100 MiB");
   const data = new Uint8Array(await file.arrayBuffer());
   signal.throwIfAborted();
   const hash = await sha256(data);
+  signal.throwIfAborted();
+  if (attempt?.expectedSha256 && hash !== attempt.expectedSha256)
+    throw new Error("文件内容不一致，请重新选择原文件");
   const upload = await request<{ id: string; offset: number }>(
     id,
     "files",
@@ -113,6 +122,7 @@ export async function downloadPhoneFile(
   progress: (bytes: number) => void,
   signal: AbortSignal,
   transferId?: string,
+  attempt?: TransferAttempt,
 ): Promise<Blob> {
   const request = <T>(
     target: string,
@@ -123,7 +133,11 @@ export async function downloadPhoneFile(
     phoneRequest<T>(
       target,
       operation,
-      { ...args, ...(transferId ? { _transferId: transferId } : {}) },
+      {
+        ...args,
+        ...(transferId ? { _transferId: transferId } : {}),
+        ...(attempt ? { _transferAttempt: attempt.attemptId } : {}),
+      },
       abort,
     );
   const info = await request<ExchangeFile & { sha256: string }>(
@@ -139,6 +153,8 @@ export async function downloadPhoneFile(
   )
     throw new Error("文件大小无效或超过 100 MiB");
   const bytes = new Uint8Array(info.size);
+  if (attempt?.expectedSha256 && info.sha256 !== attempt.expectedSha256)
+    throw new Error("手机文件内容已改变，请从文件列表重新下载");
   let offset = 0;
   while (offset < bytes.length) {
     const result = await request<{ data: string }>(

@@ -1,3 +1,4 @@
+import { DeviceTaskSection } from "./device-task-panel";
 import { PhoneTransferList } from "./phone-transfer-list";
 import { useDeviceDirectory, publishDeviceStatus, refreshDeviceDirectory } from "./device-directory";
 import { useEffect, useMemo, useState } from "react";
@@ -917,6 +918,7 @@ export function DeviceLinkPanel({
             </div>
           )}
           {directory.nearby.filter((nearby) => !status?.devices.some((device) => device.id === nearby.id)).map((device) => <p key={device.id} className="mx-4 rounded-xl border p-3 text-xs">{device.name} · 附近待配对 · {device.address}<br />创建配对邀请并在目标手机确认后连接。</p>)}
+          <DeviceTaskSection />
           <details className="m-4"><summary className="cursor-pointer text-sm">全部文件传输</summary><PhoneTransferList /></details>
         </main>
       </section>

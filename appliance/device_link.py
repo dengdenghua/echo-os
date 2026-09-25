@@ -631,6 +631,12 @@ def create_device_link_router(
     ).operator_dependency()
 
     from runtime.tentacle.mirror_api import create_mirror_router
+    from runtime.tentacle.task_workspace_api import create_task_workspace_router
+
+    router.include_router(
+        create_task_workspace_router(lambda: service._coordinator),
+        dependencies=[Depends(require_operator)],
+    )
 
     router.include_router(
         create_mirror_router(lambda: service._coordinator),
