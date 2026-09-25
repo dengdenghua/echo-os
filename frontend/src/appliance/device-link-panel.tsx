@@ -1,3 +1,5 @@
+import { PhoneTransferList } from "./phone-transfer-list";
+import { useDeviceDirectory, publishDeviceStatus, refreshDeviceDirectory } from "./device-directory";
 import { useEffect, useMemo, useState } from "react";
 import {
   BatteryChargingIcon,
@@ -28,9 +30,7 @@ import {
   createPairingInvitation,
   disableDeviceLink,
   enableDeviceLink,
-  fetchDeviceLinkStatus,
   revokeLinkedDevice,
-  type DeviceLinkStatus,
   type LinkedDevice,
   type PairingInvitation,
 } from "@/appliance/device-link";
@@ -84,9 +84,11 @@ function bytesLabel(value: number) {
 function DeviceCard({
   device,
   onRevoke,
+  onOpenPhoneMirror,
 }: {
   device: LinkedDevice;
   onRevoke: () => void;
+  onOpenPhoneMirror?: (device: LinkedDevice) => void;
 }) {
   const DeviceIcon = device.type === "desktop" ? LaptopIcon : SmartphoneIcon;
   return (
@@ -144,6 +146,18 @@ function DeviceCard({
           )}
         </div>
       </div>
+      {device.type !== "desktop" && device.online && onOpenPhoneMirror && (
+        <button
+          type="button"
+          aria-label={`多屏协同 ${deviceName(device)}`}
+          title="发起多屏协同 (手机镜像)"
+          onClick={() => onOpenPhoneMirror(device)}
+          className="flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors shadow-sm"
+        >
+          <SmartphoneIcon className="size-3.5" />
+          <span>多屏协同</span>
+        </button>
+      )}
       {device.individuallyRevocable && (
         <button
           type="button"
@@ -162,12 +176,16 @@ function DeviceCard({
 export function DeviceLinkPanel({
   open,
   onClose,
+  onOpenPhoneMirror,
 }: {
   open: boolean;
   onClose: () => void;
+  onOpenPhoneMirror?: (device: LinkedDevice) => void;
 }) {
   const [section, setSection] = useState<DeviceLinkSection>("devices");
-  const [status, setStatus] = useState<DeviceLinkStatus | null>(null);
+  const directory = useDeviceDirectory(open);
+  const status = directory.status;
+  const setStatus = publishDeviceStatus;
   const [syncStatus, setSyncStatus] = useState<DeviceSyncStatus | null>(null);
   const [invitation, setInvitation] = useState<PairingInvitation | null>(null);
   const [loading, setLoading] = useState(false);
@@ -181,11 +199,11 @@ export function DeviceLinkPanel({
     setLoading(true);
     setError(null);
     return Promise.all([
-      fetchDeviceLinkStatus(),
+      refreshDeviceDirectory(),
       fetchDeviceSyncStatus().catch(() => null),
     ])
-      .then(([nextStatus, nextSyncStatus]) => {
-        setStatus(nextStatus);
+      .then(([, nextSyncStatus]) => {
+
         setSyncStatus(nextSyncStatus);
       })
       .catch((reason) => {
@@ -435,7 +453,7 @@ export function DeviceLinkPanel({
             </button>
           </header>
 
-          {error && (
+          {(error || directory.error) && (
             <p
               role="alert"
               className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-xs text-red-700 ring-1 ring-red-100"
@@ -527,6 +545,7 @@ export function DeviceLinkPanel({
                     <DeviceCard
                       key={device.id}
                       device={device}
+                      onOpenPhoneMirror={onOpenPhoneMirror}
                       onRevoke={() =>
                         setPendingAction({ kind: "revoke", device })
                       }
@@ -897,6 +916,8 @@ export function DeviceLinkPanel({
               </p>
             </div>
           )}
+          {directory.nearby.filter((nearby) => !status?.devices.some((device) => device.id === nearby.id)).map((device) => <p key={device.id} className="mx-4 rounded-xl border p-3 text-xs">{device.name} · 附近待配对 · {device.address}<br />创建配对邀请并在目标手机确认后连接。</p>)}
+          <details className="m-4"><summary className="cursor-pointer text-sm">全部文件传输</summary><PhoneTransferList /></details>
         </main>
       </section>
 

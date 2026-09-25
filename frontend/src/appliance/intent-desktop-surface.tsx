@@ -26,6 +26,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { LinkedDevice } from "./device-link";
 import { cn } from "@/lib/utils";
 import { currentActorId } from "@/core/auth/api";
 import {
@@ -157,6 +158,7 @@ export interface IntentDesktopSurfaceProps {
   hideTopControlBar?: boolean;
   onOpenWorkbench?: (prompt?: string) => void;
   onOpenApp?: (appId: string) => void;
+  onOpenPhoneMirror?: (device: LinkedDevice) => void;
   children?: ReactNode;
   className?: string;
 }
@@ -303,6 +305,7 @@ export function IntentDesktopSurface({
   onActiveRoomChange,
   hideTopControlBar = false,
   onOpenWorkbench,
+  onOpenPhoneMirror,
   children,
   className,
 }: IntentDesktopSurfaceProps) {
@@ -1689,6 +1692,7 @@ export function IntentDesktopSurface({
         <AgentPipMonitor
           visible={pipVisible}
           task={activePipTask}
+          onOpenPhoneMirror={onOpenPhoneMirror}
           onClose={() => setPipVisible(false)}
           onExpandToWindow={() => {
             setMode("workspace");

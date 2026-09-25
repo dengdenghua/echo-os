@@ -13,11 +13,11 @@ import {
   ChevronUpIcon,
   GripHorizontalIcon,
   Maximize2Icon,
-  SmartphoneIcon,
   TerminalIcon,
-  TvIcon,
   XIcon,
 } from "lucide-react";
+import { LiveDeviceList } from "./live-device-list";
+import type { LinkedDevice } from "./device-link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ export interface AgentPipMonitorProps {
   onClose?: () => void;
   onApprove?: (task: PipTask) => void;
   onReject?: (task: PipTask) => void;
-  onCastDevice?: (deviceName: string | null) => void;
+  onOpenPhoneMirror?: (device: LinkedDevice) => void;
   className?: string;
 }
 
@@ -63,13 +63,12 @@ export function AgentPipMonitor({
   onClose,
   onApprove,
   onReject,
-  onCastDevice,
+  onOpenPhoneMirror,
   className,
 }: AgentPipMonitorProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [approvalHandled, setApprovalHandled] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [castedDevice, setCastedDevice] = useState<string | null>(null);
   const [showCastMenu, setShowCastMenu] = useState(false);
 
   // 自由拖拽定位逻辑
@@ -306,53 +305,11 @@ export function AgentPipMonitor({
         </div>
 
         <div className="flex items-center gap-1 text-slate-400">
-          {/* 泛在网络投屏按钮 */}
           <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowCastMenu((prev) => !prev)}
-              className={cn(
-                "rounded p-1 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200",
-                castedDevice && "text-blue-500 font-bold",
-              )}
-              title="投屏至随身/家庭大屏设备 (AI Hotspot)"
-              aria-label="投屏至其他设备"
-            >
-              <CastIcon className="size-3" />
-            </button>
-            {showCastMenu && (
-              <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-black/10 bg-white/95 p-1 text-[10px] shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95">
-                <span className="block px-2 py-1 font-bold text-slate-400">
-                  AI Hotspot 局域网设备
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCastedDevice("iPhone 16 Pro");
-                    setShowCastMenu(false);
-                    onCastDevice?.("iPhone 16 Pro");
-                    toast.success("已将任务流投屏至 iPhone 16 Pro");
-                  }}
-                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left hover:bg-black/5 dark:hover:bg-white/10"
-                >
-                  <SmartphoneIcon className="size-3 text-blue-500" />
-                  <span>iPhone 16 Pro · 随身</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCastedDevice("客厅 Ambient TV");
-                    setShowCastMenu(false);
-                    onCastDevice?.("客厅 Ambient TV");
-                    toast.success("已将任务流投屏至 客厅 Ambient TV");
-                  }}
-                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left hover:bg-black/5 dark:hover:bg-white/10"
-                >
-                  <TvIcon className="size-3 text-purple-500" />
-                  <span>客厅 Ambient TV · 空间</span>
-                </button>
-              </div>
-            )}
+            <button type="button" onClick={() => setShowCastMenu((value) => !value)} aria-label="选择手机" title="选择手机" className="rounded p-1 hover:bg-black/5"><CastIcon className="size-3" /></button>
+            {showCastMenu && <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border bg-white p-3 text-slate-800 shadow-xl">
+              <LiveDeviceList onOpen={onOpenPhoneMirror ? (device) => { setShowCastMenu(false); onOpenPhoneMirror(device); } : undefined} />
+            </div>}
           </div>
 
           <button
@@ -388,28 +345,6 @@ export function AgentPipMonitor({
         </div>
       </div>
 
-      {/* 投屏状态横幅 */}
-      {castedDevice && (
-        <div className="flex items-center justify-between border-b border-blue-500/15 bg-blue-500/10 px-3 py-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-          <span className="flex items-center gap-1.5">
-            <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
-            已投屏监视: {castedDevice}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setCastedDevice(null);
-              onCastDevice?.(null);
-              toast.info("已断开设备投屏");
-            }}
-            className="text-[9px] underline hover:text-blue-700 dark:hover:text-blue-300"
-          >
-            断开
-          </button>
-        </div>
-      )}
-
-      {/* 主体：当前执行微步与终端预览 */}
       <div className="p-3">
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="truncate pr-2">{task.title}</span>

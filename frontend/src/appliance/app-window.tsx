@@ -42,10 +42,10 @@ const MIN_H = 240;
 
 type Rect = { x: number; y: number; w: number; h: number };
 
-function initialRect(index: number): Rect {
+function initialRect(index: number, phone = false): Rect {
   // 层叠摆放,避免完全重叠。
   const offset = (index % 6) * 28;
-  const w = Math.min(960, Math.max(MIN_W, window.innerWidth - 220));
+  const w = Math.min(phone ? 480 : 960, Math.max(MIN_W, window.innerWidth - 220));
   const h = Math.min(620, Math.max(MIN_H, window.innerHeight - 220));
   return {
     x: Math.max(20, (window.innerWidth - w) / 2 - 60 + offset),
@@ -59,6 +59,7 @@ export function AppWindow({
   win,
   index,
   focused,
+  hidden = false,
   onFocus,
   onClose,
   onMinimize,
@@ -66,12 +67,15 @@ export function AppWindow({
   win: DesktopWindow;
   index: number;
   focused: boolean;
+  hidden?: boolean;
   onFocus: () => void;
   onClose: () => void;
   onMinimize: () => void;
 }) {
-  const [rect, setRect] = useState<Rect>(() => initialRect(index));
+  const [rect, setRect] = useState<Rect>(() => initialRect(index, win.url === "/phone-mirror"));
   const [maximized, setMaximized] = useState(false);
+  const [phonePip, setPhonePip] = useState(false);
+  const beforePhonePip = useRef<(Rect & { maximized: boolean }) | null>(null);
   const restoreRect = useRef<Rect | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -369,9 +373,26 @@ export function AppWindow({
     return () => window.removeEventListener("resize", resize);
   }, [maximized]);
 
+  const togglePhonePip = () => {
+    if (!phonePip) {
+      beforePhonePip.current = { ...rect, maximized };
+      const area = { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
+      const next = { x: Math.max(area.x, area.x + area.width - 380), y: Math.max(area.y + 35, area.y + area.height - 565), w: 360, h: 480 };
+      setRect(next);
+      setMaximized(false);
+    } else if (beforePhonePip.current) {
+      setRect(beforePhonePip.current);
+      setMaximized(!!beforePhonePip.current.maximized);
+    }
+    setPhonePip(!phonePip);
+    onFocus();
+  };
+
   return (
     <div
       ref={windowRef}
+      data-phone-pip={phonePip || undefined}
+      aria-hidden={hidden || undefined}
       data-desktop-interactive
       data-liquid-surface="ultra-thick"
       onPointerDown={onFocus}
@@ -385,17 +406,20 @@ export function AppWindow({
         top: rect.y,
         width: rect.w,
         height: rect.h,
-        zIndex: focused ? 50 : 40,
+        zIndex: phonePip ? 60 : focused ? 50 : 40,
+        display: hidden ? "none" : undefined,
       }}
     >
       {win.integratedChrome && (
         /* 全尺寸内容窗口没有第二条标题栏，但系统按钮必须始终存在。 */
         <div
           className="mac-window-integrated-controls select-none"
+          style={win.url === "/phone-mirror" ? { position: "relative", inset: "auto", width: "100%", height: 32, minHeight: 32, padding: "4px 12px", display: "flex", gap: 12, alignItems: "center", background: "rgba(248,250,252,.95)" } : undefined}
           onPointerDown={startDrag("move")}
           onDoubleClick={toggleMaximize}
           aria-label={`${win.title}窗口控制`}
         >
+          {win.url === "/phone-mirror" && <button type="button" className="shrink-0 whitespace-nowrap rounded bg-white/90 px-2 py-1 text-[10px] text-slate-700" onPointerDown={(event) => event.stopPropagation()} onClick={togglePhonePip} aria-label={phonePip ? "恢复手机窗口" : "切换为悬浮小窗"}>{phonePip ? "恢复窗口" : "悬浮小窗"}</button>}
           <div className="mac-traffic-lights">
             <button
               type="button"

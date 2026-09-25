@@ -1,3 +1,5 @@
+import { fetchDeviceLinkStatus } from "./device-link";
+vi.mock("./device-link", () => ({ fetchDeviceLinkStatus: vi.fn(async () => ({ devices: [{ id: "paired-phone", model: "Pixel", platform: "android", online: true }] })) }));
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AiNetworkPulse } from "./ai-network-pulse";
@@ -144,5 +146,17 @@ describe("AiNetworkPulse", () => {
 
     rerender(<AiNetworkPulse selectedModel="deepseek-v3" defaultOpen />);
     expect(screen.getAllByText("DeepSeek-V3").length).toBeGreaterThanOrEqual(1);
+  });
+  it("opens the actual registered phone from the device radar", async () => {
+    const onOpenPhoneMirror = vi.fn();
+    render(<AiNetworkPulse defaultOpen onOpenPhoneMirror={onOpenPhoneMirror} />);
+
+    expect(screen.getByTestId("softbus-radar-section")).toBeInTheDocument();
+    const mirrorBtn = await screen.findByRole("button", { name: "打开手机" });
+    expect(mirrorBtn).toBeInTheDocument();
+
+    fireEvent.click(mirrorBtn);
+    expect(onOpenPhoneMirror).toHaveBeenCalledWith(expect.objectContaining({ id: "paired-phone" }));
+    expect(fetchDeviceLinkStatus).toHaveBeenCalled();
   });
 });

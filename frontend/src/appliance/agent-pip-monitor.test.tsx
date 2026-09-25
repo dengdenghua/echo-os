@@ -1,3 +1,5 @@
+import { fetchDeviceLinkStatus } from "./device-link";
+vi.mock("./device-link", () => ({ fetchDeviceLinkStatus: vi.fn(async () => ({ devices: [{ id: "paired-phone", model: "Pixel", platform: "android", online: true }] })) }));
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentPipMonitor } from "./agent-pip-monitor";
@@ -97,18 +99,19 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     expect(screen.getByTestId("agent-pip-monitor")).toBeInTheDocument();
   });
 
-  it("supports device casting via AI Hotspot", () => {
+  it("opens a registered phone without claiming casting success", async () => {
     const onCast = vi.fn();
-    render(<AgentPipMonitor onCastDevice={onCast} />);
+    render(<AgentPipMonitor onOpenPhoneMirror={onCast} />);
 
-    const castBtn = screen.getByRole("button", { name: /投屏至其他设备/i });
+    const castBtn = screen.getByRole("button", { name: /选择手机/i });
     fireEvent.click(castBtn);
 
-    const iphoneBtn = screen.getByText(/iPhone 16 Pro · 随身/i);
+    const iphoneBtn = await screen.findByRole("button", { name: "打开手机" });
     fireEvent.click(iphoneBtn);
 
-    expect(onCast).toHaveBeenCalledWith("iPhone 16 Pro");
-    expect(screen.getByText(/已投屏监视: iPhone 16 Pro/i)).toBeInTheDocument();
+    expect(onCast).toHaveBeenCalledWith(expect.objectContaining({ id: "paired-phone" }));
+    expect(fetchDeviceLinkStatus).toHaveBeenCalled();
+    expect(screen.queryByText(/已投屏监视/)).toBeNull();
   });
 
   it("supports dragging the PiP monitor window across the screen", () => {

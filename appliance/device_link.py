@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 
 from appliance.approval import HighRiskApprovalService, consume_request_approval
 from appliance.audit import ApplianceAudit, AuditIntegrityError
@@ -244,6 +244,12 @@ class DeviceLinkService:
         params = message.get("params")
         if not isinstance(params, dict):
             return False
+        from appliance.agent_api.devices import normalize_device_hello
+
+        try:
+            params = normalize_device_hello(params)
+        except (ValueError, TypeError):
+            return False
         device_id = params.get("tentacle_id")
         token = params.get("auth_token") or params.get("token")
         if (
@@ -418,9 +424,16 @@ class DeviceLinkService:
                 else None
             )
         )
-        if lan_host is None:
+        remote_status = self._remote_status()
+        remote_device_link = bool(remote_status.get("features", {}).get("deviceLink"))
+        if lan_host is None and not remote_device_link:
             raise DeviceLinkError(503, "a reachable LAN device host is not configured")
-        ws_url = f"ws://{lan_host}:{self._ws_port}"
+        ws_url = (
+            str(remote_status["endpoint"]).replace("https://", "wss://", 1)
+            + "/api/appliance/device-link/ws"
+            if remote_device_link
+            else f"ws://{lan_host}:{self._ws_port}"
+        )
         if self._external:
             token = _safe_text(
                 getattr(getattr(self._coordinator, "ws_server", None), "auth_token", ""),
@@ -440,7 +453,6 @@ class DeviceLinkService:
         sync_base_url: str | None = None
         sync_transport: str | None = None
         if not self._external:
-            remote_status = self._remote_access.status() if self._remote_access is not None else {}
             remote_features = remote_status.get("features")
             if (
                 isinstance(remote_features, dict)
@@ -449,7 +461,7 @@ class DeviceLinkService:
             ):
                 sync_base_url = str(remote_status["endpoint"])
                 sync_transport = "tailnet-https"
-            elif self._device_sync_port is not None:
+            elif self._device_sync_port is not None and lan_host is not None:
                 sync_base_url = f"http://{lan_host}:{self._device_sync_port}"
                 sync_transport = "lan-http"
         connect_string = f"echo://join?ws={quote(ws_url, safe='')}&token={quote(token, safe='')}"
@@ -457,7 +469,7 @@ class DeviceLinkService:
             connect_string += f"&sync={quote(sync_base_url, safe='')}"
         invitation: dict[str, Any] = {
             "schema": "echo.device-link.invitation.v1",
-            "scope": "lan",
+            "scope": "private-network" if remote_device_link else "lan",
             "wsUrl": ws_url,
             "connectString": connect_string,
             "expiresAt": expires_at,
@@ -519,6 +531,22 @@ class DeviceLinkService:
             "individuallyRevocable": "credentialDigest" in record,
         }
 
+    def _remote_status(self) -> dict[str, Any]:
+        if self._remote_access is None:
+            return unavailable_remote_access_status()
+        self._remote_access.set_device_link_available(
+            self.managed and bool(self._state["enabled"]) and self._listener_active()
+        )
+        return self._remote_access.status()
+
+    async def serve_socket(self, websocket: WebSocket) -> None:
+        if not self.managed or not self._state["enabled"] or not self._listener_active():
+            await websocket.close(code=1008, reason="device link is disabled")
+            return
+        from appliance.agent_api.devices import serve_device_socket
+
+        await serve_device_socket(websocket, self._coordinator)
+
     def status(self) -> dict[str, Any]:
         live = self._live_devices()
         if self._external:
@@ -560,11 +588,7 @@ class DeviceLinkService:
                 "encrypted": False,
                 "authenticated": True,
             },
-            "remoteAccess": (
-                self._remote_access.status()
-                if self._remote_access is not None
-                else unavailable_remote_access_status()
-            ),
+            "remoteAccess": self._remote_status(),
         }
 
     async def revoke_device(self, device_id: str) -> dict[str, Any]:
@@ -596,9 +620,22 @@ def create_device_link_router(
     authenticator: ApplianceAuthenticator | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/appliance/device-link", tags=["appliance", "device-link"])
+
+    @router.websocket("/ws")
+    async def device_socket(websocket: WebSocket) -> None:
+        # Device credentials are verified by device/hello, not administrator JWTs.
+        await service.serve_socket(websocket)
+
     require_operator = resolve_authenticator(
         jwt_secret=jwt_secret, authenticator=authenticator
     ).operator_dependency()
+
+    from runtime.tentacle.mirror_api import create_mirror_router
+
+    router.include_router(
+        create_mirror_router(lambda: service._coordinator),
+        dependencies=[Depends(require_operator)],
+    )
 
     def _record(*, actor: str, action: str, target: str, outcome: str) -> None:
         try:
@@ -627,6 +664,11 @@ def create_device_link_router(
     @router.get("")
     def status(_actor: str = Depends(require_operator)) -> dict[str, Any]:
         return service.status()
+
+    @router.get("/discovery")
+    def discovery_status(_actor: str = Depends(require_operator)) -> dict[str, Any]:
+        active = getattr(service._coordinator, "discovery", None)
+        return active.snapshot() if active else {"available": False, "error": "", "devices": []}
 
     @router.post("/enable")
     async def enable(

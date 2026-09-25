@@ -33,6 +33,7 @@ def test_extension_passes_one_authenticator_to_routes_instead_of_raw_jwt() -> No
         "create_audit_router",
         "create_capabilities_router",
         "create_device_link_router",
+        "create_device_workspace_router",
         "create_device_sync_router",
         "create_diagnostics_router",
         "create_files_router",
@@ -121,6 +122,9 @@ def test_register_app_mounts_appliance_when_enabled(tmp_path, monkeypatch):
     register_app(app, AppExtensionContext(identity_store=None))
 
     paths = _routes(app)
+    from appliance.extension import _route_paths
+
+    assert "/api/tentacle/devices" in _route_paths(app.router.routes)
     assert any(p.startswith("/api/appliance/apps") for p in paths), "启动器路由应挂载"
     assert any("/api/auth/local" in p for p in paths), "本地认证路由应挂载"
     assert any("/api/appliance/files" in p for p in paths), "文件管理器路由应挂载"

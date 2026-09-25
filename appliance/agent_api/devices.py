@@ -6,6 +6,18 @@ import secrets
 from typing import Any
 
 
+def normalize_device_hello(payload: dict[str, Any]) -> dict[str, Any]:
+    from runtime.tentacle.transport.device_protocol import normalize_hello
+
+    return normalize_hello(payload)
+
+
+async def serve_device_socket(socket: Any, coordinator: Any) -> None:
+    from runtime.tentacle.transport.asgi import serve_device_socket as serve
+
+    await serve(socket, coordinator.ws_server)
+
+
 def set_active_device_coordinator(coordinator: Any) -> None:
     from runtime.tentacle.team_bridge import set_active_coordinator
 

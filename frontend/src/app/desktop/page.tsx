@@ -139,6 +139,9 @@ import {
   type MacShellApp,
 } from "@/appliance/macos-shell";
 
+import type { LinkedDevice } from "@/appliance/device-link";
+import { PhoneMirrorApp } from "@/appliance/phone-mirror-app";
+
 type DesktopApp = {
   name: string;
   subtitle: string;
@@ -194,6 +197,14 @@ const DESKTOP_APPS: DesktopApp[] = [
     route: "/device-link",
     icon: SmartphoneIcon,
     color: "linear-gradient(145deg, #7f9cff, #4455d8)",
+  },
+  {
+    name: "手机镜像",
+    subtitle: "多屏协同与手机投屏",
+    route: "/phone-mirror",
+    icon: SmartphoneIcon,
+    color: "linear-gradient(145deg, #10b981, #059669)",
+    dock: true,
   },
   {
     name: "知识库",
@@ -803,6 +814,17 @@ export default function DesktopShellPage() {
     return () => window.removeEventListener("keydown", onSystemShortcut);
   }, [spotlightOpen, lockScreen, openSpotlight, setOverlay, closeTransient]);
 
+  const openPhoneMirror = (device: LinkedDevice) => {
+    if (!isDeviceOperator || !device.online || device.platform !== "android") return;
+    setDeviceLinkOpen(false);
+    const id = `phone-mirror:${device.id}`;
+    openWindow({
+      id, title: `${[device.brand, device.model].filter(Boolean).join(" ") || device.id} · 手机协同`,
+      url: "/phone-mirror", integratedChrome: true,
+      content: <PhoneMirrorApp deviceId={device.id} onClose={() => closeWindow(id)} />,
+    });
+  };
+
   const openApp = (app: DesktopApp, routeOverride?: string) => {
     const registeredApp = findWorkbenchApp(app.route);
     if (
@@ -833,6 +855,12 @@ export default function DesktopShellPage() {
       setPhotosOpen(false);
       setDeviceLinkOpen(false);
       setHubOpen(false);
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
+      return;
+    }
+    if (app.route === "/phone-mirror") {
+      setDeviceLinkOpen(true);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
@@ -1534,6 +1562,7 @@ export default function DesktopShellPage() {
                 openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({}))
               }
               onOpenSettings={() => openSystemAgentSettings("models")}
+              onOpenPhoneMirror={openPhoneMirror}
             />
           }
           activeApp={menuBarActiveApp}
@@ -1592,6 +1621,7 @@ export default function DesktopShellPage() {
         />
         <div className="relative min-h-0 flex-1 pt-[25px]">
           <IntentDesktopSurface
+            onOpenPhoneMirror={openPhoneMirror}
             mode={desktopMode}
             onModeChange={setDesktopMode}
             theme={desktopTheme}
@@ -2414,6 +2444,7 @@ export default function DesktopShellPage() {
         <DeviceLinkPanel
           open={deviceLinkOpen}
           onClose={() => setDeviceLinkOpen(false)}
+          onOpenPhoneMirror={openPhoneMirror}
         />
       )}
 
@@ -2426,13 +2457,14 @@ export default function DesktopShellPage() {
         )}
       >
         {windows
-          .filter((win) => !minimized.has(win.id))
+          .filter((win) => win.url === "/phone-mirror" || !minimized.has(win.id))
           .map((win, i) => (
             <AppWindow
               key={win.id}
               win={win}
               index={i}
               focused={focusedWin === win.id}
+              hidden={minimized.has(win.id)}
               onFocus={() => focusWindow(win.id)}
               onClose={() => closeWindow(win.id)}
               onMinimize={() => minimizeWindow(win.id)}

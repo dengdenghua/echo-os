@@ -7,6 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CheckIcon, RadioIcon } from "lucide-react";
+import { LiveDeviceList } from "./live-device-list";
+import type { LinkedDevice } from "./device-link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +63,7 @@ export const AVAILABLE_MODELS: ModelOption[] = [
 export interface AiNetworkPulseProps {
   onOpenWorkbench?: () => void;
   onOpenSettings?: () => void;
+  onOpenPhoneMirror?: (device: LinkedDevice) => void;
   onSelectModel?: (modelId: string) => void;
   selectedModel?: string;
   defaultOpen?: boolean;
@@ -70,6 +73,7 @@ export interface AiNetworkPulseProps {
 export function AiNetworkPulse({
   onOpenWorkbench,
   onOpenSettings,
+  onOpenPhoneMirror,
   onSelectModel,
   selectedModel = "auto",
   defaultOpen = false,
@@ -410,6 +414,11 @@ export function AiNetworkPulse({
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="space-y-2" data-testid="softbus-radar-section">
+          <h3 className="text-xs font-semibold">设备互联</h3>
+          <LiveDeviceList enabled={open} onOpen={(device) => { setOpen(false); onOpenPhoneMirror?.(device); }} />
         </div>
 
         {/* 底部功能按钮 */}

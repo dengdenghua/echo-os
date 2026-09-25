@@ -250,4 +250,25 @@ describe("device link panel", () => {
       "approved",
     );
   });
+
+  it("triggers onOpenPhoneMirror when clicking 多屏协同 button on an online phone", async () => {
+    const user = userEvent.setup();
+    const onOpenPhoneMirror = vi.fn();
+    render(
+      <DeviceLinkPanel
+        open
+        onClose={vi.fn()}
+        onOpenPhoneMirror={onOpenPhoneMirror}
+      />,
+    );
+
+    await screen.findByText("Echo Pocket");
+    const mirrorBtn = screen.getByRole("button", { name: /多屏协同 Echo Pocket/ });
+    expect(mirrorBtn).toBeInTheDocument();
+
+    await user.click(mirrorBtn);
+    expect(onOpenPhoneMirror).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "phone-1" }),
+    );
+  });
 });

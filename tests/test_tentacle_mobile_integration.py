@@ -384,7 +384,7 @@ async def test_task_execute_device_not_found(coordinator, mock_mobile_client):
 
     assert data["method"] == "task/result"
     assert data["params"]["success"] is False
-    assert "not found" in data["params"]["response"]
+    assert "identity mismatch" in data["params"]["response"]
 
 
 # ── 断开与统计 ────────────────────────────────────────────

@@ -213,6 +213,14 @@ def register_app(app: Any, context: Any) -> None:
     )
     app.state.echo_remote_access = remote_access
     app.state.echo_device_link = device_link
+    if existing_tentacle is None:
+        # Native OS owns the coordinator lazily. AI's workbench must project that
+        # pool as well, rather than require Agent's competing LAN listener.
+        from appliance.agent_api.device_workspace import create_device_workspace_router
+
+        app.include_router(
+            create_device_workspace_router(device_link, authenticator=authenticator)
+        )
     app.include_router(
         create_device_link_router(
             device_link,
