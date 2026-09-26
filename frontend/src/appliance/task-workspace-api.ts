@@ -1,6 +1,15 @@
 import { authHeader } from "./auth";
 
+export type TaskStage = { device_id: string; task: string };
+
 export type DeviceTask = {
+  stages?: TaskStage[];
+  stage_index?: number;
+  stage_status?: string;
+  stage_history?: (TaskStage & {
+    results: DeviceTask["results"];
+    result_review: DeviceTask["result_review"];
+  })[];
   id: string;
   task: string;
   device_id: string;
@@ -18,6 +27,12 @@ export type DeviceTask = {
   }[];
   revision: string;
   busy: boolean;
+  result_review?: {
+    outcome: "achieved" | "not_achieved";
+    reviewed_by: string;
+    reviewed_at: number;
+    revision: string;
+  } | null;
   error?: string;
 };
 export async function taskWorkspaceRequest<T>(
