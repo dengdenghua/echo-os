@@ -48,7 +48,7 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:unit && pnpm test:electron",
     "test:unit": "vitest run --exclude 'electron/**/*.test.cjs' --exclude 'electron/**/*.node-test.cjs' && node --test scripts/*.test.mjs",
-    "test:electron": "node electron/dev-url.test.cjs && node electron/desktop-updater.test.cjs && node electron/shell-profile.test.cjs && node electron/agent-service.test.cjs && node electron/system-actions.test.cjs && node electron/system-update.test.cjs && node electron/system-controls.test.cjs && node electron/system-notifications.test.cjs && node electron/system-shell.test.cjs && node electron/native-liquid-glass.test.cjs && node electron/native-app-ipc-smoke.node-test.cjs && node ../packaging/image/verify-native-shell-package.test.cjs",
+    "test:electron": "node electron/safe-external-url.test.cjs && node electron/dev-url.test.cjs && node electron/desktop-updater.test.cjs && node electron/shell-profile.test.cjs && node electron/agent-service.test.cjs && node electron/system-actions.test.cjs && node electron/system-update.test.cjs && node electron/system-controls.test.cjs && node electron/system-notifications.test.cjs && node electron/system-shell.test.cjs && node electron/native-liquid-glass.test.cjs && node electron/native-app-ipc-smoke.node-test.cjs && node ../packaging/image/verify-native-shell-package.test.cjs",
     "test:native-glass": "electron electron/native-liquid-glass-addon.node-test.cjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

@@ -153,6 +153,13 @@ export default defineConfig({
     react(),
   ],
   resolve: {
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+    ],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "motion/react": fileURLToPath(
