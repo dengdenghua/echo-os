@@ -131,12 +131,14 @@ function Breadcrumb({
 
 export function FileManager({
   openRequest,
+  initialShowTrash = false,
   onAskAgent,
   onClose,
   onOpenSettings,
   onOpenSystemFiles,
 }: {
   openRequest?: { path: string; selectedPath?: string } | null;
+  initialShowTrash?: boolean;
   onAskAgent?: (context: DesktopAgentContext) => void;
   onClose: () => void;
   onOpenSettings?: () => void;
@@ -172,7 +174,13 @@ export function FileManager({
     percent: number;
     paused?: boolean;
   } | null>(null);
-  const [showTrash, setShowTrash] = useState(false);
+  const [showTrash, setShowTrash] = useState(initialShowTrash);
+  useEffect(() => {
+    if (initialShowTrash) {
+      setShowTrash(true);
+      setSidebarTarget("nas");
+    }
+  }, [initialShowTrash]);
   const [sidebarTarget, setSidebarTarget] =
     useState<FinderSidebarTarget>("nas");
   const [trash, setTrash] = useState<TrashEntry[]>([]);

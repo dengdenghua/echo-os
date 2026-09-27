@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,7 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     id: "deepseek-v3",
     name: "DeepSeek-V3",
     provider: "DeepSeek",
-    tag: "深度推理",
+    tag: "极致性价比",
   },
   {
     id: "gemini-1-5-pro",
@@ -53,10 +53,10 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     tag: "超长上下文",
   },
   {
-    id: "echo-local-npu",
-    name: "Echo Local NPU",
-    provider: "Station (私有)",
-    tag: "100% 私有免流",
+    id: "echo-local-llama3",
+    name: "Echo Llama-3.3-70B",
+    provider: "Station Local",
+    tag: "本地私有化",
   },
 ];
 
@@ -82,6 +82,33 @@ export function AiNetworkPulse({
   const [policy, setPolicy] = useState<RoutingPolicy>("local-first");
   const [activeModel, setActiveModel] = useState(selectedModel);
   const [open, setOpen] = useState(defaultOpen);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const lastPointerDownRef = useRef<number>(0);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setPortalContainer(
+        triggerRef.current?.closest<HTMLElement>(".macos-desktop-root") ?? null,
+      );
+    } else {
+      setPortalContainer(null);
+    }
+  };
+
+  const handlePointerDown = () => {
+    lastPointerDownRef.current = Date.now();
+  };
+
+  const handleClick = (_e: React.MouseEvent) => {
+    // If pointerdown already triggered this interaction in the last 400ms,
+    // skip the click handler to prevent double-toggling against Radix's onPointerDown.
+    if (Date.now() - lastPointerDownRef.current < 400) {
+      return;
+    }
+    handleOpenChange(!open);
+  };
 
   useEffect(() => {
     setActiveModel(selectedModel);
@@ -130,13 +157,15 @@ export function AiNetworkPulse({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
+          ref={triggerRef}
           type="button"
-          onClick={() => setOpen((prev) => !prev)}
+          onPointerDown={handlePointerDown}
+          onClick={handleClick}
           className={cn(
-            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 text-[11px] font-medium text-slate-100 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/20",
+            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 text-[11px] font-medium text-slate-100 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/20 select-none cursor-pointer",
             open && "scale-[1.02] bg-white/20 ring-1 ring-white/30",
             className,
           )}
@@ -160,7 +189,8 @@ export function AiNetworkPulse({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[420px] rounded-2xl border border-black/10 bg-white/90 p-4 text-slate-800 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/90 dark:text-slate-100"
+        portalContainer={portalContainer}
+        className="z-[200] w-[420px] max-w-[calc(100vw-24px)] rounded-2xl border border-black/10 bg-white/90 p-4 text-slate-800 shadow-2xl shadow-black/20 backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/90 dark:text-slate-100"
       >
         {/* 顶部标题与状态 */}
         <div className="flex items-center justify-between border-b border-black/5 pb-3 dark:border-white/10">

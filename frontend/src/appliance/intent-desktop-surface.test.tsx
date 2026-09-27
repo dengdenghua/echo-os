@@ -102,6 +102,7 @@ describe("IntentDesktopSurface", () => {
     ).toBeInTheDocument();
     expect(onOpenWorkbench).toHaveBeenCalledWith(
       "分析 NAS 存储碎片化并生成优化方案",
+      "researcher",
     );
     // Should switch to workspace mode
     expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
@@ -375,4 +376,213 @@ describe("IntentDesktopSurface", () => {
       expect(screen.queryByText("意图纯净态")).not.toBeInTheDocument();
     });
   });
+
+  it("does not render empty state card in pure mode so it never blocks the intent bar", () => {
+    render(<IntentDesktopSurface initialMode="pure" activeRoom="researcher" />);
+
+    // Dismiss the task in researcher room
+    const dismissButtons = screen.queryAllByRole("button", { name: /关闭任务/i });
+    dismissButtons.forEach((btn) => fireEvent.click(btn));
+
+    // In pure mode with no tasks, empty state card must NOT be displayed
+    expect(
+      screen.queryByText("该协同空间暂无进行中的任务"),
+    ).not.toBeInTheDocument();
+
+    // Intent input must be in the document and accessible
+    const input = screen.getByPlaceholderText(/输入意图/i);
+    expect(input).toBeInTheDocument();
+  });
+
+  it("renders empty state card below intent bar with self-end in workspace mode when tasks are empty", () => {
+    render(<IntentDesktopSurface initialMode="workspace" activeRoom="researcher" />);
+
+    // Dismiss task in researcher room
+    const dismissBtn = screen.getByRole("button", { name: /关闭任务/i });
+    fireEvent.click(dismissBtn);
+
+    // Empty state should be visible in workspace mode
+    const emptyCard = screen.getByText("该协同空间暂无进行中的任务");
+    expect(emptyCard).toBeInTheDocument();
+    expect(emptyCard.closest("[data-task-card='true']")).toHaveClass(
+      "self-end",
+    );
+
+    // Intent input remains accessible and not occluded
+    const input = screen.getByPlaceholderText(/输入意图/i);
+    expect(input).toBeInTheDocument();
+  });
+
+  it("toggles between pure and workspace mode when pressing Alt+D", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    expect(screen.getByText("意图纯净态")).toBeInTheDocument();
+
+    // Press Alt+D
+    fireEvent.keyDown(window, { key: "d", altKey: true });
+    expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
+
+    // Press Alt+D again
+    fireEvent.keyDown(window, { key: "d", altKey: true });
+    expect(screen.getByText("意图纯净态")).toBeInTheDocument();
+  });
+
+  it("renders breathing dual-mode switcher badge and toggles mode on click", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    const badge = screen.getByRole("button", { name: "双态形态切换" });
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent("极简意图态");
+
+    fireEvent.click(badge);
+    expect(badge).toHaveTextContent("多窗口工作台");
+  });
+
+  it("automatically morphs into workspace mode upon submitting intent from pure mode", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    const input = screen.getByPlaceholderText(/输入意图/i);
+    fireEvent.change(input, {
+      target: { value: "分析 NAS 存储碎片化并生成优化方案" },
+    });
+
+    const submitBtn = screen.getByRole("button", { name: "提交意图" });
+    fireEvent.click(submitBtn);
+
+    // Mode automatically expanded to workspace
+    expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
+    expect(toast.info).toHaveBeenCalledWith(
+      "已自适应展开多窗口工作台",
+      expect.objectContaining({
+        description: expect.stringContaining("按 Alt+D 可随时切回极简意图"),
+      }),
+    );
+  });
+
+  it("dynamically updates placeholder and highlights templates when switching agents", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    // Default is Researcher
+    expect(
+      screen.getByPlaceholderText(/全网深度调研 DeepSeek/i),
+    ).toBeInTheDocument();
+
+    const trigger = screen.getByTestId("agent-selector-trigger");
+
+    // Open agent popover menu and select Builder
+    fireEvent.click(trigger);
+    const builderBtn = screen.getByRole("menuitem", { name: /Builder/i });
+    fireEvent.click(builderBtn);
+
+    // Placeholder dynamically switches to Builder domain
+    expect(
+      screen.getByPlaceholderText(/交叉编译 RK3576/i),
+    ).toBeInTheDocument();
+
+    // Open agent popover menu and select Operator
+    fireEvent.click(trigger);
+    const operatorBtn = screen.getByRole("menuitem", { name: /Operator/i });
+    fireEvent.click(operatorBtn);
+
+    // Placeholder dynamically switches to Operator domain
+    expect(
+      screen.getByPlaceholderText(/执行 NAS ZFS/i),
+    ).toBeInTheDocument();
+  });
+
+  it("autocompletes intent when clicking the Tab autocomplete prompt button", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    // Click the Tab autocomplete button
+    const tabPromptBtn = screen.getByRole("button", { name: "Tab 补全推荐" });
+    expect(tabPromptBtn).toBeInTheDocument();
+    fireEvent.click(tabPromptBtn);
+
+    const input = screen.getByPlaceholderText(/输入意图/i) as HTMLInputElement;
+    expect(input.value).toContain("全网深度调研 DeepSeek V3");
+  });
+
+  it("supports Omarchy-style built-in agent matrix: Codex, Claude, Hermes, Pi, OpenCode", () => {
+    render(<IntentDesktopSurface initialMode="pure" />);
+
+    const trigger = screen.getByTestId("agent-selector-trigger");
+
+    // Open popover to verify Omarchy badge indicator and engine specs
+    fireEvent.click(trigger);
+    expect(screen.getByText(/Omarchy Matrix/i)).toBeInTheDocument();
+    expect(screen.getByText(/AST Parser/i)).toBeInTheDocument();
+    expect(screen.getByText(/Extended Thinking/i)).toBeInTheDocument();
+
+    // 1. Switch to Codex
+    const codexBtn = screen.getByRole("menuitem", { name: /Codex/i });
+    expect(codexBtn).toBeInTheDocument();
+    fireEvent.click(codexBtn);
+    expect(screen.getByPlaceholderText(/让 Codex 规划软件工程/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分派 Agent: Codex/i })).toBeInTheDocument();
+
+    // 2. Switch to Claude
+    fireEvent.click(trigger);
+    const claudeBtn = screen.getByRole("menuitem", { name: /Claude/i });
+    expect(claudeBtn).toBeInTheDocument();
+    fireEvent.click(claudeBtn);
+    expect(screen.getByPlaceholderText(/向 Claude 请教/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分派 Agent: Claude/i })).toBeInTheDocument();
+
+    // 3. Switch to Hermes
+    fireEvent.click(trigger);
+    const hermesBtn = screen.getByRole("menuitem", { name: /Hermes/i });
+    expect(hermesBtn).toBeInTheDocument();
+    fireEvent.click(hermesBtn);
+    expect(screen.getByPlaceholderText(/唤醒 Hermes/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分派 Agent: Hermes/i })).toBeInTheDocument();
+
+    // 4. Switch to Pi
+    fireEvent.click(trigger);
+    const piBtn = screen.getByRole("menuitem", { name: /Inflection/i });
+    expect(piBtn).toBeInTheDocument();
+    fireEvent.click(piBtn);
+    expect(screen.getByPlaceholderText(/与 Pi 随心交流/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分派 Agent: Pi/i })).toBeInTheDocument();
+
+    // 5. Switch to OpenCode
+    fireEvent.click(trigger);
+    const openCodeBtn = screen.getByRole("menuitem", { name: /OpenCode/i });
+    expect(openCodeBtn).toBeInTheDocument();
+    fireEvent.click(openCodeBtn);
+    expect(screen.getByPlaceholderText(/让 OpenCode 在沙箱中执行/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分派 Agent: OpenCode/i })).toBeInTheDocument();
+  });
+
+  it("submits intent with selected Omarchy agent and dispatches agentId to workbench callback", () => {
+    const onOpenWorkbench = vi.fn();
+    render(
+      <IntentDesktopSurface
+        initialMode="pure"
+        onOpenWorkbench={onOpenWorkbench}
+      />,
+    );
+
+    // Select Claude via popover
+    const trigger = screen.getByTestId("agent-selector-trigger");
+    fireEvent.click(trigger);
+    const claudeBtn = screen.getByRole("menuitem", { name: /Claude/i });
+    fireEvent.click(claudeBtn);
+
+    const input = screen.getByPlaceholderText(/向 Claude 请教/i);
+    fireEvent.change(input, {
+      target: { value: "撰写下一代端侧操作系统安全白皮书" },
+    });
+
+    const submitBtn = screen.getByRole("button", { name: "提交意图" });
+    fireEvent.click(submitBtn);
+
+    expect(onOpenWorkbench).toHaveBeenCalledWith(
+      "撰写下一代端侧操作系统安全白皮书",
+      "claude",
+    );
+    expect(screen.getByText("[Claude]")).toBeInTheDocument();
+    expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
+  });
 });
+
+

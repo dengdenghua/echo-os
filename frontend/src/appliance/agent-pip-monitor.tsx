@@ -20,12 +20,16 @@ import { LiveDeviceList } from "./live-device-list";
 import type { LinkedDevice } from "./device-link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  clampToWorkArea,
+  getDesktopWorkArea,
+} from "./desktop-screen-bounds";
 
 export interface PipTask {
   id: string;
   title: string;
   agentName: string;
-  agentType: "researcher" | "builder" | "operator";
+  agentType: string;
   stepText: string;
   progress: number;
   needsApproval?: boolean;
@@ -86,23 +90,12 @@ export function AgentPipMonitor({
     isPill: boolean;
   } | null>(null);
 
-  // 窗口尺寸变化时重新限制坐标，防止被遮挡在屏幕之外
+  // 窗口尺寸或多显示器变化时重新限制坐标，防止被遮挡在屏幕之外
   useEffect(() => {
     const handleResize = () => {
       setPosition((prev) => {
         if (!prev) return null;
-        const width = 320;
-        const height = 240;
-        const margin = 12;
-        const clampedX = Math.max(
-          margin,
-          Math.min(window.innerWidth - width - margin, prev.x),
-        );
-        const clampedY = Math.max(
-          margin,
-          Math.min(window.innerHeight - height - margin, prev.y),
-        );
-        return { x: clampedX, y: clampedY };
+        return clampToWorkArea(prev.x, prev.y, 320, 240);
       });
     };
     window.addEventListener("resize", handleResize);
@@ -135,6 +128,9 @@ export function AgentPipMonitor({
     const targetRef = isPill ? pillRef.current : containerRef.current;
     if (!targetRef) return;
 
+    // 拖拽启动时刷新一次多屏真实物理边界
+    void getDesktopWorkArea(true);
+
     const rect = targetRef.getBoundingClientRect();
     dragRef.current = {
       startX: e.clientX,
@@ -157,19 +153,10 @@ export function AgentPipMonitor({
 
       const width = el.offsetWidth || 320;
       const height = el.offsetHeight || 200;
-      const margin = 12;
 
-      // 视口安全区限制，防止拖出屏幕外丢失
-      const clampedX = Math.max(
-        margin,
-        Math.min(window.innerWidth - width - margin, newLeft),
-      );
-      const clampedY = Math.max(
-        margin,
-        Math.min(window.innerHeight - height - margin, newTop),
-      );
-
-      setPosition({ x: Math.round(clampedX), y: Math.round(clampedY) });
+      // 物理工作区安全区限制，跨副屏与负坐标精准贴靠
+      const clamped = clampToWorkArea(newLeft, newTop, width, height);
+      setPosition(clamped);
     };
 
     const onPointerUp = () => {
@@ -306,8 +293,8 @@ export function AgentPipMonitor({
 
         <div className="flex items-center gap-1 text-slate-400">
           <div className="relative">
-            <button type="button" onClick={() => setShowCastMenu((value) => !value)} aria-label="选择手机" title="选择手机" className="rounded p-1 hover:bg-black/5"><CastIcon className="size-3" /></button>
-            {showCastMenu && <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border bg-white p-3 text-slate-800 shadow-xl">
+            <button type="button" onClick={() => setShowCastMenu((value) => !value)} aria-label="选择手机" title="选择手机" className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10"><CastIcon className="size-3" /></button>
+            {showCastMenu && <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-black/10 bg-white/95 p-3 text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95 dark:text-slate-100">
               <LiveDeviceList onOpen={onOpenPhoneMirror ? (device) => { setShowCastMenu(false); onOpenPhoneMirror(device); } : undefined} />
             </div>}
           </div>

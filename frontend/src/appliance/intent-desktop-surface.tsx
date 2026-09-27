@@ -14,6 +14,8 @@ import {
   ArrowRightIcon,
   BotIcon,
   CastIcon,
+  CheckIcon,
+  ChevronDownIcon,
   CpuIcon,
   DatabaseIcon,
   DropletIcon,
@@ -128,10 +130,30 @@ export const OPEN_ROOMS: OpenRoom[] = [
   },
 ];
 
+export type BuiltinAgentId =
+  | "codex"
+  | "claude"
+  | "hermes"
+  | "pi"
+  | "opencode"
+  | "researcher"
+  | "builder"
+  | "operator";
+
+export function agentToOpenRoom(agent: BuiltinAgentId): OpenRoomType {
+  if (agent === "researcher" || agent === "builder" || agent === "operator") {
+    return agent;
+  }
+  if (agent === "codex" || agent === "opencode" || agent === "hermes") {
+    return "builder";
+  }
+  return "researcher";
+}
+
 export interface TaskObject {
   id: string;
   title: string;
-  agent: "researcher" | "builder" | "operator";
+  agent: BuiltinAgentId;
   agentName: string;
   status: "running" | "completed" | "idle";
   progress: number;
@@ -139,7 +161,7 @@ export interface TaskObject {
   contextLinks: Array<{ label: string; icon: "file" | "db" | "terminal" }>;
   side: "left" | "right";
   handover?: {
-    toAgent: "researcher" | "builder" | "operator";
+    toAgent: BuiltinAgentId;
     toAgentName: string;
     artifactName: string;
     note: string;
@@ -156,12 +178,216 @@ export interface IntentDesktopSurfaceProps {
   activeRoom?: OpenRoomType;
   onActiveRoomChange?: (room: OpenRoomType) => void;
   hideTopControlBar?: boolean;
-  onOpenWorkbench?: (prompt?: string) => void;
+  onOpenWorkbench?: (prompt?: string, agentId?: string) => void;
   onOpenApp?: (appId: string) => void;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
   children?: ReactNode;
   className?: string;
 }
+
+export interface AgentPreset {
+  key: BuiltinAgentId;
+  label: string;
+  name: string;
+  title: string;
+  icon: string;
+  category: "frontier" | "role";
+  badge: string;
+  brandTag: string;
+  engine: string;
+  placeholder: string;
+  outputPreview: string;
+  colorScheme: {
+    activeBg: string;
+    activeText: string;
+    border: string;
+    badgeBg: string;
+    badgeText: string;
+    halo: string;
+    dot: string;
+  };
+}
+
+export const BUILTIN_AGENTS: AgentPreset[] = [
+  // 旗舰模型 Agent (Omarchy 开发者生态)
+  {
+    key: "codex",
+    label: "Codex",
+    name: "Codex (工程专家)",
+    title: "OpenAI Codex",
+    icon: "🤖",
+    category: "frontier",
+    badge: "OpenAI",
+    brandTag: "工程规划 · 复杂重构 · 测试套件生成",
+    engine: "Codex-Engine // v0.153 · AST Parser",
+    placeholder: "让 Codex 规划软件工程：重构代码架构、生成测试套件或排查系统缺陷...",
+    outputPreview: "已初始化 AST 语法树分析器；正在解构核心调度流水线并生成多步工程重构实施计划...",
+    colorScheme: {
+      activeBg: "bg-emerald-600 text-white shadow-emerald-500/30",
+      activeText: "text-emerald-500 dark:text-emerald-400",
+      border: "border-emerald-500/40",
+      badgeBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      badgeText: "text-emerald-600 dark:text-emerald-400",
+      halo: "shadow-[0_0_20px_rgba(16,185,129,0.25)]",
+      dot: "bg-emerald-500",
+    },
+  },
+  {
+    key: "claude",
+    label: "Claude",
+    name: "Claude (深度思考)",
+    title: "Claude Code",
+    icon: "🟣",
+    category: "frontier",
+    badge: "Anthropic",
+    brandTag: "深度推演 · 长文规范 · 架构权衡",
+    engine: "Claude-3.7-Sonnet // Extended Thinking Core",
+    placeholder: "向 Claude 请教：深度思考推理、技术长文架构设计或跨模块系统权衡...",
+    outputPreview: "正在展开深度思维链 (Thinking Process)；已对微内核与宏内核边界完成 3 轮推演对比...",
+    colorScheme: {
+      activeBg: "bg-purple-600 text-white shadow-purple-500/30",
+      activeText: "text-purple-500 dark:text-purple-400",
+      border: "border-purple-500/40",
+      badgeBg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+      badgeText: "text-purple-600 dark:text-purple-400",
+      halo: "shadow-[0_0_20px_rgba(168,85,247,0.25)]",
+      dot: "bg-purple-500",
+    },
+  },
+  {
+    key: "hermes",
+    label: "Hermes",
+    name: "Hermes (自主工具)",
+    title: "Nous Hermes",
+    icon: "⚡",
+    category: "frontier",
+    badge: "Nous",
+    brandTag: "端侧工具链 · Function Calling · 自动化流",
+    engine: "Hermes-Agent-3 // Local Tooling Bus",
+    placeholder: "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
+    outputPreview: "正在探测本地注册 Function Calling 工具链；已自动挂载 NAS 主板温度与转速传感器控制端...",
+    colorScheme: {
+      activeBg: "bg-amber-600 text-white shadow-amber-500/30",
+      activeText: "text-amber-500 dark:text-amber-400",
+      border: "border-amber-500/40",
+      badgeBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+      badgeText: "text-amber-600 dark:text-amber-400",
+      halo: "shadow-[0_0_20px_rgba(245,158,11,0.25)]",
+      dot: "bg-amber-500",
+    },
+  },
+  {
+    key: "pi",
+    label: "Pi",
+    name: "Pi (智能陪伴)",
+    title: "Inflection Pi",
+    icon: "🥧",
+    category: "frontier",
+    badge: "Inflection",
+    brandTag: "亲和交互 · 灵感脑暴 · 敏捷陪伴",
+    engine: "Inflection-Pi // Empathic Core",
+    placeholder: "与 Pi 随心交流：探讨产品灵感、整理思维碎片或敏捷日常问答...",
+    outputPreview: "已捕获并理解您的产品灵感碎片；正在将其整理为结构化且富有美感的极简执行清单...",
+    colorScheme: {
+      activeBg: "bg-pink-600 text-white shadow-pink-500/30",
+      activeText: "text-pink-500 dark:text-pink-400",
+      border: "border-pink-500/40",
+      badgeBg: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
+      badgeText: "text-pink-600 dark:text-pink-400",
+      halo: "shadow-[0_0_20px_rgba(236,72,153,0.25)]",
+      dot: "bg-pink-500",
+    },
+  },
+  {
+    key: "opencode",
+    label: "OpenCode",
+    name: "OpenCode (开源全栈)",
+    title: "OpenCode Zen",
+    icon: "💻",
+    category: "frontier",
+    badge: "OpenCode",
+    brandTag: "开源沙箱 · Python 科学计算 · 数据脚本",
+    engine: "OpenCode-Interpreter // Sandboxed Python 3.12",
+    placeholder: "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
+    outputPreview: "已在沙箱中成功拉起 Python 3.12 隔离内核；已预装 NumPy / Pandas 并准备执行数据清洗与制图...",
+    colorScheme: {
+      activeBg: "bg-cyan-600 text-white shadow-cyan-500/30",
+      activeText: "text-cyan-500 dark:text-cyan-400",
+      border: "border-cyan-500/40",
+      badgeBg: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+      badgeText: "text-cyan-600 dark:text-cyan-400",
+      halo: "shadow-[0_0_20px_rgba(6,182,212,0.25)]",
+      dot: "bg-cyan-500",
+    },
+  },
+  // 系统核心职能 Agent
+  {
+    key: "researcher",
+    label: "Researcher",
+    name: "Researcher (调研员)",
+    title: "调研员",
+    icon: "🔍",
+    category: "role",
+    badge: "Research",
+    brandTag: "全网文献检索 · 技术情报对比 · 知识综述",
+    engine: "Echo Neural Perceptor // Multi-Source Crawler",
+    placeholder: "输入意图，例如：全网深度调研 DeepSeek V3 架构对比评测...",
+    outputPreview: "已完成 4 篇论文交叉对比与算力评估；正在汇总 MoE 门控稀疏激活模式与显存驻留测试曲线...",
+    colorScheme: {
+      activeBg: "bg-blue-600 text-white shadow-blue-500/30",
+      activeText: "text-blue-500 dark:text-blue-400",
+      border: "border-blue-500/40",
+      badgeBg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+      badgeText: "text-blue-600 dark:text-blue-400",
+      halo: "shadow-[0_0_20px_rgba(59,130,246,0.25)]",
+      dot: "bg-blue-500",
+    },
+  },
+  {
+    key: "builder",
+    label: "Builder",
+    name: "Builder (架构师)",
+    title: "架构师",
+    icon: "🛠️",
+    category: "role",
+    badge: "Builder",
+    brandTag: "交叉编译 · 固件构建 · 内核驱动适配",
+    engine: "Echo Compiler Toolchain // aarch64-linux-gnu",
+    placeholder: "输入意图，例如：交叉编译 RK3576 ARM64 固件与 NPU 驱动...",
+    outputPreview: "已完成 Makefile 参数适配并成功链接 OpenZFS 存储池与 6.0 TOPS NPU 驱动包。",
+    colorScheme: {
+      activeBg: "bg-indigo-600 text-white shadow-indigo-500/30",
+      activeText: "text-indigo-500 dark:text-indigo-400",
+      border: "border-indigo-500/40",
+      badgeBg: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+      badgeText: "text-indigo-600 dark:text-indigo-400",
+      halo: "shadow-[0_0_20px_rgba(99,102,241,0.25)]",
+      dot: "bg-indigo-500",
+    },
+  },
+  {
+    key: "operator",
+    label: "Operator",
+    name: "Operator (中枢)",
+    title: "管家中枢",
+    icon: "⚡",
+    category: "role",
+    badge: "SysAdmin",
+    brandTag: "NAS 存储体检 · NPU 算力调度 · 硬件巡检",
+    engine: "Echo System Daemon // Hardware Monitor",
+    placeholder: "输入意图，例如：执行 NAS ZFS 存储池完整性校验与快照体检...",
+    outputPreview: "正在执行 OpenZFS 存储池全盘校验；已自动对齐 NAS 物理阵列健康状态。",
+    colorScheme: {
+      activeBg: "bg-emerald-600 text-white shadow-emerald-500/30",
+      activeText: "text-emerald-500 dark:text-emerald-400",
+      border: "border-emerald-500/40",
+      badgeBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      badgeText: "text-emerald-600 dark:text-emerald-400",
+      halo: "shadow-[0_0_20px_rgba(16,185,129,0.25)]",
+      dot: "bg-emerald-500",
+    },
+  },
+];
 
 const DEFAULT_TASKS: TaskObject[] = [
   {
@@ -200,7 +426,7 @@ const DEFAULT_TASKS: TaskObject[] = [
       { label: "rknpu2_driver.c", icon: "file" },
       { label: "ZFS Storage", icon: "db" },
     ],
-    side: "left",
+    side: "right",
     handover: {
       toAgent: "operator",
       toAgentName: "Operator (中枢)",
@@ -229,7 +455,7 @@ const DEFAULT_TASKS: TaskObject[] = [
 export interface IntentTemplate {
   label: string;
   prompt: string;
-  agent: "researcher" | "builder" | "operator";
+  agent: BuiltinAgentId;
   room: OpenRoomType;
 }
 
@@ -269,6 +495,71 @@ export const INTENT_TEMPLATES: IntentTemplate[] = [
     prompt: "巡检本地 6.0 TOPS NPU 芯片负载与温度，分配独占运行队列",
     agent: "operator",
     room: "operator",
+  },
+  // Codex 专属推荐
+  {
+    label: "API 吞吐重构",
+    prompt: "重构 FastAPI 异步网关服务与连接池，提升高并发数据流吞吐与响应延迟",
+    agent: "codex",
+    room: "builder",
+  },
+  {
+    label: "单元测试补全",
+    prompt: "为核心状态机与调度器编写 100% 分支覆盖率的 Vitest/Pytest 测试套件",
+    agent: "codex",
+    room: "builder",
+  },
+  // Claude 专属推荐
+  {
+    label: "微内核架构权衡",
+    prompt: "深度推演 Microkernel 与 Monolithic 架构在边缘 Agentic OS 场景下的稳定性与性能权衡",
+    agent: "claude",
+    room: "researcher",
+  },
+  {
+    label: "隐私规范白皮书",
+    prompt: "起草 Echo OS 本地化端侧安全、沙箱隔离机制与差分隐私协议规范白皮书",
+    agent: "claude",
+    room: "researcher",
+  },
+  // Hermes 专属推荐
+  {
+    label: "传感器接口联动",
+    prompt: "自动发现并调用 NAS 硬件主板传感器、磁盘 S.M.A.R.T. 与风扇转速控制接口",
+    agent: "hermes",
+    room: "operator",
+  },
+  {
+    label: "自动化流水线",
+    prompt: "编排自动化网络工具流，抓取前沿开源社区进展并生成格式化日报交付",
+    agent: "hermes",
+    room: "operator",
+  },
+  // Pi 专属推荐
+  {
+    label: "人机交互脑暴",
+    prompt: "从人类直觉与多模态交互视角，探讨空间计算与桌面 Agent 的融合形态",
+    agent: "pi",
+    room: "researcher",
+  },
+  {
+    label: "日程待办整理",
+    prompt: "梳理今日工作台未完成的高优事项，并给出清晰精炼的番茄钟执行计划",
+    agent: "pi",
+    room: "researcher",
+  },
+  // OpenCode 专属推荐
+  {
+    label: "沙箱数据可视化",
+    prompt: "在隔离沙箱中读取系统历史负载日志，使用 Matplotlib 绘制 24h 波动趋势图",
+    agent: "opencode",
+    room: "builder",
+  },
+  {
+    label: "局域网探测脚本",
+    prompt: "编写基于 Scapy 的异步轻量级局域网存活主机与端口探测分析脚本",
+    agent: "opencode",
+    room: "builder",
   },
 ];
 
@@ -351,9 +642,8 @@ export function IntentDesktopSurface({
   );
 
   const [intentInput, setIntentInput] = useState("");
-  const [selectedAgent, setSelectedAgent] = useState<
-    "researcher" | "builder" | "operator"
-  >("researcher");
+  const [selectedAgent, setSelectedAgent] =
+    useState<BuiltinAgentId>("researcher");
   const [tasks, setTasks] = useState<TaskObject[]>(DEFAULT_TASKS);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [pipVisible, setPipVisible] = useState(true);
@@ -365,6 +655,32 @@ export function IntentDesktopSurface({
     agentName: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
+  const [isAutoRoute, setIsAutoRoute] = useState(false);
+  const agentMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAgentMenuOpen) return;
+    const handleClickOutside = (e: globalThis.MouseEvent) => {
+      if (
+        agentMenuRef.current &&
+        !agentMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsAgentMenuOpen(false);
+      }
+    };
+    const handleMenuKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsAgentMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleMenuKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleMenuKeyDown);
+    };
+  }, [isAgentMenuOpen]);
 
   // 窗口卡片拖拽系统
   const [cardPositions, setCardPositions] = useState<
@@ -625,6 +941,13 @@ export function IntentDesktopSurface({
         inputRef.current?.focus();
         return;
       }
+      // Alt+D / Option+D 全局形态快速切换
+      if (e.altKey && (e.key.toLowerCase() === "d" || e.code === "KeyD")) {
+        e.preventDefault();
+        toggleMode();
+        return;
+      }
+
       // 其余组合键（Cmd/Ctrl/Alt）一律放行，交给系统/输入框默认行为，避免误吞粘贴、快捷键等
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const isInput =
@@ -680,28 +1003,68 @@ export function IntentDesktopSurface({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [expandedTaskId, inspectingAsset, mode, toggleMode]);
 
+  const currentAgentDescriptor = useMemo(() => {
+    return (
+      BUILTIN_AGENTS.find((a) => a.key === selectedAgent) ??
+      BUILTIN_AGENTS.find((a) => a.key === "researcher")!
+    );
+  }, [selectedAgent]);
+
+  const sortedTemplates = useMemo(() => {
+    const current = INTENT_TEMPLATES.filter((t) => t.agent === selectedAgent);
+    const others = INTENT_TEMPLATES.filter((t) => t.agent !== selectedAgent);
+    return [...current, ...others];
+  }, [selectedAgent]);
+
   // 提交意图
   const handleSubmitIntent = () => {
     const trimmed = intentInput.trim();
     if (!trimmed) return;
 
-    const agentNames = {
+    let targetAgent = selectedAgent;
+    if (isAutoRoute) {
+      const lower = trimmed.toLowerCase();
+      if (/code|git|compile|build|重构|编译|驱动|架构|测试|api|bug/i.test(lower)) {
+        targetAgent = "codex";
+      } else if (/think|reason|思考|论证|白皮书|哲学|设计模式/i.test(lower)) {
+        targetAgent = "claude";
+      } else if (/nas|zfs|disk|存储|磁盘|硬件|npu|温度|风扇/i.test(lower)) {
+        targetAgent = "operator";
+      } else if (/python|pandas|沙箱|脚本|数据分析|matplotlib/i.test(lower)) {
+        targetAgent = "opencode";
+      } else {
+        targetAgent = "researcher";
+      }
+    }
+
+    const agentNames: Record<BuiltinAgentId, string> = {
+      codex: "Codex (工程专家)",
+      claude: "Claude (深度思考)",
+      hermes: "Hermes (自主工具)",
+      pi: "Pi (智能陪伴)",
+      opencode: "OpenCode (开源全栈)",
       researcher: "Researcher (调研员)",
       builder: "Builder (架构师)",
       operator: "Operator (管家)",
     };
 
+    const activeDescriptor =
+      BUILTIN_AGENTS.find((a) => a.key === targetAgent) ?? currentAgentDescriptor;
+
     const newTask: TaskObject = {
       id: `task-${Date.now()}`,
       title: trimmed,
-      agent: selectedAgent,
-      agentName: agentNames[selectedAgent],
+      agent: targetAgent,
+      agentName: agentNames[targetAgent],
       status: "running",
       progress: 12,
-      outputPreview: `[Agent 启动] 已分配至 ${agentNames[selectedAgent]}，正在规划执行子图与分配算力配额...`,
+      outputPreview: `[${activeDescriptor.label} 启动] ${activeDescriptor.outputPreview}`,
       contextLinks: [
         { label: "User Prompt Intent", icon: "file" },
-        { label: "Active Execution Engine", icon: "terminal" },
+        {
+          label: activeDescriptor.engine.split("//")[0]?.trim() || "Active Engine",
+          icon: "terminal",
+        },
       ],
       side: tasks.length % 2 === 0 ? "left" : "right",
     };
@@ -709,16 +1072,38 @@ export function IntentDesktopSurface({
     setTasks((prev) => [newTask, ...prev]);
     setIntentInput("");
 
-    // 自动切换为多窗口工作台模式以展示任务执行
+    // 自动平滑展开为多窗口工作台模式以展示任务执行与产物
     if (mode === "pure") {
       setMode("workspace");
+      toast.info("已自适应展开多窗口工作台", {
+        description: `检测到任务已分派给 ${agentNames[targetAgent]}，按 Alt+D 可随时切回极简意图`,
+      });
+    } else {
+      toast.success(`新任务已创建并分派给 ${agentNames[targetAgent]}`, {
+        description: trimmed,
+      });
     }
 
-    toast.success(`新任务已创建并分派给 ${agentNames[selectedAgent]}`, {
-      description: trimmed,
-    });
+    onOpenWorkbench?.(trimmed, targetAgent);
+  };
 
-    onOpenWorkbench?.(trimmed);
+  const agentPlaceholders: Record<BuiltinAgentId, string> = {
+    codex: "让 Codex 规划软件工程：重构代码架构、生成测试套件或排查系统缺陷...",
+    claude: "向 Claude 请教：深度思考推理、技术长文架构设计或跨模块系统权衡...",
+    hermes: "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
+    pi: "与 Pi 随心交流：探讨产品灵感、整理思维碎片或敏捷日常问答...",
+    opencode: "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
+    researcher: "输入意图，例如：全网深度调研 DeepSeek V3 架构对比评测...",
+    builder: "输入意图，例如：交叉编译 RK3576 ARM64 固件与 NPU 驱动...",
+    operator: "输入意图，例如：执行 NAS ZFS 存储池完整性校验与快照体检...",
+  };
+
+  const handleApplyTemplate = (tpl: IntentTemplate) => {
+    setIntentInput(tpl.prompt);
+    setSelectedAgent(tpl.agent);
+    setIsAutoRoute(false);
+    setActiveRoom(tpl.room);
+    inputRef.current?.focus();
   };
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -733,9 +1118,7 @@ export function IntentDesktopSurface({
       e.preventDefault();
       const firstTpl = dynamicTemplates[0];
       if (firstTpl) {
-        setIntentInput(firstTpl.prompt);
-        setSelectedAgent(firstTpl.agent);
-        setActiveRoom(firstTpl.room);
+        handleApplyTemplate(firstTpl);
       }
     }
   };
@@ -745,12 +1128,13 @@ export function IntentDesktopSurface({
       className={cn(
         "relative flex size-full select-none flex-col overflow-hidden transition-colors duration-500",
         theme,
+        theme !== "theme-white" && "dark",
         theme === "theme-white" &&
-          "bg-[radial-gradient(circle_at_50%_15%,#fffdfa_0%,#fbf7ef_45%,#f3ebe0_100%)] text-slate-800",
+          "bg-[radial-gradient(circle_at_50%_25%,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0.18)_50%,rgba(240,245,255,0.06)_100%)] text-slate-800",
         theme === "theme-glass" &&
-          "bg-[radial-gradient(at_15%_15%,rgba(45,75,130,0.5)_0%,transparent_55%),radial-gradient(at_85%_85%,rgba(125,45,110,0.4)_0%,transparent_55%),linear-gradient(135deg,#0c111c_0%,#121927_50%,#090d15_100%)] text-slate-100",
+          "bg-[radial-gradient(at_15%_15%,rgba(56,189,248,0.15)_0%,transparent_55%),radial-gradient(at_85%_85%,rgba(168,85,247,0.12)_0%,transparent_55%),rgba(10,15,30,0.32)] text-slate-100",
         theme === "theme-dark" &&
-          "bg-[radial-gradient(circle_at_50%_0%,#151820_0%,#090b0e_65%,#040507_100%)] text-slate-100",
+          "bg-[radial-gradient(circle_at_50%_0%,rgba(30,41,59,0.28)_0%,transparent_65%),rgba(3,6,12,0.52)] text-slate-100",
         className,
       )}
       onClick={handleBackdropClick}
@@ -891,45 +1275,83 @@ export function IntentDesktopSurface({
         {/* 中央 Zen Intent 意图核心 */}
         <div
           className={cn(
-            "z-20 flex w-full max-w-2xl flex-col items-center text-center transition-all duration-500",
+            "z-30 flex w-full max-w-2xl flex-col items-center text-center transition-all duration-500",
             mode === "workspace"
-              ? "-translate-y-20 scale-90 opacity-80 pointer-events-auto"
+              ? "-translate-y-24 scale-95 opacity-90 focus-within:opacity-100 hover:opacity-100 pointer-events-auto"
               : "translate-y-0 scale-100 opacity-100",
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Echo 核心液态呼吸脉冲节点 */}
-          <div
-            className="group relative mb-5 flex size-14 cursor-pointer items-center justify-center transition-transform hover:scale-110 active:scale-95"
+          {/* 精致微形态切换胶囊 (Breathing Dual-Mode Switcher) */}
+          <button
+            type="button"
             onClick={toggleMode}
-            title="点击在【纯净意图态】与【多窗口工作台】间切换 (Space)"
-            role="button"
-            aria-label="Echo 意图节点"
+            className={cn(
+              "group mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium shadow-md backdrop-blur-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]",
+              theme === "theme-white"
+                ? "border-black/10 bg-white/75 text-slate-700 shadow-black/5 hover:bg-white/90"
+                : "border-white/15 bg-slate-900/65 text-slate-200 shadow-black/20 hover:bg-slate-900/85",
+            )}
+            title="点击在【极简意图态】与【多窗口工作台】间切换 (快捷键: Alt+D / Space)"
+            aria-label="双态形态切换"
           >
-            {/* 外层微折射呼吸环 */}
-            <span className="absolute inset-0 rounded-full border border-blue-500/25 bg-blue-500/10 backdrop-blur-md animate-ping-slow dark:border-blue-400/30 dark:bg-blue-400/10" />
-            {/* 中层液态玻璃光晕 */}
-            <span className="absolute inset-1.5 rounded-full border border-black/10 bg-gradient-to-tr from-blue-500/20 via-purple-500/15 to-amber-500/20 shadow-lg shadow-blue-500/10 backdrop-blur-lg dark:border-white/20 dark:from-blue-400/30 dark:to-purple-400/20" />
-            {/* 核心声学脉冲球 */}
-            <span className="relative flex size-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-md transition-all group-hover:bg-blue-600 dark:bg-white dark:text-slate-900 dark:group-hover:bg-blue-400">
-              <SparklesIcon className="size-3.5 animate-pulse text-amber-300 dark:text-blue-600" />
+            <span className="flex items-center gap-1.5 font-medium">
+              <span
+                className={cn(
+                  "size-1.5 rounded-full transition-colors",
+                  mode === "pure" ? "bg-emerald-400" : "bg-blue-400",
+                )}
+              />
+              <span>
+                {mode === "pure" ? "极简意图态" : "🖥️ 多窗口工作台"}
+              </span>
             </span>
+            <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
+              Alt+D
+            </kbd>
+          </button>
+
+          {/* 核心光韵图标与标语整合区 */}
+          <div className="flex flex-col items-center">
+            {/* 量子聚变核心节点 (Quantum Reactor Core) */}
+            <div
+              className="group relative mb-3 flex size-12 cursor-pointer items-center justify-center transition-transform hover:scale-105 active:scale-95"
+              onClick={toggleMode}
+              title="点击在【纯净意图态】与【多窗口工作台】间切换 (Space)"
+              role="button"
+              aria-label="Echo 意图节点"
+            >
+              {/* 外层微折射呼吸环与旋转偏振能量刻度 */}
+              <span className="absolute inset-0 rounded-full border border-sky-400/25 bg-sky-400/10 backdrop-blur-md animate-pulse" />
+              <span className="absolute -inset-1 rounded-full border border-dashed border-sky-400/30 opacity-60 animate-[spin_24s_linear_infinite]" />
+              {/* 核心声学脉冲球 */}
+              <span className="relative flex size-8 items-center justify-center rounded-full bg-slate-900/90 text-white shadow-[0_0_16px_rgba(56,189,248,0.4)] ring-1 ring-sky-400/30 transition-all group-hover:bg-blue-600 dark:bg-white/95 dark:text-slate-900 dark:group-hover:bg-sky-400">
+                <SparklesIcon className="size-4 text-sky-400 dark:text-blue-600" />
+              </span>
+            </div>
+
+            {/* 极客 HUD 遥测矩阵指示 */}
+            <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-wider text-sky-500/80 dark:text-sky-300/80 select-none drop-shadow-[0_0_6px_rgba(56,189,248,0.3)]">
+              <span>SYS.NEURAL_BUS // ACTIVE</span>
+              <span className="opacity-40">·</span>
+              <span>NPU 6.0 TOPS</span>
+            </div>
+
+            <h2 className="mt-1 text-xs font-semibold tracking-wider text-slate-700/90 dark:text-slate-200/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
+              下午好，今天有什么探索计划？
+            </h2>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 dark:from-white dark:via-sky-100 dark:to-indigo-200 bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(56,189,248,0.25)]">
+              意图优先 · 让 Agent 驱动执行
+            </h1>
           </div>
 
-          <h2 className="text-sm font-medium tracking-wide text-slate-500 dark:text-slate-400">
-            下午好，今天有什么探索计划？
-          </h2>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight">
-            意图优先 · 让 Agent 驱动执行
-          </h1>
-
-          {/* 意图输入胶囊 */}
+          {/* 意图输入中心卡片 (Frosted Command Hub) */}
           <div
             className={cn(
-              "mt-6 w-full rounded-2xl border p-3 shadow-2xl backdrop-blur-2xl transition-all focus-within:ring-2 focus-within:ring-blue-500/30",
+              "mt-6 w-full rounded-2xl border p-3.5 backdrop-blur-2xl transition-all duration-300 focus-within:ring-2 focus-within:ring-sky-400/30",
               theme === "theme-white"
-                ? "border-black/10 bg-white/95 text-slate-900 shadow-black/5"
-                : "border-white/15 bg-slate-900/80 text-white shadow-black/40",
+                ? "border-black/10 bg-white/85 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_20px_45px_-12px_rgba(0,0,0,0.12)] focus-within:border-blue-500/40"
+                : "border-sky-400/20 bg-slate-900/80 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_0_35px_rgba(56,189,248,0.14),0_20px_50px_-10px_rgba(0,0,0,0.5)] focus-within:border-sky-400/50 focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_0_50px_rgba(56,189,248,0.26),0_25px_60px_-10px_rgba(0,0,0,0.6)]",
             )}
           >
             <div className="flex items-center gap-3">
@@ -940,106 +1362,274 @@ export function IntentDesktopSurface({
                 value={intentInput}
                 onChange={(e) => setIntentInput(e.target.value)}
                 onKeyDown={handleInputKeyDown}
-                placeholder="输入意图，例如：分析 NAS 存储碎片化并生成优化方案... (Tab 键自动带入预设)"
+                placeholder={agentPlaceholders[selectedAgent]}
                 className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-slate-400"
               />
+              {!intentInput.trim() && dynamicTemplates[0] && (
+                <button
+                  type="button"
+                  onClick={() => handleApplyTemplate(dynamicTemplates[0]!)}
+                  aria-label="Tab 补全推荐"
+                  className="hidden shrink-0 cursor-pointer select-none items-center gap-1 rounded-md border border-black/10 bg-black/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 transition-all hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 sm:inline-flex"
+                  title="按 Tab 键自动带入推荐意图"
+                >
+                  <kbd className="font-semibold text-blue-500 dark:text-blue-400">Tab ⇥</kbd>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSubmitIntent}
                 disabled={!intentInput.trim()}
-                className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white transition-all hover:scale-105 disabled:opacity-40 dark:bg-white dark:text-slate-900"
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
+                  intentInput.trim()
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/30 hover:scale-105 active:scale-95"
+                    : "cursor-not-allowed bg-slate-800/20 text-slate-400 opacity-40 dark:bg-white/10 dark:text-slate-500",
+                )}
                 aria-label="提交意图"
+                title={intentInput.trim() ? "提交意图 (Enter)" : "请输入意图内容"}
               >
                 <ArrowRightIcon className="size-4" />
               </button>
             </div>
 
-            {/* 意图标签与 Agent 切换 */}
-            <div className="mt-3 flex items-center justify-between border-t border-black/5 pt-2.5 text-xs dark:border-white/10">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-semibold text-slate-400">
+            {/* 底部精炼功能栏：只有一行！左侧是优雅的 Agent 弹窗选择器，右侧是快捷推荐 */}
+            <div className="relative mt-2.5 flex items-center justify-between gap-3 border-t border-black/5 pt-2.5 dark:border-white/10">
+              {/* 左侧：Agent 弹窗选择触发器 (完全贴合 Image 2 的纯净质感与层级规范) */}
+              <div className="relative flex shrink-0 items-center gap-1.5" ref={agentMenuRef}>
+                <span className="select-none text-[11px] font-semibold text-slate-400">
                   分派:
                 </span>
-                {(
-                  [
-                    { key: "researcher", label: "Researcher" },
-                    { key: "builder", label: "Builder" },
-                    { key: "operator", label: "Operator" },
-                  ] as const
-                ).map((ag) => (
-                  <button
-                    key={ag.key}
-                    type="button"
-                    onClick={() => setSelectedAgent(ag.key)}
+                <button
+                  type="button"
+                  data-testid="agent-selector-trigger"
+                  onClick={() => setIsAgentMenuOpen((v) => !v)}
+                  className={cn(
+                    "group inline-flex cursor-pointer select-none items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-150 active:scale-95",
+                    "border-black/10 bg-black/[0.04] text-slate-700 hover:bg-black/[0.07] hover:text-slate-900",
+                    "dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white",
+                    isAgentMenuOpen &&
+                      "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:border-blue-400/40 dark:bg-blue-400/15 dark:text-blue-300",
+                  )}
+                  title={`当前分派：${isAutoRoute ? "自动选择" : currentAgentDescriptor.name} (点击切换)`}
+                  aria-label={`分派 Agent: ${isAutoRoute ? "自动" : currentAgentDescriptor.label}`}
+                  aria-expanded={isAgentMenuOpen}
+                >
+                  <span className="text-sm">
+                    {isAutoRoute ? "✨" : currentAgentDescriptor.icon}
+                  </span>
+                  <span className="font-semibold">
+                    {isAutoRoute ? "自动" : currentAgentDescriptor.label}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-400">
+                    {isAutoRoute ? "(智能路由)" : `(${currentAgentDescriptor.badge})`}
+                  </span>
+                  <ChevronDownIcon
                     className={cn(
-                      "rounded-md px-2 py-0.5 text-[11px] font-medium transition-all",
-                      selectedAgent === ag.key
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-black/5 text-slate-600 hover:bg-black/10 dark:bg-white/10 dark:text-slate-300",
+                      "size-3 text-slate-400 transition-transform duration-200 group-hover:text-slate-600 dark:group-hover:text-slate-200",
+                      isAgentMenuOpen && "rotate-180 text-blue-500 dark:text-blue-400",
+                    )}
+                  />
+                </button>
+
+                {/* 弹出式 Agent 选择菜单 (匹配 Image 2 规范) */}
+                {isAgentMenuOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Agent 选择菜单"
+                    className={cn(
+                      "absolute bottom-full left-0 mb-2 z-50 w-72 sm:w-80 max-h-[380px] overflow-y-auto rounded-2xl border p-1.5 shadow-2xl backdrop-blur-xl transition-all duration-150 animate-in fade-in-0 zoom-in-95",
+                      "border-black/10 bg-white/95 text-slate-800 shadow-slate-900/15",
+                      "dark:border-white/15 dark:bg-slate-900/95 dark:text-slate-100 dark:shadow-black/50",
+                      "[scrollbar-width:thin]",
                     )}
                   >
-                    {ag.label}
-                  </button>
-                ))}
+                    {/* 选项 0: ✨ 自动 */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsAutoRoute(true);
+                        setIsAgentMenuOpen(false);
+                        toast.info("已切换为自动分派模式", {
+                          description: "系统将根据您的意图关键词自动路由至最合适的 Agent 引擎",
+                        });
+                      }}
+                      className={cn(
+                        "group flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
+                        isAutoRoute
+                          ? "bg-blue-500/10 text-blue-600 dark:bg-blue-400/15 dark:text-blue-300 font-medium"
+                          : "hover:bg-black/5 dark:hover:bg-white/5",
+                      )}
+                    >
+                      <span className="mt-0.5 text-base">✨</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                            自动
+                          </span>
+                          {isAutoRoute && (
+                            <CheckIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                          按任务自动选择 · 当前 {currentAgentDescriptor.label}
+                        </p>
+                      </div>
+                    </button>
+
+                    <div className="my-1 h-px bg-black/5 dark:bg-white/10" />
+
+                    {/* 分组 1: 旗舰模型组 */}
+                    <div className="flex items-center justify-between px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                      <span>旗舰模型 (Frontier Agents)</span>
+                      <span className="rounded bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-mono text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
+                        Omarchy Matrix
+                      </span>
+                    </div>
+
+                    {BUILTIN_AGENTS.filter((a) => a.category === "frontier").map((ag) => {
+                      const isSelected = !isAutoRoute && selectedAgent === ag.key;
+                      return (
+                        <button
+                          key={ag.key}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsAutoRoute(false);
+                            setSelectedAgent(ag.key);
+                            setIsAgentMenuOpen(false);
+                          }}
+                          className={cn(
+                            "group flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
+                            isSelected
+                              ? "bg-blue-500/10 dark:bg-blue-400/15 font-medium"
+                              : "hover:bg-black/5 dark:hover:bg-white/5",
+                          )}
+                        >
+                          <span className="mt-0.5 text-base">{ag.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                  {ag.label}
+                                </span>
+                                <span className="rounded bg-black/5 px-1 py-0.2 text-[9px] font-mono text-slate-400 dark:bg-white/10 dark:text-slate-400">
+                                  {ag.badge}
+                                </span>
+                              </div>
+                              {isSelected && (
+                                <CheckIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                              使用 {ag.label} 身份，{ag.brandTag}
+                            </p>
+                            <p className="mt-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                              {ag.engine} · 运行就绪
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    <div className="my-1 h-px bg-black/5 dark:bg-white/10" />
+
+                    {/* 分组 2: 系统专属职能 */}
+                    <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                      系统专属职能 (System Roles)
+                    </div>
+
+                    {BUILTIN_AGENTS.filter((a) => a.category === "role").map((ag) => {
+                      const isSelected = !isAutoRoute && selectedAgent === ag.key;
+                      return (
+                        <button
+                          key={ag.key}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsAutoRoute(false);
+                            setSelectedAgent(ag.key);
+                            setIsAgentMenuOpen(false);
+                          }}
+                          className={cn(
+                            "group flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
+                            isSelected
+                              ? "bg-blue-500/10 dark:bg-blue-400/15 font-medium"
+                              : "hover:bg-black/5 dark:hover:bg-white/5",
+                          )}
+                        >
+                          <span className="mt-0.5 text-base">{ag.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                {ag.title} ({ag.label})
+                              </span>
+                              {isSelected && (
+                                <CheckIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                              {ag.brandTag}
+                            </p>
+                            <p className="mt-0.5 text-[10px] font-mono text-slate-400">
+                              系统原生常驻在场
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              <div className="hidden items-center gap-1.5 sm:flex">
-                <span className="text-[10px] text-slate-400">快捷推荐:</span>
-                {INTENT_TEMPLATES.map((tpl: IntentTemplate) => (
-                  <button
-                    key={tpl.label}
-                    type="button"
-                    onClick={() => {
-                      setIntentInput(tpl.prompt);
-                      setSelectedAgent(tpl.agent);
-                      setActiveRoom(tpl.room);
-                      inputRef.current?.focus();
-                    }}
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] transition-all",
-                      selectedAgent === tpl.agent
-                        ? "bg-blue-500/15 text-blue-700 font-semibold dark:bg-blue-400/20 dark:text-blue-300"
-                        : "bg-black/5 text-slate-500 hover:text-slate-900 dark:bg-white/10 dark:text-slate-400 dark:hover:text-white",
-                    )}
-                  >
-                    {tpl.label}
-                  </button>
-                ))}
+              {/* 右侧：快捷推荐预设 (单一清爽流线排布) */}
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden pl-2">
+                <span className="shrink-0 select-none text-[11px] text-slate-400 flex items-center gap-1">
+                  <SparklesIcon className="size-3 text-amber-500" />
+                  推荐:
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
+                  {sortedTemplates.map((tpl: IntentTemplate) => {
+                    const isCurrentAgent = selectedAgent === tpl.agent;
+                    return (
+                      <button
+                        key={tpl.label}
+                        type="button"
+                        onClick={() => handleApplyTemplate(tpl)}
+                        className={cn(
+                          "inline-flex shrink-0 cursor-pointer select-none items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-medium transition-all duration-150 active:scale-95",
+                          isCurrentAgent
+                            ? "border-blue-500/30 bg-blue-500/10 font-medium text-blue-600 dark:border-blue-400/30 dark:bg-blue-400/15 dark:text-blue-300"
+                            : "border-black/5 bg-black/5 text-slate-500 hover:bg-black/10 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200",
+                        )}
+                        title={`${tpl.prompt} (分派给 ${tpl.agent})`}
+                      >
+                        <SparklesIcon
+                          className={cn(
+                            "size-2.5 shrink-0",
+                            isCurrentAgent
+                              ? "text-blue-500 dark:text-blue-400"
+                              : "text-slate-400 opacity-60",
+                          )}
+                        />
+                        <span>{tpl.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Task Objects 任务窗口卡片 (多窗口工作区一级公民) */}
-        <div className="pointer-events-none absolute inset-x-8 bottom-16 top-24 z-30 flex items-center justify-between gap-6 transition-all duration-500">
+        <div className="pointer-events-none absolute inset-x-8 bottom-16 top-24 z-20 flex items-center justify-between gap-6 transition-all duration-500">
           {(() => {
             const filteredTasks =
               activeRoom === "all"
                 ? tasks
                 : tasks.filter((t) => t.agent === activeRoom);
-
-            if (filteredTasks.length === 0) {
-              return (
-                <div
-                  data-task-card="true"
-                  className={cn(
-                    "pointer-events-auto mx-auto flex h-48 w-full max-w-md flex-col items-center justify-center rounded-2xl border border-dashed p-6 text-center backdrop-blur-md transition-all",
-                    theme === "theme-white"
-                      ? "border-black/15 bg-white/50 text-slate-600"
-                      : "border-white/15 bg-slate-900/50 text-slate-300",
-                  )}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <BotIcon className="size-8 text-slate-400" />
-                  <p className="mt-2 text-xs font-semibold">
-                    该协同空间暂无进行中的任务
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    可在上方意图条输入目标，直接指派给该空间专属 Agent
-                  </p>
-                </div>
-              );
-            }
 
             const cards = filteredTasks.slice(0, 2).map((task) => {
               const isLeft = task.side === "left";
@@ -1056,13 +1646,13 @@ export function IntentDesktopSurface({
                     theme === "theme-white"
                       ? "border-amber-900/10 bg-white/95 text-slate-800 shadow-[0_22px_45px_-12px_rgba(180,155,120,0.22),0_1px_3px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03]"
                       : "border-white/15 bg-slate-900/90 text-slate-100 shadow-black/60",
-                    // 双态退散核心动效：pure 模式向左/右滑出屏幕并淡化
+                    // 双态退散核心动效：pure 模式彻底退散消失（opacity-0 + invisible），绝对不在背景形成重叠鬼影
                     mode === "pure" &&
                       (isLeft
-                        ? "-translate-x-[115%] scale-90 opacity-15 pointer-events-none"
-                        : "translate-x-[115%] scale-90 opacity-15 pointer-events-none"),
+                        ? "-translate-x-[120%] scale-90 opacity-0 pointer-events-none invisible"
+                        : "translate-x-[120%] scale-90 opacity-0 pointer-events-none invisible"),
                     mode === "workspace" &&
-                      "scale-100 opacity-100 pointer-events-auto",
+                      "scale-100 opacity-100 pointer-events-auto visible",
                   )}
                   style={{
                     transform:
@@ -1195,7 +1785,7 @@ export function IntentDesktopSurface({
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveRoom(task.handover!.toAgent);
+                              setActiveRoom(agentToOpenRoom(task.handover!.toAgent));
                               toast.success(
                                 `已穿梭至 ${task.handover!.toAgentName} 的空间`,
                                 {
@@ -1262,16 +1852,16 @@ export function IntentDesktopSurface({
                   key="operator-hardware-hud"
                   data-task-card="true"
                   className={cn(
-                    "flex h-[360px] w-full max-w-[500px] flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-2xl transition-all duration-500",
+                    "ml-auto flex h-[360px] w-full max-w-[500px] flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-2xl transition-all duration-500",
                     isDraggingHud &&
                       "transition-none shadow-[0_30px_70px_rgba(0,0,0,0.5)] ring-2 ring-blue-500/40",
                     theme === "theme-white"
                       ? "border-black/10 bg-white/90 text-slate-800 shadow-slate-300/40"
                       : "border-white/15 bg-slate-900/90 text-slate-100 shadow-black/60",
                     mode === "pure" &&
-                      "translate-x-[115%] scale-90 opacity-15 pointer-events-none",
+                      "translate-x-[120%] scale-90 opacity-0 pointer-events-none invisible",
                     mode === "workspace" &&
-                      "scale-100 opacity-100 pointer-events-auto",
+                      "scale-100 opacity-100 pointer-events-auto visible",
                   )}
                   style={{
                     transform:
@@ -1378,24 +1968,33 @@ export function IntentDesktopSurface({
               );
             }
 
+            if (cards.length === 0) {
+              if (mode === "pure") return null;
+              return (
+                <div
+                  data-task-card="true"
+                  className={cn(
+                    "pointer-events-auto mx-auto flex h-36 w-full max-w-md flex-col items-center justify-center rounded-2xl border border-dashed p-4 text-center backdrop-blur-md transition-all duration-500 self-end mb-6 sm:mb-10",
+                    theme === "theme-white"
+                      ? "border-black/15 bg-white/60 text-slate-600 shadow-sm"
+                      : "border-white/15 bg-slate-900/60 text-slate-300 shadow-sm",
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <BotIcon className="size-7 text-slate-400" />
+                  <p className="mt-2 text-xs font-semibold">
+                    该协同空间暂无进行中的任务
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    可在上方意图条输入目标，直接指派给该空间专属 Agent
+                  </p>
+                </div>
+              );
+            }
+
             return cards;
           })()}
         </div>
-
-        {/* 纯净意图态下的底部轻提示 */}
-        {mode === "pure" && (
-          <div
-            className={cn(
-              "pointer-events-none absolute bottom-4 z-20 flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-medium shadow-sm backdrop-blur-md transition-all",
-              theme === "theme-white"
-                ? "border-black/10 bg-white/80 text-slate-600"
-                : "border-white/15 bg-slate-900/80 text-slate-300",
-            )}
-          >
-            <span className="size-1.5 animate-ping rounded-full bg-emerald-500" />
-            <span>纯净意图态 · 按 Space 空格键或点击空白壁纸召回工作台</span>
-          </div>
-        )}
 
         {/* 展开的任务全图与上下文 Drawer/Dialog */}
         {expandedTaskId &&

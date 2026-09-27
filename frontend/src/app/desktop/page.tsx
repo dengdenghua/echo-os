@@ -49,7 +49,6 @@ import {
   ShoppingBagIcon,
   SmartphoneIcon,
   TerminalSquareIcon,
-  Trash2Icon,
   XIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -106,6 +105,10 @@ import {
 import type { OsAgentSettingsSection } from "@/components/workspace/settings/system-agent-settings-content";
 import { ApplianceLogin, ApplianceSessionGate } from "@/appliance/login";
 import { FileManager } from "@/appliance/file-manager";
+import { listTrash, type TrashEntry } from "@/appliance/files";
+import { MacDockTrash } from "@/appliance/mac-dock-trash";
+import { MacDockDownloadsStack } from "@/appliance/mac-dock-stack";
+import { EchoMark } from "@/components/brand/echo-mark";
 import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
 import { HubPanel } from "@/appliance/hub-panel";
 import type { HubApp } from "@/appliance/hub";
@@ -127,7 +130,6 @@ import {
   MacAppIcon,
   MacControlCenter,
   MacDesktopIcon,
-  MacDesktopWidgets,
   MacDesktopWallpaperArtwork,
   MacLaunchpad,
   MacLiquidGlassPanel,
@@ -138,9 +140,10 @@ import {
   MacWorkspaceDropdown,
   type MacShellApp,
 } from "@/appliance/macos-shell";
-
 import type { LinkedDevice } from "@/appliance/device-link";
 import { PhoneMirrorApp } from "@/appliance/phone-mirror-app";
+import { MissionControl } from "@/appliance/mission-control";
+import { playSystemSound } from "@/appliance/desktop-audio-feedback";
 
 type DesktopApp = {
   name: string;
@@ -173,7 +176,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     subtitle: "浏览、调研、自动化",
     route: "/browser",
     icon: GlobeIcon,
-    color: "linear-gradient(145deg, #55c7ff, #087bd8)",
+    color: "linear-gradient(150deg, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
     dock: true,
   },
   {
@@ -181,7 +184,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     subtitle: "本地智能相册",
     route: "/photos",
     icon: ImageIcon,
-    color: "linear-gradient(145deg, #fb8aa2, #f06b38)",
+    color: "linear-gradient(150deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
     dock: true,
   },
   {
@@ -189,7 +192,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     subtitle: "容量、磁盘与共享",
     route: "/storage-center",
     icon: HardDriveIcon,
-    color: "linear-gradient(145deg, #46c7df, #1768cf)",
+    color: "linear-gradient(150deg, #38bdf8 0%, #0284c7 50%, #0369a1 100%)",
   },
   {
     name: "设备连接",
@@ -203,7 +206,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     subtitle: "多屏协同与手机投屏",
     route: "/phone-mirror",
     icon: SmartphoneIcon,
-    color: "linear-gradient(145deg, #10b981, #059669)",
+    color: "linear-gradient(150deg, #34d399 0%, #059669 60%, #064e3b 100%)",
     dock: true,
   },
   {
@@ -473,6 +476,39 @@ export default function DesktopShellPage() {
     path: string;
     selectedPath?: string;
   } | null>(null);
+  const [fileOpenTrash, setFileOpenTrash] = useState(false);
+  const [trashEntries, setTrashEntries] = useState<TrashEntry[]>([]);
+  const [trashMenu, setTrashMenu] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+
+  const refreshTrashEntries = useCallback(() => {
+    listTrash()
+      .then((res) => setTrashEntries(res?.entries || []))
+      .catch(() => setTrashEntries([]));
+  }, []);
+
+  useEffect(() => {
+    refreshTrashEntries();
+    const timer = window.setInterval(refreshTrashEntries, 20_000);
+    return () => window.clearInterval(timer);
+  }, [refreshTrashEntries]);
+
+  const handleOpenTrash = useCallback(() => {
+    setFileOpenTrash(true);
+    setFileManagerOpen(true);
+    playSystemSound("pop");
+  }, []);
+
+  const handleEmptyTrash = useCallback(() => {
+    if (trashEntries.length === 0) {
+      toast.info("废纸篓已是空的");
+      return;
+    }
+    setFileOpenTrash(true);
+    setFileManagerOpen(true);
+  }, [trashEntries.length]);
+
   const [desktopMode, setDesktopMode] = useState<DesktopMode>("workspace");
   const [desktopActiveRoom, setDesktopActiveRoom] =
     useState<OpenRoomType>("all");
@@ -636,12 +672,33 @@ export default function DesktopShellPage() {
     windows,
     minimized,
     focusedWin,
+    geometries,
     openWindow,
     closeWindow,
     minimizeWindow,
+    restoreWindow,
     focusWindow,
     openWorkspace,
+    updateWindowGeometry,
   } = useDesktopWorkspaces();
+  const [missionControlOpen, setMissionControlOpen] = useState(false);
+
+  // 触控板多指捏合 (Pinch) 与两指滚动快速唤起调度中心
+  const handleDesktopWheel = useCallback(
+    (e: React.WheelEvent<HTMLElement>) => {
+      if ((e.target as HTMLElement).closest("[data-desktop-interactive]")) return;
+      if (e.ctrlKey) {
+        if (e.deltaY < -12 && !missionControlOpen) {
+          setMissionControlOpen(true);
+          playSystemSound("whoosh");
+        } else if (e.deltaY > 12 && missionControlOpen) {
+          setMissionControlOpen(false);
+          playSystemSound("whoosh");
+        }
+      }
+    },
+    [missionControlOpen],
+  );
   useDesktopWorkspaceRequest({
     ready:
       applianceAuthed === true &&
@@ -807,7 +864,13 @@ export default function DesktopShellPage() {
         void lockScreen();
         return;
       }
+      if (event.key === "F3" || (event.ctrlKey && event.key === "ArrowUp")) {
+        event.preventDefault();
+        setMissionControlOpen((prev) => !prev);
+        return;
+      }
       if (event.key !== "Escape") return;
+      setMissionControlOpen(false);
       closeTransient();
     };
     window.addEventListener("keydown", onSystemShortcut);
@@ -1291,6 +1354,7 @@ export default function DesktopShellPage() {
       setContextMenu(null);
       setDesktopMenu(null);
       setNativeWindowMenu(null);
+      setTrashMenu(null);
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -1505,7 +1569,10 @@ export default function DesktopShellPage() {
     <main
       aria-label="Echo OS 桌面"
       className={cn(
-        "macos-desktop-root relative h-screen overflow-hidden bg-transparent text-white",
+        "macos-desktop-root relative h-screen overflow-hidden bg-transparent",
+        desktopTheme,
+        desktopTheme === "theme-white" ? "text-slate-900" : "text-white dark",
+        desktopMode === "pure" && "is-mode-pure",
         `mac-wallpaper-${wallpaper}`,
         `mac-liquid-${liquidGlassStyle}`,
       )}
@@ -1522,6 +1589,7 @@ export default function DesktopShellPage() {
       data-liquid-tint={liquidGlassTuning.tint}
       data-liquid-tint-strength={liquidGlassTuning.tintStrength}
       onPointerMove={liquidGlassPointer.onPointerMove}
+      onWheel={handleDesktopWheel}
       onContextMenu={(event) => {
         const target = event.target;
         if (
@@ -1549,11 +1617,6 @@ export default function DesktopShellPage() {
         wallpaper={wallpaper}
       />
       <MacLiquidGlassWebGL />
-      <div aria-hidden className="mac-liquid-atmosphere">
-        <span className="mac-liquid-caustic is-a" />
-        <span className="mac-liquid-caustic is-b" />
-        <span className="mac-liquid-grain" />
-      </div>
       <section className="relative z-10 flex h-full min-h-0 flex-col">
         <MacMenuBar
           modelStatus={
@@ -1580,6 +1643,7 @@ export default function DesktopShellPage() {
           appStoreAvailable
           onOpenAppStore={openAppStore}
           onOpenLaunchpad={() => setOverlay("launchpad", true)}
+          onToggleMissionControl={() => setMissionControlOpen((prev) => !prev)}
           systemCapabilities={availableSystemActions}
           systemControls={systemControls}
           onLockScreen={lockScreen}
@@ -1629,8 +1693,8 @@ export default function DesktopShellPage() {
             activeRoom={desktopActiveRoom}
             onActiveRoomChange={setDesktopActiveRoom}
             hideTopControlBar={true}
-            onOpenWorkbench={(prompt) =>
-              openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt }))
+            onOpenWorkbench={(prompt, agentId) =>
+              openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt, agentId }))
             }
             onOpenApp={(appId) => {
               const app = visibleDesktopApps.find(
@@ -1658,13 +1722,7 @@ export default function DesktopShellPage() {
                 if (app) openApp(app);
               }}
               onApps={openAppStore}
-            >
-              <MacDesktopWidgets
-                agentHealth={agentDesktopHealth}
-                onOpenWorkspace={() => openApp(DESKTOP_WORKBENCH_APP)}
-                onOpenNotifications={toggleNotifications}
-              />
-            </DesktopStartGuide>
+            />
             <div className="mac-desktop-icons">
               {desktopShortcuts.map((app) => (
                 <MacDesktopIcon key={app.id} app={app} />
@@ -2051,6 +2109,40 @@ export default function DesktopShellPage() {
           </div>
         )}
 
+        {trashMenu && (
+          <div
+            data-desktop-interactive
+            data-liquid-surface="thick"
+            className="mac-desktop-context-menu"
+            style={{
+              left: Math.min(trashMenu.x, window.innerWidth - 210),
+              top: Math.max(10, trashMenu.y - 100),
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                handleOpenTrash();
+                setTrashMenu(null);
+              }}
+            >
+              打开废纸篓
+            </button>
+            <div />
+            <button
+              type="button"
+              disabled={trashEntries.length === 0}
+              onClick={() => {
+                handleEmptyTrash();
+                setTrashMenu(null);
+              }}
+            >
+              清空废纸篓
+            </button>
+          </div>
+        )}
+
         {contextMenu && (
           <div
             data-desktop-interactive
@@ -2084,8 +2176,9 @@ export default function DesktopShellPage() {
           <DockItem onClick={openFinder} title="文件" running>
             <MacAppIcon
               icon={FolderIcon}
-              gradient="linear-gradient(145deg, #6fd0ff, #1c78d3)"
+              gradient="linear-gradient(150deg, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%)"
               appId="system:finder"
+              preferArtwork
             />
           </DockItem>
           <DockItem
@@ -2096,6 +2189,7 @@ export default function DesktopShellPage() {
               icon={MAC_SYSTEM_APPS.launchpad.icon}
               gradient={MAC_SYSTEM_APPS.launchpad.gradient}
               appId="system:launchpad"
+              preferArtwork
             />
           </DockItem>
           <DockItem onClick={openAppStore} title="Echo Hub" running={hubOpen}>
@@ -2104,6 +2198,7 @@ export default function DesktopShellPage() {
               iconUrl={appStoreApp?.iconDataUrl || undefined}
               gradient={MAC_SYSTEM_APPS.appStore.gradient}
               appId="system:app-store"
+              preferArtwork
             />
           </DockItem>
           {visibleDesktopApps
@@ -2127,6 +2222,7 @@ export default function DesktopShellPage() {
                     icon={Icon}
                     gradient={app.color}
                     appId={`echo:${app.route}`}
+                    preferArtwork
                     state={
                       app.route === "/workspace/realtime/new" &&
                       (taskProjection?.counts.active ?? 0) > 0
@@ -2210,8 +2306,9 @@ export default function DesktopShellPage() {
             <div className="relative">
               <MacAppIcon
                 icon={ListChecksIcon}
-                gradient="linear-gradient(145deg, #7c9cff, #4f46d8)"
+                gradient="linear-gradient(150deg, #a5b4fc 0%, #6366f1 60%, #4338ca 100%)"
                 appId="system:tasks"
+                preferArtwork
               />
               {(taskProjection?.counts.waitingApproval ?? 0) > 0 && (
                 <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border border-white/80 bg-amber-500 px-1 text-[9px] font-semibold leading-4 text-white shadow-sm">
@@ -2227,8 +2324,9 @@ export default function DesktopShellPage() {
           >
             <MacAppIcon
               icon={CpuIcon}
-              gradient="linear-gradient(145deg, #29333f, #090d11)"
+              gradient="linear-gradient(150deg, #1e293b 0%, #0f172a 60%, #020617 100%)"
               appId="system:activity-monitor"
+              preferArtwork
             />
           </DockItem>
           <DockItem onClick={openSystemSettings} title="系统设置">
@@ -2236,14 +2334,68 @@ export default function DesktopShellPage() {
               icon={MAC_SYSTEM_APPS.settings.icon}
               gradient={MAC_SYSTEM_APPS.settings.gradient}
               appId="system:settings"
+              preferArtwork
             />
           </DockItem>
           <span className="mac-dock-separator" />
-          <DockItem onClick={() => toast.info("废纸篓为空")} title="废纸篓">
-            <MacAppIcon
-              icon={Trash2Icon}
-              gradient="linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05))"
-              appId="system:trash"
+          {/* 最小化窗口托盘 */}
+          {windows
+            .filter((win) => minimized.has(win.id))
+            .map((win) => (
+              <DockItem
+                key={`minimized:${win.id}`}
+                onClick={() => {
+                  restoreWindow(win.id);
+                  playSystemSound("whoosh");
+                }}
+                title={`${win.title} · 点击恢复窗口`}
+              >
+                <div className="mac-dock-minimized-window">
+                  <div className="mac-dock-mini-titlebar">
+                    <span className="mini-dot bg-[#ff5f56]" />
+                    <span className="mini-dot bg-[#ffbd2e]" />
+                    <span className="mini-dot bg-[#27c93f]" />
+                  </div>
+                  <div className="mac-dock-mini-body">
+                    <span className="text-[8px] font-medium text-slate-200 truncate max-w-[40px] leading-tight select-none">
+                      {win.title}
+                    </span>
+                  </div>
+                  <span className="mac-dock-mini-badge">
+                    <EchoMark tone="brand" className="size-2.5" />
+                  </span>
+                </div>
+              </DockItem>
+            ))}
+          {/* 下载堆栈 (Downloads Stack) */}
+          <DockItem
+            onClick={() => {
+              setFileOpenTrash(false);
+              setFileOpenRequest({ path: "Downloads" });
+              setFileManagerOpen(true);
+              playSystemSound("pop");
+            }}
+            title="下载"
+          >
+            <MacDockDownloadsStack />
+          </DockItem>
+          {/* 原汁原味 macOS 独立立体晶透废纸篓 */}
+          <DockItem
+            onClick={handleOpenTrash}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setTrashMenu({ x: event.clientX, y: event.clientY });
+            }}
+            title={
+              trashEntries.length > 0
+                ? `废纸篓 (${trashEntries.length} 项)`
+                : "废纸篓"
+            }
+          >
+            <MacDockTrash
+              isFull={trashEntries.length > 0}
+              itemCount={trashEntries.length}
             />
           </DockItem>
         </Dock>
@@ -2352,24 +2504,31 @@ export default function DesktopShellPage() {
 
       {fileManagerOpen && (
         <FileManager
+          initialShowTrash={fileOpenTrash}
           onAskAgent={(context) => {
             setFileManagerOpen(false);
+            setFileOpenTrash(false);
             openWorkspace(
               taskWorkspaceRoute({ prompt: desktopAgentDraft(context) }),
             );
           }}
           openRequest={fileOpenRequest}
-          onClose={() => setFileManagerOpen(false)}
+          onClose={() => {
+            setFileManagerOpen(false);
+            setFileOpenTrash(false);
+          }}
           onOpenSystemFiles={
             nativeFileManagerApp
               ? () => {
                   setFileManagerOpen(false);
+                  setFileOpenTrash(false);
                   openNativeApp(nativeFileManagerApp);
                 }
               : undefined
           }
           onOpenSettings={() => {
             setFileManagerOpen(false);
+            setFileOpenTrash(false);
             openStorageSettings();
           }}
         />
@@ -2465,6 +2624,8 @@ export default function DesktopShellPage() {
               index={i}
               focused={focusedWin === win.id}
               hidden={minimized.has(win.id)}
+              initialGeometry={geometries?.[win.id]}
+              onGeometryChange={(geom) => updateWindowGeometry(win.id, geom)}
               onFocus={() => focusWindow(win.id)}
               onClose={() => closeWindow(win.id)}
               onMinimize={() => minimizeWindow(win.id)}
@@ -2510,6 +2671,24 @@ export default function DesktopShellPage() {
         open={launchpadOpen}
         apps={macShellApps}
         onClose={() => setOverlay("launchpad", false)}
+      />
+      <MissionControl
+        open={missionControlOpen}
+        windows={windows}
+        activeWindowId={focusedWin}
+        onSelectWindow={(id) => {
+          playSystemSound("snap");
+          focusWindow(id);
+          setMissionControlOpen(false);
+        }}
+        onCloseWindow={(id) => {
+          playSystemSound("toggle");
+          closeWindow(id);
+        }}
+        onClose={() => {
+          playSystemSound("whoosh");
+          setMissionControlOpen(false);
+        }}
       />
       <MacControlCenter
         open={controlCenterOpen}

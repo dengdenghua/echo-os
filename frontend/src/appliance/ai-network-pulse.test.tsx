@@ -147,6 +147,57 @@ describe("AiNetworkPulse", () => {
     rerender(<AiNetworkPulse selectedModel="deepseek-v3" defaultOpen />);
     expect(screen.getAllByText("DeepSeek-V3").length).toBeGreaterThanOrEqual(1);
   });
+
+  it("reliably opens with pointerdown+click sequence without closing immediately", () => {
+    render(<AiNetworkPulse />);
+    const trigger = screen.getByRole("button", {
+      name: /打开 AI Network 实时脉搏/i,
+    });
+
+    // Simulate real browser mouse interaction: pointerdown then click within 50ms
+    fireEvent.pointerDown(trigger, { button: 0 });
+    fireEvent.click(trigger);
+
+    expect(screen.getByText("ECHO AI NETWORK")).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("data-state", "open");
+  });
+
+  it("reliably closes when clicked again with pointerdown+click sequence", () => {
+    render(<AiNetworkPulse />);
+    const trigger = screen.getByRole("button", {
+      name: /打开 AI Network 实时脉搏/i,
+    });
+
+    // 1. Open
+    fireEvent.pointerDown(trigger, { button: 0 });
+    fireEvent.click(trigger);
+    expect(screen.getByText("ECHO AI NETWORK")).toBeInTheDocument();
+
+    // 2. Click again to close
+    fireEvent.pointerDown(trigger, { button: 0 });
+    fireEvent.click(trigger);
+    expect(screen.queryByText("ECHO AI NETWORK")).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("data-state", "closed");
+  });
+
+  it("targets .macos-desktop-root container when opened inside desktop shell", () => {
+    const { container } = render(
+      <div className="macos-desktop-root">
+        <AiNetworkPulse />
+      </div>,
+    );
+    const trigger = screen.getByRole("button", {
+      name: /打开 AI Network 实时脉搏/i,
+    });
+
+    fireEvent.click(trigger);
+    const menuContent = screen.getByText("ECHO AI NETWORK").closest("[data-slot='dropdown-menu-content']");
+    expect(menuContent).not.toBeNull();
+    // Portal should be inside .macos-desktop-root container
+    const desktopRoot = container.querySelector(".macos-desktop-root");
+    expect(desktopRoot?.contains(menuContent)).toBe(true);
+  });
+
   it("opens the actual registered phone from the device radar", async () => {
     const onOpenPhoneMirror = vi.fn();
     render(<AiNetworkPulse defaultOpen onOpenPhoneMirror={onOpenPhoneMirror} />);

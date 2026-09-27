@@ -28,7 +28,7 @@ export function DesktopStartGuide({
   onResults: () => void;
   onDatabase: () => void;
   onApps: () => void;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <Guide
@@ -129,7 +129,7 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
   };
 
   if (phase === "done" || (phase === "new" && props.completedTasks > 0))
-    return props.children;
+    return props.children ?? null;
   const finished = phase === "started" && props.completedTasks > 0;
 
   if (collapsed) {
