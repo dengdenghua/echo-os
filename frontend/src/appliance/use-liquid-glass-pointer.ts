@@ -39,13 +39,19 @@ export function useLiquidGlassPointer(): LiquidGlassPointerHandlers {
   );
 
   const onPointerMove: PointerEventHandler<HTMLElement> = (event) => {
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
     const now = event.timeStamp || performance.now();
     const previousMotionSample = liquidMotionSampleRef.current;
-    const motion = calculateLiquidGlassMotion(
-      event.clientX - previousMotionSample.x,
-      event.clientY - previousMotionSample.y,
-      previousMotionSample.time > 0 ? now - previousMotionSample.time : 0,
-    );
+    const motion = prefersReducedMotion
+      ? { x: 0, y: 0, energy: 0, settleMs: 0 }
+      : calculateLiquidGlassMotion(
+          event.clientX - previousMotionSample.x,
+          event.clientY - previousMotionSample.y,
+          previousMotionSample.time > 0 ? now - previousMotionSample.time : 0,
+        );
     liquidMotionSampleRef.current = {
       x: event.clientX,
       y: event.clientY,

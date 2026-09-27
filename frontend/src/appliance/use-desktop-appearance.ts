@@ -9,7 +9,7 @@
  * 旧 key 保留（别的组件可能还在读），后续以新 key 为准。
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CSSProperties } from "react";
 
@@ -114,8 +114,14 @@ function loadAppearance(): DesktopAppearance {
     const raw = localStorage.getItem(APPEARANCE_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<DesktopAppearance>;
+      const theme = normalizeTheme(parsed.theme ?? null);
+      let wallpaper = normalizeWallpaper(parsed.wallpaper ?? null);
+      // 暗黑风格下如果仍残留或默认了白天苹果壁纸 (orbit)，自动修正为深邃暗夜 (midnight)
+      if (theme === "theme-dark" && wallpaper === "orbit") {
+        wallpaper = "midnight";
+      }
       return {
-        theme: normalizeTheme(parsed.theme ?? null),
+        theme,
         liquidGlassStyle: normalizeStyle(parsed.liquidGlassStyle ?? null),
         liquidGlassIntensity: normalizeIntensity(
           parsed.liquidGlassIntensity ?? null,
@@ -123,12 +129,19 @@ function loadAppearance(): DesktopAppearance {
         liquidGlassTuning: parsed.liquidGlassTuning
           ? normalizeLiquidGlassTuning(parsed.liquidGlassTuning)
           : DEFAULT_LIQUID_GLASS_TUNING,
-        wallpaper: normalizeWallpaper(parsed.wallpaper ?? null),
+        wallpaper,
       };
     }
     // 旧四键迁移
+    const theme = normalizeTheme(localStorage.getItem("echo-desktop-theme"));
+    let wallpaper = normalizeWallpaper(
+      localStorage.getItem("echo:desktop-wallpaper"),
+    );
+    if (theme === "theme-dark" && wallpaper === "orbit") {
+      wallpaper = "midnight";
+    }
     const migrated: DesktopAppearance = {
-      theme: normalizeTheme(localStorage.getItem("echo-desktop-theme")),
+      theme,
       liquidGlassStyle: normalizeStyle(
         localStorage.getItem("echo:liquid-glass-style"),
       ),
@@ -138,9 +151,7 @@ function loadAppearance(): DesktopAppearance {
       liquidGlassTuning: parseLiquidGlassTuning(
         localStorage.getItem(LIQUID_GLASS_TUNING_STORAGE_KEY),
       ),
-      wallpaper: normalizeWallpaper(
-        localStorage.getItem("echo:desktop-wallpaper"),
-      ),
+      wallpaper,
     };
     return migrated;
   } catch {
@@ -185,6 +196,10 @@ function applyThemeClass(theme: DesktopTheme) {
 export function useDesktopAppearance() {
   const [appearance, setAppearance] =
     useState<DesktopAppearance>(loadAppearance);
+
+  useEffect(() => {
+    applyThemeClass(appearance.theme);
+  }, [appearance.theme]);
 
   const update = useCallback((patch: Partial<DesktopAppearance>) => {
     setAppearance((current) => {

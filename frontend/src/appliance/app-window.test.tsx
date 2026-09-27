@@ -152,4 +152,202 @@ describe("Echo OS desktop application window", () => {
     expect(win.style.getPropertyValue("--window-tilt-y")).toBe("0deg");
     vi.unstubAllGlobals();
   });
+
+  it("restores exact position and dimensions when initialGeometry is provided", () => {
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "custom-geometry-app",
+          title: "自定义窗口",
+          url: "https://example.com",
+        }}
+        index={2}
+        focused
+        initialGeometry={{
+          x: 350,
+          y: 180,
+          w: 720,
+          h: 480,
+          maximized: false,
+        }}
+        onFocus={vi.fn()}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+      />,
+    );
+
+    const win = container.querySelector<HTMLElement>(".mac-window")!;
+    expect(win.style.left).toBe("350px");
+    expect(win.style.top).toBe("180px");
+    expect(win.style.width).toBe("720px");
+    expect(win.style.height).toBe("480px");
+  });
+
+  it("supports sleeping mode, displaying sleep shield and waking up upon click", () => {
+    const onFocus = vi.fn();
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "sleepy-app",
+          title: "休眠应用",
+          url: "https://example.com/heavy",
+        }}
+        index={0}
+        focused={false}
+        onFocus={onFocus}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+      />,
+    );
+
+    const sleepBtn = screen.getByRole("button", { name: /休眠窗口/i });
+    expect(sleepBtn).toBeInTheDocument();
+
+    // Toggle sleep manually
+    fireEvent.click(sleepBtn);
+
+    // Sleep shield should appear
+    expect(screen.getByTestId("window-sleep-shield")).toBeInTheDocument();
+    expect(screen.getByText(/已进入节能休眠/i)).toBeInTheDocument();
+
+    // Iframe should be hidden/invisible
+    const iframe = container.querySelector<HTMLIFrameElement>("iframe")!;
+    expect(iframe).toHaveClass("invisible");
+
+    // Click wake button inside sleep shield
+    const wakeBtn = screen.getByRole("button", { name: /点击即时唤醒/i });
+    fireEvent.click(wakeBtn);
+
+    // Sleep shield should be removed and onFocus called
+    expect(screen.queryByTestId("window-sleep-shield")).toBeNull();
+    expect(iframe).not.toHaveClass("invisible");
+    expect(onFocus).toHaveBeenCalled();
+  });
+
+  it("reveals Quick Tile menu on hovering the zoom button and supports left and right split tiling", () => {
+    vi.useFakeTimers();
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "tile-app",
+          title: "分屏应用",
+          url: "https://example.com",
+        }}
+        index={0}
+        focused
+        onFocus={vi.fn()}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+      />,
+    );
+
+    const zoomBtn = container.querySelector(".mac-traffic-light.zoom")!;
+    const zoomContainer = zoomBtn.parentElement!;
+    expect(zoomContainer).toBeDefined();
+
+    // Hover over zoom container
+    fireEvent.mouseEnter(zoomContainer);
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+
+    // Quick tile menu should be visible
+    expect(screen.getByTestId("window-quick-tile-menu")).toBeInTheDocument();
+    expect(screen.getByText("靠左半屏")).toBeInTheDocument();
+    expect(screen.getByText("靠右半屏")).toBeInTheDocument();
+
+    // Click tile left
+    fireEvent.click(screen.getByText("靠左半屏"));
+    expect(screen.queryByTestId("window-quick-tile-menu")).toBeNull();
+
+    const win = container.querySelector<HTMLElement>(".mac-window")!;
+    expect(parseInt(win.style.width, 10)).toBeGreaterThan(100);
+
+    vi.useRealTimers();
+  });
+
+  it("displays magnetic snap preview when dragged near edge and snaps window on pointerUp", () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(16);
+      return 1;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    const onGeometryChange = vi.fn();
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "snap-app",
+          title: "吸附窗口",
+          url: "https://example.com",
+        }}
+        index={0}
+        focused
+        onFocus={vi.fn()}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+        onGeometryChange={onGeometryChange}
+      />,
+    );
+
+    const titlebar = container.querySelector(".mac-window-titlebar")!;
+    fireEvent.pointerDown(titlebar, { clientX: 200, clientY: 100 });
+
+    // Drag to top edge (clientY <= workArea.y + 26)
+    fireEvent.pointerMove(window, { clientX: 200, clientY: 10 });
+    expect(screen.getByTestId("window-snap-preview")).toBeInTheDocument();
+
+    // Drop window
+    fireEvent.pointerUp(window);
+    expect(screen.queryByTestId("window-snap-preview")).toBeNull();
+    expect(onGeometryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ maximized: true }),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("fluidly un-maximizes when dragging the title bar of a maximized window", () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(16);
+      return 1;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    const onGeometryChange = vi.fn();
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "unmax-app",
+          title: "全屏拖出应用",
+          url: "https://example.com",
+        }}
+        index={0}
+        focused
+        initialGeometry={{
+          x: 0,
+          y: 0,
+          w: 1200,
+          h: 800,
+          maximized: true,
+        }}
+        onFocus={vi.fn()}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+        onGeometryChange={onGeometryChange}
+      />,
+    );
+
+    const titlebar = container.querySelector(".mac-window-titlebar")!;
+    // Drag while maximized
+    fireEvent.pointerDown(titlebar, { clientX: 600, clientY: 20 });
+    const win = container.querySelector<HTMLElement>(".mac-window")!;
+    expect(win).toHaveAttribute("data-window-dragging", "move");
+    expect(onGeometryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ maximized: false }),
+    );
+
+    fireEvent.pointerUp(window);
+    vi.unstubAllGlobals();
+  });
 });

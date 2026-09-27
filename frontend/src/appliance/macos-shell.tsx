@@ -44,6 +44,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { EchoMark } from "@/components/brand/echo-mark";
+import { getMacAppArtwork } from "./mac-app-artworks";
 import type {
   AgentDesktopHealth,
   AgentDesktopHealthState,
@@ -145,13 +146,21 @@ export type MacShellApp = {
 
 export type MacAppIconState = "default" | "active" | "thinking" | "complete";
 
-/** Keep branding on Echo Agent; system apps use familiar supplied glyphs. */
-function MacAppArtwork({ appId }: { appId?: string }): ReactNode {
-  if (appId !== "echo:/workspace/realtime/new") return null;
-
-  return (
-    <EchoMark tone="light" className="mac-app-icon-art mac-shell-icon-art" />
-  );
+/** Render authentic macOS-fidelity artwork for system apps, or branded Echo mark. */
+function MacAppArtwork({
+  appId,
+  preferArtwork = false,
+}: {
+  appId?: string;
+  preferArtwork?: boolean;
+}): ReactNode {
+  if (preferArtwork) return getMacAppArtwork(appId);
+  if (appId === "echo:/workspace/realtime/new") {
+    return (
+      <EchoMark tone="light" className="mac-app-icon-art mac-shell-icon-art" />
+    );
+  }
+  return null;
 }
 
 /** Original fluid ribbon artwork shared by the desktop and lock screen. */
@@ -176,6 +185,8 @@ export function MacAppIcon({
   className,
   liquidBackdrop = false,
   state = "default",
+  artwork,
+  preferArtwork = false,
 }: {
   icon: MacIcon;
   gradient: string;
@@ -184,8 +195,11 @@ export function MacAppIcon({
   className?: string;
   liquidBackdrop?: boolean;
   state?: MacAppIconState;
+  artwork?: ReactNode;
+  preferArtwork?: boolean;
 }) {
-  const appArtwork = iconUrl ? null : MacAppArtwork({ appId });
+  const appArtwork =
+    iconUrl ? null : (artwork ?? MacAppArtwork({ appId, preferArtwork }));
   const echoPalette = appId ? ECHO_APP_ICON_PALETTES[appId] : undefined;
   const showTechField = appId ? ECHO_TECH_FIELD_APP_IDS.has(appId) : false;
 
@@ -340,8 +354,8 @@ export function MacWorkspaceDropdown({
         className={cn(
           "flex items-center gap-1.5 h-[22px] px-2.5 rounded-full text-xs transition-all border cursor-pointer",
           open
-            ? "bg-white/25 text-white border-white/30 shadow-xs"
-            : "bg-white/10 text-white/90 border-white/15 hover:bg-white/20 hover:text-white",
+            ? "bg-current/20 text-inherit border-current/25 shadow-xs"
+            : "bg-current/10 text-inherit border-current/15 hover:bg-current/15",
         )}
         title="桌面空间与模式控制 (点击切换协作空间或纯净态)"
       >
@@ -360,7 +374,7 @@ export function MacWorkspaceDropdown({
         </span>
         <ChevronDownIcon
           className={cn(
-            "size-3 text-white/50 transition-transform duration-150",
+            "size-3 text-inherit opacity-60 transition-transform duration-150",
             open && "rotate-180",
           )}
         />
@@ -479,6 +493,7 @@ export function MacMenuBar({
   desktopTheme = "theme-white",
   onToggleTheme,
   showBattery = false,
+  onToggleMissionControl,
 }: {
   activeApp?: string;
   controlCenterOpen: boolean;
@@ -494,6 +509,7 @@ export function MacMenuBar({
   appStoreAvailable: boolean;
   onOpenAppStore: () => void;
   onOpenLaunchpad: () => void;
+  onToggleMissionControl?: () => void;
   systemCapabilities: MacSystemCapabilities;
   systemControls?: SystemControlState | null;
   onLockScreen: () => void;
@@ -580,6 +596,11 @@ export function MacMenuBar({
       key: "view",
       items: [
         {
+          label: "调度中心 (Mission Control)",
+          shortcut: "F3",
+          onSelect: () => select(() => onToggleMissionControl?.()),
+        },
+        {
           label: "显示应用库",
           shortcut: "F4",
           onSelect: () => select(onOpenLaunchpad),
@@ -622,14 +643,8 @@ export function MacMenuBar({
     <header
       ref={menuRef}
       data-desktop-interactive
-      className="mac-menu-bar"
-      style={{
-        backgroundColor: "#000000",
-        backgroundImage: "none",
-        color: "#ffffff",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
-      }}
+      className={cn("mac-menu-bar", desktopTheme)}
+      data-theme={desktopTheme}
     >
       <div className="mac-menu-left">
         <div className="relative">
@@ -704,8 +719,8 @@ export function MacMenuBar({
                 className={cn(
                   "mac-menu-button",
                   index === 0
-                    ? "font-bold text-white tracking-wide"
-                    : "text-white/85 font-normal",
+                    ? "font-bold text-inherit tracking-wide"
+                    : "text-inherit opacity-90 font-normal",
                   activeMenu === menu.key && "is-active",
                 )}
                 onClick={() =>
@@ -2209,15 +2224,15 @@ export function MacStatusPill() {
 export const MAC_SYSTEM_APPS = {
   launchpad: {
     icon: LayoutGridIcon,
-    gradient: "linear-gradient(145deg, #f7f7fa, #bfc4cf)",
+    gradient: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 60%, #020617 100%)",
   },
   settings: {
     icon: SettingsIcon,
-    gradient: "linear-gradient(145deg, #7f8793, #343940)",
+    gradient: "linear-gradient(150deg, #94a3b8 0%, #475569 60%, #334155 100%)",
   },
   appStore: {
     icon: ShoppingBagIcon,
-    gradient: "linear-gradient(145deg, #72b9ff, #3158d8)",
+    gradient: "linear-gradient(150deg, #38bdf8 0%, #2563eb 55%, #1e40af 100%)",
   },
   notifications: {
     icon: BellIcon,

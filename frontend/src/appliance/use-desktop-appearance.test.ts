@@ -132,3 +132,13 @@ it("survives a corrupt unified payload without throwing", () => {
   expect(result.current.theme).toBe("theme-white");
   expect(result.current.wallpaper).toBe("orbit");
 });
+
+it("normalizes legacy orbit daytime wallpaper to midnight when dark theme is active", () => {
+  localStorage.setItem("echo-desktop-theme", "theme-dark");
+  localStorage.setItem("echo:desktop-wallpaper", "orbit");
+
+  const { result } = renderHook(useDesktopAppearance);
+  expect(result.current.theme).toBe("theme-dark");
+  expect(result.current.wallpaper).toBe("midnight");
+});
+

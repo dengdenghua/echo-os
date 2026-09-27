@@ -1,22 +1,98 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { currentActorId } from "@/core/auth/api";
+import { actorScopedStorageKey } from "@/core/auth/scoped-storage";
 import { threadIdForWorkspaceRoute } from "@/core/router/task-workspace-route";
 import type { DesktopWindow } from "./app-window";
+
+export type WindowGeometry = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  maximized?: boolean;
+};
+
+export type DesktopSessionSnapshot = {
+  version: 1;
+  geometries: Record<string, WindowGeometry>;
+};
+
+const DESKTOP_SESSION_PREFIX = "echo-desktop-session";
+
+function loadSessionSnapshot(actor: string): Record<string, WindowGeometry> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(
+      actorScopedStorageKey(DESKTOP_SESSION_PREFIX, actor),
+    );
+    if (!raw) return null;
+    const data = JSON.parse(raw) as DesktopSessionSnapshot;
+    if (data && data.version === 1 && data.geometries) {
+      return data.geometries;
+    }
+  } catch {
+    // 存储解析失败时忽略
+  }
+  return null;
+}
+
+function persistSessionSnapshot(
+  actor: string,
+  geometries: Record<string, WindowGeometry>,
+) {
+  if (typeof window === "undefined") return;
+  try {
+    const snapshot: DesktopSessionSnapshot = {
+      version: 1,
+      geometries,
+    };
+    window.localStorage.setItem(
+      actorScopedStorageKey(DESKTOP_SESSION_PREFIX, actor),
+      JSON.stringify(snapshot),
+    );
+  } catch {
+    // 存储不可用时静默降级
+  }
+}
 
 type State = {
   windows: DesktopWindow[];
   minimized: Set<string>;
   focusedWin: string | null;
+  geometries: Record<string, WindowGeometry>;
 };
+
 type Action =
-  | { type: "open"; window: DesktopWindow }
+  | { type: "open"; window: DesktopWindow; geometry?: WindowGeometry }
   | { type: "reset" }
-  | { type: "close" | "minimize" | "focus"; id: string }
-  | { type: "route"; id: string; route: string; url: string };
+  | { type: "close" | "minimize" | "restore" | "focus"; id: string }
+  | { type: "route"; id: string; route: string; url: string }
+  | { type: "geometry"; id: string; geometry: WindowGeometry }
+  | { type: "restore_geometries"; geometries: Record<string, WindowGeometry> };
 
 function reduce(state: State, action: Action): State {
   if (action.type === "reset") {
-    return { windows: [], minimized: new Set<string>(), focusedWin: null };
+    return {
+      windows: [],
+      minimized: new Set<string>(),
+      focusedWin: null,
+      geometries: {},
+    };
+  }
+  if (action.type === "restore_geometries") {
+    return {
+      ...state,
+      geometries: action.geometries,
+    };
+  }
+  if (action.type === "geometry") {
+    return {
+      ...state,
+      geometries: {
+        ...state.geometries,
+        [action.id]: action.geometry,
+      },
+    };
   }
   const minimized = new Set(state.minimized);
   if (action.type === "open") {
@@ -47,6 +123,9 @@ function reduce(state: State, action: Action): State {
           }
         : target;
     minimized.delete(target.id);
+    const geometries = action.geometry
+      ? { ...state.geometries, [target.id]: action.geometry }
+      : state.geometries;
     return {
       windows: existing
         ? state.windows.map((entry) =>
@@ -55,6 +134,7 @@ function reduce(state: State, action: Action): State {
         : [...state.windows, target],
       minimized,
       focusedWin: target.id,
+      geometries,
     };
   }
   if (action.type === "route") {
@@ -73,6 +153,14 @@ function reduce(state: State, action: Action): State {
       ),
     };
   }
+  if (action.type === "restore") {
+    minimized.delete(action.id);
+    return {
+      ...state,
+      minimized,
+      focusedWin: action.id,
+    };
+  }
   if (action.type === "focus")
     return state.windows.some((entry) => entry.id === action.id)
       ? { ...state, focusedWin: action.id }
@@ -88,7 +176,7 @@ function reduce(state: State, action: Action): State {
       ? ([...windows].reverse().find((entry) => !minimized.has(entry.id))?.id ??
         null)
       : state.focusedWin;
-  return { windows, minimized, focusedWin };
+  return { windows, minimized, focusedWin, geometries: state.geometries };
 }
 
 /** Resolve identity, restore minimization and focus in a single state transition. */
@@ -96,19 +184,37 @@ export function useDesktopWindows() {
   const actor = currentActorId();
   const ownerRef = useRef(actor);
   const [owner, setOwner] = useState(actor);
-  const [state, dispatch] = useReducer(reduce, {
-    windows: [],
-    minimized: new Set<string>(),
-    focusedWin: null,
-  });
+  const [state, dispatch] = useReducer(
+    reduce,
+    undefined,
+    () => ({
+      windows: [],
+      minimized: new Set<string>(),
+      focusedWin: null,
+      geometries: loadSessionSnapshot(actor) ?? {},
+    }),
+  );
+
   useEffect(() => {
     if (ownerRef.current === actor) return;
     ownerRef.current = actor;
     setOwner(actor);
     dispatch({ type: "reset" });
+    const restored = loadSessionSnapshot(actor);
+    if (restored) {
+      dispatch({ type: "restore_geometries", geometries: restored });
+    }
   }, [actor]);
+
+  useEffect(() => {
+    if (owner === actor) {
+      persistSessionSnapshot(actor, state.geometries);
+    }
+  }, [actor, owner, state.geometries]);
+
   const openWindow = useCallback(
-    (window: DesktopWindow) => dispatch({ type: "open", window }),
+    (window: DesktopWindow, geometry?: WindowGeometry) =>
+      dispatch({ type: "open", window, geometry }),
     [],
   );
   const closeWindow = useCallback(
@@ -117,6 +223,10 @@ export function useDesktopWindows() {
   );
   const minimizeWindow = useCallback(
     (id: string) => dispatch({ type: "minimize", id }),
+    [],
+  );
+  const restoreWindow = useCallback(
+    (id: string) => dispatch({ type: "restore", id }),
     [],
   );
   const focusWindow = useCallback(
@@ -128,14 +238,27 @@ export function useDesktopWindows() {
       dispatch({ type: "route", id, route, url }),
     [],
   );
+  const updateWindowGeometry = useCallback(
+    (id: string, geometry: WindowGeometry) =>
+      dispatch({ type: "geometry", id, geometry }),
+    [],
+  );
+
   return {
     ...(owner === actor
       ? state
-      : { windows: [], minimized: new Set<string>(), focusedWin: null }),
+      : {
+          windows: [],
+          minimized: new Set<string>(),
+          focusedWin: null,
+          geometries: {},
+        }),
     openWindow,
     closeWindow,
     minimizeWindow,
+    restoreWindow,
     focusWindow,
     reportWindowRoute,
+    updateWindowGeometry,
   };
 }
