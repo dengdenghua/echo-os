@@ -669,7 +669,7 @@ def _load_clip_rows(
                     rows.extend(
                         conn.execute(
                             "SELECT path, clip_embedding FROM image_clip "
-                            f"WHERE path IN ({placeholders})",
+                            f"WHERE path IN ({placeholders})",  # nosec B608 # noqa: S608
                             batch,
                         ).fetchall()
                     )

@@ -553,12 +553,12 @@ def _escalation_chain(verdict: ComplexityVerdict) -> list[str]:
 
 
 def _select_private_model(user_model: str | None) -> str:
-    from runtime.platform.models.custom_model_selection import selections_for_entry
-    from runtime.safety.privacy import PrivacyViolation, is_loopback_endpoint
-    from runtime.sensing.model_router.custom_model_flags import (
+    from runtime.platform.models.custom_model_flags import (
         custom_model_entry_for,
         read_custom_models,
     )
+    from runtime.platform.models.custom_model_selection import selections_for_entry
+    from runtime.safety.privacy import PrivacyViolation, is_loopback_endpoint
 
     def local(model: str) -> bool:
         entry = custom_model_entry_for(model)

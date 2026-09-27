@@ -167,8 +167,8 @@ def test_explicit_cloud_model_cannot_override_privacy(monkeypatch):
 
 
 def test_auto_selects_exact_local_catalog_row(monkeypatch):
+    from runtime.platform.models import custom_model_flags
     from runtime.platform.models.custom_model_selection import custom_model_selection_id
-    from runtime.sensing.model_router import custom_model_flags
 
     monkeypatch.setattr(turn_complexity, "_resolve_tier_model", lambda _: None)
     monkeypatch.setattr(

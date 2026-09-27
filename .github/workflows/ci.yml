@@ -450,7 +450,7 @@ jobs:
 
       - name: Bandit SAST
         run: >-
-          uv run bandit -r appliance/ deploy/appliance/verify-running-appliance.py
+          uv run bandit -r appliance/ runtime/ deploy/appliance/verify-running-appliance.py
           deploy/appliance/delivery_source_preflight.py
           deploy/appliance/external_storage.py
           deploy/appliance/nas_data_backup.py

@@ -149,8 +149,8 @@ def _detect_local_model() -> tuple[bool, str | None]:
     """Require a loopback model catalog, not merely an open application port."""
     import urllib.request
 
+    from runtime.platform.models.custom_model_flags import read_custom_models
     from runtime.safety.privacy import is_loopback_endpoint, private_urlopen
-    from runtime.sensing.model_router.custom_model_flags import read_custom_models
 
     endpoints: list[str] = []
     for entry in (read_custom_models() or {}).values():

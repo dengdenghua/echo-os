@@ -567,7 +567,7 @@ class BubblewrapBackend:
         for parent in namespace_parents:
             # /tmp already exists as the private tmpfs mounted above; its
             # descendants still need explicit namespace directories.
-            if parent != Path("/tmp"):
+            if parent != Path("/tmp"):  # nosec B108
                 wrapped.extend(["--dir", str(parent)])
 
         workspace_flag = "--ro-bind" if policy.mode == "read-only" else "--bind"

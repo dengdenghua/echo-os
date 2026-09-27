@@ -146,7 +146,7 @@ def _fetch_registry_metadata(url: str, timeout: float) -> dict[str, Any]:
             "User-Agent": "Echo-Codex-Update-Radar/1.0",
         },
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310 # noqa: S310
         content_length = response.headers.get("Content-Length")
         if content_length and int(content_length) > MAX_RESPONSE_BYTES:
             raise ValueError("Codex registry response is too large")

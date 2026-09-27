@@ -80,16 +80,24 @@ def require_local_router(router: Any, model: str | None = None) -> None:
         return
     # Only adapters whose HTTP transport is configured without ambient
     # proxies or redirects are admitted. Unknown adapters fail closed.
-    from runtime.sensing.model_router.ollama_router import OllamaModelRouter
-    from runtime.sensing.model_router.openai_responses_router import OpenAIResponsesModelRouter
-    from runtime.sensing.model_router.openai_router import OpenAIModelRouter
+    router_type_name = type(router).__name__
+    router_type_module = type(router).__module__ or ""
 
-    if type(router) is OllamaModelRouter:
-        endpoint = router._base_url
-    elif type(router) is OpenAIModelRouter:
-        endpoint = router.base_url
-    elif type(router) is OpenAIResponsesModelRouter:
-        endpoint = router._responses_url
+    if (
+        router_type_module.startswith("runtime.sensing.model_router.")
+        and router_type_name == "OllamaModelRouter"
+    ):
+        endpoint = getattr(router, "_base_url", None)
+    elif (
+        router_type_module.startswith("runtime.sensing.model_router.")
+        and router_type_name == "OpenAIModelRouter"
+    ):
+        endpoint = getattr(router, "base_url", None)
+    elif (
+        router_type_module.startswith("runtime.sensing.model_router.")
+        and router_type_name == "OpenAIResponsesModelRouter"
+    ):
+        endpoint = getattr(router, "_responses_url", None)
     else:
         deny_private_operation("unverified_model_adapter")
         return
@@ -115,7 +123,7 @@ def private_urlopen(request: urllib.request.Request, *, timeout: float):
     """Keep private HTTP calls off ambient proxies and redirect chains."""
     require_local_endpoint(request.full_url, operation="local_service_request")
     if not privacy_enabled():
-        return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
+        return urllib.request.urlopen(request, timeout=timeout)  # nosec B310 # noqa: S310
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
     return opener.open(request, timeout=timeout)  # noqa: S310
 

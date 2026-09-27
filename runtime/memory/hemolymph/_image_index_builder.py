@@ -179,8 +179,8 @@ def build_index(
             "image_face_sources",
         )
         for table in tables:
-            conn.execute(f"CREATE TEMP TABLE previous_{table} AS SELECT * FROM {table}")
-            conn.execute(f"DELETE FROM {table}")
+            conn.execute(f"CREATE TEMP TABLE previous_{table} AS SELECT * FROM {table}")  # nosec B608 — static internal tuple
+            conn.execute(f"DELETE FROM {table}")  # nosec B608 — static internal tuple
         previous_paths = {row[0] for row in conn.execute("SELECT path FROM previous_image_meta")}
         previous_vectors = (
             {
@@ -412,14 +412,14 @@ def build_index(
         # Legacy rows have no fingerprint and are conservatively invalidated.
         for table in ("image_tags", "image_ocr"):
             if not same_root:
-                conn.execute(f"DELETE FROM {table}")
+                conn.execute(f"DELETE FROM {table}")  # nosec B608 # static internal tuple
                 continue
             conn.execute(
-                f"DELETE FROM {table} WHERE NOT EXISTS ("
+                f"DELETE FROM {table} WHERE NOT EXISTS ("  # nosec B608 # static internal tuple
                 "SELECT 1 FROM image_meta m JOIN previous_image_meta p ON p.path=m.path "
                 "JOIN image_fingerprints n ON n.path=m.path "
                 "JOIN previous_image_fingerprints o ON o.path=m.path "
-                f"WHERE m.path={table}.path AND m.mtime=p.mtime "
+                f"WHERE m.path={table}.path AND m.mtime=p.mtime "  # nosec B608
                 "AND m.width=p.width AND m.height=p.height AND n.fingerprint=o.fingerprint)"
             )
         conn.execute(
