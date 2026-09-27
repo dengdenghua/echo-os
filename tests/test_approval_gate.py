@@ -229,3 +229,29 @@ class TestRuleBasedProvider:
         provider.request(_req("exec_shell"))
 
         assert fallback.calls == 2
+
+
+def test_every_registered_code_execution_skill_needs_approval() -> None:
+    """A skill that runs arbitrary code must never fall through as low risk.
+
+    ``ipython`` was once missing from the name lists and was auto-allowed
+    under the default ``low="allow"`` policy despite running any Python.
+    Derive the set from the real registry so a new exec skill cannot drift.
+    """
+    from runtime.execution.suckers.registry import SkillRegistry
+    from runtime.execution.suckers.write_skills import register_exec_skill
+    from runtime.safety.approval.approval_gate import assess_approval_risk
+
+    registry = SkillRegistry()
+    register_exec_skill(registry)
+    runners = [
+        name
+        for name in registry.all_names()
+        if {"exec", "dangerous"} <= set(registry.get(name).affinity or [])
+        and not name.startswith(("kill_", "read_"))
+    ]
+
+    assert {"exec_shell", "ipython", "background_exec"} <= set(runners)
+    for name in runners:
+        assert is_dangerous_tool(name), name
+        assert assess_approval_risk(name).level in {"high", "critical"}, name

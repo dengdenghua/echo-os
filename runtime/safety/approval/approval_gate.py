@@ -107,6 +107,9 @@ class ApprovalRiskPolicy:
 DANGEROUS_TOOLS: frozenset[str] = frozenset(
     {
         "exec_shell",
+        "background_exec",
+        # Runs arbitrary Python in a subprocess — as capable as exec_shell.
+        "ipython",
         "write_text_file",
         "append_text_file",
         "edit_text_file",
@@ -234,6 +237,7 @@ def assess_approval_risk(
         "background_exec",
         "run_command",
         "exec_command",
+        "ipython",
         "run_python",
         "python_exec",
         "run_code",

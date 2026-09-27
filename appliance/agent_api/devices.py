@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import secrets
+from collections.abc import Callable
 from typing import Any
+
+from fastapi import APIRouter
 
 
 def normalize_device_hello(payload: dict[str, Any]) -> dict[str, Any]:
@@ -24,6 +27,18 @@ def set_active_device_coordinator(coordinator: Any) -> None:
     set_active_coordinator(coordinator)
 
 
+def create_device_task_workspace_router(get_coordinator: Callable[[], Any]) -> APIRouter:
+    from runtime.tentacle.task_workspace_api import create_task_workspace_router
+
+    return create_task_workspace_router(get_coordinator)
+
+
+def create_device_mirror_router(get_coordinator: Callable[[], Any]) -> APIRouter:
+    from runtime.tentacle.mirror_api import create_mirror_router
+
+    return create_mirror_router(get_coordinator)
+
+
 def create_device_coordinator(context: Any, *, port: int) -> Any:
     from runtime.core.cerebrum.planner import StaticPlanner
     from runtime.tentacle.coordinator import TentacleCoordinator
@@ -41,4 +56,9 @@ def create_device_coordinator(context: Any, *, port: int) -> Any:
     )
 
 
-__all__ = ["create_device_coordinator", "set_active_device_coordinator"]
+__all__ = [
+    "create_device_coordinator",
+    "create_device_mirror_router",
+    "create_device_task_workspace_router",
+    "set_active_device_coordinator",
+]

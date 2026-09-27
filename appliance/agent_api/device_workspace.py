@@ -6,9 +6,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
+from appliance.agent_api.devices import (
+    create_device_mirror_router,
+    create_device_task_workspace_router,
+)
 from appliance.security import ApplianceAuthenticator
-from runtime.tentacle.mirror_api import create_mirror_router
-from runtime.tentacle.task_workspace_api import create_task_workspace_router
 
 
 def create_device_workspace_router(
@@ -20,8 +22,8 @@ def create_device_workspace_router(
         tags=["device-workspace"],
         dependencies=[Depends(authenticator.operator_dependency())],
     )
-    router.include_router(create_mirror_router(lambda: service._coordinator))
-    router.include_router(create_task_workspace_router(lambda: service._coordinator))
+    router.include_router(create_device_mirror_router(lambda: service._coordinator))
+    router.include_router(create_device_task_workspace_router(lambda: service._coordinator))
 
     @router.get("/devices")
     def devices() -> list[dict[str, Any]]:

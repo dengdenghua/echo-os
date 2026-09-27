@@ -630,16 +630,18 @@ def create_device_link_router(
         jwt_secret=jwt_secret, authenticator=authenticator
     ).operator_dependency()
 
-    from runtime.tentacle.mirror_api import create_mirror_router
-    from runtime.tentacle.task_workspace_api import create_task_workspace_router
+    from appliance.agent_api.devices import (
+        create_device_mirror_router,
+        create_device_task_workspace_router,
+    )
 
     router.include_router(
-        create_task_workspace_router(lambda: service._coordinator),
+        create_device_task_workspace_router(lambda: service._coordinator),
         dependencies=[Depends(require_operator)],
     )
 
     router.include_router(
-        create_mirror_router(lambda: service._coordinator),
+        create_device_mirror_router(lambda: service._coordinator),
         dependencies=[Depends(require_operator)],
     )
 

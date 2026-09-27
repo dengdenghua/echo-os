@@ -137,6 +137,14 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             ("decide",),
         ),
         _Symbol("active_bridge", "runtime.tentacle.team_bridge", "set_active_coordinator"),
+        _Symbol("hello", "runtime.tentacle.transport.device_protocol", "normalize_hello"),
+        _Symbol("socket", "runtime.tentacle.transport.asgi", "serve_device_socket"),
+        _Symbol(
+            "task_workspace_router",
+            "runtime.tentacle.task_workspace_api",
+            "create_task_workspace_router",
+        ),
+        _Symbol("mirror_router", "runtime.tentacle.mirror_api", "create_mirror_router"),
     ),
     "skills": (
         _Symbol("skill", "runtime.execution.suckers.registry", "Skill"),

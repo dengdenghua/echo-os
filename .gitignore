@@ -63,6 +63,7 @@ test-results/
 .echo/*.bak
 .echo/*.lock
 .echo/archive/
+.echo-*/
 
 # WorkBuddy agent workspace: per-session reports and curated memory notes live
 # here. They describe work in progress, not shipped source, so they stay local

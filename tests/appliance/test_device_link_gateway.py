@@ -88,5 +88,9 @@ def test_gateway_does_not_promote_unauthenticated_loopback_listener():
     async def endpoint(websocket: WebSocket):
         await serve_device_socket(websocket, coordinator.ws_server)
 
-    with TestClient(app) as client, pytest.raises(WebSocketDisconnect), client.websocket_connect("/device/ws"):
+    with (
+        TestClient(app) as client,
+        pytest.raises(WebSocketDisconnect),
+        client.websocket_connect("/device/ws"),
+    ):
         pass
