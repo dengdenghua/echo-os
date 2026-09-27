@@ -487,6 +487,14 @@ export interface EchoElectronAPI {
      * inspector button so the user can examine runtime errors). */
     openDevTools: () => Promise<{ ok: boolean; error?: string }>;
     isFullScreen: () => Promise<{ ok: boolean; fullScreen?: boolean }>;
+    getScreenBounds?: () => Promise<{
+      ok: boolean;
+      windowBounds?: { x: number; y: number; width: number; height: number };
+      bounds?: { x: number; y: number; width: number; height: number };
+      workArea?: { x: number; y: number; width: number; height: number };
+      scaleFactor?: number;
+      error?: string;
+    }>;
   };
 
   /** Optional compatibility hook. Echo OS does not bundle the legacy pet

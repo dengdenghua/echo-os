@@ -13,6 +13,7 @@ const {
   net,
   protocol,
   safeStorage,
+  screen,
   shell,
   session,
   systemPreferences,
@@ -24,6 +25,10 @@ const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { spawnBackend, killBackend } = require("./backend-runtime.cjs");
+const {
+  isSameAppLocation,
+  safeOpenExternal,
+} = require("./safe-external-url.cjs");
 const desktopUpdater = require("./desktop-updater.cjs");
 const desktopProtocol = require("./desktop-protocol.cjs");
 const shellProfile = require("./shell-profile.cjs");
@@ -101,6 +106,9 @@ if (process.platform === "win32") {
 }
 
 let mainWindow = null;
+// URL the main window's renderer is served from (packaged entry or dev server).
+// IPC and main-frame navigation are only trusted on this location.
+let appRendererUrl = null;
 let nativeLiquidGlassController = null;
 let nativeLiquidGlassSmokeLogged = false;
 const BROWSER_PARTITION = "persist:echo-browser";
@@ -685,12 +693,23 @@ async function loadEnabledExtensions() {
 
 // ── IPC wiring ─────────────────────────────────────────────────
 function registerIpc() {
+  // The preload bridge exposes shell-level capabilities (openPath, file moves,
+  // system actions). Only the app's own renderer may reach them — never a
+  // foreign page the main frame was steered to, nor another webContents.
   const handle = (channel, fn) =>
-    ipcMain.handle(channel, async (_event, ...args) => fn(...args));
+    ipcMain.handle(channel, async (event, ...args) => {
+      if (
+        event.sender !== mainWindow?.webContents ||
+        !isSameAppLocation(event.senderFrame?.url, appRendererUrl)
+      ) {
+        throw new Error(`[echo] IPC ${channel} rejected: untrusted sender`);
+      }
+      return fn(...args);
+    });
 
   // app
   handle("app:getVersion", () => app.getVersion());
-  handle("app:openExternal", (url) => shell.openExternal(url));
+  handle("app:openExternal", (url) => safeOpenExternal(shell, url));
   handle("app:getPlatform", () => process.platform);
 
   // macOS 26+: only bounded surface geometry crosses this bridge. The renderer
@@ -877,6 +896,30 @@ function registerIpc() {
     ok: true,
     fullScreen: mainWindow?.isFullScreen() ?? false,
   }));
+  handle("window:getScreenBounds", () => {
+    try {
+      if (!mainWindow) {
+        const primary = screen.getPrimaryDisplay();
+        return {
+          ok: true,
+          bounds: primary.bounds,
+          workArea: primary.workArea,
+          scaleFactor: primary.scaleFactor,
+        };
+      }
+      const winBounds = mainWindow.getBounds();
+      const display = screen.getDisplayMatching(winBounds);
+      return {
+        ok: true,
+        windowBounds: winBounds,
+        bounds: display.bounds,
+        workArea: display.workArea,
+        scaleFactor: display.scaleFactor,
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
 
   // desktop organizer
   handle("desktop:getAutomationPermissions", () => {
@@ -1447,8 +1490,21 @@ function createMainWindow() {
     win.webContents.send("window:fullscreen-changed", { fullScreen: false });
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    safeOpenExternal(shell, url);
     return { action: "deny" };
+  });
+  // Leaving the app location would hand `window.echo` to foreign content, so
+  // keep the main frame on the renderer and send ordinary links outward.
+  win.webContents.on("will-navigate", (event, url) => {
+    const target = event.url ?? url;
+    if (isSameAppLocation(target, appRendererUrl)) return;
+    event.preventDefault();
+    void safeOpenExternal(shell, target);
+  });
+  win.webContents.on("will-redirect", (event, url) => {
+    if (!isSameAppLocation(event.url ?? url, appRendererUrl)) {
+      event.preventDefault();
+    }
   });
   if (DESKTOP_SESSION) {
     win.webContents.once("did-finish-load", () => {
@@ -1476,10 +1532,12 @@ function createMainWindow() {
     const entry = DESKTOP_SESSION
       ? `${desktopProtocol.DESKTOP_APP_ENTRY_URL}#/desktop`
       : desktopProtocol.DESKTOP_APP_ENTRY_URL;
+    appRendererUrl = entry;
     win.loadURL(entry).catch((error) => {
       console.error("[echo] desktop renderer failed to load:", error);
     });
   } else {
+    appRendererUrl = DEV_URL;
     win.loadURL(DEV_URL);
     win.webContents.on("did-fail-load", (_e, code, desc) => {
       console.error(
