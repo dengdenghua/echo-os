@@ -278,9 +278,12 @@ def test_runtime_does_not_enable_runner_without_subagent_executor(tmp_path) -> N
     assert runtime.runner is None
     assert runtime.runner_enabled is False
     assert "not configured" in runtime.runner_reason
+    # ``cancelled`` joined the durable task ledger with the coordination layer
+    # (a cancelled coordination task is terminal but distinct from ``failed``).
     assert runtime.status("t")["task_counts"] == {
         "pending": 0,
         "working": 0,
         "done": 0,
         "failed": 0,
+        "cancelled": 0,
     }

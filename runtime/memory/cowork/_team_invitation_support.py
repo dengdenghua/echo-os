@@ -226,7 +226,7 @@ def _reservation_row(
     actor_id: str,
 ) -> sqlite3.Row | None:
     return conn.execute(
-        f"SELECT {_RESERVATION_COLUMNS} FROM team_invitation_reservations "  # noqa: S608
+        f"SELECT {_RESERVATION_COLUMNS} FROM team_invitation_reservations "  # nosec B608 # noqa: S608
         "WHERE invite_id = ? AND actor_id = ?",
         (invite_id, actor_id),
     ).fetchone()
@@ -234,7 +234,7 @@ def _reservation_row(
 
 def _reservation_by_id(conn: sqlite3.Connection, reservation_id: str) -> sqlite3.Row | None:
     return conn.execute(
-        f"SELECT {_RESERVATION_COLUMNS} FROM team_invitation_reservations "  # noqa: S608
+        f"SELECT {_RESERVATION_COLUMNS} FROM team_invitation_reservations "  # nosec B608 # noqa: S608
         "WHERE reservation_id = ?",
         (reservation_id,),
     ).fetchone()

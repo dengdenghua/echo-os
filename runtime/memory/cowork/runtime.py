@@ -119,7 +119,9 @@ def _history_provider(thread_store: Any):
     return _history
 
 
-def _execute_subagent_task(task: AsyncTask, context: dict[str, Any]) -> str:
+def _execute_subagent_task(
+    task: AsyncTask, context: dict[str, Any], *, coordination: Any = None
+) -> str:
     from runtime.execution.subagents import call_subagent
     from runtime.platform.process.session import Session, current_session
 
@@ -146,6 +148,18 @@ def _execute_subagent_task(task: AsyncTask, context: dict[str, Any]) -> str:
             "cowork_task_id": task.task_id,
         }
     )
+    # A coordinated durable task restores the execution policy that was
+    # captured when the work was enqueued (see coordination_policy.capture_policy).
+    # The policy supplies the scoped metadata the original caller was entitled
+    # to; it never widens the host-bound identity established above, so a
+    # delayed task still cannot inherit an expired foreground lease.
+    if coordination is not None:
+        ledger = getattr(coordination, "ledger", None)
+        coordinated_task = ledger.get(task.task_id) if ledger is not None else None
+        if coordinated_task:
+            policy = ledger.context(task.task_id)
+            inherited_metadata.update(policy.get("metadata") or {})
+            inherited_metadata["_coordination_task_id"] = task.task_id
     task_session = Session(
         actor=str(task.created_by or getattr(parent, "actor", None) or "").strip() or None,
         thread_id=task.thread_id,
