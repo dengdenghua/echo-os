@@ -239,6 +239,7 @@ class DeviceLinkService:
         # change in a future Agent release.
         server.auth_token = secrets.token_urlsafe(32)
         server._check_auth = self._check_hello_auth
+        server.is_per_device_auth = True
 
     def _check_hello_auth(self, message: dict[str, Any]) -> bool:
         params = message.get("params")

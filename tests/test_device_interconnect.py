@@ -25,6 +25,7 @@ TOKEN = "test-device-token-not-a-production-credential"
 
 @pytest_asyncio.fixture
 async def hub(monkeypatch):
+    monkeypatch.setenv("ECHO_ALLOW_INSECURE_SHARED_TOKEN_PEER_CALLS", "1")
     monkeypatch.setenv(
         "ECHO_DEVICE_PEER_GRANTS",
         json.dumps(
@@ -239,3 +240,129 @@ def test_metadata_cannot_override_identity_or_protocol():
     assert hello["tentacle_id"] == "real" and "auth_token" not in hello
     with pytest.raises(ValueError, match="version"):
         normalize_hello({"tentacle_id": "phone", "protocol_version": "99.0"})
+
+
+@pytest.mark.asyncio
+async def test_peer_call_rejected_without_per_device_auth_or_insecure_flag(hub, monkeypatch):
+    coordinator, url = hub
+    monkeypatch.delenv("ECHO_ALLOW_INSECURE_SHARED_TOKEN_PEER_CALLS", raising=False)
+    async with connect(url) as phone:
+        await register(phone)
+        await phone.send(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "unauthorized-peer-call",
+                    "method": "device/call",
+                    "params": {
+                        "target_device_id": "vm-1",
+                        "tool": "workspace.write_text",
+                        "args": {"path": "test.txt", "text": "blocked"},
+                    },
+                }
+            )
+        )
+        response = json.loads(await asyncio.wait_for(phone.recv(), 3))
+        assert response["error"]["code"] == -32098
+        assert "per-device credentials" in response["error"]["message"]
+
+        # Enabling per-device auth mode allows the call past the -32098 gate
+        coordinator.ws_server.is_per_device_auth = True
+        await phone.send(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": "authorized-peer-call",
+                    "method": "device/call",
+                    "params": {
+                        "target_device_id": "vm-1",
+                        "tool": "workspace.write_text",
+                        "args": {"path": "test.txt", "text": "allowed"},
+                    },
+                }
+            )
+        )
+        response2 = json.loads(await asyncio.wait_for(phone.recv(), 3))
+        # vm-1 is not connected yet, so execution fails at the device layer, NOT at -32098
+        assert response2.get("error", {}).get("code") != -32098
+
+
+@pytest.mark.asyncio
+async def test_peer_call_respects_device_lease_and_generates_receipt(hub, tmp_path):
+    coordinator, url = hub
+    vm = DeviceClient(
+        url=url,
+        token=TOKEN,
+        device_id="vm-1",
+        device_kind="vm",
+        tools=DesktopTools(workspace=tmp_path),
+    )
+    task = asyncio.create_task(vm.run_once())
+    try:
+        await asyncio.wait_for(vm.ready.wait(), 3)
+        async with connect(url) as phone:
+            await register(phone)
+
+            # 1. Acquire lease by competing owner
+            locked = await coordinator.pool.acquire_lock(
+                "vm-1", owner="task:competing-task", task_id="task-100"
+            )
+            assert locked is True
+
+            # Peer call should be rejected due to lease lock
+            await phone.send(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": "blocked-by-lease",
+                        "method": "device/call",
+                        "params": {
+                            "target_device_id": "vm-1",
+                            "tool": "workspace.write_text",
+                            "args": {"path": "lease-test.txt", "text": "cannot overwrite"},
+                        },
+                    }
+                )
+            )
+            response = json.loads(await asyncio.wait_for(phone.recv(), 3))
+            assert response["error"]["code"] == -32016
+            assert "lease is held by another task" in response["error"]["message"].lower()
+
+            # 2. Release competing lease and re-acquire by this device
+            released = await coordinator.pool.release_lock("vm-1", owner="task:competing-task")
+            assert released is True
+            acquired = await coordinator.pool.acquire_lock(
+                "vm-1", owner="device:android-emulator-1", task_id="peer-task"
+            )
+            assert acquired is True
+
+            await phone.send(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": "call-with-own-lease",
+                        "method": "device/call",
+                        "params": {
+                            "target_device_id": "vm-1",
+                            "tool": "workspace.write_text",
+                            "args": {"path": "lease-test.txt", "text": "written under lease"},
+                        },
+                    }
+                )
+            )
+            response = json.loads(await asyncio.wait_for(phone.recv(), 3))
+            assert response["result"]["success"] is True
+
+            # Verify receipt in coordinator.device_executor.ledger
+            receipts = coordinator.device_executor.ledger.list(device_id="vm-1")
+            assert len(receipts) >= 1
+            latest = receipts[0]
+            assert latest.action == "workspace.write_text"
+            assert latest.device_id == "vm-1"
+            assert latest.trace_id == "device:android-emulator-1"
+            assert latest.success is True
+            assert latest.lease_id is not None
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task

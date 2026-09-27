@@ -39,6 +39,7 @@ from runtime.pet import PetUdpBridge
 from runtime.platform.process.paths import app_paths
 
 from .base import Heartbeat, ToolCall, ToolResult
+from .execution import DeviceActionExecutor
 from .mobile.cerebrum_adapter import CerebrumDecisionAdapter
 from .mobile.device import MobileDevice
 from .mobile.pc_screen_capture import (
@@ -74,8 +75,10 @@ def _build_device_from_hello(
         from .remote_device import RemoteDesktopDevice
 
         return RemoteDesktopDevice(
-            tentacle_id=hello.tentacle_id, device_meta=hello.to_meta(),
-            ws_server=ws_server, capabilities=hello.capabilities,
+            tentacle_id=hello.tentacle_id,
+            device_meta=hello.to_meta(),
+            ws_server=ws_server,
+            capabilities=hello.capabilities,
         )
     if hello.platform == "ios":
         from .ios.device import IOSDevice
@@ -132,6 +135,7 @@ class TentacleCoordinator:
         self.transfer_journal_path = app_paths().data_dir / "tentacle" / "transfers.sqlite3"
         self._discovery_host = host
         self.pool = TentaclePool()
+        self.device_executor = DeviceActionExecutor(self.pool)
         self._pet_bridge = PetUdpBridge()
         self.pool.subscribe_screen_changes(self._pet_bridge.on_pool_event)
         # 屏幕流中继服务
@@ -148,6 +152,7 @@ class TentacleCoordinator:
             host=host,
             port=port,
             auth_token=auth_token,
+            action_executor=self.device_executor,
             on_device_hello=self._on_device_hello,
             on_device_disconnect=self._on_device_disconnect,
             on_heartbeat=self._on_heartbeat,
@@ -347,7 +352,9 @@ class TentacleCoordinator:
             return {"success": False, "error": "Remote input not enabled"}
         return await self.remote_input_handler.handle_input(event)
 
-    async def _on_task_workspace(self, source: str, message: dict[str, Any], ws: WebSocketConnection) -> None:
+    async def _on_task_workspace(
+        self, source: str, message: dict[str, Any], ws: WebSocketConnection
+    ) -> None:
         from .task_workspace import get_task_workspace
 
         if self.ws_server._connections.get(source) is not ws:
@@ -357,11 +364,18 @@ class TentacleCoordinator:
                 raise ValueError("任务请求过大")
             command = message["method"].removeprefix("task/workspace/")
             result = await get_task_workspace(self).dispatch(
-                command, message.get("params", {}), actor=f"device:{source}", source=source,
+                command,
+                message.get("params", {}),
+                actor=f"device:{source}",
+                source=source,
             )
             reply = {"jsonrpc": "2.0", "id": message.get("id"), "result": result}
         except (ValueError, TypeError, PermissionError) as exc:
-            reply = {"jsonrpc": "2.0", "id": message.get("id"), "error": {"code": -32004, "message": str(exc)}}
+            reply = {
+                "jsonrpc": "2.0",
+                "id": message.get("id"),
+                "error": {"code": -32004, "message": str(exc)},
+            }
         await ws.send(json.dumps(reply, ensure_ascii=False))
 
     async def _on_task_execute(self, request: TaskExecuteRequest, ws: WebSocketConnection) -> None:
