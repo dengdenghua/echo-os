@@ -155,6 +155,8 @@ EMBEDDED_RUNTIME_TESTS = (
     "tests/appliance/test_native_docker_control.py",
     "tests/appliance/test_native_docker_health.py",
     "tests/appliance/test_device_link.py",
+    "tests/appliance/test_device_link_gateway.py",
+    "tests/appliance/test_phone_mirror_bridge.py",
     "tests/appliance/test_entrypoint.py",
     "tests/appliance/test_document_worker_packaging.py",
     "tests/appliance/test_extension.py",
