@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DESKTOP_WALLPAPER_URL } from "./desktop-wallpaper";
 import {
   BatteryChargingIcon,
   BellIcon,
@@ -92,7 +93,7 @@ function SettingsRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-20 items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-b-0">
+    <div className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 xl:flex xl:gap-4 xl:px-5">
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
         <Icon className="size-5" />
       </span>
@@ -102,7 +103,9 @@ function SettingsRow({
           {description}
         </small>
       </span>
-      {children ? <span className="shrink-0">{children}</span> : null}
+      {children ? (
+        <span className="col-span-2 min-w-0 xl:shrink-0">{children}</span>
+      ) : null}
     </div>
   );
 }
@@ -153,7 +156,7 @@ function ControlSlider({
   const [preview, setPreview] = useState(value);
   useEffect(() => setPreview(value), [value]);
   return (
-    <div className="flex w-64 items-center gap-3">
+    <div className="flex w-full min-w-0 items-center gap-3 xl:w-64">
       <input
         aria-label={label}
         className="w-full accent-blue-600"
@@ -178,27 +181,22 @@ function ControlSlider({
 const WALLPAPERS: Array<{
   id: Wallpaper;
   label: string;
-  gradient: string;
 }> = [
   {
     id: "orbit",
     label: "轨道",
-    gradient: "linear-gradient(135deg,#1d4ed8,#67e8f9 55%,#f8fafc)",
   },
   {
     id: "aurora",
     label: "极光",
-    gradient: "linear-gradient(135deg,#081f3d,#16a34a 52%,#a7f3d0)",
   },
   {
     id: "sunset",
     label: "日落",
-    gradient: "linear-gradient(135deg,#7c2d12,#fb7185 52%,#fde68a)",
   },
   {
     id: "midnight",
     label: "午夜",
-    gradient: "linear-gradient(135deg,#020617,#312e81 55%,#0f172a)",
   },
 ];
 
@@ -410,9 +408,21 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
                   }`}
                 >
                   <span
-                    className="block aspect-[16/10] rounded-lg"
-                    style={{ background: item.gradient }}
-                  />
+                    className={`mac-wallpaper-${item.id} relative block aspect-[16/10] overflow-hidden rounded-lg`}
+                    aria-hidden="true"
+                  >
+                    <span className="desktop-wallpaper absolute inset-0">
+                      <img
+                        className="desktop-wallpaper-art"
+                        src={DESKTOP_WALLPAPER_URL}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-a" />
+                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-b" />
+                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-c" />
+                    </span>
+                  </span>
                   <span className="mt-2 flex items-center justify-between px-1 text-xs font-medium">
                     {item.label}
                     {selected ? (

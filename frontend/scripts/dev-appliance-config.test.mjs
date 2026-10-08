@@ -182,11 +182,15 @@ test("launcher preflight is read-only and does not expose credentials", () => {
       FRONTEND_PORT: "3100",
     },
   });
-  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.status, 1, result.stderr);
   const report = JSON.parse(result.stdout);
-  assert.equal(report.check, "development-configuration-only");
-  assert.equal(report.port, 8100);
-  assert.equal(report.frontendPort, 3100);
+  assert.equal(report.check, "development-instance-preflight");
+  assert.equal(report.ports.backend, 8100);
+  assert.equal(report.ports.frontend, 3100);
+  assert.equal(report.ok, false);
+  assert.ok(
+    report.errors.some((error) => error.includes("Python import probe")),
+  );
   assert.equal(existsSync(data), false);
   assert.equal(
     (result.stdout + result.stderr).includes("must-not-appear"),

@@ -11,6 +11,23 @@ vi.mock("sonner", () => ({
 }));
 
 describe("IntentDesktopSurface keyboard contracts", () => {
+  it("leaves focus and desktop mode unchanged while a modal is open", () => {
+    const onModeChange = vi.fn();
+    render(
+      <>
+        <IntentDesktopSurface mode="workspace" onModeChange={onModeChange} />
+        <div role="dialog" aria-modal="true">
+          <input aria-label="弹窗输入" />
+        </div>
+      </>,
+    );
+    const field = screen.getByLabelText("弹窗输入");
+    field.focus();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "d", altKey: true });
+    expect(field).toHaveFocus();
+    expect(onModeChange).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();

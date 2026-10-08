@@ -680,13 +680,14 @@ export default function DesktopShellPage() {
     focusWindow,
     openWorkspace,
     updateWindowGeometry,
-  } = useDesktopWorkspaces();
+  } = useDesktopWorkspaces(useCallback(() => setDesktopMode("workspace"), []));
   const [missionControlOpen, setMissionControlOpen] = useState(false);
 
   // 触控板多指捏合 (Pinch) 与两指滚动快速唤起调度中心
   const handleDesktopWheel = useCallback(
     (e: React.WheelEvent<HTMLElement>) => {
-      if ((e.target as HTMLElement).closest("[data-desktop-interactive]")) return;
+      if ((e.target as HTMLElement).closest("[data-desktop-interactive]"))
+        return;
       if (e.ctrlKey) {
         if (e.deltaY < -12 && !missionControlOpen) {
           setMissionControlOpen(true);
@@ -849,6 +850,13 @@ export default function DesktopShellPage() {
 
   useEffect(() => {
     const onSystemShortcut = (event: globalThis.KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        document.querySelector(
+          '[role="dialog"][data-state="open"], [aria-modal="true"]',
+        )
+      )
+        return;
       if ((event.metaKey || event.ctrlKey) && event.code === "Space") {
         event.preventDefault();
         if (spotlightOpen) setOverlay("spotlight", false);
@@ -878,13 +886,18 @@ export default function DesktopShellPage() {
   }, [spotlightOpen, lockScreen, openSpotlight, setOverlay, closeTransient]);
 
   const openPhoneMirror = (device: LinkedDevice) => {
-    if (!isDeviceOperator || !device.online || device.platform !== "android") return;
+    if (!isDeviceOperator || !device.online || device.platform !== "android")
+      return;
     setDeviceLinkOpen(false);
     const id = `phone-mirror:${device.id}`;
     openWindow({
-      id, title: `${[device.brand, device.model].filter(Boolean).join(" ") || device.id} · 手机协同`,
-      url: "/phone-mirror", integratedChrome: true,
-      content: <PhoneMirrorApp deviceId={device.id} onClose={() => closeWindow(id)} />,
+      id,
+      title: `${[device.brand, device.model].filter(Boolean).join(" ") || device.id} · 手机协同`,
+      url: "/phone-mirror",
+      integratedChrome: true,
+      content: (
+        <PhoneMirrorApp deviceId={device.id} onClose={() => closeWindow(id)} />
+      ),
     });
   };
 
@@ -1694,7 +1707,10 @@ export default function DesktopShellPage() {
             onActiveRoomChange={setDesktopActiveRoom}
             hideTopControlBar={true}
             onOpenWorkbench={(prompt, agentId) =>
-              openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt, agentId }))
+              openApp(
+                DESKTOP_WORKBENCH_APP,
+                taskWorkspaceRoute({ prompt, agentId }),
+              )
             }
             onOpenApp={(appId) => {
               const app = visibleDesktopApps.find(
@@ -2608,6 +2624,8 @@ export default function DesktopShellPage() {
       )}
 
       <div
+        inert={desktopMode === "pure"}
+        aria-hidden={desktopMode === "pure" || undefined}
         className={cn(
           "pointer-events-none absolute inset-0 z-40 transition-all duration-500",
           desktopMode === "pure"
@@ -2616,7 +2634,9 @@ export default function DesktopShellPage() {
         )}
       >
         {windows
-          .filter((win) => win.url === "/phone-mirror" || !minimized.has(win.id))
+          .filter(
+            (win) => win.url === "/phone-mirror" || !minimized.has(win.id),
+          )
           .map((win, i) => (
             <AppWindow
               key={win.id}

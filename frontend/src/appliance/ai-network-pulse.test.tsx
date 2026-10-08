@@ -1,5 +1,11 @@
 import { fetchDeviceLinkStatus } from "./device-link";
-vi.mock("./device-link", () => ({ fetchDeviceLinkStatus: vi.fn(async () => ({ devices: [{ id: "paired-phone", model: "Pixel", platform: "android", online: true }] })) }));
+vi.mock("./device-link", () => ({
+  fetchDeviceLinkStatus: vi.fn(async () => ({
+    devices: [
+      { id: "paired-phone", model: "Pixel", platform: "android", online: true },
+    ],
+  })),
+}));
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AiNetworkPulse } from "./ai-network-pulse";
@@ -25,7 +31,7 @@ describe("AiNetworkPulse", () => {
     });
     expect(trigger).toBeInTheDocument();
     expect(screen.getByText("AI")).toBeInTheDocument();
-    expect(screen.getByText("32%")).toBeInTheDocument();
+    expect(screen.getByText("演示")).toBeInTheDocument();
   });
 
   it("opens popover menu and displays Agents, Plans, and Policy sections", () => {
@@ -37,7 +43,7 @@ describe("AiNetworkPulse", () => {
 
     expect(screen.getByText("ECHO AI NETWORK")).toBeInTheDocument();
     expect(
-      screen.getByText("全局算力宽带、资费套餐与智能路由中枢"),
+      screen.getByText("演示预览 · 下方为示例数据，非实时遥测"),
     ).toBeInTheDocument();
 
     // Policy section
@@ -191,7 +197,9 @@ describe("AiNetworkPulse", () => {
     });
 
     fireEvent.click(trigger);
-    const menuContent = screen.getByText("ECHO AI NETWORK").closest("[data-slot='dropdown-menu-content']");
+    const menuContent = screen
+      .getByText("ECHO AI NETWORK")
+      .closest("[data-slot='dropdown-menu-content']");
     expect(menuContent).not.toBeNull();
     // Portal should be inside .macos-desktop-root container
     const desktopRoot = container.querySelector(".macos-desktop-root");
@@ -200,14 +208,18 @@ describe("AiNetworkPulse", () => {
 
   it("opens the actual registered phone from the device radar", async () => {
     const onOpenPhoneMirror = vi.fn();
-    render(<AiNetworkPulse defaultOpen onOpenPhoneMirror={onOpenPhoneMirror} />);
+    render(
+      <AiNetworkPulse defaultOpen onOpenPhoneMirror={onOpenPhoneMirror} />,
+    );
 
     expect(screen.getByTestId("softbus-radar-section")).toBeInTheDocument();
     const mirrorBtn = await screen.findByRole("button", { name: "打开手机" });
     expect(mirrorBtn).toBeInTheDocument();
 
     fireEvent.click(mirrorBtn);
-    expect(onOpenPhoneMirror).toHaveBeenCalledWith(expect.objectContaining({ id: "paired-phone" }));
+    expect(onOpenPhoneMirror).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "paired-phone" }),
+    );
     expect(fetchDeviceLinkStatus).toHaveBeenCalled();
   });
 });

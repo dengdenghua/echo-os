@@ -51,7 +51,7 @@ export function DesktopStartGuide({
 
 function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
   const key = `echo:desktop-start.v2:${props.identity}`;
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [phase, setPhase] = useState<Phase>(() => {
     try {
       const value = localStorage.getItem(key);
@@ -151,7 +151,7 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
           <CompassIcon className="size-3.5 text-blue-500" />
           <span>新手引导</span>
           <span className="rounded-full bg-blue-500/10 px-1.5 py-0.2 text-[10px] text-blue-600 dark:text-blue-400">
-            {finished ? "已完成" : "3步"}
+            {finished ? "已完成" : "4步"}
           </span>
           <ChevronRightIcon className="size-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
         </button>

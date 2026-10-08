@@ -8,9 +8,35 @@ import { useDesktopWindows } from "./use-desktop-windows";
 import { WorkspaceArtifactRequestContext } from "./workspace-artifact-request";
 
 /** Every desktop entry uses the same task identity and embedded content host. */
-export function useDesktopWorkspaces() {
+export function useDesktopWorkspaces(onActivate?: () => void) {
   const windows = useDesktopWindows();
-  const { openWindow, reportWindowRoute } = windows;
+  const {
+    openWindow: createWindow,
+    restoreWindow: restore,
+    focusWindow: focus,
+    reportWindowRoute,
+  } = windows;
+  const openWindow = useCallback(
+    (...args: Parameters<typeof createWindow>) => {
+      onActivate?.();
+      return createWindow(...args);
+    },
+    [createWindow, onActivate],
+  );
+  const restoreWindow = useCallback(
+    (...args: Parameters<typeof restore>) => {
+      onActivate?.();
+      return restore(...args);
+    },
+    [restore, onActivate],
+  );
+  const focusWindow = useCallback(
+    (...args: Parameters<typeof focus>) => {
+      onActivate?.();
+      return focus(...args);
+    },
+    [focus, onActivate],
+  );
   const openWorkspace = useCallback(
     (route: string, options: { state?: unknown; title?: string } = {}) => {
       const workspaceRoute = normalizeWorkspaceRoute(route);
@@ -38,6 +64,9 @@ export function useDesktopWorkspaces() {
   );
   return {
     ...windows,
+    openWindow,
+    restoreWindow,
+    focusWindow,
     windows: windows.windows.map((window) => ({
       ...window,
       content: (

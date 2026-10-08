@@ -7,6 +7,11 @@ import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import { resolveDevConfiguration } from "./dev-appliance-config.mjs";
 import {
+  devSettings,
+  devEnvironment,
+  inspectDevSetup,
+} from "./dev-instance.mjs";
+import {
   assertPortFree,
   devPorts,
   probeDevService,
@@ -14,13 +19,19 @@ import {
 } from "./dev-service-health.mjs";
 
 const frontendRoot = fileURLToPath(new URL("..", import.meta.url));
+const settings = devSettings(resolve(frontendRoot, ".."), "os");
 const ports = devPorts();
 const require = createRequire(import.meta.url);
 
-if (process.argv.includes("--status")) {
+if (process.argv.includes("--check")) {
+  await import("./dev-preflight.mjs");
+} else if (process.argv.includes("--status")) {
   const [backend, desktop] = await Promise.all([
-    probeDevService(ports.backend),
-    probeDevService(ports.frontend),
+    probeDevService(ports.backend, { identity: settings.identity }),
+    probeDevService(ports.frontend, {
+      identity: settings.identity,
+      frontend: true,
+    }),
   ]);
   console.info(JSON.stringify({ backend, desktop }, null, 2));
   process.exitCode =
@@ -35,7 +46,9 @@ if (process.argv.includes("--status")) {
 }
 
 async function run() {
-  resolveDevConfiguration(resolve(frontendRoot, ".."));
+  resolveDevConfiguration(settings.root, devEnvironment(settings));
+  const report = inspectDevSetup(settings);
+  if (!report.ok) throw new Error(report.errors.join("; "));
   const children = new Set();
   const expectedExits = new WeakSet();
   let stopping = false;
@@ -47,7 +60,7 @@ async function run() {
     const child = spawn(process.execPath, [script, ...args], {
       cwd: frontendRoot,
       env: {
-        ...process.env,
+        ...devEnvironment(settings),
         GATEWAY_PORT: String(ports.backend),
         FRONTEND_PORT: String(ports.frontend),
         ECHO_INTERNAL_GATEWAY_BASE_URL: `http://127.0.0.1:${ports.backend}`,
@@ -141,6 +154,7 @@ async function run() {
     await Promise.all([
       assertPortFree(ports.backend),
       assertPortFree(ports.frontend),
+      assertPortFree(settings.ports.tentacle),
     ]);
     if (stopping) return;
     controller = new AbortController();
@@ -160,7 +174,10 @@ async function run() {
       launch(resolve(frontendRoot, "scripts/dev-appliance-backend.mjs")),
       "Backend",
     );
-    await waitForDevService(ports.backend, { signal: controller.signal });
+    await waitForDevService(ports.backend, {
+      signal: controller.signal,
+      identity: settings.identity,
+    });
     const vite = resolve(
       dirname(require.resolve("vite/package.json")),
       "bin/vite.js",
@@ -178,10 +195,22 @@ async function run() {
     await waitForDevService(ports.frontend, {
       timeoutMs: 30000,
       signal: controller.signal,
+      identity: settings.identity,
+      frontend: true,
     });
     console.info(
       `[echo] Ready: http://localhost:${ports.frontend}/#/desktop · runtime, session and proxy verified`,
     );
+    if (process.argv.includes("--electron")) {
+      const electronCli = resolve(
+        dirname(require.resolve("electron/package.json")),
+        "cli.js",
+      );
+      watch(
+        launch(electronCli, [resolve(frontendRoot, "electron/main.cjs")]),
+        "Desktop shell",
+      );
+    }
     console.info(
       "[echo] Enter rs to restart, quit or Ctrl+C to stop; pnpm dev:status to check.",
     );

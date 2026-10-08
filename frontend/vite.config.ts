@@ -5,6 +5,12 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import path from "path";
 import fs from "fs";
+import { devSettings, devInstancePlugin } from "./scripts/dev-instance.mjs";
+
+const devInstance = devSettings(
+  fileURLToPath(new URL("..", import.meta.url)),
+  "os",
+);
 
 import {
   rejectDefeatedCodeSplitting,
@@ -35,7 +41,7 @@ const vitePackage = require("vite/package.json");
 
 const gatewayTarget =
   process.env.ECHO_INTERNAL_GATEWAY_BASE_URL ||
-  `http://127.0.0.1:${process.env.GATEWAY_PORT || "8000"}`;
+  `http://127.0.0.1:${devInstance.ports.backend}`;
 
 const proxyConfig = {
   "/api/files/stream": {
@@ -148,6 +154,7 @@ export default defineConfig({
     __VITE_VERSION__: JSON.stringify(vitePackage.version),
   },
   plugins: [
+    devInstancePlugin("os"),
     ...(process.env.ECHO_BUILD_TRACE === "1" ? [buildTracePlugin()] : []),
     chunkSizeGatePlugin(),
     react(),
@@ -181,12 +188,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: parseInt(process.env.FRONTEND_PORT || "3000"),
+    port: devInstance.ports.frontend,
     host: "0.0.0.0",
     proxy: proxyConfig,
   },
   preview: {
-    port: parseInt(process.env.FRONTEND_PORT || "3000"),
+    port: devInstance.ports.frontend,
     host: "0.0.0.0",
     proxy: proxyConfig,
   },

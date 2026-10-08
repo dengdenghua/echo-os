@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from "@testing-library/react";
 import {
   MemoryRouter,
   Route,
@@ -40,6 +47,19 @@ vi.mock("@/app/workspace/workspace-routes", () => ({
     return <Route path="/workspace/*" element={<Task />} />;
   },
 }));
+
+it("activates the desktop window layer when opening and restoring a workspace", () => {
+  const activate = vi.fn();
+  const { result } = renderHook(() => useDesktopWorkspaces(activate));
+  act(() => result.current.openWorkspace("/workspace/realtime/new"));
+  expect(activate).toHaveBeenCalledOnce();
+  const id = result.current.windows[0]!.id;
+  act(() => result.current.minimizeWindow(id));
+  activate.mockClear();
+  act(() => result.current.restoreWindow(id));
+  expect(activate).toHaveBeenCalledOnce();
+  expect(result.current.minimized.has(id)).toBe(false);
+});
 
 function Host() {
   const { windows, openWorkspace, focusedWin, minimizeWindow, minimized } =

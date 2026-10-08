@@ -1,6 +1,12 @@
 import { fetchDeviceLinkStatus } from "./device-link";
-vi.mock("./device-link", () => ({ fetchDeviceLinkStatus: vi.fn(async () => ({ devices: [{ id: "paired-phone", model: "Pixel", platform: "android", online: true }] })) }));
-import { fireEvent, render, screen } from "@testing-library/react";
+vi.mock("./device-link", () => ({
+  fetchDeviceLinkStatus: vi.fn(async () => ({
+    devices: [
+      { id: "paired-phone", model: "Pixel", platform: "android", online: true },
+    ],
+  })),
+}));
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentPipMonitor } from "./agent-pip-monitor";
 import { toast } from "sonner";
@@ -14,6 +20,24 @@ vi.mock("sonner", () => ({
 }));
 
 describe("AgentPipMonitor (Codex 画中画)", () => {
+  it("keeps the approval available after a failed service call without reporting success", async () => {
+    const approve = vi.fn().mockRejectedValue(new Error("offline"));
+    render(<AgentPipMonitor demo={false} onApprove={approve} />);
+    fireEvent.click(screen.getByRole("button", { name: "批准放行" }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("审批未完成，请重试"),
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "批准放行" })).toBeEnabled();
+  });
+  it("never enables approval for a demo even when callbacks exist", () => {
+    const approve = vi.fn();
+    render(<AgentPipMonitor demo onApprove={approve} />);
+    const button = screen.getByRole("button", { name: "批准放行" });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(approve).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -40,27 +64,28 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     expect(screen.getByText(/Codex PiP 画中画/i)).toBeInTheDocument();
   });
 
-  it("approves high risk operation and fires notification", () => {
+  it("marks default data as a demo and disables unconnected approvals", () => {
     render(<AgentPipMonitor />);
     const approveBtn = screen.getByRole("button", { name: /批准放行/i });
     fireEvent.click(approveBtn);
 
-    expect(toast.success).toHaveBeenCalledWith(
-      "已批准执行高危操作",
-      expect.anything(),
-    );
+    expect(approveBtn).toBeDisabled();
+    expect(screen.getByText(/非实时数据/)).toBeInTheDocument();
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
-  it("rejects high risk operation and fires onReject callback", () => {
+  it("rejects high risk operation and fires onReject callback", async () => {
     const onReject = vi.fn();
-    render(<AgentPipMonitor onReject={onReject} />);
+    render(<AgentPipMonitor demo={false} onReject={onReject} />);
     const rejectBtn = screen.getByRole("button", { name: /拦截/i });
     fireEvent.click(rejectBtn);
 
     expect(onReject).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pip-task-live" }),
     );
-    expect(toast.error).toHaveBeenCalledWith("已拦截并拒绝高危操作");
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("已拦截并拒绝高危操作"),
+    );
   });
 
   it("calls onExpandToWindow callback when clicking expand button", () => {
@@ -73,18 +98,20 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     expect(onExpand).toHaveBeenCalledOnce();
   });
 
-  it("fires onApprove callback when approving high risk operation", () => {
+  it("fires onApprove callback when approving high risk operation", async () => {
     const onApprove = vi.fn();
-    render(<AgentPipMonitor onApprove={onApprove} />);
+    render(<AgentPipMonitor demo={false} onApprove={onApprove} />);
     const approveBtn = screen.getByRole("button", { name: /批准放行/i });
     fireEvent.click(approveBtn);
 
     expect(onApprove).toHaveBeenCalledWith(
       expect.objectContaining({ id: "pip-task-live" }),
     );
-    expect(toast.success).toHaveBeenCalledWith(
-      "已批准执行高危操作",
-      expect.anything(),
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "已批准执行高危操作",
+        expect.anything(),
+      ),
     );
   });
 
@@ -109,7 +136,9 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     const iphoneBtn = await screen.findByRole("button", { name: "打开手机" });
     fireEvent.click(iphoneBtn);
 
-    expect(onCast).toHaveBeenCalledWith(expect.objectContaining({ id: "paired-phone" }));
+    expect(onCast).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "paired-phone" }),
+    );
     expect(fetchDeviceLinkStatus).toHaveBeenCalled();
     expect(screen.queryByText(/已投屏监视/)).toBeNull();
   });

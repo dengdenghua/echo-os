@@ -23,6 +23,7 @@ const props = () => ({
 it("opens every required first-use setting and drafts a task without sending it", () => {
   const actions = props();
   render(<DesktopStartGuide {...actions} />);
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
   expect(actions.onStart).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "1. 数据目录与共享" }));
   expect(actions.onStorage).toHaveBeenCalledOnce();
@@ -39,6 +40,7 @@ it("opens every required first-use setting and drafts a task without sending it"
 it("introduces result and application entry points after a task finishes", () => {
   const actions = props();
   const view = render(<DesktopStartGuide {...actions} />);
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
   fireEvent.click(
     screen.getByRole("button", { name: "4. 在 Agent 工作台准备示例任务" }),
   );
@@ -54,8 +56,10 @@ it("introduces result and application entry points after a task finishes", () =>
 it("allows skipping and keeps the preference scoped to the account", () => {
   const actions = props();
   const view = render(<DesktopStartGuide {...actions} />);
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
   fireEvent.click(screen.getByRole("button", { name: "跳过引导" }));
   view.rerender(<DesktopStartGuide {...actions} identity="another-user" />);
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
   expect(screen.getByRole("button", { name: "跳过引导" })).toBeInTheDocument();
   view.rerender(<DesktopStartGuide {...actions} />);
   expect(screen.getByText("桌面小组件")).toBeInTheDocument();
@@ -84,6 +88,8 @@ it("lets an existing user reopen and close the guide on demand", () => {
 
 it("allows collapsing the guide card into a compact bookmark pill and restoring it", () => {
   render(<DesktopStartGuide {...props()} />);
+  expect(screen.queryByText("从第一个任务开始")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "展开新手引导" }));
   expect(screen.getByText("从第一个任务开始")).toBeInTheDocument();
 
   // Click collapse button

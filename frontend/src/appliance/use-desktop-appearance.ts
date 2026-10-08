@@ -51,7 +51,7 @@ const DEFAULT_APPEARANCE: DesktopAppearance = {
 const THEME_NAMES: Record<DesktopTheme, string> = {
   "theme-white": "象牙白",
   "theme-glass": "液态玻璃",
-  "theme-dark": "暗夜黑",
+  "theme-dark": "深空",
 };
 
 /** 主题与玻璃参数的联动预设：切主题时把玻璃调到视觉协调的组合，并联动壁纸。 */

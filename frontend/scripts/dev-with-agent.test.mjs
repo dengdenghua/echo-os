@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import net from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import { assertPortFree } from "./dev-service-health.mjs";
@@ -37,21 +38,35 @@ test(
     mkdirSync(join(root, ".venv/Scripts"), { recursive: true });
     writeFileSync(join(root, "config.example.yaml"), "{}");
     writeFileSync(join(root, ".venv/Scripts/python.exe"), "fixture");
+    mkdirSync(join(root, "runtime"));
+    writeFileSync(join(root, "runtime/__init__.py"), "");
     for (const file of [
       "dev-with-agent.mjs",
       "dev-service-health.mjs",
       "dev-appliance-config.mjs",
+      "dev-instance.mjs",
     ])
       copyFileSync(new URL(file, import.meta.url), join(scripts, file));
     writeFileSync(
       join(vite, "package.json"),
       JSON.stringify({ name: "vite", type: "module" }),
     );
+    for (const [name, entry] of [
+      ["typescript", "bin/tsc"],
+      ["vitest", "vitest.mjs"],
+    ]) {
+      const pkg = join(frontend, "node_modules", name);
+      mkdirSync(join(pkg, "bin"), { recursive: true });
+      writeFileSync(join(pkg, "package.json"), JSON.stringify({ name }));
+      writeFileSync(join(pkg, entry), "fixture");
+    }
     const service = `import http from 'node:http';
+import {devSettings} from '${pathToFileURL(join(scripts, "dev-instance.mjs")).href}';
+const identity = devSettings(${JSON.stringify(root)}, 'os').identity;
 const port = Number(process.env[process.argv[1].includes('vite.js') ? 'FRONTEND_PORT' : 'GATEWAY_PORT']);
 http.createServer((req,res)=>{
  res.setHeader('Content-Type','application/json');
- res.end(JSON.stringify(req.url === '/api/health'
+ res.end(JSON.stringify(['/api/dev/instance','/__echo_dev_instance'].includes(req.url) ? identity : req.url === '/api/health'
  ? {status:'ok',runtime:{name:'echo-agent-runtime'}}
  : {authRequired:true,authenticated:false,role:null}));
 }).listen(port,'127.0.0.1',()=>console.log('fixture-port='+port+' pid='+process.pid));`;
@@ -60,6 +75,8 @@ http.createServer((req,res)=>{
     const backend = await freePort();
     let desktop = await freePort();
     while (desktop === backend) desktop = await freePort();
+    let tentacle = await freePort();
+    while ([backend, desktop].includes(tentacle)) tentacle = await freePort();
     const child = spawn(
       process.execPath,
       [join(scripts, "dev-with-agent.mjs")],
@@ -68,8 +85,16 @@ http.createServer((req,res)=>{
           ...process.env,
           GATEWAY_PORT: String(backend),
           FRONTEND_PORT: String(desktop),
+          ECHO_TENTACLE_WS_PORT: String(tentacle),
           ECHO_AGENT_CONFIG: join(root, "config.example.yaml"),
-          ECHO_AGENT_PYTHON: join(root, ".venv/Scripts/python.exe"),
+          ECHO_AGENT_PYTHON: fileURLToPath(
+            new URL(
+              process.platform === "win32"
+                ? "../../.venv/Scripts/python.exe"
+                : "../../.venv/bin/python",
+              import.meta.url,
+            ),
+          ),
           ECHO_DEV_DATA_DIR: join(root, "data"),
           ECHO_PACKAGED_CODEX_VERSION: "0.153.4",
         },

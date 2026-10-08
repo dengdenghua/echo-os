@@ -20,10 +20,7 @@ import { LiveDeviceList } from "./live-device-list";
 import type { LinkedDevice } from "./device-link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  clampToWorkArea,
-  getDesktopWorkArea,
-} from "./desktop-screen-bounds";
+import { clampToWorkArea, getDesktopWorkArea } from "./desktop-screen-bounds";
 
 export interface PipTask {
   id: string;
@@ -39,10 +36,12 @@ export interface PipTask {
 export interface AgentPipMonitorProps {
   task?: PipTask;
   visible?: boolean;
+  demo?: boolean;
+  initialCollapsed?: boolean;
   onExpandToWindow?: () => void;
   onClose?: () => void;
-  onApprove?: (task: PipTask) => void;
-  onReject?: (task: PipTask) => void;
+  onApprove?: (task: PipTask) => void | Promise<void>;
+  onReject?: (task: PipTask) => void | Promise<void>;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
   className?: string;
 }
@@ -63,6 +62,8 @@ export const DEFAULT_PIP_TASK: PipTask = {
 export function AgentPipMonitor({
   task = DEFAULT_PIP_TASK,
   visible = true,
+  demo = task === DEFAULT_PIP_TASK,
+  initialCollapsed = false,
   onExpandToWindow,
   onClose,
   onApprove,
@@ -70,8 +71,9 @@ export function AgentPipMonitor({
   onOpenPhoneMirror,
   className,
 }: AgentPipMonitorProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [approvalHandled, setApprovalHandled] = useState(false);
+  const [approvalPending, setApprovalPending] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [showCastMenu, setShowCastMenu] = useState(false);
 
@@ -95,12 +97,26 @@ export function AgentPipMonitor({
     const handleResize = () => {
       setPosition((prev) => {
         if (!prev) return null;
-        return clampToWorkArea(prev.x, prev.y, 320, 240);
+        const element = collapsed ? pillRef.current : containerRef.current;
+        const width = element?.offsetWidth || 320;
+        const height = element?.offsetHeight || 240;
+        const bounded = clampToWorkArea(prev.x, prev.y, width, height);
+        return {
+          ...bounded,
+          y: Math.min(
+            bounded.y,
+            Math.max(32, window.innerHeight - height - 96),
+          ),
+        };
       });
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [collapsed]);
+
+  useEffect(() => {
+    setApprovalHandled(false);
+  }, [task.id, task.needsApproval]);
 
   // 当外部显式恢复 visible 时重置 dismissed 状态
   useEffect(() => {
@@ -156,7 +172,10 @@ export function AgentPipMonitor({
 
       // 物理工作区安全区限制，跨副屏与负坐标精准贴靠
       const clamped = clampToWorkArea(newLeft, newTop, width, height);
-      setPosition(clamped);
+      setPosition({
+        ...clamped,
+        y: Math.min(clamped.y, Math.max(32, window.innerHeight - height - 96)),
+      });
     };
 
     const onPointerUp = () => {
@@ -181,18 +200,23 @@ export function AgentPipMonitor({
     toast.info("画中画已还原至默认位置");
   };
 
-  const handleApprove = () => {
-    setApprovalHandled(true);
-    onApprove?.(task);
-    toast.success("已批准执行高危操作", {
-      description: task.approvalRiskMessage,
-    });
-  };
-
-  const handleReject = () => {
-    setApprovalHandled(true);
-    onReject?.(task);
-    toast.error("已拦截并拒绝高危操作");
+  const handleDecision = async (approve: boolean) => {
+    const callback = approve ? onApprove : onReject;
+    if (demo || !callback || approvalPending) return;
+    setApprovalPending(true);
+    try {
+      await callback(task);
+      setApprovalHandled(true);
+      if (approve)
+        toast.success("已批准执行高危操作", {
+          description: task.approvalRiskMessage,
+        });
+      else toast.error("已拦截并拒绝高危操作");
+    } catch {
+      toast.error("审批未完成，请重试");
+    } finally {
+      setApprovalPending(false);
+    }
   };
 
   const agentFirstName = (task.agentName || "Agent").split(" ")[0];
@@ -209,7 +233,7 @@ export function AgentPipMonitor({
         onDoubleClick={handleResetPosition}
         className={cn(
           "fixed z-50 flex cursor-grab items-center gap-2 rounded-full border border-black/10 bg-white/85 px-3 py-1.5 shadow-xl backdrop-blur-xl transition-all hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:cursor-grabbing dark:border-white/15 dark:bg-slate-900/85 dark:hover:bg-slate-900",
-          !position && "bottom-6 right-6",
+          !position && "bottom-24 right-4",
           isDragging && "cursor-grabbing select-none transition-none",
           className,
         )}
@@ -241,7 +265,7 @@ export function AgentPipMonitor({
           <span className="relative inline-flex size-1.5 rounded-full bg-blue-500" />
         </span>
         <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-          {agentFirstName} PiP · {task.progress}%
+          {agentFirstName} PiP · {task.progress}%{demo ? " · 演示" : ""}
         </span>
         <ChevronUpIcon className="size-3 text-slate-400" />
       </div>
@@ -252,8 +276,8 @@ export function AgentPipMonitor({
     <div
       ref={containerRef}
       className={cn(
-        "fixed z-50 flex w-80 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/90 text-slate-800 shadow-2xl shadow-black/15 backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/90 dark:text-slate-100",
-        !position && "bottom-6 right-6",
+        "fixed z-50 flex w-80 max-w-[calc(100vw-32px)] max-h-[calc(100dvh-140px)] flex-col overflow-y-auto rounded-2xl border border-black/10 bg-white/90 text-slate-800 shadow-2xl shadow-black/15 backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/90 dark:text-slate-100",
+        !position && "bottom-24 right-4",
         isDragging ? "select-none transition-none" : "transition-all",
         className,
       )}
@@ -293,10 +317,29 @@ export function AgentPipMonitor({
 
         <div className="flex items-center gap-1 text-slate-400">
           <div className="relative">
-            <button type="button" onClick={() => setShowCastMenu((value) => !value)} aria-label="选择手机" title="选择手机" className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10"><CastIcon className="size-3" /></button>
-            {showCastMenu && <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-black/10 bg-white/95 p-3 text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95 dark:text-slate-100">
-              <LiveDeviceList onOpen={onOpenPhoneMirror ? (device) => { setShowCastMenu(false); onOpenPhoneMirror(device); } : undefined} />
-            </div>}
+            <button
+              type="button"
+              onClick={() => setShowCastMenu((value) => !value)}
+              aria-label="选择手机"
+              title="选择手机"
+              className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <CastIcon className="size-3" />
+            </button>
+            {showCastMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-black/10 bg-white/95 p-3 text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95 dark:text-slate-100">
+                <LiveDeviceList
+                  onOpen={
+                    onOpenPhoneMirror
+                      ? (device) => {
+                          setShowCastMenu(false);
+                          onOpenPhoneMirror(device);
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <button
@@ -333,6 +376,11 @@ export function AgentPipMonitor({
       </div>
 
       <div className="p-3">
+        {demo && (
+          <p className="mb-2 text-xs font-medium text-slate-500">
+            演示预览 · 非实时数据，不执行操作
+          </p>
+        )}
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="truncate pr-2">{task.title}</span>
           <span className="shrink-0 text-[10px] text-blue-600 dark:text-blue-400 font-mono">
@@ -367,15 +415,17 @@ export function AgentPipMonitor({
             <div className="mt-2 flex items-center justify-end gap-1.5">
               <button
                 type="button"
-                onClick={handleReject}
-                className="rounded-md border border-black/10 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-50 dark:border-white/15 dark:bg-white/10 dark:text-slate-300"
+                onClick={() => void handleDecision(false)}
+                disabled={demo || !onReject || approvalPending}
+                className="rounded-md border border-black/10 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/15 dark:bg-white/10 dark:text-slate-300"
               >
                 拦截
               </button>
               <button
                 type="button"
-                onClick={handleApprove}
-                className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700"
+                onClick={() => void handleDecision(true)}
+                disabled={demo || !onApprove || approvalPending}
+                className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 批准放行
               </button>

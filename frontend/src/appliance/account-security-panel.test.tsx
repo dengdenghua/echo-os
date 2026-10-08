@@ -246,6 +246,22 @@ describe("Echo OS account security settings", () => {
     );
   });
 
+  it("dismisses nested approval with Escape without closing settings", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <AccountSecurityPanel open onClose={onClose} onSessionEnded={vi.fn()} />,
+    );
+    await user.click(screen.getByRole("button", { name: "全部退出…" }));
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("enrolls administrator TOTP and shows one-time recovery material", async () => {
     const user = userEvent.setup();
     const onSessionEnded = vi.fn();

@@ -82,7 +82,9 @@ export function AiNetworkPulse({
   const [policy, setPolicy] = useState<RoutingPolicy>("local-first");
   const [activeModel, setActiveModel] = useState(selectedModel);
   const [open, setOpen] = useState(defaultOpen);
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null,
+  );
   const triggerRef = useRef<HTMLButtonElement>(null);
   const lastPointerDownRef = useRef<number>(0);
 
@@ -170,7 +172,7 @@ export function AiNetworkPulse({
             className,
           )}
           aria-label="打开 AI Network 实时脉搏"
-          title="AI Network · 32% Local 本地算力"
+          title="AI Network · 演示预览，非实时遥测"
         >
           <span className="relative flex size-2 items-center justify-center">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
@@ -180,7 +182,7 @@ export function AiNetworkPulse({
           <span className="opacity-40">·</span>
           <span className="text-[10px] text-slate-300">
             {activeModelObj.id === "auto"
-              ? "32%"
+              ? "演示"
               : activeModelObj.name.split(" ")[0]}
           </span>
         </button>
@@ -201,12 +203,12 @@ export function AiNetworkPulse({
                 ECHO AI NETWORK
               </h3>
               <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                全局算力宽带、资费套餐与智能路由中枢
+                演示预览 · 下方为示例数据，非实时遥测
               </p>
             </div>
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <span className="size-1.5 rounded-full bg-emerald-500" /> 实时调度中
+            <span className="size-1.5 rounded-full bg-amber-500" /> 演示数据
           </span>
         </div>
 
@@ -448,7 +450,13 @@ export function AiNetworkPulse({
 
         <div className="space-y-2" data-testid="softbus-radar-section">
           <h3 className="text-xs font-semibold">设备互联</h3>
-          <LiveDeviceList enabled={open} onOpen={(device) => { setOpen(false); onOpenPhoneMirror?.(device); }} />
+          <LiveDeviceList
+            enabled={open}
+            onOpen={(device) => {
+              setOpen(false);
+              onOpenPhoneMirror?.(device);
+            }}
+          />
         </div>
 
         {/* 底部功能按钮 */}

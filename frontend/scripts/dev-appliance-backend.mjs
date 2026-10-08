@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { seedDevCustomModels } from "./dev-appliance-model-seed.mjs";
 import { resolveDevConfiguration } from "./dev-appliance-config.mjs";
+import { devSettings, devEnvironment } from "./dev-instance.mjs";
 
 const legacyEnvironmentPrefix = "OCTO" + "PUS_";
 for (const [name, value] of Object.entries(process.env)) {
@@ -16,15 +17,15 @@ for (const [name, value] of Object.entries(process.env)) {
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const osRoot = resolve(scriptDirectory, "../..");
-const dataRoot = resolve(
-  process.env.ECHO_DEV_DATA_DIR || resolve(osRoot, "data/echo-appliance-dev"),
-);
+const settings = devSettings(osRoot, "os");
+const launchEnvironment = devEnvironment(settings);
+const dataRoot = settings.dataRoot;
 const nasRoot = resolve(process.env.ECHO_NAS_ROOT || resolve(dataRoot, "nas"));
 const sourceCustomModelsPath = resolve(osRoot, "data/custom_models.json");
 const targetCustomModelsPath = resolve(dataRoot, "custom_models.json");
 const applianceAuthStorePath = resolve(dataRoot, "appliance-auth.json");
-const port = process.env.GATEWAY_PORT || "8000";
-const frontendPort = process.env.FRONTEND_PORT || "3000";
+const port = String(settings.ports.backend);
+const frontendPort = String(settings.ports.frontend);
 
 function persistedApplianceJwtSecret() {
   if (!existsSync(applianceAuthStorePath)) return "";
@@ -64,22 +65,11 @@ if (
   );
 }
 const { configPath, python, packagedCodexVersion, codexExecutable } =
-  resolveDevConfiguration(osRoot);
+  resolveDevConfiguration(osRoot, launchEnvironment);
 
 if (process.argv.includes("--check")) {
-  console.info(
-    JSON.stringify({
-      check: "development-configuration-only",
-      configPath,
-      python,
-      packagedCodexVersion: packagedCodexVersion || null,
-      codexExecutable: codexExecutable || null,
-      host: "127.0.0.1",
-      port: Number(port),
-      frontendPort: Number(frontendPort),
-    }),
-  );
-  process.exit(0);
+  await import("./dev-preflight.mjs");
+  process.exit(process.exitCode || 0);
 }
 
 const localJwtSecret =
@@ -119,7 +109,7 @@ const child = spawn(
   {
     cwd: osRoot,
     env: {
-      ...process.env,
+      ...launchEnvironment,
       PYTHONPATH: pythonPath,
       // Repository/configuration text is UTF-8 even on a Windows GBK locale.
       PYTHONUTF8: "1",
@@ -132,7 +122,12 @@ const child = spawn(
       // Production entrypoints never set this development-only override.
       ECHO_APPLIANCE_DEV_PASSWORDLESS:
         process.env.ECHO_APPLIANCE_DEV_PASSWORDLESS || "1",
-      ECHO_APP_EXTENSIONS: "appliance.extension",
+      ECHO_APP_EXTENSIONS: [
+        ...new Set([
+          "appliance.extension",
+          ...launchEnvironment.ECHO_APP_EXTENSIONS.split(","),
+        ]),
+      ].join(","),
       ECHO_APPLIANCE_TRUSTED_ORIGINS: trustedOrigins,
       // Local development gets per-process secrets when the operator has not
       // supplied persistent ones. They are never printed or written to disk.

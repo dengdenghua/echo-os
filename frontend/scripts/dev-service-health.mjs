@@ -1,18 +1,14 @@
 import http from "node:http";
 import net from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
+import { devSettings, probeOwnedService } from "./dev-instance.mjs";
 
-export function devPorts(env = process.env) {
-  const port = (name, fallback) => {
-    const value = env[name] || fallback;
-    if (!/^\d+$/.test(String(value)) || +value < 1 || +value > 65535)
-      throw new Error(`${name} must be a TCP port between 1 and 65535`);
-    return +value;
-  };
-  const backend = port("GATEWAY_PORT", 8000);
-  const frontend = port("FRONTEND_PORT", 3000);
-  if (backend === frontend)
-    throw new Error("Frontend and backend ports must differ");
+export function devPorts(
+  env = process.env,
+  root = fileURLToPath(new URL("../..", import.meta.url)),
+) {
+  const { backend, frontend } = devSettings(root, "os", env).ports;
   return { backend, frontend };
 }
 
@@ -53,8 +49,18 @@ function readJson(port, path, timeoutMs) {
   });
 }
 
-export async function probeDevService(port, { timeoutMs = 2000 } = {}) {
+export async function probeDevService(
+  port,
+  { timeoutMs = 2000, identity, frontend = false } = {},
+) {
   try {
+    if (identity) {
+      const owned = await probeOwnedService(port, identity, {
+        frontend,
+        timeoutMs,
+      });
+      if (!owned.ready) throw new Error(owned.error);
+    }
     const [health, auth] = await Promise.all([
       readJson(port, "/api/health", timeoutMs),
       readJson(port, "/api/appliance/auth/status", timeoutMs),
@@ -82,7 +88,13 @@ export async function probeDevService(port, { timeoutMs = 2000 } = {}) {
 
 export async function waitForDevService(
   port,
-  { timeoutMs = 120000, intervalMs = 1000, signal } = {},
+  {
+    timeoutMs = 120000,
+    intervalMs = 1000,
+    signal,
+    identity,
+    frontend = false,
+  } = {},
 ) {
   const deadline = Date.now() + timeoutMs;
   let last;
@@ -90,6 +102,8 @@ export async function waitForDevService(
     signal?.throwIfAborted();
     last = await probeDevService(port, {
       timeoutMs: Math.min(2000, deadline - Date.now()),
+      identity,
+      frontend,
     });
     signal?.throwIfAborted();
     if (last.ready) {

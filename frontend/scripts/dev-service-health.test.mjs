@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import { tmpdir } from "node:os";
 import {
   assertPortFree,
   devPorts,
@@ -25,10 +26,10 @@ function json(res, value, status = 200) {
 }
 
 test("validates distinct configured ports", () => {
-  assert.deepEqual(devPorts({}), { backend: 8000, frontend: 3000 });
+  assert.deepEqual(devPorts({}, tmpdir()), { backend: 8000, frontend: 3000 });
   for (const value of ["0", "65536", "3000x", "-1"])
-    assert.throws(() => devPorts({ FRONTEND_PORT: value }));
-  assert.throws(() => devPorts({ FRONTEND_PORT: "8000" }));
+    assert.throws(() => devPorts({ FRONTEND_PORT: value }, tmpdir()));
+  assert.throws(() => devPorts({ FRONTEND_PORT: "8000" }, tmpdir()));
 });
 test("a signed-out device is ready, without carrying account details into logs", async (t) => {
   const port = await fixture(t, (req, res) => {

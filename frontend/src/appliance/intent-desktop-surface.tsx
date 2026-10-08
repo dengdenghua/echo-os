@@ -220,13 +220,16 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     badge: "OpenAI",
     brandTag: "工程规划 · 复杂重构 · 测试套件生成",
     engine: "Codex-Engine // v0.153 · AST Parser",
-    placeholder: "让 Codex 规划软件工程：重构代码架构、生成测试套件或排查系统缺陷...",
-    outputPreview: "已初始化 AST 语法树分析器；正在解构核心调度流水线并生成多步工程重构实施计划...",
+    placeholder:
+      "让 Codex 规划软件工程：重构代码架构、生成测试套件或排查系统缺陷...",
+    outputPreview:
+      "已初始化 AST 语法树分析器；正在解构核心调度流水线并生成多步工程重构实施计划...",
     colorScheme: {
       activeBg: "bg-emerald-600 text-white shadow-emerald-500/30",
       activeText: "text-emerald-500 dark:text-emerald-400",
       border: "border-emerald-500/40",
-      badgeBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      badgeBg:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
       badgeText: "text-emerald-600 dark:text-emerald-400",
       halo: "shadow-[0_0_20px_rgba(16,185,129,0.25)]",
       dot: "bg-emerald-500",
@@ -242,13 +245,16 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     badge: "Anthropic",
     brandTag: "深度推演 · 长文规范 · 架构权衡",
     engine: "Claude-3.7-Sonnet // Extended Thinking Core",
-    placeholder: "向 Claude 请教：深度思考推理、技术长文架构设计或跨模块系统权衡...",
-    outputPreview: "正在展开深度思维链 (Thinking Process)；已对微内核与宏内核边界完成 3 轮推演对比...",
+    placeholder:
+      "向 Claude 请教：深度思考推理、技术长文架构设计或跨模块系统权衡...",
+    outputPreview:
+      "正在展开深度思维链 (Thinking Process)；已对微内核与宏内核边界完成 3 轮推演对比...",
     colorScheme: {
       activeBg: "bg-purple-600 text-white shadow-purple-500/30",
       activeText: "text-purple-500 dark:text-purple-400",
       border: "border-purple-500/40",
-      badgeBg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+      badgeBg:
+        "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
       badgeText: "text-purple-600 dark:text-purple-400",
       halo: "shadow-[0_0_20px_rgba(168,85,247,0.25)]",
       dot: "bg-purple-500",
@@ -264,13 +270,16 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     badge: "Nous",
     brandTag: "端侧工具链 · Function Calling · 自动化流",
     engine: "Hermes-Agent-3 // Local Tooling Bus",
-    placeholder: "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
-    outputPreview: "正在探测本地注册 Function Calling 工具链；已自动挂载 NAS 主板温度与转速传感器控制端...",
+    placeholder:
+      "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
+    outputPreview:
+      "正在探测本地注册 Function Calling 工具链；已自动挂载 NAS 主板温度与转速传感器控制端...",
     colorScheme: {
       activeBg: "bg-amber-600 text-white shadow-amber-500/30",
       activeText: "text-amber-500 dark:text-amber-400",
       border: "border-amber-500/40",
-      badgeBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+      badgeBg:
+        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
       badgeText: "text-amber-600 dark:text-amber-400",
       halo: "shadow-[0_0_20px_rgba(245,158,11,0.25)]",
       dot: "bg-amber-500",
@@ -287,12 +296,14 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     brandTag: "亲和交互 · 灵感脑暴 · 敏捷陪伴",
     engine: "Inflection-Pi // Empathic Core",
     placeholder: "与 Pi 随心交流：探讨产品灵感、整理思维碎片或敏捷日常问答...",
-    outputPreview: "已捕获并理解您的产品灵感碎片；正在将其整理为结构化且富有美感的极简执行清单...",
+    outputPreview:
+      "已捕获并理解您的产品灵感碎片；正在将其整理为结构化且富有美感的极简执行清单...",
     colorScheme: {
       activeBg: "bg-pink-600 text-white shadow-pink-500/30",
       activeText: "text-pink-500 dark:text-pink-400",
       border: "border-pink-500/40",
-      badgeBg: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
+      badgeBg:
+        "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
       badgeText: "text-pink-600 dark:text-pink-400",
       halo: "shadow-[0_0_20px_rgba(236,72,153,0.25)]",
       dot: "bg-pink-500",
@@ -308,13 +319,16 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     badge: "OpenCode",
     brandTag: "开源沙箱 · Python 科学计算 · 数据脚本",
     engine: "OpenCode-Interpreter // Sandboxed Python 3.12",
-    placeholder: "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
-    outputPreview: "已在沙箱中成功拉起 Python 3.12 隔离内核；已预装 NumPy / Pandas 并准备执行数据清洗与制图...",
+    placeholder:
+      "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
+    outputPreview:
+      "已在沙箱中成功拉起 Python 3.12 隔离内核；已预装 NumPy / Pandas 并准备执行数据清洗与制图...",
     colorScheme: {
       activeBg: "bg-cyan-600 text-white shadow-cyan-500/30",
       activeText: "text-cyan-500 dark:text-cyan-400",
       border: "border-cyan-500/40",
-      badgeBg: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+      badgeBg:
+        "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
       badgeText: "text-cyan-600 dark:text-cyan-400",
       halo: "shadow-[0_0_20px_rgba(6,182,212,0.25)]",
       dot: "bg-cyan-500",
@@ -332,12 +346,14 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     brandTag: "全网文献检索 · 技术情报对比 · 知识综述",
     engine: "Echo Neural Perceptor // Multi-Source Crawler",
     placeholder: "输入意图，例如：全网深度调研 DeepSeek V3 架构对比评测...",
-    outputPreview: "已完成 4 篇论文交叉对比与算力评估；正在汇总 MoE 门控稀疏激活模式与显存驻留测试曲线...",
+    outputPreview:
+      "已完成 4 篇论文交叉对比与算力评估；正在汇总 MoE 门控稀疏激活模式与显存驻留测试曲线...",
     colorScheme: {
       activeBg: "bg-blue-600 text-white shadow-blue-500/30",
       activeText: "text-blue-500 dark:text-blue-400",
       border: "border-blue-500/40",
-      badgeBg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+      badgeBg:
+        "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
       badgeText: "text-blue-600 dark:text-blue-400",
       halo: "shadow-[0_0_20px_rgba(59,130,246,0.25)]",
       dot: "bg-blue-500",
@@ -354,12 +370,14 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     brandTag: "交叉编译 · 固件构建 · 内核驱动适配",
     engine: "Echo Compiler Toolchain // aarch64-linux-gnu",
     placeholder: "输入意图，例如：交叉编译 RK3576 ARM64 固件与 NPU 驱动...",
-    outputPreview: "已完成 Makefile 参数适配并成功链接 OpenZFS 存储池与 6.0 TOPS NPU 驱动包。",
+    outputPreview:
+      "已完成 Makefile 参数适配并成功链接 OpenZFS 存储池与 6.0 TOPS NPU 驱动包。",
     colorScheme: {
       activeBg: "bg-indigo-600 text-white shadow-indigo-500/30",
       activeText: "text-indigo-500 dark:text-indigo-400",
       border: "border-indigo-500/40",
-      badgeBg: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+      badgeBg:
+        "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
       badgeText: "text-indigo-600 dark:text-indigo-400",
       halo: "shadow-[0_0_20px_rgba(99,102,241,0.25)]",
       dot: "bg-indigo-500",
@@ -376,12 +394,14 @@ export const BUILTIN_AGENTS: AgentPreset[] = [
     brandTag: "NAS 存储体检 · NPU 算力调度 · 硬件巡检",
     engine: "Echo System Daemon // Hardware Monitor",
     placeholder: "输入意图，例如：执行 NAS ZFS 存储池完整性校验与快照体检...",
-    outputPreview: "正在执行 OpenZFS 存储池全盘校验；已自动对齐 NAS 物理阵列健康状态。",
+    outputPreview:
+      "正在执行 OpenZFS 存储池全盘校验；已自动对齐 NAS 物理阵列健康状态。",
     colorScheme: {
       activeBg: "bg-emerald-600 text-white shadow-emerald-500/30",
       activeText: "text-emerald-500 dark:text-emerald-400",
       border: "border-emerald-500/40",
-      badgeBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+      badgeBg:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
       badgeText: "text-emerald-600 dark:text-emerald-400",
       halo: "shadow-[0_0_20px_rgba(16,185,129,0.25)]",
       dot: "bg-emerald-500",
@@ -512,7 +532,8 @@ export const INTENT_TEMPLATES: IntentTemplate[] = [
   // Claude 专属推荐
   {
     label: "微内核架构权衡",
-    prompt: "深度推演 Microkernel 与 Monolithic 架构在边缘 Agentic OS 场景下的稳定性与性能权衡",
+    prompt:
+      "深度推演 Microkernel 与 Monolithic 架构在边缘 Agentic OS 场景下的稳定性与性能权衡",
     agent: "claude",
     room: "researcher",
   },
@@ -525,7 +546,8 @@ export const INTENT_TEMPLATES: IntentTemplate[] = [
   // Hermes 专属推荐
   {
     label: "传感器接口联动",
-    prompt: "自动发现并调用 NAS 硬件主板传感器、磁盘 S.M.A.R.T. 与风扇转速控制接口",
+    prompt:
+      "自动发现并调用 NAS 硬件主板传感器、磁盘 S.M.A.R.T. 与风扇转速控制接口",
     agent: "hermes",
     room: "operator",
   },
@@ -551,7 +573,8 @@ export const INTENT_TEMPLATES: IntentTemplate[] = [
   // OpenCode 专属推荐
   {
     label: "沙箱数据可视化",
-    prompt: "在隔离沙箱中读取系统历史负载日志，使用 Matplotlib 绘制 24h 波动趋势图",
+    prompt:
+      "在隔离沙箱中读取系统历史负载日志，使用 Matplotlib 绘制 24h 波动趋势图",
     agent: "opencode",
     room: "builder",
   },
@@ -874,7 +897,7 @@ export function IntentDesktopSurface({
     const themeNames = {
       "theme-white": "象牙温和白",
       "theme-glass": "静谧液态玻璃",
-      "theme-dark": "纯粹暗夜黑",
+      "theme-dark": "深空",
     };
     toast.success(`桌面主题已切换为：${themeNames[newTheme]}`);
   };
@@ -934,6 +957,13 @@ export function IntentDesktopSurface({
   // 全局键盘人机工程学：Cmd+K / Ctrl+K / '/' 聚焦意图，Escape 退出，Space 双态互换
   useEffect(() => {
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (
+        e.defaultPrevented ||
+        document.querySelector(
+          '[role="dialog"][data-state="open"], [aria-modal="true"]',
+        )
+      )
+        return;
       const activeTag = document.activeElement?.tagName?.toLowerCase();
       // Cmd/Ctrl+K 是本组件的"聚焦意图输入框"快捷键，最先判定并保留；
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -1024,7 +1054,9 @@ export function IntentDesktopSurface({
     let targetAgent = selectedAgent;
     if (isAutoRoute) {
       const lower = trimmed.toLowerCase();
-      if (/code|git|compile|build|重构|编译|驱动|架构|测试|api|bug/i.test(lower)) {
+      if (
+        /code|git|compile|build|重构|编译|驱动|架构|测试|api|bug/i.test(lower)
+      ) {
         targetAgent = "codex";
       } else if (/think|reason|思考|论证|白皮书|哲学|设计模式/i.test(lower)) {
         targetAgent = "claude";
@@ -1049,7 +1081,8 @@ export function IntentDesktopSurface({
     };
 
     const activeDescriptor =
-      BUILTIN_AGENTS.find((a) => a.key === targetAgent) ?? currentAgentDescriptor;
+      BUILTIN_AGENTS.find((a) => a.key === targetAgent) ??
+      currentAgentDescriptor;
 
     const newTask: TaskObject = {
       id: `task-${Date.now()}`,
@@ -1062,7 +1095,8 @@ export function IntentDesktopSurface({
       contextLinks: [
         { label: "User Prompt Intent", icon: "file" },
         {
-          label: activeDescriptor.engine.split("//")[0]?.trim() || "Active Engine",
+          label:
+            activeDescriptor.engine.split("//")[0]?.trim() || "Active Engine",
           icon: "terminal",
         },
       ],
@@ -1090,9 +1124,11 @@ export function IntentDesktopSurface({
   const agentPlaceholders: Record<BuiltinAgentId, string> = {
     codex: "让 Codex 规划软件工程：重构代码架构、生成测试套件或排查系统缺陷...",
     claude: "向 Claude 请教：深度思考推理、技术长文架构设计或跨模块系统权衡...",
-    hermes: "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
+    hermes:
+      "唤醒 Hermes：调用端侧 Function Calling 工具链与执行自动化多步流...",
     pi: "与 Pi 随心交流：探讨产品灵感、整理思维碎片或敏捷日常问答...",
-    opencode: "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
+    opencode:
+      "让 OpenCode 在沙箱中执行：运行 Python 数据分析、科学计算与运维脚本...",
     researcher: "输入意图，例如：全网深度调研 DeepSeek V3 架构对比评测...",
     builder: "输入意图，例如：交叉编译 RK3576 ARM64 固件与 NPU 驱动...",
     operator: "输入意图，例如：执行 NAS ZFS 存储池完整性校验与快照体检...",
@@ -1129,12 +1165,10 @@ export function IntentDesktopSurface({
         "relative flex size-full select-none flex-col overflow-hidden transition-colors duration-500",
         theme,
         theme !== "theme-white" && "dark",
-        theme === "theme-white" &&
-          "bg-[radial-gradient(circle_at_50%_25%,rgba(255,255,255,0.45)_0%,rgba(255,255,255,0.18)_50%,rgba(240,245,255,0.06)_100%)] text-slate-800",
+        theme === "theme-white" && "bg-transparent text-slate-800",
         theme === "theme-glass" &&
           "bg-[radial-gradient(at_15%_15%,rgba(56,189,248,0.15)_0%,transparent_55%),radial-gradient(at_85%_85%,rgba(168,85,247,0.12)_0%,transparent_55%),rgba(10,15,30,0.32)] text-slate-100",
-        theme === "theme-dark" &&
-          "bg-[radial-gradient(circle_at_50%_0%,rgba(30,41,59,0.28)_0%,transparent_65%),rgba(3,6,12,0.52)] text-slate-100",
+        theme === "theme-dark" && "bg-transparent text-slate-100",
         className,
       )}
       onClick={handleBackdropClick}
@@ -1264,7 +1298,7 @@ export function IntentDesktopSurface({
               )}
             >
               <MoonIcon className="size-3" />
-              <span>暗夜黑</span>
+              <span>深空</span>
             </button>
           </div>
         </div>
@@ -1277,7 +1311,7 @@ export function IntentDesktopSurface({
           className={cn(
             "z-30 flex w-full max-w-2xl flex-col items-center text-center transition-all duration-500",
             mode === "workspace"
-              ? "-translate-y-24 scale-95 opacity-90 focus-within:opacity-100 hover:opacity-100 pointer-events-auto"
+              ? "absolute inset-x-4 top-6 mx-auto w-auto pointer-events-auto"
               : "translate-y-0 scale-100 opacity-100",
           )}
           onClick={(e) => e.stopPropagation()}
@@ -1291,6 +1325,7 @@ export function IntentDesktopSurface({
               theme === "theme-white"
                 ? "border-black/10 bg-white/75 text-slate-700 shadow-black/5 hover:bg-white/90"
                 : "border-white/15 bg-slate-900/65 text-slate-200 shadow-black/20 hover:bg-slate-900/85",
+              "order-last mb-0 mt-5 border-transparent bg-transparent text-slate-600 shadow-none backdrop-blur-none hover:bg-white/20 dark:bg-transparent dark:text-slate-200",
             )}
             title="点击在【极简意图态】与【多窗口工作台】间切换 (快捷键: Alt+D / Space)"
             aria-label="双态形态切换"
@@ -1303,7 +1338,7 @@ export function IntentDesktopSurface({
                 )}
               />
               <span>
-                {mode === "pure" ? "极简意图态" : "🖥️ 多窗口工作台"}
+                {mode === "pure" ? "打开任务视图" : "多窗口工作台 · 演示任务"}
               </span>
             </span>
             <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
@@ -1311,44 +1346,18 @@ export function IntentDesktopSurface({
             </kbd>
           </button>
 
-          {/* 核心光韵图标与标语整合区 */}
-          <div className="flex flex-col items-center">
-            {/* 量子聚变核心节点 (Quantum Reactor Core) */}
-            <div
-              className="group relative mb-3 flex size-12 cursor-pointer items-center justify-center transition-transform hover:scale-105 active:scale-95"
-              onClick={toggleMode}
-              title="点击在【纯净意图态】与【多窗口工作台】间切换 (Space)"
-              role="button"
-              aria-label="Echo 意图节点"
-            >
-              {/* 外层微折射呼吸环与旋转偏振能量刻度 */}
-              <span className="absolute inset-0 rounded-full border border-sky-400/25 bg-sky-400/10 backdrop-blur-md animate-pulse" />
-              <span className="absolute -inset-1 rounded-full border border-dashed border-sky-400/30 opacity-60 animate-[spin_24s_linear_infinite]" />
-              {/* 核心声学脉冲球 */}
-              <span className="relative flex size-8 items-center justify-center rounded-full bg-slate-900/90 text-white shadow-[0_0_16px_rgba(56,189,248,0.4)] ring-1 ring-sky-400/30 transition-all group-hover:bg-blue-600 dark:bg-white/95 dark:text-slate-900 dark:group-hover:bg-sky-400">
-                <SparklesIcon className="size-4 text-sky-400 dark:text-blue-600" />
-              </span>
-            </div>
-
-            {/* 极客 HUD 遥测矩阵指示 */}
-            <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-wider text-sky-500/80 dark:text-sky-300/80 select-none drop-shadow-[0_0_6px_rgba(56,189,248,0.3)]">
-              <span>SYS.NEURAL_BUS // ACTIVE</span>
-              <span className="opacity-40">·</span>
-              <span>NPU 6.0 TOPS</span>
-            </div>
-
-            <h2 className="mt-1 text-xs font-semibold tracking-wider text-slate-700/90 dark:text-slate-200/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
-              下午好，今天有什么探索计划？
-            </h2>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 dark:from-white dark:via-sky-100 dark:to-indigo-200 bg-clip-text text-transparent drop-shadow-[0_2px_6px_rgba(56,189,248,0.25)]">
-              意图优先 · 让 Agent 驱动执行
+          {mode === "pure" && (
+            <h1 className="text-2xl font-medium tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              今天想完成什么？
             </h1>
-          </div>
+          )}
 
           {/* 意图输入中心卡片 (Frosted Command Hub) */}
           <div
+            data-intent-composer
             className={cn(
               "mt-6 w-full rounded-2xl border p-3.5 backdrop-blur-2xl transition-all duration-300 focus-within:ring-2 focus-within:ring-sky-400/30",
+              mode === "workspace" && "mt-0",
               theme === "theme-white"
                 ? "border-black/10 bg-white/85 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_20px_45px_-12px_rgba(0,0,0,0.12)] focus-within:border-blue-500/40"
                 : "border-sky-400/20 bg-slate-900/80 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_0_35px_rgba(56,189,248,0.14),0_20px_50px_-10px_rgba(0,0,0,0.5)] focus-within:border-sky-400/50 focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_0_50px_rgba(56,189,248,0.26),0_25px_60px_-10px_rgba(0,0,0,0.6)]",
@@ -1363,19 +1372,8 @@ export function IntentDesktopSurface({
                 onChange={(e) => setIntentInput(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 placeholder={agentPlaceholders[selectedAgent]}
-                className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-slate-400"
+                className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-slate-500"
               />
-              {!intentInput.trim() && dynamicTemplates[0] && (
-                <button
-                  type="button"
-                  onClick={() => handleApplyTemplate(dynamicTemplates[0]!)}
-                  aria-label="Tab 补全推荐"
-                  className="hidden shrink-0 cursor-pointer select-none items-center gap-1 rounded-md border border-black/10 bg-black/5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 transition-all hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 sm:inline-flex"
-                  title="按 Tab 键自动带入推荐意图"
-                >
-                  <kbd className="font-semibold text-blue-500 dark:text-blue-400">Tab ⇥</kbd>
-                </button>
-              )}
               <button
                 type="button"
                 onClick={handleSubmitIntent}
@@ -1387,7 +1385,9 @@ export function IntentDesktopSurface({
                     : "cursor-not-allowed bg-slate-800/20 text-slate-400 opacity-40 dark:bg-white/10 dark:text-slate-500",
                 )}
                 aria-label="提交意图"
-                title={intentInput.trim() ? "提交意图 (Enter)" : "请输入意图内容"}
+                title={
+                  intentInput.trim() ? "提交意图 (Enter)" : "请输入意图内容"
+                }
               >
                 <ArrowRightIcon className="size-4" />
               </button>
@@ -1396,7 +1396,10 @@ export function IntentDesktopSurface({
             {/* 底部精炼功能栏：只有一行！左侧是优雅的 Agent 弹窗选择器，右侧是快捷推荐 */}
             <div className="relative mt-2.5 flex items-center justify-between gap-3 border-t border-black/5 pt-2.5 dark:border-white/10">
               {/* 左侧：Agent 弹窗选择触发器 (完全贴合 Image 2 的纯净质感与层级规范) */}
-              <div className="relative flex shrink-0 items-center gap-1.5" ref={agentMenuRef}>
+              <div
+                className="relative flex shrink-0 items-center gap-1.5"
+                ref={agentMenuRef}
+              >
                 <span className="select-none text-[11px] font-semibold text-slate-400">
                   分派:
                 </span>
@@ -1422,12 +1425,15 @@ export function IntentDesktopSurface({
                     {isAutoRoute ? "自动" : currentAgentDescriptor.label}
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-400">
-                    {isAutoRoute ? "(智能路由)" : `(${currentAgentDescriptor.badge})`}
+                    {isAutoRoute
+                      ? "(智能路由)"
+                      : `(${currentAgentDescriptor.badge})`}
                   </span>
                   <ChevronDownIcon
                     className={cn(
                       "size-3 text-slate-400 transition-transform duration-200 group-hover:text-slate-600 dark:group-hover:text-slate-200",
-                      isAgentMenuOpen && "rotate-180 text-blue-500 dark:text-blue-400",
+                      isAgentMenuOpen &&
+                        "rotate-180 text-blue-500 dark:text-blue-400",
                     )}
                   />
                 </button>
@@ -1452,7 +1458,8 @@ export function IntentDesktopSurface({
                         setIsAutoRoute(true);
                         setIsAgentMenuOpen(false);
                         toast.info("已切换为自动分派模式", {
-                          description: "系统将根据您的意图关键词自动路由至最合适的 Agent 引擎",
+                          description:
+                            "系统将根据您的意图关键词自动路由至最合适的 Agent 引擎",
                         });
                       }}
                       className={cn(
@@ -1488,8 +1495,11 @@ export function IntentDesktopSurface({
                       </span>
                     </div>
 
-                    {BUILTIN_AGENTS.filter((a) => a.category === "frontier").map((ag) => {
-                      const isSelected = !isAutoRoute && selectedAgent === ag.key;
+                    {BUILTIN_AGENTS.filter(
+                      (a) => a.category === "frontier",
+                    ).map((ag) => {
+                      const isSelected =
+                        !isAutoRoute && selectedAgent === ag.key;
                       return (
                         <button
                           key={ag.key}
@@ -1540,63 +1550,75 @@ export function IntentDesktopSurface({
                       系统专属职能 (System Roles)
                     </div>
 
-                    {BUILTIN_AGENTS.filter((a) => a.category === "role").map((ag) => {
-                      const isSelected = !isAutoRoute && selectedAgent === ag.key;
-                      return (
-                        <button
-                          key={ag.key}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setIsAutoRoute(false);
-                            setSelectedAgent(ag.key);
-                            setIsAgentMenuOpen(false);
-                          }}
-                          className={cn(
-                            "group flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
-                            isSelected
-                              ? "bg-blue-500/10 dark:bg-blue-400/15 font-medium"
-                              : "hover:bg-black/5 dark:hover:bg-white/5",
-                          )}
-                        >
-                          <span className="mt-0.5 text-base">{ag.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-slate-900 dark:text-white">
-                                {ag.title} ({ag.label})
-                              </span>
-                              {isSelected && (
-                                <CheckIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                              )}
+                    {BUILTIN_AGENTS.filter((a) => a.category === "role").map(
+                      (ag) => {
+                        const isSelected =
+                          !isAutoRoute && selectedAgent === ag.key;
+                        return (
+                          <button
+                            key={ag.key}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setIsAutoRoute(false);
+                              setSelectedAgent(ag.key);
+                              setIsAgentMenuOpen(false);
+                            }}
+                            className={cn(
+                              "group flex w-full cursor-pointer select-none items-start gap-2.5 rounded-xl p-2.5 text-left transition-colors",
+                              isSelected
+                                ? "bg-blue-500/10 dark:bg-blue-400/15 font-medium"
+                                : "hover:bg-black/5 dark:hover:bg-white/5",
+                            )}
+                          >
+                            <span className="mt-0.5 text-base">{ag.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                  {ag.title} ({ag.label})
+                                </span>
+                                {isSelected && (
+                                  <CheckIcon className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                )}
+                              </div>
+                              <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                                {ag.brandTag}
+                              </p>
+                              <p className="mt-0.5 text-[10px] font-mono text-slate-400">
+                                系统原生常驻在场
+                              </p>
                             </div>
-                            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
-                              {ag.brandTag}
-                            </p>
-                            <p className="mt-0.5 text-[10px] font-mono text-slate-400">
-                              系统原生常驻在场
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      },
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* 右侧：快捷推荐预设 (单一清爽流线排布) */}
-              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden pl-2">
-                <span className="shrink-0 select-none text-[11px] text-slate-400 flex items-center gap-1">
-                  <SparklesIcon className="size-3 text-amber-500" />
-                  推荐:
-                </span>
-                <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
+              <details
+                className={cn(
+                  "relative ml-auto text-left",
+                  mode === "pure" && "hidden",
+                )}
+              >
+                <summary className="cursor-pointer rounded-lg px-2 py-1 text-xs text-slate-600 hover:bg-black/5 dark:text-slate-300">
+                  示例任务
+                </summary>
+                <div className="absolute right-0 top-full z-50 mt-2 grid max-h-64 w-72 max-w-[80vw] gap-2 overflow-y-auto rounded-2xl border border-black/10 bg-white p-3 shadow-xl dark:border-white/15 dark:bg-slate-900">
+                  {" "}
                   {sortedTemplates.map((tpl: IntentTemplate) => {
                     const isCurrentAgent = selectedAgent === tpl.agent;
                     return (
                       <button
                         key={tpl.label}
                         type="button"
-                        onClick={() => handleApplyTemplate(tpl)}
+                        onClick={(event) => {
+                          handleApplyTemplate(tpl);
+                          event.currentTarget
+                            .closest("details")
+                            ?.removeAttribute("open");
+                        }}
                         className={cn(
                           "inline-flex shrink-0 cursor-pointer select-none items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-[11px] font-medium transition-all duration-150 active:scale-95",
                           isCurrentAgent
@@ -1618,13 +1640,13 @@ export function IntentDesktopSurface({
                     );
                   })}
                 </div>
-              </div>
+              </details>
             </div>
           </div>
         </div>
 
         {/* Task Objects 任务窗口卡片 (多窗口工作区一级公民) */}
-        <div className="pointer-events-none absolute inset-x-8 bottom-16 top-24 z-20 flex items-center justify-between gap-6 transition-all duration-500">
+        <div className="pointer-events-none absolute inset-x-5 bottom-28 top-[clamp(14rem,27vh,19rem)] z-20 mx-auto flex max-w-[1120px] flex-col items-center justify-start gap-6 overflow-y-auto px-1 pb-6 lg:flex-row lg:items-start">
           {(() => {
             const filteredTasks =
               activeRoom === "all"
@@ -1640,11 +1662,11 @@ export function IntentDesktopSurface({
                   key={task.id}
                   data-task-card="true"
                   className={cn(
-                    "flex h-[360px] w-full max-w-[500px] flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-2xl transition-all duration-500",
+                    "flex w-full min-w-0 shrink-0 lg:shrink max-w-[548px] flex-col overflow-hidden rounded-[22px] border shadow-2xl backdrop-blur-2xl transition-all duration-500",
                     isDragging &&
                       "transition-none shadow-[0_30px_70px_rgba(0,0,0,0.5)] ring-2 ring-blue-500/40",
                     theme === "theme-white"
-                      ? "border-amber-900/10 bg-white/95 text-slate-800 shadow-[0_22px_45px_-12px_rgba(180,155,120,0.22),0_1px_3px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03]"
+                      ? "border-white/60 bg-white/85 text-slate-800 shadow-[0_22px_45px_-12px_rgba(180,155,120,0.22),0_1px_3px_rgba(0,0,0,0.05)] "
                       : "border-white/15 bg-slate-900/90 text-slate-100 shadow-black/60",
                     // 双态退散核心动效：pure 模式彻底退散消失（opacity-0 + invisible），绝对不在背景形成重叠鬼影
                     mode === "pure" &&
@@ -1666,7 +1688,7 @@ export function IntentDesktopSurface({
                   {/* 窗口头部：可拖拽标题栏与 macOS 交通灯 */}
                   <div
                     onPointerDown={(e) => handleCardDragStart(e, task.id)}
-                    className="flex h-9 cursor-grab active:cursor-grabbing select-none items-center justify-between border-b border-black/5 bg-black/[0.02] px-3.5 dark:border-white/10 dark:bg-white/[0.02]"
+                    className="flex h-11 cursor-grab active:cursor-grabbing select-none items-center justify-between px-5 pt-2"
                     title="按住并拖动标题栏可自由移动此任务窗口"
                   >
                     <div className="flex items-center gap-2">
@@ -1704,14 +1726,14 @@ export function IntentDesktopSurface({
                           aria-label="展开任务详情"
                         />
                       </div>
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        [{task.agentName.split(" ")[0]}]
+                      <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">
+                        {task.agentName.split(" ")[0]}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                          "rounded-full px-2 py-0.5 text-[13px] font-semibold",
                           task.status === "completed"
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : "bg-blue-500/10 text-blue-600 dark:text-blue-400",
@@ -1719,7 +1741,7 @@ export function IntentDesktopSurface({
                       >
                         {task.status === "completed"
                           ? "已完成 100%"
-                          : `执行中 ${task.progress}%`}
+                          : `${task.status === "running" ? "执行中" : "已暂停"} ${task.progress}%`}
                       </span>
                       <button
                         type="button"
@@ -1737,13 +1759,13 @@ export function IntentDesktopSurface({
                   </div>
 
                   {/* 窗口分栏：左侧 Context，右侧 Live Execution */}
-                  <div className="flex flex-1 overflow-hidden">
+                  <div className="flex flex-1 flex-col overflow-hidden">
                     {/* Context Pane */}
-                    <div className="flex w-36 flex-col border-r border-black/5 bg-black/[0.01] p-3 dark:border-white/10 dark:bg-white/[0.01]">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                        上下文关联
-                      </span>
-                      <div className="mt-2 flex flex-col gap-1.5 text-[11px]">
+                    <details className="order-2 border-t border-black/5 px-5 py-3 dark:border-white/10">
+                      <summary className="cursor-pointer text-[13px] font-medium text-slate-600 dark:text-slate-300">
+                        上下文关联 · {task.contextLinks.length} 项资料
+                      </summary>
+                      <div className="mt-3 flex flex-wrap gap-2 text-[13px]">
                         {task.contextLinks.map((link, idx) => (
                           <button
                             key={idx}
@@ -1756,36 +1778,39 @@ export function IntentDesktopSurface({
                             title={`点击检查上下文资产：${link.label}`}
                           >
                             {link.icon === "file" && (
-                              <FolderIcon className="size-3 shrink-0 text-amber-500" />
+                              <FolderIcon className="size-4 shrink-0 text-slate-500" />
                             )}
                             {link.icon === "db" && (
-                              <DatabaseIcon className="size-3 shrink-0 text-blue-500" />
+                              <DatabaseIcon className="size-4 shrink-0 text-slate-500" />
                             )}
                             {link.icon === "terminal" && (
-                              <TerminalIcon className="size-3 shrink-0 text-emerald-500" />
+                              <TerminalIcon className="size-4 shrink-0 text-slate-500" />
                             )}
                             <span className="truncate">{link.label}</span>
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </details>
 
                     {/* Live Stream / Progress Pane */}
-                    <div className="flex flex-1 flex-col justify-between p-3.5">
+                    <div className="flex min-w-0 flex-1 flex-col gap-5 p-5">
                       <div>
-                        <h4 className="line-clamp-2 text-xs font-semibold leading-relaxed">
+                        <h4 className="min-h-[3.25rem] text-[17px] font-semibold leading-relaxed tracking-tight">
                           {task.title}
                         </h4>
-                        <div className="mt-3 rounded-lg bg-black/[0.03] p-2.5 font-mono text-[11px] leading-relaxed text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">
+                        <div className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-600 dark:text-slate-300">
                           {task.outputPreview}
                         </div>
 
                         {/* Agent 接力协作纽带微条 */}
                         {task.handover && (
-                          <div
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveRoom(agentToOpenRoom(task.handover!.toAgent));
+                              setActiveRoom(
+                                agentToOpenRoom(task.handover!.toAgent),
+                              );
                               toast.success(
                                 `已穿梭至 ${task.handover!.toAgentName} 的空间`,
                                 {
@@ -1793,41 +1818,41 @@ export function IntentDesktopSurface({
                                 },
                               );
                             }}
-                            className="mt-2.5 flex cursor-pointer items-center justify-between rounded-lg border border-blue-500/20 bg-blue-500/5 px-2.5 py-1.5 text-[10px] transition-colors hover:bg-blue-500/10 dark:border-blue-400/20 dark:bg-blue-950/20 dark:hover:bg-blue-950/40"
+                            className="mt-4 flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg py-2 text-left text-[13px] transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-white/10"
                             title={`点击跳转至 ${task.handover.toAgentName} 的协同工坊`}
                             data-testid={`handover-pill-${task.id}`}
                           >
                             <div className="flex items-center gap-1.5 truncate">
-                              <span className="font-bold text-blue-600 dark:text-blue-400">
+                              <span className="shrink-0 font-medium text-slate-600 dark:text-slate-300">
                                 ⮑ 接力协作
                               </span>
                               <span className="truncate text-slate-500 dark:text-slate-400">
                                 产物 {task.handover.artifactName} 交付至
                               </span>
                             </div>
-                            <span className="shrink-0 font-semibold text-blue-600 dark:text-blue-400">
+                            <span className="shrink-0 font-medium text-slate-600 dark:text-slate-300">
                               {task.handover.toAgentName.split(" ")[0]} →
                             </span>
-                          </div>
+                          </button>
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                          <span>Agent 持续自适应迭代中</span>
-                        </div>
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <span className="text-[13px] text-slate-500 dark:text-slate-400">
+                          演示任务
+                        </span>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setExpandedTaskId(task.id)}
-                            className="rounded-lg border border-black/10 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-black/5 dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/10"
+                            className="rounded-xl px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/10"
                           >
                             查看详情
                           </button>
                           <button
                             type="button"
                             onClick={() => onOpenWorkbench?.(task.title)}
-                            className="rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                            className="rounded-xl bg-blue-600 px-3 py-2 text-[13px] font-semibold text-white transition-all hover:bg-blue-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                           >
                             打开空间 →
                           </button>
@@ -2289,7 +2314,9 @@ export function IntentDesktopSurface({
 
         {/* Codex 风格画中画 (PiP) 浮窗：后台执行监视与危险操作放行审批 */}
         <AgentPipMonitor
-          visible={pipVisible}
+          demo
+          initialCollapsed
+          visible={pipVisible && mode === "workspace"}
           task={activePipTask}
           onOpenPhoneMirror={onOpenPhoneMirror}
           onClose={() => setPipVisible(false)}

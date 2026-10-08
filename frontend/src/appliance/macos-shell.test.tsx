@@ -880,7 +880,7 @@ describe("Echo desktop shell", () => {
     expect(screen.getByRole("group", { name: "桌面环境主题" })).toBeVisible();
     const whiteBtn = screen.getByRole("button", { name: /象牙白/ });
     const glassBtn = screen.getByRole("button", { name: /液态玻璃/ });
-    const darkBtn = screen.getByRole("button", { name: /暗夜黑/ });
+    const darkBtn = screen.getByRole("button", { name: /深空/ });
 
     expect(whiteBtn).toHaveAttribute("aria-pressed", "true");
     expect(glassBtn).toHaveAttribute("aria-pressed", "false");

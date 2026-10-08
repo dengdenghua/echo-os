@@ -198,8 +198,9 @@ export function MacAppIcon({
   artwork?: ReactNode;
   preferArtwork?: boolean;
 }) {
-  const appArtwork =
-    iconUrl ? null : (artwork ?? MacAppArtwork({ appId, preferArtwork }));
+  const appArtwork = iconUrl
+    ? null
+    : (artwork ?? MacAppArtwork({ appId, preferArtwork }));
   const echoPalette = appId ? ECHO_APP_ICON_PALETTES[appId] : undefined;
   const showTechField = appId ? ECHO_TECH_FIELD_APP_IDS.has(appId) : false;
 
@@ -766,7 +767,7 @@ export function MacMenuBar({
             className="mac-status-icon"
             onClick={onToggleTheme}
             aria-label="快速切换桌面主题"
-            title={`当前主题：${desktopTheme === "theme-white" ? "象牙白" : desktopTheme === "theme-glass" ? "液态玻璃" : "暗夜黑"} · 点击快速切换`}
+            title={`当前主题：${desktopTheme === "theme-white" ? "象牙白" : desktopTheme === "theme-glass" ? "液态玻璃" : "深空"} · 点击快速切换`}
           >
             {desktopTheme === "theme-white" ? (
               <SunIcon className="size-[15px] text-amber-500" />
@@ -983,7 +984,7 @@ export function MacLiquidGlassPanel({
           <small>{style === "crystal" ? "Crystal Flow" : "Soft Aurora"}</small>
         </div>
 
-        {/* 桌面环境主题预设 (象牙白 / 液态玻璃 / 暗夜黑) */}
+        {/* 桌面环境主题预设 (象牙白 / 液态玻璃 / 深空) */}
         <fieldset className="mac-glass-fieldset">
           <legend>桌面环境主题</legend>
           <div className="grid grid-cols-3 gap-2">
@@ -1035,9 +1036,9 @@ export function MacLiquidGlassPanel({
               aria-pressed={desktopTheme === "theme-dark"}
             >
               <MoonIcon className="size-4 text-purple-400" />
-              <span>暗夜黑</span>
+              <span>深空</span>
               <small className="text-[10px] font-normal text-slate-400">
-                纯粹暗夜
+                冷光玻璃
               </small>
             </button>
           </div>
