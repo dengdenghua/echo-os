@@ -158,6 +158,7 @@ class DeviceLinkService:
         self._lifecycle_lock = asyncio.Lock()
         self._invitations: dict[str, float] = {}
         self._startup_error = ""
+        self._revocation_listeners: list[Callable[[str], None]] = []
         self._state = self._read_state()
 
     @property
@@ -328,6 +329,31 @@ class DeviceLinkService:
                     self._write_state_locked()
                 return True
         return False
+
+    def add_revocation_listener(self, listener: Callable[[str], None]) -> None:
+        """Run *listener(device_id)* after a managed device is revoked."""
+
+        self._revocation_listeners.append(listener)
+
+    def pairing_generation(self, device_id: str) -> str | None:
+        """Return an opaque id for the device's *current* pairing, if any.
+
+        A device id is client supplied, so re-pairing can reuse it.  Every
+        pairing mints a fresh credential, so a hash of that credential digest
+        distinguishes generations without exposing the digest itself.
+        Dependent grants must be bound to this value, not the bare device id.
+        """
+
+        if self._external or _DEVICE_ID.fullmatch(device_id) is None:
+            return None
+        with self._state_lock:
+            for device in self._state["devices"]:
+                if device["id"] == device_id:
+                    return hashlib.sha256(
+                        b"echo-os/device-link/pairing/v1:"
+                        + device["credentialDigest"].encode("ascii")
+                    ).hexdigest()[:32]
+        return None
 
     def managed_device(self, device_id: str) -> dict[str, Any] | None:
         """Return a bounded public managed-device record, never its digest."""
@@ -603,6 +629,11 @@ class DeviceLinkService:
                 raise DeviceLinkError(404, "paired device not found")
             self._state["devices"] = remaining
             self._write_state_locked()
+        for listener in list(self._revocation_listeners):
+            # Dependent state (sync grants, upload sessions) is also bound to
+            # the pairing generation, so a failing listener cannot re-grant.
+            with contextlib.suppress(Exception):
+                listener(device_id)
         connection = getattr(getattr(self._coordinator, "ws_server", None), "_connections", {}).get(
             device_id
         )

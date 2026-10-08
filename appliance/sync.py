@@ -127,6 +127,9 @@ class DeviceSyncService:
         if self.db_path.is_symlink():
             raise OSError("device sync database must not be a symbolic link")
         self._initialize()
+        add_listener = getattr(device_link, "add_revocation_listener", None)
+        if callable(add_listener):
+            add_listener(self.forget_device)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(str(self.db_path), timeout=5.0, isolation_level=None)
@@ -139,7 +142,7 @@ class DeviceSyncService:
     def _initialize(self) -> None:
         with self._connect() as connection:
             version = int(connection.execute("PRAGMA user_version").fetchone()[0])
-            if version not in {0, 1}:
+            if version not in {0, 1, 2}:
                 raise OSError("device sync database is newer than this Echo version")
             connection.execute("PRAGMA journal_mode=WAL")
             connection.execute("PRAGMA synchronous=FULL")
@@ -149,6 +152,7 @@ class DeviceSyncService:
                     device_id TEXT NOT NULL,
                     scope TEXT NOT NULL CHECK(scope IN ('photos', 'files')),
                     enabled_at INTEGER NOT NULL,
+                    pairing_id TEXT NOT NULL DEFAULT '',
                     PRIMARY KEY(device_id, scope)
                 );
                 CREATE TABLE IF NOT EXISTS assets (
@@ -186,7 +190,31 @@ class DeviceSyncService:
                 CREATE INDEX IF NOT EXISTS events_scope_cursor ON events(scope, cursor);
                 """
             )
-            connection.execute("PRAGMA user_version=1")
+            columns = {
+                str(row[1]) for row in connection.execute("PRAGMA table_info(grants)").fetchall()
+            }
+            if "pairing_id" not in columns:
+                connection.execute(
+                    "ALTER TABLE grants ADD COLUMN pairing_id TEXT NOT NULL DEFAULT ''"
+                )
+            # v1 grants were keyed by the client-chosen device id only. Bind
+            # each to the device's current pairing; drop grants of unpaired ids.
+            legacy = connection.execute(
+                "SELECT DISTINCT device_id FROM grants WHERE pairing_id=''"
+            ).fetchall()
+            for row in legacy:
+                device_id = str(row["device_id"])
+                pairing = self._pairing_id(device_id)
+                if pairing:
+                    connection.execute(
+                        "UPDATE grants SET pairing_id=? WHERE device_id=? AND pairing_id=''",
+                        (pairing, device_id),
+                    )
+                else:
+                    connection.execute(
+                        "DELETE FROM grants WHERE device_id=? AND pairing_id=''", (device_id,)
+                    )
+            connection.execute("PRAGMA user_version=2")
         with contextlib.suppress(OSError):
             self.db_path.chmod(0o600)
 
@@ -241,12 +269,67 @@ class DeviceSyncService:
             raise SyncError(422, "invalid asset size")
         return DeviceSyncService._normalized_source_path(path, scope), digest
 
+    def _pairing_id(self, device_id: str) -> str:
+        resolver = getattr(self.device_link, "pairing_generation", None)
+        pairing = resolver(device_id) if callable(resolver) else None
+        return pairing if isinstance(pairing, str) else ""
+
     def _granted_scopes(self, device_id: str) -> tuple[str, ...]:
+        # Grants belong to one pairing generation. A re-pair that reuses the
+        # same client-supplied device id never inherits an earlier approval.
+        pairing = self._pairing_id(device_id)
+        if not pairing:
+            return ()
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT scope FROM grants WHERE device_id=? ORDER BY scope", (device_id,)
+                "SELECT scope FROM grants WHERE device_id=? AND pairing_id=? ORDER BY scope",
+                (device_id, pairing),
             ).fetchall()
         return tuple(str(row["scope"]) for row in rows)
+
+    def _drop_device_locked(
+        self, connection: sqlite3.Connection, device_id: str, *, keep_pairing: str = ""
+    ) -> list[str]:
+        """Delete grants outside *keep_pairing* and cancel the device's uploads.
+
+        With *keep_pairing* set, uploads are only cancelled when stale grants
+        of an earlier pairing were actually found.
+        """
+
+        if keep_pairing:
+            stale = connection.execute(
+                "DELETE FROM grants WHERE device_id=? AND pairing_id<>?",
+                (device_id, keep_pairing),
+            ).rowcount
+            if not stale:
+                return []
+        else:
+            connection.execute("DELETE FROM grants WHERE device_id=?", (device_id,))
+        rows = connection.execute(
+            "SELECT session_id FROM assets WHERE device_id=? "
+            "AND state='uploading' AND session_id IS NOT NULL",
+            (device_id,),
+        ).fetchall()
+        connection.execute(
+            "UPDATE assets SET state='cancelled', session_id=NULL, updated_at=? "
+            "WHERE device_id=? AND state='uploading'",
+            (int(self._clock()), device_id),
+        )
+        return [str(row["session_id"]) for row in rows]
+
+    def forget_device(self, device_id: str) -> None:
+        """Revocation hook: remove grants and unfinished uploads of *device_id*.
+
+        Committed files stay in the NAS as ordinary data; they authorize nothing.
+        """
+
+        with self._lock, self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            sessions = self._drop_device_locked(connection, device_id)
+            connection.commit()
+        for session_id in sessions:
+            with contextlib.suppress(FileNotFoundError, OSError, ValueError):
+                self.files.cancel_upload_session(session_id)
 
     def _require_scope(self, device_id: str, scope: str) -> None:
         if scope not in self._granted_scopes(device_id):
@@ -255,17 +338,22 @@ class DeviceSyncService:
     def set_scope(self, device_id: str, scope: str, *, enabled: bool) -> dict[str, Any]:
         if scope not in SYNC_SCOPES:
             raise SyncError(422, "invalid sync scope")
-        if self.device_link.managed_device(device_id) is None:
+        pairing = self._pairing_id(device_id)
+        if self.device_link.managed_device(device_id) is None or not pairing:
             raise SyncError(404, "managed paired device not found")
         now = int(self._clock())
         sessions: list[str] = []
         with self._lock, self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            # Leftovers of an earlier pairing (e.g. a missed revocation hook)
+            # are purged together with their unfinished uploads.
+            sessions = self._drop_device_locked(connection, device_id, keep_pairing=pairing)
             if enabled:
                 connection.execute(
-                    "INSERT INTO grants(device_id, scope, enabled_at) VALUES(?, ?, ?) "
-                    "ON CONFLICT(device_id, scope) DO UPDATE SET enabled_at=excluded.enabled_at",
-                    (device_id, scope, now),
+                    "INSERT INTO grants(device_id, scope, enabled_at, pairing_id) "
+                    "VALUES(?, ?, ?, ?) ON CONFLICT(device_id, scope) DO UPDATE SET "
+                    "enabled_at=excluded.enabled_at, pairing_id=excluded.pairing_id",
+                    (device_id, scope, now, pairing),
                 )
             else:
                 connection.execute(
@@ -276,7 +364,7 @@ class DeviceSyncService:
                     "AND state='uploading' AND session_id IS NOT NULL",
                     (device_id, scope),
                 ).fetchall()
-                sessions = [str(row["session_id"]) for row in rows]
+                sessions += [str(row["session_id"]) for row in rows]
                 connection.execute(
                     "UPDATE assets SET state='cancelled', session_id=NULL, updated_at=? "
                     "WHERE device_id=? AND scope=? AND state='uploading'",
@@ -735,7 +823,8 @@ class DeviceSyncService:
         }
         with self._connect() as connection:
             grants = connection.execute(
-                "SELECT device_id, scope, enabled_at FROM grants ORDER BY device_id, scope"
+                "SELECT device_id, scope, enabled_at, pairing_id FROM grants "
+                "ORDER BY device_id, scope"
             ).fetchall()
             counts = connection.execute(
                 "SELECT device_id, scope, state, conflict, COUNT(*) AS amount, "
@@ -761,7 +850,7 @@ class DeviceSyncService:
         }
         for row in grants:
             device = devices.get(str(row["device_id"]))
-            if device is not None:
+            if device is not None and row["pairing_id"] == self._pairing_id(str(row["device_id"])):
                 device["grants"][str(row["scope"])] = True
         for row in counts:
             device = devices.get(str(row["device_id"]))
@@ -795,9 +884,11 @@ def create_device_sync_router(
     authenticator: ApplianceAuthenticator | None = None,
 ) -> APIRouter:
     router = APIRouter(tags=["appliance", "device-sync"])
-    require_browser = resolve_authenticator(
+    # Sync grants are device control plane: operator-only like device-link,
+    # so a family account that knows the review password cannot change them.
+    require_operator = resolve_authenticator(
         jwt_secret=jwt_secret, authenticator=authenticator
-    ).dependency()
+    ).operator_dependency()
 
     def _audit(actor: str, action: str, target: str, outcome: str) -> None:
         try:
@@ -863,7 +954,7 @@ def create_device_sync_router(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/api/appliance/sync")
-    async def admin_status(_actor: str = Depends(require_browser)) -> dict[str, Any]:
+    async def admin_status(_actor: str = Depends(require_operator)) -> dict[str, Any]:
         return await run_in_threadpool(service.admin_status)
 
     @router.post("/api/appliance/sync/devices/{device_id}/{scope}/{operation}")
@@ -872,7 +963,7 @@ def create_device_sync_router(
         scope: str,
         operation: str,
         request: Request,
-        actor: str = Depends(require_browser),
+        actor: str = Depends(require_operator),
     ) -> dict[str, Any]:
         if scope not in SYNC_SCOPES or operation not in {"enable", "disable"}:
             raise HTTPException(status_code=404, detail="sync setting not found")

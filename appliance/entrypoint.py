@@ -295,9 +295,17 @@ def main(argv: list[str] | None = None) -> int:
                     flush=True,
                 )
             else:
+                # Only a bcrypt hash reaches the auth store and this value is
+                # generated once, so it cannot be recovered or printed later.
                 print(
-                    f"Echo OS appliance admin password generated. username={ADMIN_USERNAME} "
-                    f"stored in {auth_store_path()}; set ECHO_PRINT_GENERATED_PASSWORD=1 to print it, then rotate immediately.",
+                    f"Echo OS appliance admin password generated for username={ADMIN_USERNAME} "
+                    "but not printed (ECHO_PRINT_GENERATED_PASSWORD is off). Only its bcrypt "
+                    f"hash is kept in {auth_store_path()}; the plaintext cannot be recovered "
+                    "and later restarts will not print it. To set a known password: stop "
+                    f"Echo, remove {auth_store_path()} (this also removes other Echo logins "
+                    "and signs out all sessions), then start again with ECHO_ADMIN_PASSWORD "
+                    "set, or with ECHO_PRINT_GENERATED_PASSWORD=1 to print a new generated "
+                    "one once; rotate it immediately after signing in.",
                     file=sys.stderr,
                     flush=True,
                 )

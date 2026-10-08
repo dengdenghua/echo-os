@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -243,6 +244,103 @@ def test_one_paired_device_cannot_resume_another_devices_session(tmp_path) -> No
     assert sync.changes("phone-2")["changes"] == []
 
 
+def _repair_with_same_id(link, coordinator, device_id: str = "phone-1") -> str:
+    invitation = link.create_pairing_invitation()
+    token = parse_qs(urlparse(invitation["connectString"]).query)["token"][0]
+    assert coordinator.ws_server._check_auth(
+        {"params": {"tentacle_id": device_id, "auth_token": token, "platform": "android"}}
+    )
+    return token
+
+
+def _start_private_upload(sync) -> tuple[str, bytes]:
+    content = b"old phone backup"
+    prepared = sync.preflight(
+        "phone-1",
+        asset_id="private-backup",
+        scope="files",
+        path="private.txt",
+        size=len(content),
+        sha256=hashlib.sha256(content).hexdigest(),
+    )
+    assert prepared["decision"] == "upload"
+    return prepared["session"]["sessionId"], content
+
+
+@pytest.mark.parametrize("revocation_hook", [True, False])
+def test_repairing_same_device_id_does_not_inherit_grants_or_sessions(
+    tmp_path, revocation_hook: bool
+) -> None:
+    link, old_token, files, _photos, sync, coordinator = _services(tmp_path)
+    sync.set_scope("phone-1", "files", enabled=True)
+    session_id, content = _start_private_upload(sync)
+    if not revocation_hook:
+        # Generation binding must hold even if the cleanup hook never ran.
+        link._revocation_listeners.clear()
+
+    asyncio.run(link.revoke_device("phone-1"))
+    assert not link.authenticate_device("phone-1", old_token)
+    new_token = _repair_with_same_id(link, coordinator)
+    assert link.authenticate_device("phone-1", new_token)
+
+    assert sync.device_status("phone-1")["grantedScopes"] == []
+    assert sync.admin_status()["devices"][0]["grants"]["files"] is False
+    for call in (
+        lambda: sync.upload_status("phone-1", session_id),
+        lambda: sync.append_chunk("phone-1", session_id, 0, content),
+        lambda: sync.preflight(
+            "phone-1",
+            asset_id="new-unapproved-backup",
+            scope="files",
+            path="new.txt",
+            size=3,
+            sha256=hashlib.sha256(b"new").hexdigest(),
+        ),
+    ):
+        with pytest.raises(SyncError) as denied:
+            call()
+        assert denied.value.status_code in {403, 404}
+
+    # A fresh approval for the new pairing starts over instead of resuming
+    # the previous pairing's unfinished upload.
+    sync.set_scope("phone-1", "files", enabled=True)
+    with pytest.raises(SyncError) as gone:
+        sync.upload_status("phone-1", session_id)
+    assert gone.value.status_code == 404
+    with pytest.raises(FileNotFoundError):
+        files.get_upload_session(session_id)
+    again = sync.preflight(
+        "phone-1",
+        asset_id="private-backup",
+        scope="files",
+        path="private.txt",
+        size=len(content),
+        sha256=hashlib.sha256(content).hexdigest(),
+    )
+    assert again["decision"] == "upload"
+    assert again["session"]["sessionId"] != session_id
+
+
+def test_legacy_grants_bind_to_current_pairing_on_upgrade(tmp_path) -> None:
+    link, _token, files, photos, sync, _coordinator = _services(tmp_path)
+    with sqlite3.connect(sync.db_path) as connection:
+        connection.execute("DROP TABLE grants")
+        connection.execute(
+            "CREATE TABLE grants (device_id TEXT NOT NULL, scope TEXT NOT NULL, "
+            "enabled_at INTEGER NOT NULL, PRIMARY KEY(device_id, scope))"
+        )
+        connection.execute("INSERT INTO grants VALUES('phone-1', 'files', 1)")
+        connection.execute("INSERT INTO grants VALUES('gone-phone', 'files', 1)")
+        connection.execute("PRAGMA user_version=1")
+    upgraded = DeviceSyncService(
+        data_dir=tmp_path / "state", files=files, device_link=link, photos=photos
+    )
+    assert upgraded.device_status("phone-1")["grantedScopes"] == ["files"]
+    with sqlite3.connect(upgraded.db_path) as connection:
+        rows = connection.execute("SELECT device_id, pairing_id FROM grants").fetchall()
+    assert rows == [("phone-1", link.pairing_generation("phone-1"))]
+
+
 @pytest.mark.parametrize(
     ("scope", "path"),
     [("files", "../escape.txt"), ("files", "/absolute.txt"), ("photos", "Camera/a.exe")],
@@ -356,6 +454,44 @@ def test_device_http_api_uses_pair_credential_and_admin_step_up(tmp_path) -> Non
 
     asyncio.run(link.revoke_device("phone-1"))
     assert anonymous.get("/api/appliance/device-sync", headers=headers).status_code == 401
+
+
+def test_family_account_cannot_manage_sync_even_with_review_password(tmp_path) -> None:
+    _link, _token, _files, _photos, sync, _coordinator = _services(tmp_path)
+    audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
+    approval = HighRiskApprovalService(
+        password_hash=PASSWORD_HASH,
+        jwt_secret=JWT_SECRET,
+        audit=audit,
+        boot_nonce=b"s" * 32,
+    )
+    app = FastAPI()
+    app.include_router(create_approval_router(approval, jwt_secret=JWT_SECRET))
+    app.include_router(
+        create_device_sync_router(sync, jwt_secret=JWT_SECRET, approval=approval, audit=audit)
+    )
+    client = TestClient(app)
+    family_token = encode_jwt_hs256(
+        {"sub": "local:alice", "iat": 0, "exp": 9_999_999_999}, secret=JWT_SECRET
+    )
+    client.headers.update({"Authorization": f"Bearer {family_token}"})
+
+    assert client.get("/api/appliance/sync").status_code == 403
+    issued = client.post(
+        "/api/appliance/approvals",
+        json={
+            "action": "device-sync.files.enable",
+            "target": "phone-1",
+            "password": PASSWORD,
+        },
+    )
+    headers = {APPROVAL_HEADER: issued.json()["approvalToken"]} if issued.status_code == 200 else {}
+    for operation in ("enable", "disable"):
+        response = client.post(
+            f"/api/appliance/sync/devices/phone-1/files/{operation}", headers=headers
+        )
+        assert response.status_code == 403
+    assert sync.device_status("phone-1")["grantedScopes"] == []
 
 
 def test_upload_disconnect_is_a_quiet_client_closed_response(tmp_path) -> None:

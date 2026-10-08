@@ -257,6 +257,50 @@ def test_main_rewrites_explicit_config_to_secure_runtime_copy(tmp_path, monkeypa
     ]
 
 
+def test_generated_password_notice_does_not_claim_plaintext_is_stored(
+    tmp_path, monkeypatch, capsys
+):
+    from appliance import agent_ui
+
+    generated = "generated-secret-value"
+    monkeypatch.setenv("ECHO_RUNTIME_CONFIG", str(tmp_path / "runtime.yaml"))
+    monkeypatch.delenv("ECHO_PRINT_GENERATED_PASSWORD", raising=False)
+    for name in (
+        "ECHO_PACKAGED_CODEX_VERSION",
+        "ECHO_APPLIANCE",
+        "ECHO_APP_EXTENSIONS",
+        "ECHO_REQUIRED_APP_EXTENSIONS",
+        "ECHO_SKILL_EXTENSIONS",
+    ):
+        monkeypatch.setenv(name, "pytest-restore-guard")
+        monkeypatch.delenv(name)
+    monkeypatch.setattr(entrypoint, "_drop_container_privileges", lambda _root: None)
+    monkeypatch.setattr(
+        entrypoint,
+        "prepare_runtime_config",
+        lambda _template, output: (output, generated),
+    )
+    monkeypatch.setattr(
+        agent_ui,
+        "agent_bundle_status",
+        lambda: {"source_id": "a" * 40, "version": "1.2.3", "packaged_codex_version": "0"},
+    )
+
+    def _exec(_program: str, _args: list[str]):
+        raise OSError("exec captured")
+
+    monkeypatch.setattr(os, "execv", _exec)
+    with pytest.raises(OSError, match="exec captured"):
+        entrypoint.main(["serve", "--config", str(tmp_path / "custom.yaml")])
+
+    notice = capsys.readouterr().err
+    assert generated not in notice
+    assert "bcrypt hash" in notice
+    assert "cannot be recovered" in notice
+    assert "ECHO_ADMIN_PASSWORD" in notice
+    assert "stored in" not in notice
+
+
 @pytest.mark.skipif(os.name == "nt", reason="container privilege migration requires POSIX uid APIs")
 def test_container_entrypoint_migrates_state_but_never_nas_data(tmp_path, monkeypatch):
     data_root = tmp_path / "data"
