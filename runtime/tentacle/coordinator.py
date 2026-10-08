@@ -431,14 +431,15 @@ class TentacleCoordinator:
             tool_calls = await self._decision_engine(request.task, device)
             logger.info("decision engine generated %d tool calls", len(tool_calls))
 
-            # 逐个执行
-            results: list[ToolResult] = []
-            for call in tool_calls:
-                result = await device.execute(call)
-                results.append(result)
-                if not result.success:
-                    logger.warning("tool call failed: %s error=%s", call.tool, result.error_message)
-                    break  # 有错误时停止
+            # 经租约 + 回执账本的统一执行路径逐个下发（失败即停止）
+            results = await self.device_executor.execute_sequence(
+                device,
+                tool_calls,
+                owner=f"coordinator:{request.task_id}",
+                task_id=request.task_id,
+            )
+            if results and not results[-1].success:
+                logger.warning("tool call failed: error=%s", results[-1].error_message)
 
             # 汇总结果
             success = all(r.success for r in results)

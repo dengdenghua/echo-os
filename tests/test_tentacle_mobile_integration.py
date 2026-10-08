@@ -357,6 +357,29 @@ async def test_task_execute_with_decision_engine(coordinator, mock_mobile_client
         assert "tc-a" in received_calls
         assert "tc-b" in received_calls
 
+        # Host tasks run through the leased, receipt-recording executor path.
+        receipts = coord_with_engine.device_executor.ledger.list(device_id="android-test-002")
+        assert {receipt.call_id for receipt in receipts} == {"tc-a", "tc-b"}
+        assert all(receipt.lease_id for receipt in receipts)
+        assert coord_with_engine.pool.lock_holder("android-test-002") is None
+
+        # A device leased by another task is not driven by the decision engine.
+        assert await coord_with_engine.pool.acquire_lock(
+            "android-test-002", "other-owner", "other-task", timeout_s=60
+        )
+        received_calls.clear()
+        task_result = None
+        handler_task = asyncio.create_task(mobile_handler())
+        await ws.send(
+            json.dumps(
+                {**task_msg, "id": "task-3", "params": {**task_msg["params"], "task_id": "task-3"}}
+            )
+        )
+        await asyncio.wait_for(handler_task, timeout=10.0)
+        assert task_result["params"]["success"] is False
+        assert received_calls == []
+        await coord_with_engine.pool.release_lock("android-test-002", "other-owner")
+
         await ws.close()
     finally:
         await coord_with_engine.stop()
