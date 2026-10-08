@@ -13,6 +13,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
@@ -34,6 +35,7 @@ import {
 import {
   getDesktopWorkArea,
   getDesktopWorkAreaSync,
+  type ScreenWorkArea,
 } from "./desktop-screen-bounds";
 import type { WindowGeometry } from "./use-desktop-windows";
 import { playSystemSound } from "./desktop-audio-feedback";
@@ -49,14 +51,64 @@ export type DesktopWindow = {
   content?: ReactNode;
   /** Agent 等内建应用把导航并入窗口内容，由 Echo OS 叠加唯一一套系统按钮。 */
   integratedChrome?: boolean;
+  /** 首次打开时的期望尺寸，会按当前工作区收缩。 */
+  preferredSize?: { w: number; h: number };
+  /** 内容自带标题栏的高度：系统按钮在其中垂直居中，空白处可拖动窗口。 */
+  chromeHeight?: number;
 };
 
 const MIN_W = 360;
 const MIN_H = 240;
 
+/** 窗口可占用区域相对工作区的留白：顶部让出菜单栏，底部让出 Dock。 */
+const WINDOW_SIDE_INSET = 6;
+const WINDOW_TOP_INSET = 31;
+const WINDOW_BOTTOM_INSET = 83;
+/** 内建应用把导航并入窗口内容，顶部这一条的空白处都可以拖动窗口。 */
+const TITLEBAR_DRAG_HEIGHT = 40;
+const NON_DRAGGABLE_TARGET =
+  "button, a, input, select, textarea, label, summary, [role='button'], [role='tab'], [role='menuitem'], [role='combobox'], [role='slider'], [contenteditable='true'], [data-no-window-drag]";
+/** 手机悬浮小窗始终位于普通窗口之上。 */
+const PHONE_PIP_Z = 10_000;
+const SNAP_PREVIEW_Z = 9_000;
+
 export type WindowSnapZone = "none" | "maximize" | "left" | "right";
 
 type Rect = { x: number; y: number; w: number; h: number };
+
+function maximizedRect(area: ScreenWorkArea): Rect {
+  return {
+    x: area.x + WINDOW_SIDE_INSET,
+    y: area.y + WINDOW_TOP_INSET,
+    w: Math.max(MIN_W, area.width - WINDOW_SIDE_INSET * 2),
+    h: Math.max(MIN_H, area.height - WINDOW_TOP_INSET - WINDOW_BOTTOM_INSET),
+  };
+}
+
+function tiledRect(area: ScreenWorkArea, side: "left" | "right"): Rect {
+  const full = maximizedRect(area);
+  const w = Math.floor((area.width - 16) / 2);
+  return {
+    x: side === "left" ? full.x : area.x + w + 10,
+    y: full.y,
+    w,
+    h: full.h,
+  };
+}
+
+/**
+ * 把窗口收回当前工作区：放得下就完整显示，放不下就缩到工作区大小。
+ * 已在区域内的窗口原样返回（同一引用），调用方据此跳过状态更新。
+ */
+export function fitRectToWorkArea(rect: Rect, area: ScreenWorkArea): Rect {
+  const bounds = maximizedRect(area);
+  const w = Math.min(rect.w, bounds.w);
+  const h = Math.min(rect.h, bounds.h);
+  const x = Math.min(Math.max(rect.x, bounds.x), bounds.x + bounds.w - w);
+  const y = Math.min(Math.max(rect.y, bounds.y), bounds.y + bounds.h - h);
+  if (x === rect.x && y === rect.y && w === rect.w && h === rect.h) return rect;
+  return { x, y, w, h };
+}
 
 function ZoomTrafficLight({
   maximized,
@@ -169,9 +221,29 @@ function ZoomTrafficLight({
   );
 }
 
-function initialRect(index: number, phone = false): Rect {
+function initialRect(
+  index: number,
+  phone = false,
+  preferred?: { w: number; h: number },
+): Rect {
   // 层叠摆放,避免完全重叠。
   const offset = (index % 6) * 28;
+  if (preferred) {
+    // 应用声明了自己的尺寸：居中打开，并收进当前工作区。
+    const area = getDesktopWorkAreaSync();
+    const bounds = maximizedRect(area);
+    const w = Math.min(preferred.w, bounds.w);
+    const h = Math.min(preferred.h, bounds.h);
+    return fitRectToWorkArea(
+      {
+        x: Math.round(area.x + (area.width - w) / 2 + offset),
+        y: Math.round(bounds.y + (bounds.h - h) / 2 + offset),
+        w,
+        h,
+      },
+      area,
+    );
+  }
   const w = Math.min(
     phone ? 480 : 960,
     Math.max(MIN_W, window.innerWidth - 220),
@@ -193,6 +265,7 @@ export function AppWindow({
   index,
   focused,
   hidden = false,
+  stackOrder,
   initialGeometry,
   onGeometryChange,
   onFocus,
@@ -203,6 +276,8 @@ export function AppWindow({
   index: number;
   focused: boolean;
   hidden?: boolean;
+  /** 在最近使用栈中的位置，越大越靠上。缺省时只区分聚焦与否。 */
+  stackOrder?: number;
   initialGeometry?: WindowGeometry;
   onGeometryChange?: (geometry: WindowGeometry) => void;
   onFocus: () => void;
@@ -210,6 +285,8 @@ export function AppWindow({
   onMinimize: () => void;
 }) {
   const [rect, setRect] = useState<Rect>(() => {
+    const area = getDesktopWorkAreaSync();
+    if (initialGeometry?.maximized) return maximizedRect(area);
     if (
       initialGeometry &&
       typeof initialGeometry.x === "number" &&
@@ -217,18 +294,24 @@ export function AppWindow({
       initialGeometry.w >= MIN_W &&
       initialGeometry.h >= MIN_H
     ) {
-      return {
-        x: initialGeometry.x,
-        y: initialGeometry.y,
-        w: initialGeometry.w,
-        h: initialGeometry.h,
-      };
+      // 上次会话可能在更大的屏幕上，恢复时先收回当前工作区。
+      return fitRectToWorkArea(
+        {
+          x: initialGeometry.x,
+          y: initialGeometry.y,
+          w: initialGeometry.w,
+          h: initialGeometry.h,
+        },
+        area,
+      );
     }
-    return initialRect(index, win.url === "/phone-mirror");
+    return initialRect(index, win.url === "/phone-mirror", win.preferredSize);
   });
   const [maximized, setMaximized] = useState(
     () => !!initialGeometry?.maximized,
   );
+  /** 入场动画只播一次；拖拽结束或重绘不应让窗口重新"弹入"。 */
+  const [entered, setEntered] = useState(false);
   const [phonePip, setPhonePip] = useState(false);
   const beforePhonePip = useRef<WindowGeometry | null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
@@ -264,34 +347,14 @@ export function AppWindow({
   const snapPreviewRect = useMemo<Rect | null>(() => {
     if (snapZone === "none") return null;
     const workArea = getDesktopWorkAreaSync();
-    if (snapZone === "maximize") {
-      return {
-        x: workArea.x + 6,
-        y: workArea.y + 31,
-        w: Math.max(MIN_W, workArea.width - 12),
-        h: Math.max(MIN_H, workArea.height - 114),
-      };
-    }
-    const halfW = Math.floor((workArea.width - 16) / 2);
-    const commonH = Math.max(MIN_H, workArea.height - 114);
-    if (snapZone === "left") {
-      return {
-        x: workArea.x + 6,
-        y: workArea.y + 31,
-        w: halfW,
-        h: commonH,
-      };
-    }
-    if (snapZone === "right") {
-      return {
-        x: workArea.x + halfW + 10,
-        y: workArea.y + 31,
-        w: halfW,
-        h: commonH,
-      };
-    }
-    return null;
+    if (snapZone === "maximize") return maximizedRect(workArea);
+    return tiledRect(workArea, snapZone);
   }, [snapZone]);
+
+  // 最小化后再恢复时重播入场动画，作为恢复反馈。
+  useEffect(() => {
+    if (hidden) setEntered(false);
+  }, [hidden]);
 
   const handleWakeAndFocus = useCallback(() => {
     if (isSleeping) {
@@ -300,41 +363,21 @@ export function AppWindow({
     onFocus();
   }, [isSleeping, onFocus]);
 
-  const tileLeft = useCallback(() => {
-    handleWakeAndFocus();
-    if (!maximized) {
-      restoreRect.current = rect;
-    }
-    const workArea = getDesktopWorkAreaSync();
-    const halfW = Math.floor((workArea.width - 16) / 2);
-    const targetRect: Rect = {
-      x: workArea.x + 6,
-      y: workArea.y + 31,
-      w: halfW,
-      h: Math.max(MIN_H, workArea.height - 114),
-    };
-    setRect(targetRect);
-    setMaximized(false);
-    onGeometryChange?.({ ...targetRect, maximized: false });
-  }, [handleWakeAndFocus, maximized, onGeometryChange, rect]);
-
-  const tileRight = useCallback(() => {
-    handleWakeAndFocus();
-    if (!maximized) {
-      restoreRect.current = rect;
-    }
-    const workArea = getDesktopWorkAreaSync();
-    const halfW = Math.floor((workArea.width - 16) / 2);
-    const targetRect: Rect = {
-      x: workArea.x + halfW + 10,
-      y: workArea.y + 31,
-      w: halfW,
-      h: Math.max(MIN_H, workArea.height - 114),
-    };
-    setRect(targetRect);
-    setMaximized(false);
-    onGeometryChange?.({ ...targetRect, maximized: false });
-  }, [handleWakeAndFocus, maximized, onGeometryChange, rect]);
+  const tile = useCallback(
+    (side: "left" | "right") => {
+      handleWakeAndFocus();
+      if (!maximized) {
+        restoreRect.current = rect;
+      }
+      const targetRect = tiledRect(getDesktopWorkAreaSync(), side);
+      setRect(targetRect);
+      setMaximized(false);
+      onGeometryChange?.({ ...targetRect, maximized: false });
+    },
+    [handleWakeAndFocus, maximized, onGeometryChange, rect],
+  );
+  const tileLeft = useCallback(() => tile("left"), [tile]);
+  const tileRight = useCallback(() => tile("right"), [tile]);
 
   // 10 分钟后台未激活的非内建 iframe 窗口进入节能休眠状态
   useEffect(() => {
@@ -518,12 +561,7 @@ export function AppWindow({
       if (d && !maximizedRef.current) {
         restoreRect.current = d.orig;
       }
-      const maxRect = {
-        x: workArea.x + 6,
-        y: workArea.y + 31,
-        w: Math.max(MIN_W, workArea.width - 12),
-        h: Math.max(MIN_H, workArea.height - 114),
-      };
+      const maxRect = maximizedRect(workArea);
       setRect(maxRect);
       setMaximized(true);
       onGeometryChangeRef.current?.({ ...maxRect, maximized: true });
@@ -531,17 +569,7 @@ export function AppWindow({
       if (d && !maximizedRef.current) {
         restoreRect.current = d.orig;
       }
-      const halfW = Math.floor((workArea.width - 16) / 2);
-      const commonH = Math.max(MIN_H, workArea.height - 114);
-      const targetRect: Rect =
-        activeZone === "left"
-          ? { x: workArea.x + 6, y: workArea.y + 31, w: halfW, h: commonH }
-          : {
-              x: workArea.x + halfW + 10,
-              y: workArea.y + 31,
-              w: halfW,
-              h: commonH,
-            };
+      const targetRect = tiledRect(workArea, activeZone);
       setRect(targetRect);
       setMaximized(false);
       onGeometryChangeRef.current?.({ ...targetRect, maximized: false });
@@ -570,8 +598,12 @@ export function AppWindow({
     const startY = event.clientY;
 
     if (maximized && mode === "move") {
-      const restore = restoreRect.current || initialRect(index);
       const workArea = getDesktopWorkAreaSync();
+      const restore = fitRectToWorkArea(
+        restoreRect.current ||
+          initialRect(index, false, win.preferredSize),
+        workArea,
+      );
       const ratio = Math.min(
         Math.max((event.clientX - rect.x) / Math.max(1, rect.w), 0.1),
         0.9,
@@ -611,7 +643,11 @@ export function AppWindow({
   const toggleMaximize = useCallback(() => {
     handleWakeAndFocus();
     if (maximized) {
-      const target = restoreRect.current || rect;
+      // 最大化期间视口可能变小，还原尺寸也要收回当前工作区。
+      const target = fitRectToWorkArea(
+        restoreRect.current || rect,
+        getDesktopWorkAreaSync(),
+      );
       setRect(target);
       restoreRect.current = null;
       setMaximized(false);
@@ -619,13 +655,7 @@ export function AppWindow({
       return;
     }
     restoreRect.current = rect;
-    const workArea = getDesktopWorkAreaSync();
-    const maxRect = {
-      x: workArea.x + 6,
-      y: workArea.y + 31,
-      w: Math.max(MIN_W, workArea.width - 12),
-      h: Math.max(MIN_H, workArea.height - 114),
-    };
+    const maxRect = maximizedRect(getDesktopWorkAreaSync());
     setRect(maxRect);
     setMaximized(true);
     onGeometryChange?.({ ...maxRect, maximized: true });
@@ -716,22 +746,51 @@ export function AppWindow({
     win.integratedChrome,
   ]);
 
+  // 视口变化（分辨率、窗口尺寸、外接屏）后：最大化窗口跟随新工作区，
+  // 其余窗口收回可见区域，避免标题栏跑到屏幕外再也拖不回来。
   useEffect(() => {
-    if (!maximized) return;
     const resize = () => {
       const workArea = getDesktopWorkAreaSync();
-      const maxRect = {
-        x: workArea.x + 6,
-        y: workArea.y + 31,
-        w: Math.max(MIN_W, workArea.width - 12),
-        h: Math.max(MIN_H, workArea.height - 114),
-      };
-      setRect(maxRect);
-      onGeometryChange?.({ ...maxRect, maximized: true });
+      if (maximizedRef.current) {
+        const maxRect = maximizedRect(workArea);
+        setRect(maxRect);
+        onGeometryChangeRef.current?.({ ...maxRect, maximized: true });
+        return;
+      }
+      const current = rectRef.current;
+      const next = fitRectToWorkArea(current, workArea);
+      if (next === current) return;
+      setRect(next);
+      onGeometryChangeRef.current?.({ ...next, maximized: false });
     };
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, [maximized, onGeometryChange]);
+  }, []);
+
+  const isTitlebarHit = (event: PointerEvent | MouseEvent<HTMLDivElement>) => {
+    // 手机镜像的内容区逐像素映射到手机屏幕，不能拿来拖窗口。
+    if (!win.integratedChrome || !win.content || win.url === "/phone-mirror")
+      return false;
+    const element = windowRef.current;
+    const target = event.target;
+    if (!element || !(target instanceof Element)) return false;
+    // 系统按钮条自己处理拖动和双击，避免同一次双击被处理两次。
+    if (target.closest(".mac-window-integrated-controls, .mac-window-titlebar"))
+      return false;
+    if (target.closest(NON_DRAGGABLE_TARGET)) return false;
+    return (
+      event.clientY - element.getBoundingClientRect().top <=
+      (win.chromeHeight ?? TITLEBAR_DRAG_HEIGHT)
+    );
+  };
+
+  const handleWindowPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (drag.current || event.button !== 0 || !isTitlebarHit(event)) {
+      handleWakeAndFocus();
+      return;
+    }
+    startDrag("move")(event);
+  };
 
   const togglePhonePip = () => {
     if (!phonePip) {
@@ -755,8 +814,9 @@ export function AppWindow({
       {snapPreviewRect && (
         <div
           data-testid="window-snap-preview"
-          className="mac-window-snap-preview fixed pointer-events-none z-50 rounded-2xl transition-all duration-200"
+          className="mac-window-snap-preview fixed pointer-events-none rounded-2xl transition-all duration-200"
           style={{
+            zIndex: SNAP_PREVIEW_Z,
             left: `${snapPreviewRect.x}px`,
             top: `${snapPreviewRect.y}px`,
             width: `${snapPreviewRect.w}px`,
@@ -768,11 +828,26 @@ export function AppWindow({
       )}
       <div
         ref={windowRef}
+        role="dialog"
+        aria-label={win.title}
+        data-window-id={win.id}
         data-desktop-interactive
         data-phone-pip={phonePip || undefined}
+        data-window-entered={entered || undefined}
         aria-hidden={hidden || undefined}
         data-liquid-surface="ultra-thick"
-        onPointerDown={handleWakeAndFocus}
+        onPointerDown={handleWindowPointerDown}
+        onDoubleClick={(event) => {
+          if (isTitlebarHit(event)) toggleMaximize();
+        }}
+        onAnimationEnd={(event) => {
+          if (
+            event.target === event.currentTarget &&
+            event.animationName === "mac-window-spring-enter"
+          ) {
+            setEntered(true);
+          }
+        }}
         className={cn(
           "mac-window absolute flex flex-col overflow-hidden",
           !focused && "is-unfocused",
@@ -783,7 +858,13 @@ export function AppWindow({
           top: rect.y,
           width: rect.w,
           height: rect.h,
-          zIndex: phonePip ? 60 : focused ? 50 : 40,
+          zIndex: phonePip
+            ? PHONE_PIP_Z
+            : stackOrder !== undefined
+              ? 10 + stackOrder
+              : focused
+                ? 50
+                : 40,
           display: hidden ? "none" : undefined,
         }}
       >
@@ -791,7 +872,7 @@ export function AppWindow({
           /* 全尺寸内容窗口没有第二条标题栏，但系统按钮必须始终存在。 */
           <div
             className="mac-window-integrated-controls select-none"
-            style={win.url === "/phone-mirror" ? { position: "relative", inset: "auto", width: "100%", height: 32, minHeight: 32, padding: "4px 12px", display: "flex", gap: 12, alignItems: "center", background: "rgba(248,250,252,.95)" } : undefined}
+            style={win.url === "/phone-mirror" ? { position: "relative", inset: "auto", width: "100%", height: 32, minHeight: 32, padding: "4px 12px", display: "flex", gap: 12, alignItems: "center", background: "rgba(248,250,252,.95)" } : win.chromeHeight ? { height: win.chromeHeight } : undefined}
             onPointerDown={startDrag("move")}
             onDoubleClick={toggleMaximize}
             aria-label={`${win.title}窗口控制`}
@@ -838,6 +919,7 @@ export function AppWindow({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={onClose}
                 title="关闭"
+                aria-label={`关闭${win.title}`}
                 className="mac-traffic-light close"
               />
               <button
@@ -845,6 +927,7 @@ export function AppWindow({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={onMinimize}
                 title="最小化"
+                aria-label={`最小化${win.title}`}
                 className="mac-traffic-light minimize"
               />
               <ZoomTrafficLight

@@ -36,6 +36,11 @@ import { NutDeviceConfigPanel } from "@/appliance/nut-device-config-panel";
 import { SmartSchedulePanel } from "@/appliance/smart-schedule-panel";
 import { UpsPanel } from "@/appliance/ups-panel";
 import { ZfsMirrorPanel } from "@/appliance/zfs-mirror-panel";
+import {
+  SystemAppFrame,
+  SystemAppLightsSpacer,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
 import { cn } from "@/lib/utils";
 
 type StorageCenterSection = "overview" | "health" | "pools" | "sharing";
@@ -559,16 +564,18 @@ export function StorageCenterPanel({
   onClose: () => void;
   onOpenFiles?: () => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const [section, setSection] = useState<StorageCenterSection>("overview");
 
   useEffect(() => {
-    if (!open) return;
+    // 窗口形态下 Esc 不关闭整个应用，与其他桌面窗口一致。
+    if (!open || inWindow) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
+  }, [inWindow, onClose, open]);
 
   if (!open) return null;
 
@@ -580,80 +587,79 @@ export function StorageCenterPanel({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[89] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-      data-desktop-interactive
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <SystemAppFrame
+      label="存储中心"
+      onClose={onClose}
+      overlayClassName="fixed inset-0 z-[89] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
+      className="relative flex h-[min(780px,calc(100vh-56px))] w-[min(1120px,calc(100vw-28px))] overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/94 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+      windowClassName="relative flex size-full overflow-hidden bg-slate-50 text-slate-900"
     >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="存储中心"
-        className="relative flex h-[min(780px,calc(100vh-56px))] w-[min(1120px,calc(100vw-28px))] overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/94 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
-      >
-        <aside className="w-[210px] shrink-0 border-r border-slate-200/75 bg-white/52 p-4 backdrop-blur-2xl">
-          <div className="flex items-center gap-2 px-1">
-            <button
-              type="button"
-              aria-label="关闭存储中心"
-              onClick={onClose}
-              className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
-            >
-              <XIcon className="size-2.5" />
-            </button>
-            <span className="size-3.5 rounded-full bg-[#febc2e]" />
-            <span className="size-3.5 rounded-full bg-[#28c840]" />
-          </div>
-          <div className="mt-7 px-2">
-            <span className="grid size-12 place-items-center rounded-[15px] bg-gradient-to-br from-cyan-400 to-blue-700 text-white shadow-lg shadow-blue-500/20">
-              <HardDriveIcon className="size-6" />
-            </span>
-            <h1 className="mt-3 text-[18px] font-semibold tracking-tight">
-              存储中心
-            </h1>
-            <p className="mt-1 text-[10px] leading-4 text-slate-400">
-              容量、磁盘与家庭共享
-            </p>
-          </div>
-          <nav className="mt-7 space-y-1" aria-label="存储中心导航">
-            {sections.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSection(item.id)}
-                  className={cn(
-                    "flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[12px] font-semibold transition",
-                    section === item.id
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-white/82 hover:text-slate-900",
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-          <div className="mt-auto hidden" />
-        </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_85%_0%,rgba(125,211,252,.16),transparent_38%)]">
-          {section === "overview" ? (
-            <StorageOverview onOpenFiles={onOpenFiles} />
-          ) : section === "health" ? (
-            <StorageHealthWorkspace />
-          ) : section === "pools" ? (
-            <StoragePoolsWorkspace />
+      <aside className="w-[210px] shrink-0 border-r border-slate-200/75 bg-white/52 p-4 backdrop-blur-2xl">
+        <div className="flex items-center gap-2 px-1">
+          {inWindow ? (
+            <SystemAppLightsSpacer />
           ) : (
-            <div className="mx-auto w-full max-w-[980px] px-7 py-7">
-              <OmvSharingPanel />
-            </div>
+            <>
+              <button
+                type="button"
+                aria-label="关闭存储中心"
+                onClick={onClose}
+                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
+              >
+                <XIcon className="size-2.5" />
+              </button>
+              <span className="size-3.5 rounded-full bg-[#febc2e]" />
+              <span className="size-3.5 rounded-full bg-[#28c840]" />
+            </>
           )}
-        </main>
-      </section>
-    </div>
+        </div>
+        <div className="mt-7 px-2">
+          <span className="grid size-12 place-items-center rounded-[15px] bg-gradient-to-br from-cyan-400 to-blue-700 text-white shadow-lg shadow-blue-500/20">
+            <HardDriveIcon className="size-6" />
+          </span>
+          <h1 className="mt-3 text-[18px] font-semibold tracking-tight">
+            存储中心
+          </h1>
+          <p className="mt-1 text-[10px] leading-4 text-slate-400">
+            容量、磁盘与家庭共享
+          </p>
+        </div>
+        <nav className="mt-7 space-y-1" aria-label="存储中心导航">
+          {sections.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSection(item.id)}
+                className={cn(
+                  "flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[12px] font-semibold transition",
+                  section === item.id
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-white/82 hover:text-slate-900",
+                )}
+              >
+                <Icon className="size-4" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="mt-auto hidden" />
+      </aside>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_85%_0%,rgba(125,211,252,.16),transparent_38%)]">
+        {section === "overview" ? (
+          <StorageOverview onOpenFiles={onOpenFiles} />
+        ) : section === "health" ? (
+          <StorageHealthWorkspace />
+        ) : section === "pools" ? (
+          <StoragePoolsWorkspace />
+        ) : (
+          <div className="mx-auto w-full max-w-[980px] px-7 py-7">
+            <OmvSharingPanel />
+          </div>
+        )}
+      </main>
+    </SystemAppFrame>
   );
 }

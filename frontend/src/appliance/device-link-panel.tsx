@@ -43,6 +43,10 @@ import {
   type DeviceSyncStatus,
 } from "@/appliance/device-sync";
 import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
+import {
+  SystemAppFrame,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
 import { cn } from "@/lib/utils";
 
 type DeviceLinkSection = "devices" | "pair" | "sync" | "remote";
@@ -183,6 +187,7 @@ export function DeviceLinkPanel({
   onClose: () => void;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const [section, setSection] = useState<DeviceLinkSection>("devices");
   const directory = useDeviceDirectory(open);
   const status = directory.status;
@@ -347,33 +352,43 @@ export function DeviceLinkPanel({
   const remoteConnected = !!remote?.available;
 
   return (
-    <div
-      className="absolute inset-0 z-[82] grid place-items-center bg-slate-950/22 px-5 pb-20 pt-10 backdrop-blur-[5px]"
-      data-desktop-interactive
+    <SystemAppFrame
+      label="设备连接"
+      onClose={onClose}
+      backdropButtonLabel="关闭设备连接"
+      overlayClassName="absolute inset-0 z-[82] grid place-items-center bg-slate-950/22 px-5 pb-20 pt-10 backdrop-blur-[5px]"
+      className="relative flex h-[min(620px,calc(100vh-120px))] w-[min(920px,calc(100vw-34px))] overflow-hidden rounded-[24px] border border-white/75 bg-[#edf1f6]/94 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.38)] backdrop-blur-3xl"
+      windowClassName="relative flex size-full overflow-hidden bg-[#edf1f6] text-slate-900"
+      trailing={
+        <HighRiskApprovalDialog
+          open={!!pendingAction}
+          title={approvalCopy?.title ?? "确认设备连接操作"}
+          description={approvalCopy?.description ?? "请输入管理员密码继续。"}
+          targetLabel={approvalCopy?.target}
+          confirmLabel={approvalCopy?.confirm}
+          destructive={approvalCopy?.destructive}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={runApprovedAction}
+        />
+      }
     >
-      <button
-        type="button"
-        aria-label="关闭设备连接"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-      />
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="设备连接"
-        className="relative flex h-[min(620px,calc(100vh-120px))] w-[min(920px,calc(100vw-34px))] overflow-hidden rounded-[24px] border border-white/75 bg-[#edf1f6]/94 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.38)] backdrop-blur-3xl"
-      >
         <aside className="w-56 shrink-0 border-r border-white/70 bg-white/44 px-3 py-4">
           <div className="mb-5 flex items-center justify-between px-1">
             <div className="flex gap-2">
-              <button
-                type="button"
-                aria-label="关闭"
-                onClick={onClose}
-                className="size-3 rounded-full bg-[#ff5f57] ring-1 ring-black/10"
-              />
-              <span className="size-3 rounded-full bg-[#febc2e] ring-1 ring-black/10" />
-              <span className="size-3 rounded-full bg-[#28c840] ring-1 ring-black/10" />
+              {inWindow ? (
+                <span aria-hidden className="block h-3 w-11" />
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    aria-label="关闭"
+                    onClick={onClose}
+                    className="size-3 rounded-full bg-[#ff5f57] ring-1 ring-black/10"
+                  />
+                  <span className="size-3 rounded-full bg-[#febc2e] ring-1 ring-black/10" />
+                  <span className="size-3 rounded-full bg-[#28c840] ring-1 ring-black/10" />
+                </>
+              )}
             </div>
           </div>
           <div className="mb-4 flex items-center gap-3 rounded-2xl bg-white/72 p-3 ring-1 ring-white">
@@ -921,18 +936,6 @@ export function DeviceLinkPanel({
           <DeviceTaskSection />
           <details className="m-4"><summary className="cursor-pointer text-sm">全部文件传输</summary><PhoneTransferList /></details>
         </main>
-      </section>
-
-      <HighRiskApprovalDialog
-        open={!!pendingAction}
-        title={approvalCopy?.title ?? "确认设备连接操作"}
-        description={approvalCopy?.description ?? "请输入管理员密码继续。"}
-        targetLabel={approvalCopy?.target}
-        confirmLabel={approvalCopy?.confirm}
-        destructive={approvalCopy?.destructive}
-        onCancel={() => setPendingAction(null)}
-        onConfirm={runApprovedAction}
-      />
-    </div>
+    </SystemAppFrame>
   );
 }

@@ -116,6 +116,35 @@ const projection: EchoTaskProjectionResponse = {
 };
 
 describe("Echo task space", () => {
+  it("opens the requested task's details when the desktop asks for it", () => {
+    const props = {
+      open: true,
+      projection,
+      loading: false,
+      error: null,
+      onClose: vi.fn(),
+      onRefresh: vi.fn(),
+      onOpenWorkspace: vi.fn(),
+      onTakeover: vi.fn(),
+      onResumeExecution: vi.fn(),
+      onApprovalDecision: vi.fn(),
+    };
+    const { rerender } = render(<TaskSpacePanel {...props} />);
+    expect(
+      screen.queryByRole("complementary", { name: "任务详情" }),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <TaskSpacePanel
+        {...props}
+        focusTaskRequest={{ taskId: "task-app-start" }}
+      />,
+    );
+    expect(
+      screen.getByRole("complementary", { name: "任务详情" }),
+    ).toHaveTextContent("启动媒体服务");
+  });
+
   it("shows real task state, approval context, capability policy, and filters", async () => {
     const user = userEvent.setup();
     render(

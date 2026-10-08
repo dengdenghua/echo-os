@@ -26,7 +26,14 @@ import {
   type OpenRoomType,
 } from "@/appliance/intent-desktop-surface";
 import { LocalDatabaseApp } from "@/appliance/local-database-app";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AppWindowIcon,
@@ -118,6 +125,19 @@ import { StorageCenterPanel } from "@/appliance/storage-center-panel";
 import { DeviceLinkPanel } from "@/appliance/device-link-panel";
 import { resolveSystemSettingsSurface } from "@/appliance/system-settings-surface";
 import { TaskSpacePanel } from "@/appliance/task-space-panel";
+import { useAgents } from "@/core/agents/hooks";
+import {
+  discardPendingNewSession,
+  writePendingNewSession,
+} from "@/core/threads/pending-new-session";
+import type { EchoTaskProjection } from "@/appliance/task-space";
+import { DockTaskRail } from "@/appliance/dock-task-rail";
+import {
+  SystemAppWindowProvider,
+  systemAppForWindow,
+  useSystemAppWindow,
+  type SystemAppId,
+} from "@/appliance/system-app-window";
 import { useEchoTaskProjection } from "@/appliance/task-space";
 import { AppWindow } from "@/appliance/app-window";
 import {
@@ -352,7 +372,6 @@ export default function DesktopShellPage() {
     liquidGlassOpen,
     aboutOpen,
     accountSecurityOpen,
-    taskSpaceOpen,
     setOverlay,
     toggleOverlay,
     closeTransient,
@@ -465,9 +484,60 @@ export default function DesktopShellPage() {
     resumeExecution: resumeTaskProjection,
     decideApproval: decideTaskApproval,
   } = useEchoTaskProjection(applianceAuthed === true);
+  // 桌面意图面只用后端的 Agent 名册，不在前端预置 Agent。
+  const { agents: agentRoster } = useAgents();
+  const desktopAgents = useMemo(
+    () =>
+      agentRoster.map((agent) => ({
+        id: agent.name,
+        name: agent.display_name || agent.name,
+        icon: agent.icon,
+        description: agent.description,
+      })),
+    [agentRoster],
+  );
+  // 从桌面任务卡片打开任务空间时，要展开的那个任务。
+  const [taskSpaceFocus, setTaskSpaceFocus] = useState<{
+    taskId: string;
+  } | null>(null);
+  const [desktopMode, setDesktopMode] = useState<DesktopMode>("workspace");
+  // 桌面窗口:系统应用直接渲染 React 内容，第三方应用才使用 iframe。
+  const {
+    windows,
+    minimized,
+    focusedWin,
+    geometries,
+    stack: windowStack,
+    openWindow,
+    closeWindow,
+    minimizeWindow,
+    restoreWindow,
+    focusWindow,
+    openWorkspace,
+    updateWindowGeometry,
+  } = useDesktopWorkspaces(useCallback(() => setDesktopMode("workspace"), []));
+
+  // 系统应用（文件、照片、Hub……）都是桌面窗口：开关读写的是窗口管理器，
+  // 打开即创建或唤起窗口，关闭即关窗，不再是互斥的全屏面板。
   // NAS 文件管理器(原生路线;Electron 寄生模式仍用透明桌面整理抽屉)。
-  const [fileManagerOpen, setFileManagerOpen] = useState(false);
-  const [photosOpen, setPhotosOpen] = useState(false);
+  const [fileManagerOpen, setFileManagerOpen] = useSystemAppWindow(
+    "files",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [photosOpen, setPhotosOpen] = useSystemAppWindow(
+    "photos",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [taskSpaceOpen, setTaskSpaceOpen] = useSystemAppWindow(
+    "task-space",
+    windows,
+    openWindow,
+    closeWindow,
+  );
   const [photoSearchRequest, setPhotoSearchRequest] = useState<{
     query: string;
     selectedPath?: string;
@@ -494,11 +564,19 @@ export default function DesktopShellPage() {
     return () => window.clearInterval(timer);
   }, [refreshTrashEntries]);
 
+  // 文件窗口常驻，"打开废纸篓"是一次性请求：交给已挂载的文件窗口后立即复位，
+  // 下一次点击废纸篓才能再次触发。
+  useEffect(() => {
+    if (!fileOpenTrash || !fileManagerOpen) return;
+    const timer = window.setTimeout(() => setFileOpenTrash(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [fileManagerOpen, fileOpenTrash]);
+
   const handleOpenTrash = useCallback(() => {
     setFileOpenTrash(true);
     setFileManagerOpen(true);
     playSystemSound("pop");
-  }, []);
+  }, [setFileManagerOpen]);
 
   const handleEmptyTrash = useCallback(() => {
     if (trashEntries.length === 0) {
@@ -507,9 +585,8 @@ export default function DesktopShellPage() {
     }
     setFileOpenTrash(true);
     setFileManagerOpen(true);
-  }, [trashEntries.length]);
+  }, [setFileManagerOpen, trashEntries.length]);
 
-  const [desktopMode, setDesktopMode] = useState<DesktopMode>("workspace");
   const [desktopActiveRoom, setDesktopActiveRoom] =
     useState<OpenRoomType>("all");
   const {
@@ -548,9 +625,24 @@ export default function DesktopShellPage() {
       setFileManagerOpen(true);
     }
   });
-  const [storageCenterOpen, setStorageCenterOpen] = useState(false);
-  const [deviceLinkOpen, setDeviceLinkOpen] = useState(false);
-  const [hubOpen, setHubOpen] = useState(false);
+  const [storageCenterOpen, setStorageCenterOpen] = useSystemAppWindow(
+    "storage-center",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [deviceLinkOpen, setDeviceLinkOpen] = useSystemAppWindow(
+    "device-link",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [hubOpen, setHubOpen] = useSystemAppWindow(
+    "hub",
+    windows,
+    openWindow,
+    closeWindow,
+  );
   const [pendingAppControl, setPendingAppControl] = useState<{
     operation: "start" | "stop";
     app: ApplianceApp;
@@ -667,20 +759,6 @@ export default function DesktopShellPage() {
     return () => window.removeEventListener("echo:open-system-settings", open);
   }, [openSystemAgentSettings]);
 
-  // 桌面窗口:系统应用直接渲染 React 内容，第三方应用才使用 iframe。
-  const {
-    windows,
-    minimized,
-    focusedWin,
-    geometries,
-    openWindow,
-    closeWindow,
-    minimizeWindow,
-    restoreWindow,
-    focusWindow,
-    openWorkspace,
-    updateWindowGeometry,
-  } = useDesktopWorkspaces(useCallback(() => setDesktopMode("workspace"), []));
   const [missionControlOpen, setMissionControlOpen] = useState(false);
 
   // 触控板多指捏合 (Pinch) 与两指滚动快速唤起调度中心
@@ -919,18 +997,12 @@ export default function DesktopShellPage() {
     }
     if (app.route === "/photos") {
       setPhotosOpen(true);
-      setStorageCenterOpen(false);
-      setDeviceLinkOpen(false);
-      setHubOpen(false);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/storage-center") {
       setStorageCenterOpen(true);
-      setPhotosOpen(false);
-      setDeviceLinkOpen(false);
-      setHubOpen(false);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
@@ -943,18 +1015,12 @@ export default function DesktopShellPage() {
     }
     if (app.route === "/device-link") {
       setDeviceLinkOpen(true);
-      setPhotosOpen(false);
-      setStorageCenterOpen(false);
-      setHubOpen(false);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/hub") {
       setHubOpen(true);
-      setPhotosOpen(false);
-      setStorageCenterOpen(false);
-      setDeviceLinkOpen(false);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
@@ -1026,11 +1092,8 @@ export default function DesktopShellPage() {
       !isNativeSystemSettingsApp(app),
   );
   const openAppStore = useCallback(() => {
-    setPhotosOpen(false);
-    setStorageCenterOpen(false);
-    setDeviceLinkOpen(false);
     setHubOpen(true);
-  }, []);
+  }, [setHubOpen]);
   useEffect(() => {
     const openHubFromCatalog = () => openAppStore();
     window.addEventListener(OPEN_ECHO_HUB_EVENT, openHubFromCatalog);
@@ -1578,6 +1641,183 @@ export default function DesktopShellPage() {
       ? "文件管理器"
       : focusedWindowTitle;
 
+  const openTaskSpace = (taskId?: string) => {
+    setTaskSpaceFocus(taskId ? { taskId } : null);
+    setTaskSpaceOpen(true);
+  };
+  const openTaskThread = (task: EchoTaskProjection, artifact?: string) => {
+    if (!task.threadId) {
+      openTaskSpace(task.id);
+      return;
+    }
+    openWorkspace(
+      taskWorkspaceRoute({
+        threadId: task.threadId,
+        agentId: task.agentId,
+        artifact,
+      }),
+      { title: `任务 · ${task.title}` },
+    );
+  };
+
+  // 系统应用的关闭收尾：窗口红绿灯和应用内部的关闭入口走同一条路径。
+  const closeFilesApp = () => {
+    setFileManagerOpen(false);
+    setFileOpenTrash(false);
+  };
+  const closePhotosApp = () => {
+    setPhotosOpen(false);
+    setPhotoSearchRequest(null);
+  };
+  const closeSystemApp = (app: SystemAppId) => {
+    if (app === "files") closeFilesApp();
+    else if (app === "photos") closePhotosApp();
+    else if (app === "hub") setHubOpen(false);
+    else if (app === "storage-center") setStorageCenterOpen(false);
+    else if (app === "device-link") setDeviceLinkOpen(false);
+    else setTaskSpaceOpen(false);
+  };
+
+  // 系统应用窗口的内容每次渲染时按当前状态生成，打开请求（定位到某个文件、
+  // 搜索某张照片）才能送达已经打开的窗口。
+  const renderSystemApp = (app: SystemAppId): ReactNode => {
+    switch (app) {
+      case "files":
+        return (
+          <FileManager
+            initialShowTrash={fileOpenTrash}
+            onAskAgent={(context) => {
+              setFileManagerOpen(false);
+              setFileOpenTrash(false);
+              openWorkspace(
+                taskWorkspaceRoute({ prompt: desktopAgentDraft(context) }),
+              );
+            }}
+            openRequest={fileOpenRequest}
+            onClose={closeFilesApp}
+            onOpenSystemFiles={
+              nativeFileManagerApp
+                ? () => {
+                    setFileManagerOpen(false);
+                    setFileOpenTrash(false);
+                    openNativeApp(nativeFileManagerApp);
+                  }
+                : undefined
+            }
+            onOpenSettings={() => {
+              setFileManagerOpen(false);
+              setFileOpenTrash(false);
+              openStorageSettings();
+            }}
+          />
+        );
+      case "photos":
+        return (
+          <PhotosPanel
+            open
+            searchRequest={photoSearchRequest}
+            onAskAgent={(context) =>
+              openWorkspace(
+                taskWorkspaceRoute({ prompt: desktopAgentDraft(context) }),
+              )
+            }
+            onClose={closePhotosApp}
+          />
+        );
+      case "hub":
+        return (
+          <HubPanel
+            open
+            canManageDevice={isDeviceOperator}
+            onClose={() => setHubOpen(false)}
+            onAppsChanged={refreshApplianceApps}
+            onOpenDeviceApp={(app) => void openHubApplianceApp(app)}
+            onOpenWorkbench={(route) => {
+              setHubOpen(false);
+              openWorkspace(route);
+            }}
+            onOpenSystemApp={(route) => {
+              const registeredApp = findWorkbenchApp(route);
+              if (
+                registeredApp?.delivery === "remote" &&
+                workbenchAvailability?.get(registeredApp.moduleId) !== true
+              ) {
+                toast.info("应用状态尚未就绪，请刷新应用中心后重试。");
+                return;
+              }
+              setHubOpen(false);
+              const app = visibleDesktopApps.find(
+                (entry) => entry.route.split("?")[0] === route.split("?")[0],
+              );
+              if (app) openApp(app, route);
+              else
+                openWorkspace(
+                  `${route}${route.includes("?") ? "&" : "?"}embedded=app`,
+                  {
+                    title: findWorkbenchApp(route)?.name ?? "应用",
+                  },
+                );
+            }}
+            onOpenAgentAssets={(asset) => {
+              setHubOpen(false);
+              openWorkspace(agentAssetManagementRoute(asset), {
+                title: asset.kind === "skill" ? "Agent 技能" : "Agent 插件",
+              });
+            }}
+          />
+        );
+      case "storage-center":
+        return isDeviceOperator ? (
+          <StorageCenterPanel
+            open
+            onClose={() => setStorageCenterOpen(false)}
+            onOpenFiles={() => {
+              setStorageCenterOpen(false);
+              openFiles();
+            }}
+          />
+        ) : null;
+      case "device-link":
+        return isDeviceOperator ? (
+          <DeviceLinkPanel
+            open
+            onClose={() => setDeviceLinkOpen(false)}
+            onOpenPhoneMirror={openPhoneMirror}
+          />
+        ) : null;
+      case "task-space":
+        return (
+          <TaskSpacePanel
+            open
+            focusTaskRequest={taskSpaceFocus}
+            projection={taskProjection}
+            loading={taskProjectionLoading}
+            error={taskProjectionError}
+            onClose={() => setTaskSpaceOpen(false)}
+            onRefresh={refreshTaskProjection}
+            onTakeover={takeoverTaskProjection}
+            onResumeExecution={resumeTaskProjection}
+            onApprovalDecision={decideTaskApproval}
+            onOpenWorkspace={(task, artifact) => {
+              setTaskSpaceOpen(false);
+              if (task?.threadId) {
+                const route = taskWorkspaceRoute({
+                  threadId: task.threadId,
+                  agentId: task.agentId,
+                  artifact,
+                });
+                openWorkspace(route, {
+                  title: `任务 · ${task.title}`,
+                });
+                return;
+              }
+              openApp(DESKTOP_WORKBENCH_APP);
+            }}
+          />
+        );
+    }
+  };
+
   return (
     <main
       aria-label="Echo OS 桌面"
@@ -1630,7 +1870,9 @@ export default function DesktopShellPage() {
         wallpaper={wallpaper}
       />
       <MacLiquidGlassWebGL />
-      <section className="relative z-10 flex h-full min-h-0 flex-col">
+      {/* 不在这里建立层叠上下文：菜单栏（z-100）、Dock（z-90）和系统浮层
+          必须与窗口层（z-40）同场比较，才能始终位于应用窗口之上。 */}
+      <section className="relative flex h-full min-h-0 flex-col">
         <MacMenuBar
           modelStatus={
             <AiNetworkPulse
@@ -1696,7 +1938,8 @@ export default function DesktopShellPage() {
             />
           }
         />
-        <div className="relative min-h-0 flex-1 pt-[25px]">
+        {/* 桌面内容（意图面、任务卡、桌面图标）自成一层，整体位于窗口之下。 */}
+        <div className="relative z-10 min-h-0 flex-1 pt-[25px]">
           <IntentDesktopSurface
             onOpenPhoneMirror={openPhoneMirror}
             mode={desktopMode}
@@ -1706,12 +1949,36 @@ export default function DesktopShellPage() {
             activeRoom={desktopActiveRoom}
             onActiveRoomChange={setDesktopActiveRoom}
             hideTopControlBar={true}
+            tasks={
+              taskProjection?.tasks ?? (taskProjectionError ? [] : undefined)
+            }
+            tasksAvailable={
+              taskProjection ? taskProjection.available : !taskProjectionError
+            }
+            agents={desktopAgents}
+            onOpenTask={openTaskThread}
+            onOpenTaskSpace={openTaskSpace}
             onOpenWorkbench={(prompt, agentId) =>
               openApp(
                 DESKTOP_WORKBENCH_APP,
                 taskWorkspaceRoute({ prompt, agentId }),
               )
             }
+            onDispatchIntent={(prompt, agentId) => {
+              // 复用工作台"一次性自动发送"交接：新会话挂载时读出并立即发送，
+              // 读后即清，刷新不会重复发送。工作台窗口就是这条会话的客户端，
+              // 需要授权的操作照常在窗口里请用户确认，不会在后台被静默拒绝。
+              writePendingNewSession(prompt);
+              openApp(
+                DESKTOP_WORKBENCH_APP,
+                taskWorkspaceRoute({ prompt, agentId }),
+              );
+              // 任务登记后尽快出现在桌面上，不必等下一轮轮询。
+              window.setTimeout(refreshTaskProjection, 2_000);
+              // 工作台没能及时接手时撤回交接，避免之后手动打开的新会话被
+              // 意外自动发送；提示词仍留在工作台输入框里，可以手动发送。
+              window.setTimeout(() => discardPendingNewSession(prompt), 15_000);
+            }}
             onOpenApp={(appId) => {
               const app = visibleDesktopApps.find(
                 (entry) => entry.route === appId,
@@ -1730,7 +1997,7 @@ export default function DesktopShellPage() {
               onStart={(prompt) =>
                 openApp(DESKTOP_WORKBENCH_APP, taskWorkspaceRoute({ prompt }))
               }
-              onResults={() => setOverlay("taskSpace", true)}
+              onResults={() => setTaskSpaceOpen(true)}
               onDatabase={() => {
                 const app = visibleDesktopApps.find((entry) =>
                   isLocalDatabaseRoute(entry.route),
@@ -2188,7 +2455,8 @@ export default function DesktopShellPage() {
           </div>
         )}
 
-        <Dock className="mac-dock">
+        {/* 从 Dock 切换应用前收起 Spotlight、启动台等瞬态浮层；应用窗口保持原样。 */}
+        <Dock className="mac-dock" onItemActivate={closeTransient}>
           <DockItem onClick={openFinder} title="文件" running>
             <MacAppIcon
               icon={FolderIcon}
@@ -2315,7 +2583,7 @@ export default function DesktopShellPage() {
             </>
           )}
           <DockItem
-            onClick={() => setOverlay("taskSpace", true)}
+            onClick={() => setTaskSpaceOpen(true)}
             title="任务空间"
             running={taskSpaceOpen}
           >
@@ -2353,6 +2621,13 @@ export default function DesktopShellPage() {
               preferArtwork
             />
           </DockItem>
+          {/* 任务轨：进行中的 Agent 任务和应用并列，窗口挡不住 */}
+          <DockTaskRail
+            tasks={taskProjection?.tasks}
+            agents={desktopAgents}
+            onOpenTask={openTaskThread}
+            onOpenTaskSpace={openTaskSpace}
+          />
           <span className="mac-dock-separator" />
           {/* 最小化窗口托盘 */}
           {windows
@@ -2518,111 +2793,6 @@ export default function DesktopShellPage() {
         )}
       </section>
 
-      {fileManagerOpen && (
-        <FileManager
-          initialShowTrash={fileOpenTrash}
-          onAskAgent={(context) => {
-            setFileManagerOpen(false);
-            setFileOpenTrash(false);
-            openWorkspace(
-              taskWorkspaceRoute({ prompt: desktopAgentDraft(context) }),
-            );
-          }}
-          openRequest={fileOpenRequest}
-          onClose={() => {
-            setFileManagerOpen(false);
-            setFileOpenTrash(false);
-          }}
-          onOpenSystemFiles={
-            nativeFileManagerApp
-              ? () => {
-                  setFileManagerOpen(false);
-                  setFileOpenTrash(false);
-                  openNativeApp(nativeFileManagerApp);
-                }
-              : undefined
-          }
-          onOpenSettings={() => {
-            setFileManagerOpen(false);
-            setFileOpenTrash(false);
-            openStorageSettings();
-          }}
-        />
-      )}
-
-      <HubPanel
-        open={hubOpen}
-        canManageDevice={isDeviceOperator}
-        onClose={() => setHubOpen(false)}
-        onAppsChanged={refreshApplianceApps}
-        onOpenDeviceApp={(app) => void openHubApplianceApp(app)}
-        onOpenWorkbench={(route) => {
-          setHubOpen(false);
-          openWorkspace(route);
-        }}
-        onOpenSystemApp={(route) => {
-          const registeredApp = findWorkbenchApp(route);
-          if (
-            registeredApp?.delivery === "remote" &&
-            workbenchAvailability?.get(registeredApp.moduleId) !== true
-          ) {
-            toast.info("应用状态尚未就绪，请刷新应用中心后重试。");
-            return;
-          }
-          setHubOpen(false);
-          const app = visibleDesktopApps.find(
-            (entry) => entry.route.split("?")[0] === route.split("?")[0],
-          );
-          if (app) openApp(app, route);
-          else
-            openWorkspace(
-              `${route}${route.includes("?") ? "&" : "?"}embedded=app`,
-              {
-                title: findWorkbenchApp(route)?.name ?? "应用",
-              },
-            );
-        }}
-        onOpenAgentAssets={(asset) => {
-          setHubOpen(false);
-          openWorkspace(agentAssetManagementRoute(asset), {
-            title: asset.kind === "skill" ? "Agent 技能" : "Agent 插件",
-          });
-        }}
-      />
-
-      <PhotosPanel
-        open={photosOpen}
-        searchRequest={photoSearchRequest}
-        onAskAgent={(context) =>
-          openWorkspace(
-            taskWorkspaceRoute({ prompt: desktopAgentDraft(context) }),
-          )
-        }
-        onClose={() => {
-          setPhotosOpen(false);
-          setPhotoSearchRequest(null);
-        }}
-      />
-
-      {isDeviceOperator && (
-        <StorageCenterPanel
-          open={storageCenterOpen}
-          onClose={() => setStorageCenterOpen(false)}
-          onOpenFiles={() => {
-            setStorageCenterOpen(false);
-            openFiles();
-          }}
-        />
-      )}
-
-      {isDeviceOperator && (
-        <DeviceLinkPanel
-          open={deviceLinkOpen}
-          onClose={() => setDeviceLinkOpen(false)}
-          onOpenPhoneMirror={openPhoneMirror}
-        />
-      )}
-
       <div
         inert={desktopMode === "pure"}
         aria-hidden={desktopMode === "pure" || undefined}
@@ -2633,24 +2803,38 @@ export default function DesktopShellPage() {
             : "pointer-events-none scale-100 opacity-100 [&>*]:pointer-events-auto",
         )}
       >
-        {windows
-          .filter(
-            (win) => win.url === "/phone-mirror" || !minimized.has(win.id),
-          )
-          .map((win, i) => (
+        {/* 最小化只隐藏不卸载：iframe 不重载，Agent 窗口保留当前会话和路由。 */}
+        {windows.map((win, i) => {
+          const systemApp = systemAppForWindow(win.id);
+          return (
             <AppWindow
               key={win.id}
-              win={win}
+              win={
+                systemApp
+                  ? {
+                      ...win,
+                      content: (
+                        <SystemAppWindowProvider>
+                          {renderSystemApp(systemApp)}
+                        </SystemAppWindowProvider>
+                      ),
+                    }
+                  : win
+              }
               index={i}
               focused={focusedWin === win.id}
               hidden={minimized.has(win.id)}
+              stackOrder={windowStack.indexOf(win.id)}
               initialGeometry={geometries?.[win.id]}
               onGeometryChange={(geom) => updateWindowGeometry(win.id, geom)}
               onFocus={() => focusWindow(win.id)}
-              onClose={() => closeWindow(win.id)}
+              onClose={() =>
+                systemApp ? closeSystemApp(systemApp) : closeWindow(win.id)
+              }
               onMinimize={() => minimizeWindow(win.id)}
             />
-          ))}
+          );
+        })}
       </div>
 
       {/* System-owned surfaces are siblings of application windows so their
@@ -2830,32 +3014,6 @@ export default function DesktopShellPage() {
           }}
         />
       )}
-      <TaskSpacePanel
-        open={taskSpaceOpen}
-        projection={taskProjection}
-        loading={taskProjectionLoading}
-        error={taskProjectionError}
-        onClose={() => setOverlay("taskSpace", false)}
-        onRefresh={refreshTaskProjection}
-        onTakeover={takeoverTaskProjection}
-        onResumeExecution={resumeTaskProjection}
-        onApprovalDecision={decideTaskApproval}
-        onOpenWorkspace={(task, artifact) => {
-          setOverlay("taskSpace", false);
-          if (task?.threadId) {
-            const route = taskWorkspaceRoute({
-              threadId: task.threadId,
-              agentId: task.agentId,
-              artifact,
-            });
-            openWorkspace(route, {
-              title: `任务 · ${task.title}`,
-            });
-            return;
-          }
-          openApp(DESKTOP_WORKBENCH_APP);
-        }}
-      />
       <MacSystemActionDialog
         action={pendingSystemAction}
         busy={systemActionBusy}

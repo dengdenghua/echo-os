@@ -17,6 +17,11 @@ import {
 
 import { cn } from "@/lib/utils";
 import {
+  SystemAppFrame,
+  SystemAppLightsSpacer,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
+import {
   ACTIVE_TASK_STATUSES,
   FAILED_TASK_STATUSES,
   type EchoTaskProjection,
@@ -582,6 +587,7 @@ export function TaskSpacePanel({
   onTakeover,
   onResumeExecution,
   onApprovalDecision,
+  focusTaskRequest,
 }: {
   open: boolean;
   projection: EchoTaskProjectionResponse | null;
@@ -597,7 +603,10 @@ export function TaskSpacePanel({
     approved: boolean,
     reason: string,
   ) => Promise<unknown>;
+  /** 从桌面任务卡片跳转过来时要展开的任务；每次请求是一个新对象。 */
+  focusTaskRequest?: { taskId: string } | null;
 }) {
+  const inWindow = useInSystemAppWindow();
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [takeoverCandidate, setTakeoverCandidate] =
@@ -628,7 +637,13 @@ export function TaskSpacePanel({
     setActionMessage(null);
   }, [open]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || !focusTaskRequest) return;
+    setFilter("all");
+    setSelectedTaskId(focusTaskRequest.taskId);
+  }, [focusTaskRequest, open]);
+  useEffect(() => {
+    // 窗口形态由窗口管理器负责焦点与关闭，Esc 不关闭整个应用。
+    if (!open || inWindow) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -642,7 +657,7 @@ export function TaskSpacePanel({
       document.removeEventListener("keydown", handleKeyDown);
       window.clearTimeout(focusHandle);
     };
-  }, [onClose, open]);
+  }, [inWindow, onClose, open]);
   if (!open) return null;
 
   const confirmTakeover = async () => {
@@ -720,348 +735,347 @@ export function TaskSpacePanel({
 
   const counts = projection?.counts;
   return (
-    <div
-      data-desktop-interactive
-      className="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <SystemAppFrame
+      label="Echo 任务空间"
+      onClose={onClose}
+      overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
+      className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-white/75 bg-slate-50/94 text-slate-900 shadow-2xl shadow-slate-950/35 backdrop-blur-3xl"
+      windowClassName="relative flex size-full flex-col overflow-hidden bg-slate-50 text-slate-900"
     >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label="Echo 任务空间"
-        className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-white/75 bg-slate-50/94 text-slate-900 shadow-2xl shadow-slate-950/35 backdrop-blur-3xl"
-      >
-        <header className="flex h-12 shrink-0 items-center border-b border-slate-200/80 bg-white/70 px-4">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              ref={closeButtonRef}
-              aria-label="关闭任务空间"
-              onClick={onClose}
-              className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
-            >
-              <XIcon className="size-2.5" />
-            </button>
-            <span className="size-3.5 rounded-full bg-[#febc2e]" />
-            <span className="size-3.5 rounded-full bg-[#28c840]" />
-          </div>
-          <div
-            id="echo-task-space-title"
-            className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium text-slate-600"
+      <header className="flex h-12 shrink-0 items-center border-b border-slate-200/80 bg-white/70 px-4">
+        <div className="flex gap-2">
+          {inWindow ? (
+            <SystemAppLightsSpacer />
+          ) : (
+            <>
+              <button
+                type="button"
+                ref={closeButtonRef}
+                aria-label="关闭任务空间"
+                onClick={onClose}
+                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
+              >
+                <XIcon className="size-2.5" />
+              </button>
+              <span className="size-3.5 rounded-full bg-[#febc2e]" />
+              <span className="size-3.5 rounded-full bg-[#28c840]" />
+            </>
+          )}
+        </div>
+        <div
+          id="echo-task-space-title"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium text-slate-600"
+        >
+          任务空间
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            aria-label="刷新任务"
+            className="grid size-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-200/70"
           >
-            任务空间
+            <RefreshCwIcon
+              className={cn("size-4", loading && "animate-spin")}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenWorkspace()}
+            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
+          >
+            打开工作台
+          </button>
+        </div>
+      </header>
+
+      <div className="grid shrink-0 grid-cols-3 gap-3 border-b border-slate-200/70 px-5 py-4 sm:grid-cols-7">
+        {(
+          [
+            ["全部", counts?.total ?? 0, "text-slate-800"],
+            ["进行中", counts?.active ?? 0, "text-blue-600"],
+            ["待确认", counts?.waitingApproval ?? 0, "text-amber-600"],
+            ["已暂停", counts?.paused ?? 0, "text-slate-500"],
+            ["待恢复", counts?.recoveryNeeded ?? 0, "text-orange-600"],
+            ["异常", counts?.failed ?? 0, "text-red-600"],
+            ["完成", counts?.completed ?? 0, "text-emerald-600"],
+          ] satisfies Array<[string, number, string]>
+        ).map(([label, value, color]) => (
+          <div
+            key={label}
+            className="rounded-xl bg-white/75 px-3 py-2 text-center shadow-sm"
+          >
+            <div className={cn("text-lg font-semibold", color)}>
+              {counts ? value : "—"}
+            </div>
+            <div className="text-[10px] text-slate-400">{label}</div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+        ))}
+      </div>
+
+      <nav className="flex shrink-0 gap-1 border-b border-slate-200/70 px-5 py-2.5">
+        {FILTERS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setFilter(item.id)}
+            aria-pressed={filter === item.id}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs transition",
+              filter === item.id
+                ? "bg-slate-900 text-white"
+                : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-800",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+        <div className="ml-auto flex items-center gap-1.5 text-[10px] text-slate-400">
+          <span
+            className={cn(
+              "size-2 rounded-full",
+              projection?.auditIntegrity.ok === false
+                ? "bg-red-500"
+                : projection?.auditIntegrity.ok === true
+                  ? "bg-emerald-500"
+                  : "bg-slate-300",
+            )}
+          />
+          审计链
+        </div>
+      </nav>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700"
+          >
+            <span className="min-w-0">{error}</span>
             <button
               type="button"
               onClick={onRefresh}
-              aria-label="刷新任务"
-              className="grid size-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-200/70"
+              disabled={loading}
+              className="shrink-0 rounded-lg border border-red-200 bg-white/80 px-2.5 py-1.5 font-medium text-red-700 transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
             >
-              <RefreshCwIcon
-                className={cn("size-4", loading && "animate-spin")}
-              />
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenWorkspace()}
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
-            >
-              打开工作台
+              {loading ? "读取中…" : "重试读取"}
             </button>
           </div>
-        </header>
-
-        <div className="grid shrink-0 grid-cols-3 gap-3 border-b border-slate-200/70 px-5 py-4 sm:grid-cols-7">
-          {(
-            [
-              ["全部", counts?.total ?? 0, "text-slate-800"],
-              ["进行中", counts?.active ?? 0, "text-blue-600"],
-              ["待确认", counts?.waitingApproval ?? 0, "text-amber-600"],
-              ["已暂停", counts?.paused ?? 0, "text-slate-500"],
-              ["待恢复", counts?.recoveryNeeded ?? 0, "text-orange-600"],
-              ["异常", counts?.failed ?? 0, "text-red-600"],
-              ["完成", counts?.completed ?? 0, "text-emerald-600"],
-            ] satisfies Array<[string, number, string]>
-          ).map(([label, value, color]) => (
-            <div
-              key={label}
-              className="rounded-xl bg-white/75 px-3 py-2 text-center shadow-sm"
-            >
-              <div className={cn("text-lg font-semibold", color)}>
-                {counts ? value : "—"}
-              </div>
-              <div className="text-[10px] text-slate-400">{label}</div>
+        )}
+        {!projection?.available && !loading ? (
+          <div className="grid h-full place-items-center text-center">
+            <div>
+              <BotIcon className="mx-auto size-9 text-slate-300" />
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                {error ? "任务服务暂时不可用" : "任务服务正在初始化"}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                {error
+                  ? "请检查 Agent 服务状态，或点击上方“重试读取”。"
+                  : "Echo 会直接读取 Echo Agent 的真实 TaskSupervisor，不创建副本。"}
+              </p>
             </div>
-          ))}
-        </div>
-
-        <nav className="flex shrink-0 gap-1 border-b border-slate-200/70 px-5 py-2.5">
-          {FILTERS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setFilter(item.id)}
-              aria-pressed={filter === item.id}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-xs transition",
-                filter === item.id
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-800",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-          <div className="ml-auto flex items-center gap-1.5 text-[10px] text-slate-400">
-            <span
-              className={cn(
-                "size-2 rounded-full",
-                projection?.auditIntegrity.ok === false
-                  ? "bg-red-500"
-                  : projection?.auditIntegrity.ok === true
-                    ? "bg-emerald-500"
-                    : "bg-slate-300",
-              )}
-            />
-            审计链
           </div>
-        </nav>
+        ) : loading && !projection ? (
+          <div className="grid h-full place-items-center text-slate-400">
+            <Loader2Icon className="size-7 animate-spin" />
+          </div>
+        ) : tasks.length === 0 ? (
+          <div className="grid h-full place-items-center text-center">
+            <div>
+              <CheckCircle2Icon className="mx-auto size-9 text-emerald-400" />
+              <p className="mt-3 text-sm font-medium text-slate-600">
+                当前没有这类任务
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                新的 Agent 任务会自动出现在这里。
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                selected={selectedTaskId === task.id}
+                onSelect={() => {
+                  setSelectedTaskId(task.id);
+                  setActionError(null);
+                  setActionMessage(null);
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {error && (
-            <div
-              role="alert"
-              className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700"
-            >
-              <span className="min-w-0">{error}</span>
+      {selectedTask && (
+        <TaskDetailDrawer
+          task={selectedTask}
+          busy={actionBusy}
+          actionError={actionError}
+          actionMessage={actionMessage}
+          onClose={() => setSelectedTaskId(null)}
+          onOpenWorkspace={(artifact) =>
+            artifact
+              ? onOpenWorkspace(selectedTask, artifact)
+              : onOpenWorkspace(selectedTask)
+          }
+          onRequestTakeover={() => setTakeoverCandidate(selectedTask)}
+          onRequestResume={() => setResumeCandidate(selectedTask)}
+          onRequestApproval={(approved) =>
+            setApprovalCandidate({ task: selectedTask, approved })
+          }
+        />
+      )}
+
+      {approvalCandidate && (
+        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="确认审批决定"
+            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
+                <ShieldCheckIcon className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {approvalCandidate.approved
+                    ? "批准这个操作？"
+                    : "拒绝这个操作？"}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {approvalCandidate.task.approval?.action ||
+                    approvalCandidate.task.approval?.tool ||
+                    "任务正在等待管理员确认"}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={onRefresh}
-                disabled={loading}
-                className="shrink-0 rounded-lg border border-red-200 bg-white/80 px-2.5 py-1.5 font-medium text-red-700 transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
+                onClick={() => setApprovalCandidate(null)}
+                disabled={actionBusy}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
               >
-                {loading ? "读取中…" : "重试读取"}
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmApprovalDecision()}
+                disabled={actionBusy}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60",
+                  approvalCandidate.approved
+                    ? "bg-amber-500 hover:bg-amber-400"
+                    : "bg-red-600 hover:bg-red-500",
+                )}
+              >
+                {actionBusy ? "提交中…" : "确认"}
               </button>
             </div>
-          )}
-          {!projection?.available && !loading ? (
-            <div className="grid h-full place-items-center text-center">
-              <div>
-                <BotIcon className="mx-auto size-9 text-slate-300" />
-                <p className="mt-3 text-sm font-medium text-slate-600">
-                  {error ? "任务服务暂时不可用" : "任务服务正在初始化"}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {error
-                    ? "请检查 Agent 服务状态，或点击上方“重试读取”。"
-                    : "Echo 会直接读取 Echo Agent 的真实 TaskSupervisor，不创建副本。"}
-                </p>
-              </div>
-            </div>
-          ) : loading && !projection ? (
-            <div className="grid h-full place-items-center text-slate-400">
-              <Loader2Icon className="size-7 animate-spin" />
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="grid h-full place-items-center text-center">
-              <div>
-                <CheckCircle2Icon className="mx-auto size-9 text-emerald-400" />
-                <p className="mt-3 text-sm font-medium text-slate-600">
-                  当前没有这类任务
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  新的 Agent 任务会自动出现在这里。
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  selected={selectedTaskId === task.id}
-                  onSelect={() => {
-                    setSelectedTaskId(task.id);
-                    setActionError(null);
-                    setActionMessage(null);
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          </section>
         </div>
+      )}
 
-        {selectedTask && (
-          <TaskDetailDrawer
-            task={selectedTask}
-            busy={actionBusy}
-            actionError={actionError}
-            actionMessage={actionMessage}
-            onClose={() => setSelectedTaskId(null)}
-            onOpenWorkspace={(artifact) =>
-              artifact
-                ? onOpenWorkspace(selectedTask, artifact)
-                : onOpenWorkspace(selectedTask)
-            }
-            onRequestTakeover={() => setTakeoverCandidate(selectedTask)}
-            onRequestResume={() => setResumeCandidate(selectedTask)}
-            onRequestApproval={(approved) =>
-              setApprovalCandidate({ task: selectedTask, approved })
-            }
-          />
-        )}
+      {takeoverCandidate && (
+        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="确认接管任务"
+            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-600">
+                <GitBranchIcon className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  接管这个中断任务？
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Echo 将让当前 Agent worker 重新取得“
+                  {takeoverCandidate.title}
+                  ”的租约。这个动作不会自动执行任务；接管后仍需回到原任务确认并继续。
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTakeoverCandidate(null)}
+                disabled={actionBusy}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmTakeover()}
+                disabled={actionBusy}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
+              >
+                {actionBusy && (
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                )}
+                确认接管
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
-        {approvalCandidate && (
-          <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
-            <section
-              role="alertdialog"
-              aria-modal="true"
-              aria-label="确认审批决定"
-              className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
-                  <ShieldCheckIcon className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    {approvalCandidate.approved
-                      ? "批准这个操作？"
-                      : "拒绝这个操作？"}
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {approvalCandidate.task.approval?.action ||
-                      approvalCandidate.task.approval?.tool ||
-                      "任务正在等待管理员确认"}
-                  </p>
-                </div>
+      {resumeCandidate && (
+        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="确认恢复任务执行"
+            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                <PlayIcon className="size-5" />
               </div>
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setApprovalCandidate(null)}
-                  disabled={actionBusy}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void confirmApprovalDecision()}
-                  disabled={actionBusy}
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60",
-                    approvalCandidate.approved
-                      ? "bg-amber-500 hover:bg-amber-400"
-                      : "bg-red-600 hover:bg-red-500",
-                  )}
-                >
-                  {actionBusy ? "提交中…" : "确认"}
-                </button>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  从 Agent 检查点继续？
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Echo 将在原线程恢复“{resumeCandidate.title}
+                  ”，随后打开原任务查看实时进度。新的系统操作仍会按原规则等待人工确认，不会自动批准。
+                </p>
               </div>
-            </section>
-          </div>
-        )}
-
-        {takeoverCandidate && (
-          <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
-            <section
-              role="alertdialog"
-              aria-modal="true"
-              aria-label="确认接管任务"
-              className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-600">
-                  <GitBranchIcon className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    接管这个中断任务？
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Echo 将让当前 Agent worker 重新取得“
-                    {takeoverCandidate.title}
-                    ”的租约。这个动作不会自动执行任务；接管后仍需回到原任务确认并继续。
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTakeoverCandidate(null)}
-                  disabled={actionBusy}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void confirmTakeover()}
-                  disabled={actionBusy}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
-                >
-                  {actionBusy && (
-                    <Loader2Icon className="size-3.5 animate-spin" />
-                  )}
-                  确认接管
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {resumeCandidate && (
-          <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
-            <section
-              role="alertdialog"
-              aria-modal="true"
-              aria-label="确认恢复任务执行"
-              className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                  <PlayIcon className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    从 Agent 检查点继续？
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Echo 将在原线程恢复“{resumeCandidate.title}
-                    ”，随后打开原任务查看实时进度。新的系统操作仍会按原规则等待人工确认，不会自动批准。
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setResumeCandidate(null)}
-                  disabled={actionBusy}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void confirmResumeExecution()}
-                  disabled={actionBusy}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60"
-                >
-                  {actionBusy && (
-                    <Loader2Icon className="size-3.5 animate-spin" />
-                  )}
-                  确认恢复
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
-      </section>
-    </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setResumeCandidate(null)}
+                disabled={actionBusy}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmResumeExecution()}
+                disabled={actionBusy}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60"
+              >
+                {actionBusy && (
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                )}
+                确认恢复
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </SystemAppFrame>
   );
 }

@@ -62,6 +62,25 @@ export function writePendingNewSession(text: string): void {
 }
 
 /**
+ * Withdraw a specific hand-off that was never consumed (e.g. the window that
+ * should have sent it did not open). A newer hand-off with different text is
+ * left alone.
+ */
+export function discardPendingNewSession(text: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(scopedPendingKey());
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Partial<PendingNewSession>;
+    if (parsed.text === text) {
+      window.sessionStorage.removeItem(scopedPendingKey());
+    }
+  } catch {
+    // Best-effort cleanup only.
+  }
+}
+
+/**
  * Read and immediately clear a pending hand-off. Returns the text to auto-send,
  * or `null` when there is nothing valid to send (missing, malformed, or too
  * old). Clearing-on-read is what makes the hand-off refresh-safe.

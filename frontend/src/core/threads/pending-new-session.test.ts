@@ -8,6 +8,7 @@ vi.mock("@/core/auth/api", () => ({
 import {
   consumePendingNewSession,
   clearPendingNewSession,
+  discardPendingNewSession,
   isThreadStale,
   writePendingNewSession,
 } from "./pending-new-session";
@@ -97,5 +98,22 @@ describe("pending-new-session hand-off", () => {
 
   it("returns null when nothing is pending", () => {
     expect(consumePendingNewSession()).toBeNull();
+  });
+});
+
+describe("discardPendingNewSession", () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it("withdraws only the hand-off it wrote", () => {
+    writePendingNewSession("第一条");
+    discardPendingNewSession("第一条");
+    expect(consumePendingNewSession()).toBeNull();
+  });
+
+  it("leaves a newer hand-off with different text alone", () => {
+    writePendingNewSession("第一条");
+    writePendingNewSession("第二条");
+    discardPendingNewSession("第一条");
+    expect(consumePendingNewSession()).toBe("第二条");
   });
 });

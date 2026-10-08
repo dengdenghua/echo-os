@@ -28,7 +28,8 @@ export interface PipTask {
   agentName: string;
   agentType: string;
   stepText: string;
-  progress: number;
+  /** null 表示 Agent 没有汇报进度，界面显示"进行中"而不是一个假的百分比。 */
+  progress: number | null;
   needsApproval?: boolean;
   approvalRiskMessage?: string;
 }
@@ -42,6 +43,8 @@ export interface AgentPipMonitorProps {
   onClose?: () => void;
   onApprove?: (task: PipTask) => void | Promise<void>;
   onReject?: (task: PipTask) => void | Promise<void>;
+  /** 审批需要完整上下文时，只提供一个入口，把决定交给任务空间完成。 */
+  onReviewApproval?: (task: PipTask) => void;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
   className?: string;
 }
@@ -68,6 +71,7 @@ export function AgentPipMonitor({
   onClose,
   onApprove,
   onReject,
+  onReviewApproval,
   onOpenPhoneMirror,
   className,
 }: AgentPipMonitorProps) {
@@ -220,6 +224,10 @@ export function AgentPipMonitor({
   };
 
   const agentFirstName = (task.agentName || "Agent").split(" ")[0];
+  const progressLabel = task.progress == null ? "进行中" : `${task.progress}%`;
+  // 收起的胶囊只有一行字：等你批准比进度更值得被看见。
+  const pillLabel =
+    task.needsApproval && !approvalHandled ? "待批准" : progressLabel;
 
   // 极简折叠态：仅留一个微脉冲呼吸胶囊 (同样支持拖动)
   if (collapsed) {
@@ -228,7 +236,7 @@ export function AgentPipMonitor({
         ref={pillRef}
         role="button"
         tabIndex={0}
-        aria-label="展开 Codex 画中画监控"
+        aria-label="展开任务画中画"
         onPointerDown={(e) => handlePointerDown(e, true)}
         onDoubleClick={handleResetPosition}
         className={cn(
@@ -265,7 +273,8 @@ export function AgentPipMonitor({
           <span className="relative inline-flex size-1.5 rounded-full bg-blue-500" />
         </span>
         <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-          {agentFirstName} PiP · {task.progress}%{demo ? " · 演示" : ""}
+          {agentFirstName} PiP · {pillLabel}
+          {demo ? " · 演示" : ""}
         </span>
         <ChevronUpIcon className="size-3 text-slate-400" />
       </div>
@@ -311,7 +320,7 @@ export function AgentPipMonitor({
             <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
           </span>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Codex PiP 画中画 · {agentFirstName}
+            任务画中画 · {agentFirstName}
           </span>
         </div>
 
@@ -384,15 +393,20 @@ export function AgentPipMonitor({
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="truncate pr-2">{task.title}</span>
           <span className="shrink-0 text-[10px] text-blue-600 dark:text-blue-400 font-mono">
-            {task.progress}%
+            {progressLabel}
           </span>
         </div>
 
         {/* 紧凑进度条 */}
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
-            style={{ width: `${task.progress}%` }}
+            className={cn(
+              "h-full bg-blue-500 transition-all duration-300",
+              task.progress == null && "w-1/3 animate-pulse",
+            )}
+            style={
+              task.progress == null ? undefined : { width: `${task.progress}%` }
+            }
           />
         </div>
 
@@ -412,24 +426,36 @@ export function AgentPipMonitor({
             <p className="mt-1 text-[10px] text-slate-600 dark:text-slate-300">
               {task.approvalRiskMessage}
             </p>
-            <div className="mt-2 flex items-center justify-end gap-1.5">
-              <button
-                type="button"
-                onClick={() => void handleDecision(false)}
-                disabled={demo || !onReject || approvalPending}
-                className="rounded-md border border-black/10 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/15 dark:bg-white/10 dark:text-slate-300"
-              >
-                拦截
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleDecision(true)}
-                disabled={demo || !onApprove || approvalPending}
-                className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                批准放行
-              </button>
-            </div>
+            {onReviewApproval ? (
+              <div className="mt-2 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => onReviewApproval(task)}
+                  className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700"
+                >
+                  去处理
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void handleDecision(false)}
+                  disabled={demo || !onReject || approvalPending}
+                  className="rounded-md border border-black/10 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/15 dark:bg-white/10 dark:text-slate-300"
+                >
+                  拦截
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDecision(true)}
+                  disabled={demo || !onApprove || approvalPending}
+                  className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  批准放行
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

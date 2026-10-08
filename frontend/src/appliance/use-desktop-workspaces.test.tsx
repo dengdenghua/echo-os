@@ -180,3 +180,15 @@ it("restores the original thread window and can start a new draft after promotio
   expect(within(original).getByRole("textbox")).toHaveValue("后续提问草稿");
   expect(screen.getByTestId("outer-location")).toHaveTextContent(/^\/desktop$/);
 });
+
+it("leaves third-party iframe windows without content so the iframe renders", () => {
+  const { result } = renderHook(() => useDesktopWorkspaces());
+  act(() =>
+    result.current.openWindow({
+      id: "appliance:nextcloud",
+      title: "Nextcloud",
+      url: "/apps/nextcloud/",
+    }),
+  );
+  expect(result.current.windows[0]!.content).toBeUndefined();
+});

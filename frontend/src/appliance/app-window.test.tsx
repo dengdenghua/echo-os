@@ -1,7 +1,29 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AppWindow } from "./app-window";
+
+const ORIGINAL_VIEWPORT = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+};
+
+function setViewport(width: number, height: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(window, "innerHeight", {
+    configurable: true,
+    value: height,
+  });
+  // 同时让工作区缓存失效，与真实浏览器 resize 一致。
+  window.dispatchEvent(new Event("resize"));
+}
+
+afterEach(() => {
+  setViewport(ORIGINAL_VIEWPORT.width, ORIGINAL_VIEWPORT.height);
+});
 
 describe("Echo OS desktop application window", () => {
   it("renders a system application directly without creating an iframe", () => {
@@ -154,6 +176,7 @@ describe("Echo OS desktop application window", () => {
   });
 
   it("restores exact position and dimensions when initialGeometry is provided", () => {
+    setViewport(1440, 900);
     const { container } = render(
       <AppWindow
         win={{
@@ -181,6 +204,89 @@ describe("Echo OS desktop application window", () => {
     expect(win.style.top).toBe("180px");
     expect(win.style.width).toBe("720px");
     expect(win.style.height).toBe("480px");
+  });
+
+  it("pulls restored and existing windows back into a smaller viewport", () => {
+    setViewport(1440, 900);
+    const onGeometryChange = vi.fn();
+    const { container } = render(
+      <AppWindow
+        win={{ id: "wide", title: "宽窗口", url: "https://example.com" }}
+        index={0}
+        focused
+        initialGeometry={{ x: 600, y: 300, w: 800, h: 500, maximized: false }}
+        onGeometryChange={onGeometryChange}
+        onFocus={vi.fn()}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+      />,
+    );
+    const win = container.querySelector<HTMLElement>(".mac-window")!;
+    expect(win.style.left).toBe("600px");
+
+    // 视口缩小后窗口必须完整回到可见区域（不压在 Dock 下，也不超出右边缘）。
+    act(() => setViewport(1024, 700));
+    const left = Number.parseFloat(win.style.left);
+    const top = Number.parseFloat(win.style.top);
+    const width = Number.parseFloat(win.style.width);
+    const height = Number.parseFloat(win.style.height);
+    expect(left + width).toBeLessThanOrEqual(1024 - 6);
+    expect(top + height).toBeLessThanOrEqual(700 - 83);
+    expect(top).toBeGreaterThanOrEqual(31);
+    expect(onGeometryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ maximized: false, w: width, h: height }),
+    );
+  });
+
+  it("drags integrated windows from empty space in the top strip", () => {
+    setViewport(1440, 900);
+    const onFocus = vi.fn();
+    const { container } = render(
+      <AppWindow
+        win={{
+          id: "workbench",
+          title: "工作台",
+          url: "/workspace/realtime/new",
+          integratedChrome: true,
+          content: (
+            <header>
+              <span>新对话</span>
+              <button type="button">新建任务</button>
+            </header>
+          ),
+        }}
+        index={0}
+        focused
+        initialGeometry={{ x: 200, y: 120, w: 800, h: 500, maximized: false }}
+        onFocus={onFocus}
+        onClose={vi.fn()}
+        onMinimize={vi.fn()}
+      />,
+    );
+    const win = container.querySelector<HTMLElement>(".mac-window")!;
+    vi.spyOn(win, "getBoundingClientRect").mockReturnValue({
+      top: 120,
+      left: 200,
+      width: 800,
+      height: 500,
+    } as DOMRect);
+
+    // 按钮仍然是按钮，不会被当作拖拽把手。
+    fireEvent.pointerDown(screen.getByRole("button", { name: "新建任务" }), {
+      button: 0,
+      clientX: 400,
+      clientY: 130,
+    });
+    expect(win.dataset.windowDragging).toBeUndefined();
+
+    fireEvent.pointerDown(screen.getByText("新对话"), {
+      button: 0,
+      clientX: 300,
+      clientY: 130,
+    });
+    expect(win.dataset.windowDragging).toBe("move");
+    fireEvent.pointerUp(window);
+    expect(win.dataset.windowDragging).toBeUndefined();
   });
 
   it("supports sleeping mode, displaying sleep shield and waking up upon click", () => {

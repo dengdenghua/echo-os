@@ -1599,13 +1599,13 @@
   opacity: 0.55;
 }
 
-/* Dock */
+/* Dock：系统层，始终高于应用窗口（z-40）和应用面板（最高 z-89），低于菜单栏（100）。 */
 .mac-dock {
   --dock-glass-height: 68px;
   position: absolute;
   bottom: 6px;
   left: 50%;
-  z-index: 60;
+  z-index: 90;
   display: flex;
   height: var(--dock-glass-height);
   min-height: var(--dock-glass-height);
@@ -1820,6 +1820,119 @@
 .mac-dock .dock-item:hover .mac-dock-stack-folder svg {
   filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.38));
 }
+
+/* Dock 任务轨：进行中的 Agent 任务，外圈是进度环 */
+.mac-dock-task {
+  position: relative;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  color: white;
+  background: radial-gradient(
+    circle at 32% 26%,
+    rgba(255, 255, 255, 0.3),
+    rgba(15, 23, 42, 0.82) 72%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  user-select: none;
+}
+.mac-dock-task-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.mac-dock-task-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+.mac-dock-task-ring-track {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+.mac-dock-task-ring-value {
+  stroke: #60a5fa;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 600ms ease;
+}
+.mac-dock-task.is-attention .mac-dock-task-ring-value {
+  stroke: #f59e0b;
+}
+.mac-dock-task.is-muted .mac-dock-task-ring-value {
+  stroke: rgba(255, 255, 255, 0.55);
+}
+.mac-dock-task.is-indeterminate .mac-dock-task-ring {
+  animation: mac-dock-task-spin 1.4s linear infinite;
+}
+.mac-dock-task.is-attention {
+  animation: mac-dock-task-pulse 2s ease-in-out infinite;
+}
+.mac-dock-task-glyph {
+  position: relative;
+  font-size: 22px;
+  line-height: 1;
+}
+.mac-dock-task-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  place-items: center;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f59e0b;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.mac-dock-task.is-more {
+  font-size: 14px;
+  font-weight: 600;
+}
+@keyframes mac-dock-task-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+@keyframes mac-dock-task-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.32),
+      0 0 0 0 rgba(245, 158, 11, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.32),
+      0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mac-dock-task.is-indeterminate .mac-dock-task-ring,
+  .mac-dock-task.is-attention {
+    animation: none;
+  }
+}
+@media (max-width: 640px) {
+  .mac-dock-task {
+    width: 36px;
+    height: 36px;
+  }
+  .mac-dock-task-glyph {
+    font-size: 16px;
+  }
+}
 .mac-dock-running-dot {
   position: absolute;
   bottom: -3px;
@@ -1898,6 +2011,10 @@
     height 0s linear !important;
   transform: perspective(1500px) rotateX(var(--window-tilt-x))
     rotateY(var(--window-tilt-y)) scale(1.002);
+}
+.mac-window[data-window-entered] {
+  /* 入场动画只播一次：拖拽时临时移除的 animation 恢复后，窗口不会重新弹入。 */
+  animation: none;
 }
 .mac-window.is-unfocused {
   box-shadow:
@@ -2362,6 +2479,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* 窗口形态：外框、阴影和红绿灯都由桌面窗口提供，访达只填满内容区。 */
+.mac-finder-window.is-in-window {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  background: rgba(247, 248, 250, 0.98);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+.mac-finder-window.is-in-window .mac-finder-toolbar {
+  grid-template-columns: 100px 68px minmax(100px, 1fr) auto;
+}
+.mac-finder-window.is-in-window .mac-finder-traffic {
+  /* 系统红绿灯占据左上 64px。 */
+  padding-left: 64px;
 }
 .mac-finder-navigation {
   display: flex;

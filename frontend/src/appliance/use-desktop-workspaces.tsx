@@ -67,16 +67,21 @@ export function useDesktopWorkspaces(onActivate?: () => void) {
     openWindow,
     restoreWindow,
     focusWindow,
-    windows: windows.windows.map((window) => ({
-      ...window,
-      content: (
-        <WorkspaceArtifactRequestContext.Provider
-          value={window.artifactRequest}
-        >
-          {window.content}
-        </WorkspaceArtifactRequestContext.Provider>
-      ),
-    })),
+    // 只包装内建内容；第三方应用窗口没有 content，必须保持 undefined 才会渲染 iframe。
+    windows: windows.windows.map((window) =>
+      window.content === undefined
+        ? window
+        : {
+            ...window,
+            content: (
+              <WorkspaceArtifactRequestContext.Provider
+                value={window.artifactRequest}
+              >
+                {window.content}
+              </WorkspaceArtifactRequestContext.Provider>
+            ),
+          },
+    ),
     openWorkspace,
   };
 }

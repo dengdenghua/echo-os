@@ -44,7 +44,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
 
   it("renders the floating PiP monitor with live step and progress", () => {
     render(<AgentPipMonitor />);
-    expect(screen.getByText(/Codex PiP 画中画/i)).toBeInTheDocument();
+    expect(screen.getByText(/任务画中画/i)).toBeInTheDocument();
     expect(screen.getByText("RK3576 驱动装配与编译")).toBeInTheDocument();
     expect(screen.getByText("68%")).toBeInTheDocument();
     expect(
@@ -57,11 +57,11 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     const minimizeBtn = screen.getByRole("button", { name: /最小化/i });
     fireEvent.click(minimizeBtn);
 
-    expect(screen.getByText(/Builder PiP · 68%/i)).toBeInTheDocument();
+    expect(screen.getByText(/Builder PiP · 待批准/i)).toBeInTheDocument();
 
-    const pill = screen.getByText(/Builder PiP · 68%/i);
+    const pill = screen.getByText(/Builder PiP · 待批准/i);
     fireEvent.click(pill);
-    expect(screen.getByText(/Codex PiP 画中画/i)).toBeInTheDocument();
+    expect(screen.getByText(/任务画中画/i)).toBeInTheDocument();
   });
 
   it("marks default data as a demo and disables unconnected approvals", () => {
@@ -120,7 +120,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     const minimizeBtn = screen.getByRole("button", { name: /最小化/i });
     fireEvent.click(minimizeBtn);
 
-    const pill = screen.getByRole("button", { name: /展开 Codex 画中画监控/i });
+    const pill = screen.getByRole("button", { name: /展开任务画中画/i });
     fireEvent.keyDown(pill, { key: "Enter" });
 
     expect(screen.getByTestId("agent-pip-monitor")).toBeInTheDocument();

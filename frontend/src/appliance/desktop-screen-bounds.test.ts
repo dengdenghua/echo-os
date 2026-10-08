@@ -88,4 +88,42 @@ describe("desktop-screen-bounds", () => {
     // Synchronous getter returns cached value
     expect(getDesktopWorkAreaSync().width).toBe(2560);
   });
+
+  it("converts Electron screen coordinates into page coordinates", async () => {
+    // 窗口在左侧副屏上、非全屏：工作区是屏幕坐标，窗口定位用的是页面坐标。
+    (window as unknown as { echo: unknown }).echo = {
+      window: {
+        getScreenBounds: vi.fn().mockResolvedValue({
+          ok: true,
+          workArea: { x: -1920, y: 0, width: 1920, height: 1040 },
+          contentBounds: { x: -1800, y: 40, width: 1024, height: 768 },
+          scaleFactor: 1,
+        }),
+      },
+    };
+
+    const area = await getDesktopWorkArea(true);
+    expect(area.x).toBe(0);
+    expect(area.y).toBe(0);
+    // 与视口求交：不会把窗口限制到页面之外的屏幕区域。
+    expect(area.width).toBe(Math.min(window.innerWidth, 1920 - 120));
+    expect(area.height).toBe(Math.min(window.innerHeight, 1040 - 40));
+  });
+
+  it("drops the cached work area when the viewport is resized", async () => {
+    (window as unknown as { echo: unknown }).echo = {
+      window: {
+        getScreenBounds: vi.fn().mockResolvedValue({
+          ok: true,
+          workArea: { x: 0, y: 0, width: 640, height: 480 },
+          scaleFactor: 1,
+        }),
+      },
+    };
+    await getDesktopWorkArea(true);
+    expect(getDesktopWorkAreaSync().width).toBe(640);
+
+    window.dispatchEvent(new Event("resize"));
+    expect(getDesktopWorkAreaSync().width).toBe(window.innerWidth);
+  });
 });

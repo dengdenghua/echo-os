@@ -188,10 +188,10 @@ import {
 import { buildProgressOutline } from "@/core/threads/progress-outline";
 import { deriveThreadTitle } from "@/core/threads/sidebar";
 import {
-  consumePendingNewSession,
   isThreadStale,
   writePendingNewSession,
 } from "@/core/threads/pending-new-session";
+import { usePendingNewSessionAutoSend } from "@/core/threads/use-pending-new-session-auto-send";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ReasoningEffort } from "@/core/threads";
 import {
@@ -3559,31 +3559,14 @@ function RealtimePageContent({
       threadIdentityQuery,
     ],
   );
-  // Auto-send a one-shot hand-off when a fresh thread is opened by the
-  // Assistant timeout or a legacy on-demand-owned conversation migration.
-  // Session storage is consumed once, so refresh cannot duplicate the send.
-  const pendingNewSessionSentRef = useRef(false);
-  useEffect(() => {
-    if (!isNewThread) {
-      // The page component survives hash-route transitions. Reset the
-      // one-shot latch when returning to an existing thread so a later Retry
-      // can hand off and auto-send another fresh task.
-      pendingNewSessionSentRef.current = false;
-      return;
-    }
-    if (pendingNewSessionSentRef.current) return;
-    const pendingText = consumePendingNewSession();
-    if (!pendingText) return;
-    pendingNewSessionSentRef.current = true;
-    const timer = window.setTimeout(() => {
-      markSidebarThreadRunning(threadId);
-      // sendMessage returns void (fire-and-forget). If the connection isn't
-      // ready yet the composer still shows the prompt, so the user can retry
-      // by pressing Enter.
-      void sendMessage(threadId, { text: pendingText, files: [] });
-    }, 200);
-    return () => window.clearTimeout(timer);
-  }, [isNewThread, threadId, sendMessage, markSidebarThreadRunning]);
+  // Auto-send a one-shot hand-off (Assistant timeout, legacy migration, or the
+  // desktop intent box) once this fresh thread mounts.
+  usePendingNewSessionAutoSend({
+    isNewThread,
+    threadId,
+    sendMessage,
+    markSidebarThreadRunning,
+  });
 
   useEffect(() => {
     const handleQuickReply = (event: Event) => {

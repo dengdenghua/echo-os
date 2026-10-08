@@ -60,7 +60,14 @@ type State = {
   minimized: Set<string>;
   focusedWin: string | null;
   geometries: Record<string, WindowGeometry>;
+  /** 叠放顺序（最近使用在末尾）。与渲染顺序解耦，聚焦不移动 DOM，iframe 不会重载。 */
+  stack: string[];
 };
+
+function raise(stack: string[], id: string): string[] {
+  if (stack[stack.length - 1] === id) return stack;
+  return [...stack.filter((entry) => entry !== id), id];
+}
 
 type Action =
   | { type: "open"; window: DesktopWindow; geometry?: WindowGeometry }
@@ -77,6 +84,7 @@ function reduce(state: State, action: Action): State {
       minimized: new Set<string>(),
       focusedWin: null,
       geometries: {},
+      stack: [],
     };
   }
   if (action.type === "restore_geometries") {
@@ -135,6 +143,7 @@ function reduce(state: State, action: Action): State {
       minimized,
       focusedWin: target.id,
       geometries,
+      stack: raise(state.stack, target.id),
     };
   }
   if (action.type === "route") {
@@ -153,30 +162,48 @@ function reduce(state: State, action: Action): State {
       ),
     };
   }
-  if (action.type === "restore") {
+  // 激活一个已最小化的窗口（调度中心、菜单等入口）等同于恢复它，
+  // 否则焦点会落在一个看不见的窗口上。
+  if (action.type === "restore" || action.type === "focus") {
+    if (!state.windows.some((entry) => entry.id === action.id)) return state;
+    if (
+      action.type === "focus" &&
+      state.focusedWin === action.id &&
+      !state.minimized.has(action.id) &&
+      state.stack[state.stack.length - 1] === action.id
+    ) {
+      return state;
+    }
     minimized.delete(action.id);
     return {
       ...state,
       minimized,
       focusedWin: action.id,
+      stack: raise(state.stack, action.id),
     };
   }
-  if (action.type === "focus")
-    return state.windows.some((entry) => entry.id === action.id)
-      ? { ...state, focusedWin: action.id }
-      : state;
   const windows =
     action.type === "close"
       ? state.windows.filter((entry) => entry.id !== action.id)
       : state.windows;
   if (action.type === "close") minimized.delete(action.id);
   else minimized.add(action.id);
+  const stack =
+    action.type === "close"
+      ? state.stack.filter((entry) => entry !== action.id)
+      : state.stack;
+  // 焦点交给叠放顺序里最上面的可见窗口，而不是打开顺序里的最后一个。
   const focusedWin =
     state.focusedWin === action.id
-      ? ([...windows].reverse().find((entry) => !minimized.has(entry.id))?.id ??
-        null)
+      ? ([...stack].reverse().find((id) => !minimized.has(id)) ?? null)
       : state.focusedWin;
-  return { windows, minimized, focusedWin, geometries: state.geometries };
+  return {
+    windows,
+    minimized,
+    focusedWin,
+    geometries: state.geometries,
+    stack,
+  };
 }
 
 /** Resolve identity, restore minimization and focus in a single state transition. */
@@ -192,6 +219,7 @@ export function useDesktopWindows() {
       minimized: new Set<string>(),
       focusedWin: null,
       geometries: loadSessionSnapshot(actor) ?? {},
+      stack: [],
     }),
   );
 
@@ -252,6 +280,7 @@ export function useDesktopWindows() {
           minimized: new Set<string>(),
           focusedWin: null,
           geometries: {},
+          stack: [],
         }),
     openWindow,
     closeWindow,

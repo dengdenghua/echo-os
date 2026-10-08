@@ -20,6 +20,11 @@ import { toast } from "sonner";
 import { requestHighRiskApproval } from "@/appliance/approval";
 import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
 import {
+  SystemAppFrame,
+  SystemAppLightsSpacer,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
+import {
   applyPhotoIndex,
   cancelPhotoIndexJob,
   createPhotoIndexPlan,
@@ -246,6 +251,7 @@ export function PhotosPanel({
   onAskAgent?: (context: DesktopAgentContext) => void;
   onClose: () => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const [library, setLibrary] = useState<PhotoLibrary | null>(null);
   const [status, setStatus] = useState<PhotoStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -447,11 +453,12 @@ export function PhotosPanel({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (selected) setSelected(null);
-      else if (!pendingPlan) onClose();
+      // 窗口形态下 Esc 不关闭整个应用，与其他桌面窗口一致。
+      else if (!pendingPlan && !inWindow) onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open, pendingPlan, selected]);
+  }, [inWindow, onClose, open, pendingPlan, selected]);
 
   const photos = library?.items ?? [];
   const indexedPercent = useMemo(() => {
@@ -822,480 +829,458 @@ export function PhotosPanel({
 
   return (
     <>
-      <div
-        data-desktop-interactive
-        className="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
+      <SystemAppFrame
+        label="照片"
+        onClose={onClose}
+        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
+        className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/91 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        windowClassName="relative flex size-full flex-col overflow-hidden bg-slate-50 text-slate-900"
       >
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-label="照片"
-          className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/91 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
-        >
-          <header className="relative flex h-14 shrink-0 items-center bg-white/52 px-5 shadow-[0_1px_0_rgba(148,163,184,.18)]">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                aria-label="关闭照片"
-                onClick={onClose}
-                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
-              >
-                <XIcon className="size-2.5" />
-              </button>
-              <span className="size-3.5 rounded-full bg-[#febc2e]" />
-              <span className="size-3.5 rounded-full bg-[#28c840]" />
-            </div>
-            <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-slate-700">
-              <ImagesIcon className="size-4 text-rose-500" />
-              照片
-            </div>
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              disabled={loading}
-              aria-label="刷新照片库"
-              className="ml-auto grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200/70 disabled:opacity-50"
-            >
-              <RefreshCwIcon
-                className={cn("size-4", loading && "animate-spin")}
-              />
-            </button>
-          </header>
-
-          <div className="shrink-0 px-6 pb-5 pt-6">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-rose-500">
-                  <SparklesIcon className="size-3.5" />
-                  本地智能相册
-                </div>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  你的照片，只在这台设备理解
-                </h1>
-                <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-slate-500">
-                  浏览 NAS
-                  原图，缩略图与语义索引都在本地生成。智能索引只读取照片，不移动、不删除原文件。
-                </p>
-              </div>
-              <form
-                onSubmit={submitSearch}
-                className="flex h-11 w-full items-center gap-2 rounded-full bg-white/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.24),0_5px_18px_rgba(51,65,85,.06)] xl:w-[360px]"
-              >
-                {searching ? (
-                  <Loader2Icon className="size-4 animate-spin text-rose-400" />
-                ) : (
-                  <SearchIcon className="size-4 text-slate-400" />
-                )}
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.currentTarget.value)}
-                  placeholder="试试“海边的家人”或文件名"
-                  aria-label="搜索照片"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-                {query && (
-                  <button
-                    type="button"
-                    aria-label="清除照片搜索"
-                    onClick={() => {
-                      setQuery("");
-                      void refresh();
-                    }}
-                    className="grid size-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100"
-                  >
-                    <XIcon className="size-3.5" />
-                  </button>
-                )}
-              </form>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                <Metric
-                  label="媒体库"
-                  value={countLabel(
-                    status?.library.imageCount ?? library?.total ?? 0,
-                  )}
-                />
-                <Metric
-                  label={canCleanup ? "旧照片索引" : "已理解"}
-                  value={
-                    canCleanup
-                      ? countLabel(status?.index.indexed ?? 0)
-                      : `${countLabel(status?.index.indexed ?? 0)} · ${indexedPercent}%`
-                  }
-                />
-                <Metric
-                  label="人脸记录"
-                  value={countLabel(status?.index.faces ?? 0)}
-                />
-                <Metric
-                  label="重复组 / 模糊"
-                  value={`${status?.index.duplicateGroups ?? 0} / ${status?.index.blurry ?? 0}`}
-                />
-              </div>
-              <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/58 p-1.5 pl-3">
-                <label className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-slate-500">
-                  <ScanFaceIcon className="size-3.5" />
-                  人物聚类
-                  <input
-                    type="checkbox"
-                    checked={includeFaces}
-                    onChange={(event) =>
-                      setIncludeFaces(event.currentTarget.checked)
-                    }
-                    disabled={
-                      !canManage ||
-                      canCleanup ||
-                      !facesAvailable ||
-                      jobActive ||
-                      cancelPending
-                    }
-                    className="size-3.5 accent-rose-500"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void beginIndex()}
-                  disabled={
-                    planning ||
-                    jobActive ||
-                    cancelPending ||
-                    !canManage ||
-                    (!semanticAvailable && !canCleanup)
-                  }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-slate-900 px-4 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {planning || jobActive || cancelPending ? (
-                    <Loader2Icon className="size-3.5 animate-spin" />
-                  ) : status?.index.databaseExists ? (
-                    <RefreshCwIcon className="size-3.5" />
-                  ) : (
-                    <BrainCircuitIcon className="size-3.5" />
-                  )}
-                  {job?.state === "cancelling"
-                    ? job.cleanupOnly
-                      ? "正在停止索引清理"
-                      : "正在停止索引"
-                    : job?.state === "pausing"
-                      ? job.cleanupOnly
-                        ? "正在暂停索引清理"
-                        : "正在暂停索引"
-                      : job?.state === "paused"
-                        ? "索引已暂停"
-                        : job?.state === "running"
-                          ? job.cleanupOnly
-                            ? "后台清理旧索引中"
-                            : "后台索引中"
-                          : canCleanup
-                            ? "清理旧索引"
-                            : status?.index.databaseExists
-                              ? "更新智能索引"
-                              : "建立智能索引"}
-                </button>
-                {canCancel &&
-                  jobActive &&
-                  job?.jobId &&
-                  job.state === "running" && (
-                    <button
-                      type="button"
-                      onClick={() => void pauseIndex()}
-                      disabled={pausePending || cancelPending || resumePending}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {pausePending ? (
-                        <Loader2Icon className="size-3.5 animate-spin" />
-                      ) : (
-                        <PauseIcon className="size-3.5" />
-                      )}
-                      {pausePending ? "正在请求暂停" : "暂停索引"}
-                    </button>
-                  )}
-                {canCancel &&
-                  jobActive &&
-                  job?.jobId &&
-                  job.state === "paused" && (
-                    <button
-                      type="button"
-                      onClick={() => void resumeIndex()}
-                      disabled={resumePending || cancelPending || pausePending}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {resumePending ? (
-                        <Loader2Icon className="size-3.5 animate-spin" />
-                      ) : (
-                        <PlayIcon className="size-3.5" />
-                      )}
-                      {resumePending ? "正在恢复" : "继续索引"}
-                    </button>
-                  )}
-                {canCancel && jobActive && job?.jobId && (
-                  <button
-                    type="button"
-                    onClick={() => void cancelIndex()}
-                    disabled={
-                      cancelPending ||
-                      pausePending ||
-                      resumePending ||
-                      job.state === "cancelling"
-                    }
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {cancelPending || job.state === "cancelling" ? (
-                      <Loader2Icon className="size-3.5 animate-spin" />
-                    ) : (
-                      <XIcon className="size-3.5" />
-                    )}
-                    {job.state === "cancelling"
-                      ? "正在停止"
-                      : job.state === "paused"
-                        ? "取消索引"
-                        : cancelPending
-                          ? "正在请求停止"
-                          : job.cleanupOnly
-                            ? "停止清理"
-                            : "停止索引"}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {!canManage && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                当前账户可浏览和搜索照片，建立索引需设备管理员操作。
-              </p>
-            )}
-            {canCleanup && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                当前图库为空，但仍有旧索引或关联记录。可以先预览影响范围，再确认清理；不会删除原图，无需加载模型。
-              </p>
-            )}
-            {(status?.library.scanErrors ?? 0) > 0 && (
-              <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
-                部分照片目录未能读取，当前照片数量可能不完整。请检查目录权限和设备连接后刷新，再更新或清理索引。
-              </p>
-            )}
-            {status && !semanticAvailable && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                {secureReaderUnavailable
-                  ? "当前系统尚不支持相册所需的安全文件读取，可浏览照片目录和按文件名搜索。完整相册功能需在支持的设备系统上使用。"
-                  : readiness?.semantic.state === "disabled"
-                    ? "智能索引已关闭，可继续浏览照片和按文件名搜索。"
-                    : "智能索引组件尚未就绪，可继续浏览照片和按文件名搜索。请在设备上完成智能索引组件安装后刷新。"}
-              </p>
-            )}
-            {semanticAvailable && !facesAvailable && (
-              <p className="mt-3 text-xs leading-5 text-slate-500">
-                人脸识别组件尚未就绪；可以先建立语义索引，按画面内容搜索。
-              </p>
-            )}
-            <ModelReadinessNotice
-              feature={readiness?.semantic}
-              label="语义模型"
-            />
-            <ModelReadinessNotice feature={readiness?.faces} label="人物模型" />
-            {modelLoadFailed && (
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                {canManage
-                  ? "修复后可重新建立智能索引，也可重新尝试搜索。"
-                  : "请设备管理员修复后重新建立智能索引。"}
-                可继续浏览照片，搜索结果会标明使用语义还是文件名。
-              </p>
-            )}
-            {semanticAvailable &&
-              !canCleanup &&
-              readiness?.modelDownloadMayBeRequired &&
-              !modelLoadFailed &&
-              !modelLoading && (
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  首次建立索引可能需要联网下载模型，照片在本机处理。
-                  {!readiness.semantic.modelsLoaded &&
-                    "语义模型加载成功后才能进行智能检索。"}
-                </p>
-              )}
-            {canManage && cancelError && (
-              <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
-                {cancelError}
-              </p>
-            )}
-            {job?.state === "cancelling" && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                {job.cleanupOnly
-                  ? "正在停止索引清理，请稍候。原图不会被删除。"
-                  : "正在停止索引，请稍候。照片仍可浏览。"}
-              </p>
-            )}
-            {job?.state === "pausing" && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                {job.cleanupOnly
-                  ? "正在暂停索引清理，系统会在安全检查点释放资源。"
-                  : "正在暂停索引，系统会在安全检查点保留旧索引并释放资源。"}
-              </p>
-            )}
-            {job?.state === "paused" && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                {job.cleanupOnly
-                  ? "索引清理已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"
-                  : "智能索引已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"}
-              </p>
-            )}
-            {job?.state === "cancelled" && (
-              <p
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                {job.cleanupOnly
-                  ? "本次索引清理已取消，可以重新预览后清理。原图未被删除。"
-                  : "本次索引已取消，可以重新更新。"}
-              </p>
-            )}
-            {job?.state === "succeeded" && (
-              <div
-                role="status"
-                className="mt-3 text-xs leading-5 text-slate-500"
-              >
-                <p>
-                  {job.cleanupOnly
-                    ? "旧照片索引及关联记录已清理，原图未被删除"
-                    : "智能索引已更新"}
-                  {typeof job.result?.indexed === "number" &&
-                  Number.isInteger(job.result.indexed) &&
-                  job.result.indexed >= 0
-                    ? job.cleanupOnly
-                      ? `，当前剩余 ${countLabel(job.result.indexed)} 条照片索引。`
-                      : `，当前共 ${countLabel(job.result.indexed)} 张照片。`
-                    : "。"}
-                </p>
-                {indexResultSummary(job.result) && (
-                  <p>{indexResultSummary(job.result)}</p>
-                )}
-              </div>
-            )}
-            {job?.state === "failed" && (
-              <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
-                {indexFailureMessage(
-                  job.error,
-                  job.result?.partial,
-                  job.cleanupOnly,
-                )}
-              </p>
-            )}
-            {searchMode && (
-              <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
-                {searchMode === "semantic" ? (
-                  <SparklesIcon className="size-3.5 text-rose-500" />
-                ) : (
-                  <SearchIcon className="size-3.5" />
-                )}
-                {searchMode === "semantic"
-                  ? `本地语义结果 · ${library?.total ?? 0} 张`
-                  : `智能索引未就绪，已按文件名查找 · ${library?.total ?? 0} 张`}
-              </div>
-            )}
-            {(status?.library.unsafeLinksSkipped ?? 0) > 0 && (
-              <p className="mt-2 text-[10px] text-slate-400">
-                已安全跳过 {status?.library.unsafeLinksSkipped}{" "}
-                个图片链接，不会读取链接目标。
-              </p>
-            )}
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-            {loading && !library ? (
-              <div className="grid h-64 place-items-center text-sm text-slate-400">
-                <span className="flex items-center gap-2">
-                  <Loader2Icon className="size-4 animate-spin" />
-                  正在整理照片时间线…
-                </span>
-              </div>
-            ) : error ? (
-              <div className="grid h-64 place-items-center text-center">
-                <div>
-                  <UnplugIcon className="mx-auto size-8 text-slate-300" />
-                  <p className="mt-3 text-sm font-medium text-slate-700">
-                    {error}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void refresh()}
-                    className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
-                  >
-                    重新读取
-                  </button>
-                </div>
-              </div>
-            ) : photos.length === 0 ? (
-              <div className="grid h-64 place-items-center text-center">
-                <div>
-                  <ImagesIcon
-                    className="mx-auto size-10 text-slate-300"
-                    strokeWidth={1.4}
-                  />
-                  <p className="mt-3 text-sm font-medium text-slate-700">
-                    {query ? "没有找到匹配的照片" : "NAS 中还没有照片"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {query
-                      ? "换一种描述试试"
-                      : "通过文件管家上传后会自动出现在这里"}
-                  </p>
-                </div>
-              </div>
+        <header className="relative flex h-14 shrink-0 items-center bg-white/52 px-5 shadow-[0_1px_0_rgba(148,163,184,.18)]">
+          <div className="flex gap-2">
+            {inWindow ? (
+              <SystemAppLightsSpacer />
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                  {photos.map((photo) => (
-                    <PhotoTile
-                      key={photo.path}
-                      photo={photo}
-                      previewAvailable={previewAvailable}
-                      onOpen={() => setSelected(photo)}
-                    />
-                  ))}
-                </div>
-                {!searchMode && photos.length < (library?.total ?? 0) && (
-                  <div className="flex justify-center pb-2 pt-5">
-                    <button
-                      type="button"
-                      onClick={() => void loadMore()}
-                      disabled={loadingMore || searching}
-                      className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-4 text-[11px] font-semibold text-slate-600 shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-white disabled:opacity-50"
-                    >
-                      {loadingMore && (
-                        <Loader2Icon className="size-3.5 animate-spin" />
-                      )}
-                      {loadingMore
-                        ? "正在读取"
-                        : `加载更多 · ${photos.length} / ${library?.total ?? 0}`}
-                    </button>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  aria-label="关闭照片"
+                  onClick={onClose}
+                  className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
+                >
+                  <XIcon className="size-2.5" />
+                </button>
+                <span className="size-3.5 rounded-full bg-[#febc2e]" />
+                <span className="size-3.5 rounded-full bg-[#28c840]" />
               </>
             )}
           </div>
-        </section>
-      </div>
+          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-slate-700">
+            <ImagesIcon className="size-4 text-rose-500" />
+            照片
+          </div>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading}
+            aria-label="刷新照片库"
+            className="ml-auto grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200/70 disabled:opacity-50"
+          >
+            <RefreshCwIcon
+              className={cn("size-4", loading && "animate-spin")}
+            />
+          </button>
+        </header>
+
+        <div className="shrink-0 px-6 pb-5 pt-6">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-rose-500">
+                <SparklesIcon className="size-3.5" />
+                本地智能相册
+              </div>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                你的照片，只在这台设备理解
+              </h1>
+              <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-slate-500">
+                浏览 NAS
+                原图，缩略图与语义索引都在本地生成。智能索引只读取照片，不移动、不删除原文件。
+              </p>
+            </div>
+            <form
+              onSubmit={submitSearch}
+              className="flex h-11 w-full items-center gap-2 rounded-full bg-white/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.24),0_5px_18px_rgba(51,65,85,.06)] xl:w-[360px]"
+            >
+              {searching ? (
+                <Loader2Icon className="size-4 animate-spin text-rose-400" />
+              ) : (
+                <SearchIcon className="size-4 text-slate-400" />
+              )}
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                placeholder="试试“海边的家人”或文件名"
+                aria-label="搜索照片"
+                className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="清除照片搜索"
+                  onClick={() => {
+                    setQuery("");
+                    void refresh();
+                  }}
+                  className="grid size-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              )}
+            </form>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <Metric
+                label="媒体库"
+                value={countLabel(
+                  status?.library.imageCount ?? library?.total ?? 0,
+                )}
+              />
+              <Metric
+                label={canCleanup ? "旧照片索引" : "已理解"}
+                value={
+                  canCleanup
+                    ? countLabel(status?.index.indexed ?? 0)
+                    : `${countLabel(status?.index.indexed ?? 0)} · ${indexedPercent}%`
+                }
+              />
+              <Metric
+                label="人脸记录"
+                value={countLabel(status?.index.faces ?? 0)}
+              />
+              <Metric
+                label="重复组 / 模糊"
+                value={`${status?.index.duplicateGroups ?? 0} / ${status?.index.blurry ?? 0}`}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/58 p-1.5 pl-3">
+              <label className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-slate-500">
+                <ScanFaceIcon className="size-3.5" />
+                人物聚类
+                <input
+                  type="checkbox"
+                  checked={includeFaces}
+                  onChange={(event) =>
+                    setIncludeFaces(event.currentTarget.checked)
+                  }
+                  disabled={
+                    !canManage ||
+                    canCleanup ||
+                    !facesAvailable ||
+                    jobActive ||
+                    cancelPending
+                  }
+                  className="size-3.5 accent-rose-500"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void beginIndex()}
+                disabled={
+                  planning ||
+                  jobActive ||
+                  cancelPending ||
+                  !canManage ||
+                  (!semanticAvailable && !canCleanup)
+                }
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-slate-900 px-4 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {planning || jobActive || cancelPending ? (
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                ) : status?.index.databaseExists ? (
+                  <RefreshCwIcon className="size-3.5" />
+                ) : (
+                  <BrainCircuitIcon className="size-3.5" />
+                )}
+                {job?.state === "cancelling"
+                  ? job.cleanupOnly
+                    ? "正在停止索引清理"
+                    : "正在停止索引"
+                  : job?.state === "pausing"
+                    ? job.cleanupOnly
+                      ? "正在暂停索引清理"
+                      : "正在暂停索引"
+                    : job?.state === "paused"
+                      ? "索引已暂停"
+                      : job?.state === "running"
+                        ? job.cleanupOnly
+                          ? "后台清理旧索引中"
+                          : "后台索引中"
+                        : canCleanup
+                          ? "清理旧索引"
+                          : status?.index.databaseExists
+                            ? "更新智能索引"
+                            : "建立智能索引"}
+              </button>
+              {canCancel &&
+                jobActive &&
+                job?.jobId &&
+                job.state === "running" && (
+                  <button
+                    type="button"
+                    onClick={() => void pauseIndex()}
+                    disabled={pausePending || cancelPending || resumePending}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {pausePending ? (
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                    ) : (
+                      <PauseIcon className="size-3.5" />
+                    )}
+                    {pausePending ? "正在请求暂停" : "暂停索引"}
+                  </button>
+                )}
+              {canCancel &&
+                jobActive &&
+                job?.jobId &&
+                job.state === "paused" && (
+                  <button
+                    type="button"
+                    onClick={() => void resumeIndex()}
+                    disabled={resumePending || cancelPending || pausePending}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resumePending ? (
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                    ) : (
+                      <PlayIcon className="size-3.5" />
+                    )}
+                    {resumePending ? "正在恢复" : "继续索引"}
+                  </button>
+                )}
+              {canCancel && jobActive && job?.jobId && (
+                <button
+                  type="button"
+                  onClick={() => void cancelIndex()}
+                  disabled={
+                    cancelPending ||
+                    pausePending ||
+                    resumePending ||
+                    job.state === "cancelling"
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {cancelPending || job.state === "cancelling" ? (
+                    <Loader2Icon className="size-3.5 animate-spin" />
+                  ) : (
+                    <XIcon className="size-3.5" />
+                  )}
+                  {job.state === "cancelling"
+                    ? "正在停止"
+                    : job.state === "paused"
+                      ? "取消索引"
+                      : cancelPending
+                        ? "正在请求停止"
+                        : job.cleanupOnly
+                          ? "停止清理"
+                          : "停止索引"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {!canManage && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              当前账户可浏览和搜索照片，建立索引需设备管理员操作。
+            </p>
+          )}
+          {canCleanup && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              当前图库为空，但仍有旧索引或关联记录。可以先预览影响范围，再确认清理；不会删除原图，无需加载模型。
+            </p>
+          )}
+          {(status?.library.scanErrors ?? 0) > 0 && (
+            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+              部分照片目录未能读取，当前照片数量可能不完整。请检查目录权限和设备连接后刷新，再更新或清理索引。
+            </p>
+          )}
+          {status && !semanticAvailable && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              {secureReaderUnavailable
+                ? "当前系统尚不支持相册所需的安全文件读取，可浏览照片目录和按文件名搜索。完整相册功能需在支持的设备系统上使用。"
+                : readiness?.semantic.state === "disabled"
+                  ? "智能索引已关闭，可继续浏览照片和按文件名搜索。"
+                  : "智能索引组件尚未就绪，可继续浏览照片和按文件名搜索。请在设备上完成智能索引组件安装后刷新。"}
+            </p>
+          )}
+          {semanticAvailable && !facesAvailable && (
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              人脸识别组件尚未就绪；可以先建立语义索引，按画面内容搜索。
+            </p>
+          )}
+          <ModelReadinessNotice
+            feature={readiness?.semantic}
+            label="语义模型"
+          />
+          <ModelReadinessNotice feature={readiness?.faces} label="人物模型" />
+          {modelLoadFailed && (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {canManage
+                ? "修复后可重新建立智能索引，也可重新尝试搜索。"
+                : "请设备管理员修复后重新建立智能索引。"}
+              可继续浏览照片，搜索结果会标明使用语义还是文件名。
+            </p>
+          )}
+          {semanticAvailable &&
+            !canCleanup &&
+            readiness?.modelDownloadMayBeRequired &&
+            !modelLoadFailed &&
+            !modelLoading && (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                首次建立索引可能需要联网下载模型，照片在本机处理。
+                {!readiness.semantic.modelsLoaded &&
+                  "语义模型加载成功后才能进行智能检索。"}
+              </p>
+            )}
+          {canManage && cancelError && (
+            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+              {cancelError}
+            </p>
+          )}
+          {job?.state === "cancelling" && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              {job.cleanupOnly
+                ? "正在停止索引清理，请稍候。原图不会被删除。"
+                : "正在停止索引，请稍候。照片仍可浏览。"}
+            </p>
+          )}
+          {job?.state === "pausing" && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              {job.cleanupOnly
+                ? "正在暂停索引清理，系统会在安全检查点释放资源。"
+                : "正在暂停索引，系统会在安全检查点保留旧索引并释放资源。"}
+            </p>
+          )}
+          {job?.state === "paused" && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              {job.cleanupOnly
+                ? "索引清理已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"
+                : "智能索引已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"}
+            </p>
+          )}
+          {job?.state === "cancelled" && (
+            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+              {job.cleanupOnly
+                ? "本次索引清理已取消，可以重新预览后清理。原图未被删除。"
+                : "本次索引已取消，可以重新更新。"}
+            </p>
+          )}
+          {job?.state === "succeeded" && (
+            <div
+              role="status"
+              className="mt-3 text-xs leading-5 text-slate-500"
+            >
+              <p>
+                {job.cleanupOnly
+                  ? "旧照片索引及关联记录已清理，原图未被删除"
+                  : "智能索引已更新"}
+                {typeof job.result?.indexed === "number" &&
+                Number.isInteger(job.result.indexed) &&
+                job.result.indexed >= 0
+                  ? job.cleanupOnly
+                    ? `，当前剩余 ${countLabel(job.result.indexed)} 条照片索引。`
+                    : `，当前共 ${countLabel(job.result.indexed)} 张照片。`
+                  : "。"}
+              </p>
+              {indexResultSummary(job.result) && (
+                <p>{indexResultSummary(job.result)}</p>
+              )}
+            </div>
+          )}
+          {job?.state === "failed" && (
+            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+              {indexFailureMessage(
+                job.error,
+                job.result?.partial,
+                job.cleanupOnly,
+              )}
+            </p>
+          )}
+          {searchMode && (
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
+              {searchMode === "semantic" ? (
+                <SparklesIcon className="size-3.5 text-rose-500" />
+              ) : (
+                <SearchIcon className="size-3.5" />
+              )}
+              {searchMode === "semantic"
+                ? `本地语义结果 · ${library?.total ?? 0} 张`
+                : `智能索引未就绪，已按文件名查找 · ${library?.total ?? 0} 张`}
+            </div>
+          )}
+          {(status?.library.unsafeLinksSkipped ?? 0) > 0 && (
+            <p className="mt-2 text-[10px] text-slate-400">
+              已安全跳过 {status?.library.unsafeLinksSkipped}{" "}
+              个图片链接，不会读取链接目标。
+            </p>
+          )}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+          {loading && !library ? (
+            <div className="grid h-64 place-items-center text-sm text-slate-400">
+              <span className="flex items-center gap-2">
+                <Loader2Icon className="size-4 animate-spin" />
+                正在整理照片时间线…
+              </span>
+            </div>
+          ) : error ? (
+            <div className="grid h-64 place-items-center text-center">
+              <div>
+                <UnplugIcon className="mx-auto size-8 text-slate-300" />
+                <p className="mt-3 text-sm font-medium text-slate-700">
+                  {error}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refresh()}
+                  className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
+                >
+                  重新读取
+                </button>
+              </div>
+            </div>
+          ) : photos.length === 0 ? (
+            <div className="grid h-64 place-items-center text-center">
+              <div>
+                <ImagesIcon
+                  className="mx-auto size-10 text-slate-300"
+                  strokeWidth={1.4}
+                />
+                <p className="mt-3 text-sm font-medium text-slate-700">
+                  {query ? "没有找到匹配的照片" : "NAS 中还没有照片"}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  {query
+                    ? "换一种描述试试"
+                    : "通过文件管家上传后会自动出现在这里"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {photos.map((photo) => (
+                  <PhotoTile
+                    key={photo.path}
+                    photo={photo}
+                    previewAvailable={previewAvailable}
+                    onOpen={() => setSelected(photo)}
+                  />
+                ))}
+              </div>
+              {!searchMode && photos.length < (library?.total ?? 0) && (
+                <div className="flex justify-center pb-2 pt-5">
+                  <button
+                    type="button"
+                    onClick={() => void loadMore()}
+                    disabled={loadingMore || searching}
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-4 text-[11px] font-semibold text-slate-600 shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-white disabled:opacity-50"
+                  >
+                    {loadingMore && (
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                    )}
+                    {loadingMore
+                      ? "正在读取"
+                      : `加载更多 · ${photos.length} / ${library?.total ?? 0}`}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </SystemAppFrame>
 
       {selected && (
         <div

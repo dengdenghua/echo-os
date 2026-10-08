@@ -490,6 +490,8 @@ export interface EchoElectronAPI {
     getScreenBounds?: () => Promise<{
       ok: boolean;
       windowBounds?: { x: number; y: number; width: number; height: number };
+      /** 内容区（网页视口）在屏幕上的位置，用于把屏幕坐标换算成页面坐标。 */
+      contentBounds?: { x: number; y: number; width: number; height: number };
       bounds?: { x: number; y: number; width: number; height: number };
       workArea?: { x: number; y: number; width: number; height: number };
       scaleFactor?: number;

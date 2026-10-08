@@ -58,6 +58,8 @@ import { FileOrganizationPanel } from "@/appliance/file-organization-panel";
 import { FileSharePanel } from "@/appliance/file-share-panel";
 import { revealFileRequest } from "@/appliance/desktop-actions";
 import type { DesktopAgentContext } from "./desktop-agent-context";
+import { useInSystemAppWindow } from "@/appliance/system-app-window";
+import { cn } from "@/lib/utils";
 import {
   answerStorage,
   searchStorage,
@@ -144,6 +146,7 @@ export function FileManager({
   onOpenSettings?: () => void;
   onOpenSystemFiles?: () => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const directoryRequest = useRef(0);
   const uploadControlRef = useRef<ResumableUploadController | null>(null);
@@ -179,6 +182,8 @@ export function FileManager({
     if (initialShowTrash) {
       setShowTrash(true);
       setSidebarTarget("nas");
+      // 文件窗口常驻：上一个目录的读取错误不能带进回收站视图。
+      setError(null);
     }
   }, [initialShowTrash]);
   const [sidebarTarget, setSidebarTarget] =
@@ -375,14 +380,23 @@ export function FileManager({
   };
 
   return (
-    <div className="absolute inset-0 z-[70]" data-desktop-interactive>
-      <button
-        type="button"
-        className="absolute inset-0 bg-transparent"
-        onClick={onClose}
-        aria-label="关闭文件管理器"
-      />
-      <section className="mac-finder-window" data-liquid-surface="ultra-thick">
+    <div
+      className={inWindow ? "relative size-full" : "absolute inset-0 z-[70]"}
+      data-desktop-interactive
+    >
+      {!inWindow && (
+        <button
+          type="button"
+          className="absolute inset-0 bg-transparent"
+          onClick={onClose}
+          aria-label="关闭文件管理器"
+        />
+      )}
+      <section
+        aria-label={inWindow ? "文件" : undefined}
+        className={cn("mac-finder-window", inWindow && "is-in-window")}
+        data-liquid-surface={inWindow ? undefined : "ultra-thick"}
+      >
         <header className="mac-finder-toolbar">
           <div className="mac-finder-traffic">
             <button
@@ -399,14 +413,19 @@ export function FileManager({
             >
               <Link2Icon />
             </button>
-            <button
-              type="button"
-              className="mac-traffic-light close"
-              onClick={onClose}
-              aria-label="关闭"
-            />
-            <span className="mac-traffic-light minimize" />
-            <span className="mac-traffic-light zoom" />
+            {/* 窗口形态由系统提供红绿灯。 */}
+            {!inWindow && (
+              <>
+                <button
+                  type="button"
+                  className="mac-traffic-light close"
+                  onClick={onClose}
+                  aria-label="关闭"
+                />
+                <span className="mac-traffic-light minimize" />
+                <span className="mac-traffic-light zoom" />
+              </>
+            )}
           </div>
           <div className="mac-finder-navigation">
             <button

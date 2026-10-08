@@ -96,6 +96,11 @@ import {
   type HubUpdatePlan,
 } from "@/appliance/hub";
 import { cn } from "@/lib/utils";
+import {
+  SystemAppFrame,
+  SystemAppLightsSpacer,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
 import { copyTextToClipboard } from "@/core/clipboard";
 import {
   APP_PRESENTATION_LABELS,
@@ -2104,6 +2109,7 @@ export function HubPanel({
   onOpenWorkbench?: (route: string) => void;
   onOpenAgentAssets?: (asset: AgentHubAsset) => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const [view, setView] = useState<"device" | "agent">("device");
   const [catalog, setCatalog] = useState<HubCatalogResponse | null>(null);
   const [agentCatalog, setAgentCatalog] = useState<AgentHubCatalog | null>(
@@ -2311,7 +2317,8 @@ export function HubPanel({
         return;
       if (agentDetailTarget) setAgentDetailTarget(null);
       else if (detailTarget) closeDetails();
-      else onClose();
+      // 窗口形态下 Esc 不关闭整个应用，与其他桌面窗口一致。
+      else if (!inWindow) onClose();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -2319,6 +2326,7 @@ export function HubPanel({
     agentDetailTarget,
     agentConnectionTarget,
     detailTarget,
+    inWindow,
     onClose,
     open,
     pendingAgentPlan,
@@ -2783,405 +2791,395 @@ export function HubPanel({
 
   return (
     <>
-      <div
-        data-desktop-interactive
-        className="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
+      <SystemAppFrame
+        label="Echo Hub"
+        onClose={onClose}
+        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
+        className="relative flex h-[min(760px,calc(100vh-64px))] w-[min(1060px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/92 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        windowClassName="relative flex size-full flex-col overflow-hidden bg-slate-50 text-slate-900"
       >
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-label="Echo Hub"
-          className="relative flex h-[min(760px,calc(100vh-64px))] w-[min(1060px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/92 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
-        >
-          <header className="relative flex h-14 shrink-0 items-center border-b border-slate-200/65 bg-white/58 px-5">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                aria-label="关闭 Echo Hub"
-                onClick={onClose}
-                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
-              >
-                <XIcon className="size-2.5" />
-              </button>
-              <span className="size-3.5 rounded-full bg-[#febc2e]" />
-              <span className="size-3.5 rounded-full bg-[#28c840]" />
-            </div>
-            <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-slate-700">
-              <ShoppingBagIcon className="size-4 text-blue-600" />
-              Echo Hub
-            </div>
-            <button
-              type="button"
-              onClick={refreshActiveView}
-              disabled={view === "agent" ? agentLoading : loading}
-              aria-label="刷新应用目录"
-              className="ml-auto grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200/70 disabled:opacity-50"
-            >
-              <RefreshCwIcon
-                className={cn(
-                  "size-4",
-                  (view === "agent" ? agentLoading : loading) && "animate-spin",
-                )}
-              />
-            </button>
-          </header>
-
-          <div className="shrink-0 px-6 pb-5 pt-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">
-                  {view === "device" ? (
-                    <ShoppingBagIcon className="size-3.5" />
-                  ) : (
-                    <BotIcon className="size-3.5" />
-                  )}
-                  {view === "device" ? "统一应用目录" : "复用 Agent 能力目录"}
-                </div>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  {view === "device"
-                    ? "安装一次，选择最合适的打开方式"
-                    : "把插件与技能带进系统工作流"}
-                </h1>
-                <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-slate-500">
-                  {!canManageDevice
-                    ? "你可以浏览设备与 Agent 目录，并连接自己的账户；安装、更新和设备控制由管理员完成。"
-                    : view === "device"
-                      ? "应用共用同一套安装、权限、更新与卸载状态；独立窗口应用提供完整 Web 界面，工作台应用直接嵌入当前任务。"
-                      : "插件、连接器和技能复用 Agent 目录；应用不再混入能力列表。"}
-                </p>
-              </div>
-              <label className="flex h-10 w-full items-center gap-2 rounded-full bg-white/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.28),0_5px_18px_rgba(51,65,85,.06)] lg:w-72">
-                <SearchIcon className="size-4 text-slate-400" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.currentTarget.value)}
-                  placeholder={
-                    view === "device" ? "搜索全部应用" : "搜索插件与技能"
-                  }
-                  aria-label="搜索 Hub 应用"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-1 rounded-full bg-white/62 p-1">
+        <header className="relative flex h-14 shrink-0 items-center border-b border-slate-200/65 bg-white/58 px-5">
+          <div className="flex gap-2">
+            {inWindow ? (
+              <SystemAppLightsSpacer />
+            ) : (
+              <>
                 <button
                   type="button"
-                  onClick={() => {
-                    setView("device");
-                    setSearch("");
-                  }}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
-                    view === "device"
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800",
-                  )}
+                  aria-label="关闭 Echo Hub"
+                  onClick={onClose}
+                  className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
                 >
+                  <XIcon className="size-2.5" />
+                </button>
+                <span className="size-3.5 rounded-full bg-[#febc2e]" />
+                <span className="size-3.5 rounded-full bg-[#28c840]" />
+              </>
+            )}
+          </div>
+          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-slate-700">
+            <ShoppingBagIcon className="size-4 text-blue-600" />
+            Echo Hub
+          </div>
+          <button
+            type="button"
+            onClick={refreshActiveView}
+            disabled={view === "agent" ? agentLoading : loading}
+            aria-label="刷新应用目录"
+            className="ml-auto grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200/70 disabled:opacity-50"
+          >
+            <RefreshCwIcon
+              className={cn(
+                "size-4",
+                (view === "agent" ? agentLoading : loading) && "animate-spin",
+              )}
+            />
+          </button>
+        </header>
+
+        <div className="shrink-0 px-6 pb-5 pt-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">
+                {view === "device" ? (
                   <ShoppingBagIcon className="size-3.5" />
-                  应用
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView("agent");
-                    setSearch("");
-                  }}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
-                    view === "agent"
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800",
-                  )}
-                >
-                  <LibraryIcon className="size-3.5" />
-                  Agent 能力
-                </button>
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                {(view === "device" ? categories : AGENT_ASSET_FILTERS).map(
-                  (key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => {
-                        if (view === "device") setCategory(key);
-                        else setAgentKind(key as AgentAssetFilter);
-                      }}
-                      className={cn(
-                        "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium transition",
-                        (
-                          view === "device"
-                            ? category === key
-                            : agentKind === key
-                        )
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "bg-white/65 text-slate-500 hover:bg-white hover:text-slate-800",
-                      )}
-                    >
-                      {view === "device"
-                        ? `${
-                            key === "standalone"
-                              ? APP_PRESENTATION_LABELS.standalone
-                              : key === "workbench"
-                                ? APP_PRESENTATION_LABELS.workbench
-                                : (CATEGORY_LABELS[key] ?? key)
-                          }${
-                            key === "installed" || key === "updates"
-                              ? ` ${deviceCounts[key]}`
-                              : ""
-                          }`
-                        : key === "all"
-                          ? "全部"
-                          : key === "installed"
-                            ? `已安装 ${agentCapabilityCounts.installed}`
-                            : key === "updates"
-                              ? `可更新 ${agentCapabilityCounts.updates}`
-                              : key === "plugin"
-                                ? "插件"
-                                : key === "connector"
-                                  ? "连接器"
-                                  : "技能"}
-                    </button>
-                  ),
+                ) : (
+                  <BotIcon className="size-3.5" />
                 )}
+                {view === "device" ? "统一应用目录" : "复用 Agent 能力目录"}
               </div>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                {view === "device"
+                  ? "安装一次，选择最合适的打开方式"
+                  : "把插件与技能带进系统工作流"}
+              </h1>
+              <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-slate-500">
+                {!canManageDevice
+                  ? "你可以浏览设备与 Agent 目录，并连接自己的账户；安装、更新和设备控制由管理员完成。"
+                  : view === "device"
+                    ? "应用共用同一套安装、权限、更新与卸载状态；独立窗口应用提供完整 Web 界面，工作台应用直接嵌入当前任务。"
+                    : "插件、连接器和技能复用 Agent 目录；应用不再混入能力列表。"}
+              </p>
             </div>
+            <label className="flex h-10 w-full items-center gap-2 rounded-full bg-white/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.28),0_5px_18px_rgba(51,65,85,.06)] lg:w-72">
+              <SearchIcon className="size-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.currentTarget.value)}
+                placeholder={
+                  view === "device" ? "搜索全部应用" : "搜索插件与技能"
+                }
+                aria-label="搜索 Hub 应用"
+                className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              />
+            </label>
           </div>
 
-          {view === "device" &&
-            !loading &&
-            catalog &&
-            !catalog.runtime.available && (
-              <div className="mx-6 mb-4 flex shrink-0 items-center gap-3 rounded-2xl bg-amber-50/90 px-4 py-3 text-amber-800">
-                <UnplugIcon className="size-4 shrink-0" />
-                <p className="text-xs">
-                  {runtimeUnavailableMessage(catalog.runtime.error)}
-                </p>
-              </div>
-            )}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1 rounded-full bg-white/62 p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setView("device");
+                  setSearch("");
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                  view === "device"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800",
+                )}
+              >
+                <ShoppingBagIcon className="size-3.5" />
+                应用
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setView("agent");
+                  setSearch("");
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                  view === "agent"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800",
+                )}
+              >
+                <LibraryIcon className="size-3.5" />
+                Agent 能力
+              </button>
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {(view === "device" ? categories : AGENT_ASSET_FILTERS).map(
+                (key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (view === "device") setCategory(key);
+                      else setAgentKind(key as AgentAssetFilter);
+                    }}
+                    className={cn(
+                      "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium transition",
+                      (view === "device" ? category === key : agentKind === key)
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-white/65 text-slate-500 hover:bg-white hover:text-slate-800",
+                    )}
+                  >
+                    {view === "device"
+                      ? `${
+                          key === "standalone"
+                            ? APP_PRESENTATION_LABELS.standalone
+                            : key === "workbench"
+                              ? APP_PRESENTATION_LABELS.workbench
+                              : (CATEGORY_LABELS[key] ?? key)
+                        }${
+                          key === "installed" || key === "updates"
+                            ? ` ${deviceCounts[key]}`
+                            : ""
+                        }`
+                      : key === "all"
+                        ? "全部"
+                        : key === "installed"
+                          ? `已安装 ${agentCapabilityCounts.installed}`
+                          : key === "updates"
+                            ? `可更新 ${agentCapabilityCounts.updates}`
+                            : key === "plugin"
+                              ? "插件"
+                              : key === "connector"
+                                ? "连接器"
+                                : "技能"}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
 
-          {view === "device" && agentError && (
+        {view === "device" &&
+          !loading &&
+          catalog &&
+          !catalog.runtime.available && (
             <div className="mx-6 mb-4 flex shrink-0 items-center gap-3 rounded-2xl bg-amber-50/90 px-4 py-3 text-amber-800">
               <UnplugIcon className="size-4 shrink-0" />
               <p className="text-xs">
-                工作台内嵌应用目录暂时不可用：{agentError}
+                {runtimeUnavailableMessage(catalog.runtime.error)}
               </p>
             </div>
           )}
 
-          {view === "device" && operations.length > 0 && (
-            <div className="mx-6 mb-4 shrink-0 rounded-2xl bg-white/66 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,.16)]">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  后台任务
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  关窗或刷新后仍会保留
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {operations.slice(0, 3).map((operation) => {
-                  const app = catalog?.apps.find(
-                    (candidate) => candidate.id === operation.appId,
-                  );
-                  const active = ["queued", "running"].includes(
-                    operation.status,
-                  );
-                  const failed = ["failed", "interrupted"].includes(
-                    operation.status,
-                  );
-                  return (
-                    <div
-                      key={operation.operationId}
-                      className="flex items-center gap-2.5 rounded-xl bg-slate-50/78 px-3 py-2"
-                    >
-                      {active ? (
-                        <Loader2Icon className="size-3.5 shrink-0 animate-spin text-blue-600" />
-                      ) : failed ? (
-                        <UnplugIcon className="size-3.5 shrink-0 text-rose-500" />
-                      ) : (
-                        <CheckCircle2Icon className="size-3.5 shrink-0 text-emerald-500" />
+        {view === "device" && agentError && (
+          <div className="mx-6 mb-4 flex shrink-0 items-center gap-3 rounded-2xl bg-amber-50/90 px-4 py-3 text-amber-800">
+            <UnplugIcon className="size-4 shrink-0" />
+            <p className="text-xs">
+              工作台内嵌应用目录暂时不可用：{agentError}
+            </p>
+          </div>
+        )}
+
+        {view === "device" && operations.length > 0 && (
+          <div className="mx-6 mb-4 shrink-0 rounded-2xl bg-white/66 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,.16)]">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                后台任务
+              </span>
+              <span className="text-[10px] text-slate-400">
+                关窗或刷新后仍会保留
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {operations.slice(0, 3).map((operation) => {
+                const app = catalog?.apps.find(
+                  (candidate) => candidate.id === operation.appId,
+                );
+                const active = ["queued", "running"].includes(operation.status);
+                const failed = ["failed", "interrupted"].includes(
+                  operation.status,
+                );
+                return (
+                  <div
+                    key={operation.operationId}
+                    className="flex items-center gap-2.5 rounded-xl bg-slate-50/78 px-3 py-2"
+                  >
+                    {active ? (
+                      <Loader2Icon className="size-3.5 shrink-0 animate-spin text-blue-600" />
+                    ) : failed ? (
+                      <UnplugIcon className="size-3.5 shrink-0 text-rose-500" />
+                    ) : (
+                      <CheckCircle2Icon className="size-3.5 shrink-0 text-emerald-500" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-700">
+                      {app?.nameZh ?? operation.appId} ·{" "}
+                      {OPERATION_LABELS[operation.operation]}
+                    </span>
+                    <span
+                      className={cn(
+                        "max-w-[54%] truncate text-[10px]",
+                        active
+                          ? "text-blue-600"
+                          : failed
+                            ? "text-rose-600"
+                            : "text-emerald-600",
                       )}
-                      <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-700">
-                        {app?.nameZh ?? operation.appId} ·{" "}
-                        {OPERATION_LABELS[operation.operation]}
-                      </span>
-                      <span
-                        className={cn(
-                          "max-w-[54%] truncate text-[10px]",
-                          active
-                            ? "text-blue-600"
-                            : failed
-                              ? "text-rose-600"
-                              : "text-emerald-600",
-                        )}
-                        title={operation.error?.recoveryAction ?? undefined}
-                      >
-                        {operationProgressLabel(operation)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                      title={operation.error?.recoveryAction ?? undefined}
+                    >
+                      {operationProgressLabel(operation)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+          {view === "device" && visibleCoreApps.length > 0 && (
+            <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleCoreApps.map((app) => (
+                <CoreAppCard
+                  key={app.id}
+                  app={app}
+                  onOpen={onOpenSystemApp}
+                  onOpenWorkbench={onOpenWorkbench}
+                />
+              ))}
             </div>
           )}
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-            {view === "device" && visibleCoreApps.length > 0 && (
-              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleCoreApps.map((app) => (
-                  <CoreAppCard
-                    key={app.id}
-                    app={app}
-                    onOpen={onOpenSystemApp}
-                    onOpenWorkbench={onOpenWorkbench}
-                  />
-                ))}
-              </div>
-            )}
-            {view === "agent" ? (
-              agentLoading && !agentCatalog ? (
-                <div className="grid h-56 place-items-center text-sm text-slate-400">
-                  <span className="flex items-center gap-2">
-                    <Loader2Icon className="size-4 animate-spin" />
-                    正在读取 Agent 能力目录…
-                  </span>
-                </div>
-              ) : agentError ? (
-                <div className="grid h-56 place-items-center text-center">
-                  <div>
-                    <UnplugIcon className="mx-auto size-8 text-slate-300" />
-                    <p className="mt-3 text-sm font-medium text-slate-700">
-                      {agentError}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={refreshAgentCatalog}
-                      className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
-                    >
-                      重新连接
-                    </button>
-                  </div>
-                </div>
-              ) : visibleAgentAssets.length === 0 ? (
-                <div className="grid h-56 place-items-center text-sm text-slate-400">
-                  没有找到匹配的 Agent 能力
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {visibleAgentAssets.map((asset) => (
-                    <AgentAssetCard
-                      key={asset.id}
-                      asset={asset}
-                      onManage={onOpenAgentAssets}
-                      onDetails={setAgentDetailTarget}
-                    />
-                  ))}
-                </div>
-              )
-            ) : loading && !catalog && agentLoading && !agentCatalog ? (
+          {view === "agent" ? (
+            agentLoading && !agentCatalog ? (
               <div className="grid h-56 place-items-center text-sm text-slate-400">
                 <span className="flex items-center gap-2">
                   <Loader2Icon className="size-4 animate-spin" />
-                  正在校验统一应用目录…
+                  正在读取 Agent 能力目录…
                 </span>
               </div>
-            ) : error && !agentCatalog ? (
+            ) : agentError ? (
               <div className="grid h-56 place-items-center text-center">
                 <div>
                   <UnplugIcon className="mx-auto size-8 text-slate-300" />
                   <p className="mt-3 text-sm font-medium text-slate-700">
-                    {error}
+                    {agentError}
                   </p>
                   <button
                     type="button"
-                    onClick={refresh}
+                    onClick={refreshAgentCatalog}
                     className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
                   >
                     重新连接
                   </button>
                 </div>
               </div>
-            ) : visibleApps.length === 0 &&
-              visibleWorkbenchApps.length === 0 ? (
+            ) : visibleAgentAssets.length === 0 ? (
               <div className="grid h-56 place-items-center text-sm text-slate-400">
-                {visibleCoreApps.length === 0 ? "没有找到匹配的应用" : ""}
+                没有找到匹配的 Agent 能力
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleApps.map((app) => (
-                  <AppCard
-                    key={app.id}
-                    app={app}
-                    planning={
-                      planningAppId === app.id ||
-                      activeOperationAppIds.has(app.id)
-                    }
-                    onOpen={onOpenDeviceApp}
-                    onStart={(candidate) =>
-                      void beginControl("start", candidate)
-                    }
-                    onStop={(candidate) => void beginControl("stop", candidate)}
-                    onRestart={(candidate) =>
-                      void beginControl("restart", candidate)
-                    }
-                    onInstall={(candidate) => void beginInstall(candidate)}
-                    onUpdate={(candidate) => void beginUpdate(candidate)}
-                    onUninstall={(candidate) => void beginUninstall(candidate)}
-                    onDetails={openDetails}
+                {visibleAgentAssets.map((asset) => (
+                  <AgentAssetCard
+                    key={asset.id}
+                    asset={asset}
+                    onManage={onOpenAgentAssets}
+                    onDetails={setAgentDetailTarget}
                   />
                 ))}
-                {visibleWorkbenchApps.map((asset) => (
-                  <div key={asset.id}>
-                    <AgentAssetCard
-                      key={asset.id}
-                      asset={asset}
-                      presentation="workbench"
-                      primaryBusy={agentActionId === asset.id}
-                      onPrimaryAction={handleWorkbenchAppAction}
-                      onDetails={setAgentDetailTarget}
-                    />
-                    <WorkbenchAppPlacement
-                      asset={asset}
-                      onOpenWindow={onOpenSystemApp}
-                      onOpenWorkbench={onOpenWorkbench}
-                    />
-                  </div>
-                ))}
               </div>
-            )}
-          </div>
+            )
+          ) : loading && !catalog && agentLoading && !agentCatalog ? (
+            <div className="grid h-56 place-items-center text-sm text-slate-400">
+              <span className="flex items-center gap-2">
+                <Loader2Icon className="size-4 animate-spin" />
+                正在校验统一应用目录…
+              </span>
+            </div>
+          ) : error && !agentCatalog ? (
+            <div className="grid h-56 place-items-center text-center">
+              <div>
+                <UnplugIcon className="mx-auto size-8 text-slate-300" />
+                <p className="mt-3 text-sm font-medium text-slate-700">
+                  {error}
+                </p>
+                <button
+                  type="button"
+                  onClick={refresh}
+                  className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
+                >
+                  重新连接
+                </button>
+              </div>
+            </div>
+          ) : visibleApps.length === 0 && visibleWorkbenchApps.length === 0 ? (
+            <div className="grid h-56 place-items-center text-sm text-slate-400">
+              {visibleCoreApps.length === 0 ? "没有找到匹配的应用" : ""}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleApps.map((app) => (
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  planning={
+                    planningAppId === app.id ||
+                    activeOperationAppIds.has(app.id)
+                  }
+                  onOpen={onOpenDeviceApp}
+                  onStart={(candidate) => void beginControl("start", candidate)}
+                  onStop={(candidate) => void beginControl("stop", candidate)}
+                  onRestart={(candidate) =>
+                    void beginControl("restart", candidate)
+                  }
+                  onInstall={(candidate) => void beginInstall(candidate)}
+                  onUpdate={(candidate) => void beginUpdate(candidate)}
+                  onUninstall={(candidate) => void beginUninstall(candidate)}
+                  onDetails={openDetails}
+                />
+              ))}
+              {visibleWorkbenchApps.map((asset) => (
+                <div key={asset.id}>
+                  <AgentAssetCard
+                    key={asset.id}
+                    asset={asset}
+                    presentation="workbench"
+                    primaryBusy={agentActionId === asset.id}
+                    onPrimaryAction={handleWorkbenchAppAction}
+                    onDetails={setAgentDetailTarget}
+                  />
+                  <WorkbenchAppPlacement
+                    asset={asset}
+                    onOpenWindow={onOpenSystemApp}
+                    onOpenWorkbench={onOpenWorkbench}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <footer className="flex h-10 shrink-0 items-center justify-between border-t border-slate-200/60 bg-white/48 px-6 text-[10px] text-slate-400">
-            <span>
-              {view === "agent"
-                ? agentCatalog
-                  ? `${agentCatalog.plugins} 个插件 · ${agentCatalog.connectors} 个连接器 · ${agentCatalog.skills} 个技能 · 已安装 ${agentCapabilityCounts.installed}${agentCapabilityCounts.updates ? ` · 可更新 ${agentCapabilityCounts.updates}` : ""}`
-                  : "Agent 能力目录"
-                : catalog
-                  ? `${visibleCoreApps.length + visibleApps.length + visibleWorkbenchApps.length}/${coreApps.length + catalog.total + (agentCatalog?.workbenches ?? 0)} 个应用 · ${catalog.architecture}`
-                  : "Echo 受信目录"}
-            </span>
-            <span className="flex items-center gap-1.5">
-              {view === "agent" ? (
-                <LibraryIcon className="size-3 text-blue-500" />
-              ) : catalog?.runtime.available ? (
-                <CheckCircle2Icon className="size-3 text-emerald-500" />
-              ) : (
-                <ShieldCheckIcon className="size-3 text-slate-400" />
-              )}
-              {view === "agent"
-                ? "能力目录归 Agent 所有，Echo Hub 只做统一入口"
-                : "同一生命周期 · 两种应用呈现方式"}
-            </span>
-          </footer>
-        </section>
-      </div>
+        <footer className="flex h-10 shrink-0 items-center justify-between border-t border-slate-200/60 bg-white/48 px-6 text-[10px] text-slate-400">
+          <span>
+            {view === "agent"
+              ? agentCatalog
+                ? `${agentCatalog.plugins} 个插件 · ${agentCatalog.connectors} 个连接器 · ${agentCatalog.skills} 个技能 · 已安装 ${agentCapabilityCounts.installed}${agentCapabilityCounts.updates ? ` · 可更新 ${agentCapabilityCounts.updates}` : ""}`
+                : "Agent 能力目录"
+              : catalog
+                ? `${visibleCoreApps.length + visibleApps.length + visibleWorkbenchApps.length}/${coreApps.length + catalog.total + (agentCatalog?.workbenches ?? 0)} 个应用 · ${catalog.architecture}`
+                : "Echo 受信目录"}
+          </span>
+          <span className="flex items-center gap-1.5">
+            {view === "agent" ? (
+              <LibraryIcon className="size-3 text-blue-500" />
+            ) : catalog?.runtime.available ? (
+              <CheckCircle2Icon className="size-3 text-emerald-500" />
+            ) : (
+              <ShieldCheckIcon className="size-3 text-slate-400" />
+            )}
+            {view === "agent"
+              ? "能力目录归 Agent 所有，Echo Hub 只做统一入口"
+              : "同一生命周期 · 两种应用呈现方式"}
+          </span>
+        </footer>
+      </SystemAppFrame>
 
       <AppDetailSheet
         target={detailTarget}

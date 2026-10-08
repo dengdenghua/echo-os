@@ -82,4 +82,28 @@ describe("IntentDesktopSurface keyboard contracts", () => {
     // space must let the button's default activation happen, not toggle mode
     expect(screen.getByText("多窗口工作台")).toBeInTheDocument();
   });
+
+  it("keeps windows visible when Space or Escape is pressed after clicking text inside a window", () => {
+    const onModeChange = vi.fn();
+    render(
+      <>
+        <IntentDesktopSurface mode="workspace" onModeChange={onModeChange} />
+        <div role="dialog" aria-label="工作台" data-desktop-interactive>
+          <p>你好，我是 Echo</p>
+        </div>
+      </>,
+    );
+    // 点击普通文字不会移动焦点，activeElement 仍是 body。
+    fireEvent.pointerDown(screen.getByText("你好，我是 Echo"));
+    expect(document.activeElement).toBe(document.body);
+
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
+    fireEvent.keyDown(window, { key: "Escape", code: "Escape" });
+    expect(onModeChange).not.toHaveBeenCalled();
+
+    // 回到桌面空白处后，Space 恢复为形态切换。
+    fireEvent.pointerDown(document.body);
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
+    expect(onModeChange).toHaveBeenCalledWith("pure");
+  });
 });

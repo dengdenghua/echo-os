@@ -73,9 +73,12 @@ function measureRestingGlassWidth(nav: HTMLElement): number {
 export function Dock({
   children,
   className,
+  onItemActivate,
 }: {
   children: ReactNode;
   className?: string;
+  /** 在图标自身的 onClick 之前调用，用于切换应用前收起当前面板。 */
+  onItemActivate?: () => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
 
@@ -106,7 +109,21 @@ export function Dock({
   }, [children]);
 
   return (
-    <nav ref={navRef} data-desktop-interactive className={className}>
+    <nav
+      ref={navRef}
+      aria-label="程序坞"
+      data-desktop-interactive
+      className={className}
+      onClickCapture={(event) => {
+        if (
+          onItemActivate &&
+          event.target instanceof Element &&
+          event.target.closest(".dock-item")
+        ) {
+          onItemActivate();
+        }
+      }}
+    >
       <span className="mac-dock-lens" aria-hidden>
         <img
           src={DESKTOP_WALLPAPER_URL}

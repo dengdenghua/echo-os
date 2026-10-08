@@ -912,6 +912,7 @@ function registerIpc() {
       return {
         ok: true,
         windowBounds: winBounds,
+        contentBounds: mainWindow.getContentBounds(),
         bounds: display.bounds,
         workArea: display.workArea,
         scaleFactor: display.scaleFactor,
