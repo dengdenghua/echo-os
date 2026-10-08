@@ -166,6 +166,7 @@ def _build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, api: FakeApi) -> dic
         tool_validator=lambda _tools, _uid: None,
         boot_id_reader=lambda: "boot-a",
         effective_uid=0,
+        trusted_uid=os.getuid(),
         system_name="Linux",
     )
 
@@ -183,6 +184,7 @@ def _run_args(tmp_path: Path, api: FakeApi) -> dict[str, Any]:
         "tool_validator": lambda _tools, _uid: None,
         "host_verifier": _host,
         "effective_uid": 0,
+        "trusted_uid": os.getuid(),
         "system_name": "Linux",
     }
 
@@ -227,6 +229,7 @@ def test_plan_rejects_unsafe_selection_before_api_access(
             output=tmp_path / "plan.json",
             password_env="LAB_PASSWORD",
             effective_uid=0,
+            trusted_uid=os.getuid(),
             system_name="Linux",
         )
 

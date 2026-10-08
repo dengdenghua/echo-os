@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 import subprocess
 from pathlib import Path
@@ -193,7 +194,7 @@ def _write_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
         phase: f"RUN ECHO MDRAID REPLACEMENT LAB {phase} {material['planId']}"
         for phase in lab.PHASES
     }
-    lab.provisioning._write_new(tmp_path / "plan.json", material, 0, 0o400)
+    lab.provisioning._write_new(tmp_path / "plan.json", material, os.getuid(), 0o400)
     return material
 
 
@@ -226,6 +227,7 @@ def test_build_plan_binds_third_blank_disk_and_provisioning_identity(
         boot_id_reader=lambda: "boot-a",
         tool_validator=lambda _tools, _uid: None,
         effective_uid=0,
+        trusted_uid=os.getuid(),
         system_name="Linux",
     )
 
@@ -262,6 +264,7 @@ def test_three_phases_use_real_replacement_api_and_verify_reboot(
         "array_probe": lambda _path: {"healthy": True, "active": 2},
         "tool_validator": lambda _tools, _uid: None,
         "effective_uid": 0,
+        "trusted_uid": os.getuid(),
         "system_name": "Linux",
         "runner": runner,
     }
@@ -319,6 +322,7 @@ def test_identity_drift_blocks_before_member_failure(
             device_verifier=lambda *_args: {"changed": True},
             tool_validator=lambda _tools, _uid: None,
             effective_uid=0,
+            trusted_uid=os.getuid(),
             system_name="Linux",
         )
     assert mutated is False

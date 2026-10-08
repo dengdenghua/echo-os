@@ -205,6 +205,7 @@ def _build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, api: FakeApi) -> dic
         tool_validator=lambda _tools, _uid: None,
         boot_id_reader=lambda: "boot-a",
         effective_uid=0,
+        trusted_uid=os.getuid(),
         system_name="Linux",
     )
 
@@ -242,6 +243,7 @@ def test_provision_uses_two_one_shot_approvals_then_reboot_verifies_persistence(
         "tool_validator": lambda _tools, _uid: None,
         "host_verifier": _host,
         "effective_uid": 0,
+        "trusted_uid": os.getuid(),
         "system_name": "Linux",
     }
     provision = lab.run_phase(
@@ -295,6 +297,7 @@ def test_provision_rejects_identity_drift_before_issuing_approval(
             tool_validator=lambda _tools, _uid: None,
             boot_id_reader=lambda: "boot-a",
             effective_uid=0,
+            trusted_uid=os.getuid(),
             system_name="Linux",
         )
 
@@ -326,6 +329,7 @@ def test_plan_rejects_non_loopback_appliance_origin(
             platform_probe=_platform,
             tool_validator=lambda _tools, _uid: None,
             effective_uid=0,
+            trusted_uid=os.getuid(),
             system_name="Linux",
         )
 

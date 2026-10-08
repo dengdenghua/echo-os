@@ -84,7 +84,9 @@ def test_local_dev_backend_loads_the_os_appliance_extension():
     assert 'ECHO_APPLIANCE: "1"' in launcher
     assert 'ECHO_REQUIRED_APP_EXTENSIONS: "1"' in launcher
     assert 'PYTHONUTF8: "1"' in launcher
-    assert 'ECHO_APP_EXTENSIONS: "appliance.extension"' in launcher
+    # The launcher prepends the appliance extension to any inherited extensions.
+    assert 'ECHO_APP_EXTENSIONS: [' in launcher
+    assert '"appliance.extension",' in launcher
     assert "ECHO_APPLIANCE_TRUSTED_ORIGINS: trustedOrigins" in launcher
     assert "ECHO_APPLIANCE_DEV_PASSWORDLESS:" in launcher
     assert "persistedApplianceJwtSecret()" in launcher
