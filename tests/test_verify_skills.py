@@ -68,7 +68,13 @@ def test_python_typecheck_offered_only_when_mypy_installed(tmp_path: Path) -> No
     assert "syntax" in names
 
 
-def test_node_typecheck_offered_only_when_tsc_installed(tmp_path: Path) -> None:
+def test_node_typecheck_offered_only_when_tsc_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The check is gated on npx being on PATH; do not depend on the host's Node.
+    monkeypatch.setattr(
+        "runtime.execution.suckers.verify_skills._executable_available", lambda _name: True
+    )
     (tmp_path / "package.json").write_text('{"name": "demo", "scripts": {}}', encoding="utf-8")
     (tmp_path / "tsconfig.json").write_text("{}", encoding="utf-8")
 
