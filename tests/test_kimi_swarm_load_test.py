@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from runtime.memory.control_sessions import ControlSessionStore
 from runtime.safety.evolution.kimi_swarm_certification import (
     compute_kimi_swarm_certification,
@@ -20,6 +22,10 @@ from runtime.safety.evolution.kimi_swarm_load_test import (
     run_kimi_swarm_quota_probe,
 )
 from runtime.sensing.model_router.models import ModelRequest, ModelResponse
+
+# Full-reference resume proofs take 25-40s on a fast machine; a 2-vCPU hosted
+# runner needs headroom beyond the repo-wide 60s per-test cap.
+pytestmark = pytest.mark.timeout(240)
 
 
 def test_kimi_swarm_load_test_writes_control_session_replay(tmp_path: Path) -> None:

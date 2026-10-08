@@ -13,6 +13,10 @@ from starlette.websockets import WebSocketDisconnect
 from runtime.platform.ui.app import create_app
 from runtime.safety.auth import Identity, IdentityStore
 
+# The ordinary-user matrix sweeps every control plane (~35s locally); allow
+# slower hosted runners more than the repo-wide 60s per-test cap.
+pytestmark = pytest.mark.timeout(240)
+
 
 def _headers(key: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {key}"}
