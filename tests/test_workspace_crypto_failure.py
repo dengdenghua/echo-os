@@ -293,7 +293,12 @@ def _client(
     identities = IdentityStore()
     for actor in ("alice", "bob"):
         identities.add(
-            Identity(actor_id=actor, metadata={"tenant_id": "tenant-a"}),
+            # alice registers server-local mounts, which is operator-only.
+            Identity(
+                actor_id=actor,
+                roles=("operator",) if actor == "alice" else (),
+                metadata={"tenant_id": "tenant-a"},
+            ),
             api_key_plaintext=f"fixture-{actor}-api-key",
         )
     leases = LeaseStore(tmp_path / "leases.db")
