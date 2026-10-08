@@ -107,6 +107,35 @@ def test_full_suite_job_is_wired() -> None:
     )
 
 
+def test_coordination_production_contract_is_blocking() -> None:
+    job = _ci_doc()["jobs"].get("coordination-contract")
+    assert job is not None, "F09 production coordination needs a blocking CI job"
+    assert not job.get("continue-on-error", False)
+    assert not job.get("if"), "coordination must run on every configured CI event"
+    script = " ".join(str(step.get("run", "")) for step in job["steps"])
+    for target in (
+        "tests/test_group_coordination.py",
+        "tests/test_coordination_production_wiring.py",
+        "tests/test_cowork_async_runner.py",
+        "tests/test_cowork_group_router.py",
+        "tests/test_collaboration_store_cutover.py",
+        "tests/test_ephemeral_write_confine.py",
+        "tests/test_subagent_timeout.py",
+    ):
+        assert target in script
+    assert "--runxfail" in script, "an xfail cannot hide broken production wiring again"
+    assert "--timeout=60" in script
+
+
+def test_coordination_regressions_cannot_be_marked_xfail() -> None:
+    import ast
+
+    tree = ast.parse((REPO_ROOT / "tests/test_group_coordination.py").read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            assert not any("xfail" in ast.unparse(dec) for dec in node.decorator_list), node.name
+
+
 def test_jobs_running_pytest_checkout_submodules() -> None:
     """Any job executing pytest must initialise git submodules.
 
@@ -125,9 +154,7 @@ def test_jobs_running_pytest_checkout_submodules() -> None:
         if not any("pytest" in str(step.get("run", "")) for step in steps):
             continue
         checkouts = [
-            step
-            for step in steps
-            if str(step.get("uses", "")).startswith("actions/checkout")
+            step for step in steps if str(step.get("uses", "")).startswith("actions/checkout")
         ]
         if not checkouts:
             continue

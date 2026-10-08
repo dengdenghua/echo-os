@@ -56,6 +56,37 @@ jobs:
       - name: Fail if any source file is untracked
         run: python tools/lint/untracked_source_check.py
 
+  # F09 coordination was collected only by the full-suite observation job;
+  # its three xfails concealed missing production wiring. Keep this real,
+  # deterministic subset blocking while unrelated full-suite debt is triaged.
+  coordination-contract:
+    name: Group coordination production contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12.11"
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v6.6.1
+        with:
+          version: "0.11.25"
+      - name: Install locked coordination dependencies
+        run: uv sync --locked --python 3.12.11 --extra dev --extra serve
+      - name: Verify production wiring, authorization and delayed execution
+        run: >-
+          uv run pytest tests/test_group_coordination.py
+          tests/test_coordination_production_wiring.py
+          tests/test_cowork_async_runner.py tests/test_cowork_group_router.py
+          tests/test_collaboration_store_cutover.py
+          tests/test_subagent_timeout.py tests/test_subagent_threading.py
+          tests/test_subagent_denylist_propagation.py
+          tests/test_ephemeral_write_confine.py tests/test_ephemeral_runner_sec2.py
+          tests/test_ci_gate_contract.py
+          --runxfail -q --timeout=60 -p no:cacheprovider
+
   public-source-contract:
     name: Public source contract (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
@@ -371,6 +402,9 @@ jobs:
   # single-version job, and stays non-blocking for an observation round.
   # Triage the `-rf` failure list, then delete `continue-on-error` to promote
   # it to a real gate.
+  # 2026-10-01: F09 now has a separate blocking production-contract job.
+  # This repair does not establish that the unrelated whole suite is green;
+  # retain observation and its machine-readable failure report until triaged.
   full-test-suite:
     name: Full suite (Python 3.12, observation)
     runs-on: ubuntu-24.04

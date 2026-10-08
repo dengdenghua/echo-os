@@ -259,6 +259,7 @@ artifacts = [
 # the rest of deploy/ out of the runtime wheel, but never ship a NAS control
 # plane whose lazy backup routes fail only after a clean wheel install.
 [tool.hatch.build.targets.wheel.force-include]
+"runtime/kernel-release.json" = "runtime/kernel-release.json"
 "deploy/appliance/external_storage.py" = "deploy/appliance/external_storage.py"
 "deploy/appliance/nas_data_backup.py" = "deploy/appliance/nas_data_backup.py"
 "deploy/appliance/nas_data_backup_schedule_runner.py" = "deploy/appliance/nas_data_backup_schedule_runner.py"

@@ -833,6 +833,12 @@ def test_tag_release_requires_same_sha_evidence_before_build_and_push() -> None:
     assert '[[ -z "${windows_run_id}" ]]' in lookup
     assert '[[ -z "${macos_run_id}" ]]' in lookup
     assert '[[ -z "${linux_run_id}" ]]' in lookup
+    # The standalone Linux/Windows runtime security contract must have passed
+    # on this exact commit as well; it is not invoked by the main CI workflow.
+    assert "actions/workflows/runtime-security-contract.yml/runs" in lookup
+    assert '.status == "completed" and .conclusion == "success"' in lookup
+    assert '[[ -z "${security_contract_run_id}" ]]' in lookup
+    assert (REPO_ROOT / ".github" / "workflows" / "runtime-security-contract.yml").is_file()
     assert "windows_run_id=${windows_run_id}" in lookup
     assert "exit 1" in lookup
     assert gate_job["outputs"]["windows-run-id"] == (
