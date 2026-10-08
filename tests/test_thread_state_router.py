@@ -155,3 +155,81 @@ def test_thread_state_owner_metadata_blocks_other_actor() -> None:
 
     assert ok.status_code == 200
     assert denied.status_code == 404
+
+
+def _legacy_ownerless_client(*, require_auth: bool) -> tuple[TestClient, ThreadStateStore]:
+    from runtime.safety.auth import Identity, IdentityStore
+
+    identity_store = IdentityStore()
+    # Neither identity carries tenant metadata, so both resolve to the
+    # ``legacy:<actor>`` namespace that historically matched tenantless rows.
+    identity_store.add(Identity(actor_id="alice"), api_key_plaintext="sk-alice")
+    identity_store.add(
+        Identity(actor_id="ops", roles=("operator",)),
+        api_key_plaintext="sk-ops",
+    )
+    store = ThreadStateStore()
+    store.ensure_thread(
+        "legacy-ownerless",
+        metadata={},
+        values={"title": "Legacy secret", "messages": [{"content": "needle"}]},
+    )
+    store.ensure_thread(
+        "legacy-alice",
+        metadata={"owner_actor_id": "alice"},
+        values={"title": "Alice legacy", "messages": [{"content": "needle"}]},
+    )
+    app = FastAPI()
+    app.include_router(
+        create_thread_state_router(
+            store=store,
+            identity_store=identity_store,
+            require_auth=require_auth,
+        )
+    )
+    return TestClient(app), store
+
+
+def test_auth_denies_ownerless_tenantless_thread_to_ordinary_identity() -> None:
+    client, store = _legacy_ownerless_client(require_auth=True)
+    alice = {"Authorization": "Bearer sk-alice"}
+
+    assert client.get("/api/threads/legacy-ownerless", headers=alice).status_code == 404
+    assert client.get("/api/threads/legacy-ownerless/state", headers=alice).status_code == 404
+    assert client.get("/api/threads/legacy-ownerless/export", headers=alice).status_code == 404
+    assert (
+        client.post(
+            "/api/threads/legacy-ownerless/state",
+            headers=alice,
+            json={"values": {"title": "hijacked"}},
+        ).status_code
+        == 404
+    )
+    assert client.delete("/api/threads/legacy-ownerless", headers=alice).status_code == 404
+    assert store.get("legacy-ownerless")["values"]["title"] == "Legacy secret"
+
+    found = client.get("/api/threads/search?q=needle", headers=alice).json()["threads"]
+    assert [item["thread_id"] for item in found] == ["legacy-alice"]
+    # A legacy row the actor provably owns remains accessible.
+    assert client.get("/api/threads/legacy-alice", headers=alice).status_code == 200
+
+
+def test_auth_allows_operator_to_manage_ownerless_tenantless_thread() -> None:
+    client, _ = _legacy_ownerless_client(require_auth=True)
+    ops = {"Authorization": "Bearer sk-ops"}
+
+    assert client.get("/api/threads/legacy-ownerless", headers=ops).status_code == 200
+    assert client.get("/api/threads/legacy-ownerless/export", headers=ops).status_code == 200
+    found = client.get("/api/threads/search?q=needle", headers=ops).json()["threads"]
+    assert "legacy-ownerless" in {item["thread_id"] for item in found}
+    # Operator status does not unlock rows owned by another actor.
+    assert client.get("/api/threads/legacy-alice", headers=ops).status_code == 404
+
+
+def test_auth_disabled_keeps_ownerless_thread_compatibility() -> None:
+    client, _ = _legacy_ownerless_client(require_auth=False)
+
+    assert client.get("/api/threads/legacy-ownerless").status_code == 200
+    assert client.get("/api/threads/legacy-ownerless/export").status_code == 200
+    found = client.get("/api/threads/search?q=needle").json()["threads"]
+    assert "legacy-ownerless" in {item["thread_id"] for item in found}
