@@ -30,7 +30,7 @@ runtime.execution.all_skills · unified skill catalog.
 | `agnes-video-generate/scripts/agnes_video_generate.py` | AI video generation skill (async) — dual-provider (Volcano / Agnes). |
 | `agnes-video-poll/scripts/agnes_video_poll.py` | Standalone skill entry for polling an Agnes video task. |
 | `api-doc-gen/scripts/generate_api_doc.py` | Generate OpenAPI 3.0 spec from source code route definitions. |
-| `auto-hypothesis-test/scripts/statistical_test_suite.py` | statistical_test_suite.py — 根据数据自动选择统计检验并输出通俗解读 |
+| `auto-hypothesis-test/scripts/statistical_test_suite.py` | Portable compatibility entry point for the canonical statistics skill. |
 | `auto-stat-test/scripts/statistical_test_suite.py` | statistical_test_suite.py — 根据数据自动选择统计检验并输出通俗解读 |
 | `cn-finance-data/scripts/api_client.py` | Tushare API 客户端 |
 | `code-mentor/scripts/analyze_code.py` | Code Analyzer - Static analysis tool for code review |
@@ -38,6 +38,7 @@ runtime.execution.all_skills · unified skill catalog.
 | `code-mentor/scripts/run_tests.py` | Test Runner - Execute and format test results |
 | `code-safety-audit/scripts/security_scan.py` | security_scan.py — 代码安全扫描工具 |
 | `code-vuln-audit/scripts/security_scan.py` | security_scan.py — 代码安全扫描工具 |
+| `crash-triage/scripts/triage.py` | Read Echo crash dumps straight off disk and print a triage report. |
 | `data-viz-gen/scripts/build_infographic.py` | build_infographic.py — Generate self-contained HTML/SVG infographics from JSON data. |
 | `data-viz-renderer/scripts/build_infographic.py` | build_infographic.py — Generate self-contained HTML/SVG infographics from JSON data. |
 | `database-inspector/scripts/db_explorer.py` | db_explorer.py — SQLite / PostgreSQL 只读数据库探索工具 |

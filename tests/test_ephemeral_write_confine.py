@@ -9,6 +9,7 @@ for write skills, and blocks (fail-closed) a write skill that can't take one.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -120,7 +121,9 @@ def test_lock_scopes_read_and_discovery_tools_to_worktree(_session):
 
     glob_call = _Call("glob_files", {"pattern": "*.json", "root": "."})
     assert _ephemeral_write_confine_block(glob_call, _Skill(_glob, ["file", "io"])) is None
-    assert glob_call.input["root"] == "/wt"
+    # The root is a native filesystem path: preserve the same locked target
+    # on Windows, where pathlib normalizes this fixture to a backslash.
+    assert Path(glob_call.input["root"]) == Path("/wt")
     assert glob_call.input["sandbox_dir"] == "/wt"
 
 
@@ -189,4 +192,3 @@ def test_shell_tool_allowed_without_locked_root(_session):
 
     call = _Call("exec_shell", {"command": "ls"})
     assert _ephemeral_write_confine_block(call, _Skill(_shell, ["shell", "exec"])) is None
-

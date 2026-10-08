@@ -61,6 +61,10 @@
 | `gemini_router.py` | — |
 | `hf_catalog.py` | Live local-model catalog from the HuggingFace Hub (GGUF), with offline fallback. |
 | `hwfit.py` | Local-model cookbook: recommend which model to run on THIS machine. |
+| `local_ai_deployment.py` | Reviewable deployment plans and a durable, single-job local AI installer. |
+| `local_model_setup.py` | Loopback-only Ollama discovery and synthetic capability verification. |
+| `managed_ollama.py` | Pinned, private Ollama runtime owned by Echo; no system installer or shell scripts. |
+| `managed_rknn.py` | Rockchip NPU local-AI runtime: probe, catalog, and gating. |
 | `models.py` | Model router types and the mock implementation. |
 | `multi_router.py` | — |
 | `oct_router.py` | — |
@@ -79,7 +83,7 @@
 
 ## Who imports this
 
-**40** file(s) reference this package:
+**41** file(s) reference this package:
 
 - **`runtime/cli_core.py/`** · 1 file(s)
   - `runtime/cli_core.py`
@@ -102,11 +106,11 @@
 - **`runtime/research/`** · 2 file(s)
   - `runtime/research/pipeline.py`
   - `runtime/research/query_rewrite.py`
-- **`runtime/sensing/`** · 24 file(s)
+- **`runtime/sensing/`** · 25 file(s)
   - `runtime/sensing/gateway/_config_endpoints_custom_models.py`
+  - `runtime/sensing/gateway/_config_endpoints_local_setup.py`
   - `runtime/sensing/gateway/_config_endpoints_models.py`
   - `runtime/sensing/gateway/_config_helpers.py`
   - `runtime/sensing/gateway/_evolution_helpers.py`
-  - `runtime/sensing/gateway/_openai_gateway_router_helpers.py`
-  - _… and 19 more_
+  - _… and 20 more_
 

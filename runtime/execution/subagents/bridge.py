@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable, Iterable
+from contextlib import ExitStack
 from typing import Any
 
 from runtime.protocol.text_limits import MAX_SUBAGENT_MISSION_CHARS
@@ -390,6 +391,11 @@ def call_subagent(
             session = current_session()
         except (ImportError, AttributeError):
             session = None
+    from runtime.execution.request import current_execution_request
+
+    parent_execution_request = (
+        getattr(session, "execution_request", None) or current_execution_request()
+    )
     if not _parent_tool_use_id and session is not None:
         _resolved_session_meta = getattr(session, "metadata", None)
         if isinstance(_resolved_session_meta, dict):
@@ -791,13 +797,26 @@ def call_subagent(
             # confines writes (original behaviour).
             run_session = Session(metadata={"_locked_write_root": _locked_root})
         scope_token = None
-        if run_session is not None:
-            # Bind on THIS worker thread so blackboard skills see the parent's
-            # turn and the ephemeral chokepoint carries any locked write root.
-            from runtime.platform.process.session import _current_session
-
-            scope_token = _current_session.set(run_session)
+        scopes = ExitStack()
         try:
+            # The timeout executor has fresh ContextVars. Rebind the host's
+            # immutable request here; copying mutable Session metadata alone
+            # would let an ephemeral worker resolve a wider permission scope.
+            from runtime.execution.request import execution_request_scope
+            from runtime.platform.process.session import session_scope
+
+            if isinstance(run_session, Session):
+                if run_session.execution_request is None and parent_execution_request is not None:
+                    from dataclasses import replace
+
+                    run_session = replace(run_session, execution_request=parent_execution_request)
+                scopes.enter_context(session_scope(run_session))
+            elif run_session is not None:
+                # Retain the legacy non-Session embedding contract.
+                from runtime.platform.process.session import _current_session
+
+                scope_token = _current_session.set(run_session)
+            scopes.enter_context(execution_request_scope(parent_execution_request))
             with scoped_cancellation(_child_source.token):
                 # Child→parent report lane (dsh ``tool-subagent-report``):
                 # stamp the continuable session id into the dispatch context
@@ -840,6 +859,7 @@ def call_subagent(
                         usage_recorder=_record_governance_usage,
                     )
         finally:
+            scopes.close()
             if scope_token is not None:
                 from runtime.platform.process.session import _current_session
 

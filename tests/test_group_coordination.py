@@ -171,7 +171,6 @@ def test_guard_prevents_execution_and_releases_on_error(service):
     assert service.ledger.acquire("device:desktop", "group", "later", "later")
 
 
-@pytest.mark.xfail(reason="Coordination layer WIP - tool catalog policy not yet wired into production")
 def test_tool_catalog_has_real_parameters(service):
     from runtime.execution.tool_spec_builder import build_anthropic_tool_specs
 
@@ -186,7 +185,6 @@ def test_tool_catalog_has_real_parameters(service):
     assert not build_anthropic_tool_specs(registry, agent=agent, tool_ceiling=frozenset())
 
 
-@pytest.mark.xfail(reason="Coordination layer WIP - router prefix not yet wired into production")
 def test_http_create_scope_ack_cancel_and_disabled_runner(service):
     runtime = SimpleNamespace(coordination=service, runner_enabled=True, thread_store=None)
     app = FastAPI()
@@ -205,6 +203,21 @@ def test_http_create_scope_ack_cancel_and_disabled_runner(service):
     assert r.status_code == 200, r.text
     identifier = r.json()["task"]["id"]
     assert client.post(base + "/tasks", json=payload).json()["task"]["id"] == identifier
+    sender = task(service, member="drafter", request="http-sender")
+    service.ledger.send(
+        message_id="http-handoff",
+        source_id=sender["id"],
+        target_id=identifier,
+        kind="handoff",
+        body="verified drawing",
+        artifacts=[{"path": "P04.step", "version": "R3", "verification": "checked"}],
+    )
+    receipt = {"task_id": identifier, "action": "ack", "message_id": "http-handoff"}
+    assert client.post(base + "/receipt", json=receipt).json()["acknowledged"] is True
+    assert client.post(base + "/receipt", json=receipt).json()["acknowledged"] is True
+    assert (
+        client.post(base + "/receipt", json={**receipt, "task_id": sender["id"]}).status_code == 404
+    )
     assert client.get("/api/collab/private/coordination").json()["tasks"] == []
     assert (
         client.post(
@@ -217,12 +230,12 @@ def test_http_create_scope_ack_cancel_and_disabled_runner(service):
         client.post(base + "/receipt", json={"task_id": identifier, "action": "cancel"}).status_code
         == 200
     )
-    assert client.get(base).json()["tasks"][0]["status"] == "cancelled"
+    tasks_by_id = {row["id"]: row for row in client.get(base).json()["tasks"]}
+    assert tasks_by_id[identifier]["status"] == "cancelled"
     runtime.runner_enabled = False
     assert client.post(base + "/tasks", json={**payload, "request_id": "r2"}).status_code == 503
 
 
-@pytest.mark.xfail(reason="Coordination layer WIP - execution task metadata not yet injected")
 def test_delayed_work_retains_scope_and_receives_late_handoff(service, monkeypatch):
     from runtime.memory.cowork.coordination_policy import capture_policy, restore_scope
     from runtime.memory.cowork.runtime import _execute_subagent_task

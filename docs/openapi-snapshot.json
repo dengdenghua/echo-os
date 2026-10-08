@@ -2421,6 +2421,74 @@
         "title": "ControlSessionStateBody",
         "type": "object"
       },
+      "CoordinationReceiptBody": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "ack",
+              "cancel"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "message_id": {
+            "default": "",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "action"
+        ],
+        "title": "CoordinationReceiptBody",
+        "type": "object"
+      },
+      "CoordinationTaskBody": {
+        "additionalProperties": false,
+        "properties": {
+          "assignee": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Assignee",
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "prompt": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignee",
+          "prompt",
+          "request_id"
+        ],
+        "title": "CoordinationTaskBody",
+        "type": "object"
+      },
       "CreateAgentRequest": {
         "properties": {
           "description": {
@@ -19887,6 +19955,158 @@
         ]
       }
     },
+    "/api/collab/{thread_id}/coordination": {
+      "get": {
+        "operationId": "coordination_snapshot_api_collab__thread_id__coordination_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Coordination Snapshot Api Collab  Thread Id  Coordination Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Coordination Snapshot",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
+    "/api/collab/{thread_id}/coordination/receipt": {
+      "post": {
+        "operationId": "coordination_receipt_api_collab__thread_id__coordination_receipt_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoordinationReceiptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Coordination Receipt Api Collab  Thread Id  Coordination Receipt Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Coordination Receipt",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
+    "/api/collab/{thread_id}/coordination/tasks": {
+      "post": {
+        "operationId": "create_coordination_task_api_collab__thread_id__coordination_tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoordinationTaskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Coordination Task Api Collab  Thread Id  Coordination Tasks Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Coordination Task",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
     "/api/collab/{thread_id}/link-room": {
       "post": {
         "description": "Link a Team Room to this session (event-sourced) so the two surfaces\nstop drifting as separate sources of truth.",
@@ -24496,6 +24716,246 @@
         "summary": "Member View",
         "tags": [
           "cowork"
+        ]
+      }
+    },
+    "/api/crashes": {
+      "delete": {
+        "description": "Acknowledge every recorded crash (used after triage).",
+        "operationId": "api_crashes_clear_api_crashes_delete",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crashes Clear Api Crashes Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crashes Clear",
+        "tags": [
+          "observability"
+        ]
+      },
+      "get": {
+        "operationId": "api_crashes_api_crashes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crashes Api Crashes Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crashes",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/api/crashes/{fingerprint}": {
+      "get": {
+        "operationId": "api_crash_detail_api_crashes__fingerprint__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "title": "Fingerprint",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crash Detail Api Crashes  Fingerprint  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crash Detail",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/api/crashes/{fingerprint}/report": {
+      "get": {
+        "description": "Plain-text report, ready to paste into a bug report.",
+        "operationId": "api_crash_report_api_crashes__fingerprint__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "title": "Fingerprint",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crash Report Api Crashes  Fingerprint  Report Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crash Report",
+        "tags": [
+          "observability"
         ]
       }
     },
@@ -48575,6 +49035,59 @@
         ]
       }
     },
+    "/api/tentacle/devices/{device_id}/mirror/{operation}": {
+      "post": {
+        "operationId": "invoke_api_tentacle_devices__device_id__mirror__operation__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operation",
+            "required": true,
+            "schema": {
+              "title": "Operation",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Invoke Api Tentacle Devices  Device Id  Mirror  Operation  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invoke",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
     "/api/tentacle/devices/{tentacle_id}": {
       "get": {
         "operationId": "device_detail_api_tentacle_devices__tentacle_id__get",
@@ -48712,6 +49225,29 @@
           }
         },
         "summary": "Device Screenshot",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
+    "/api/tentacle/discovery": {
+      "get": {
+        "operationId": "discovery_status_api_tentacle_discovery_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Discovery Status Api Tentacle Discovery Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discovery Status",
         "tags": [
           "tentacle"
         ]
@@ -49045,6 +49581,50 @@
           }
         },
         "summary": "Submit Task",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
+    "/api/tentacle/task-workspace/{command}": {
+      "post": {
+        "operationId": "invoke_api_tentacle_task_workspace__command__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "command",
+            "required": true,
+            "schema": {
+              "title": "Command",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Invoke Api Tentacle Task Workspace  Command  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invoke",
         "tags": [
           "tentacle"
         ]

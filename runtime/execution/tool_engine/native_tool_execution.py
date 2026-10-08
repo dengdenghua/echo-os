@@ -202,10 +202,14 @@ def _execute_approved_native_call(
             )
     else:
         try:
-            output = skill.handler(**normalized.arguments)
+            from .coordination_guard import invoke_coordinated
+
+            output = invoke_coordinated(
+                skill, normalized.arguments, service=getattr(executor.registry, "coordination", None)
+            )
         except TypeError as exc:
             return (f"(TypeError: {exc})", True)
-        except (RuntimeError, ValueError, OSError) as exc:
+        except (RuntimeError, ValueError, OSError, PermissionError) as exc:
             return (f"(skill error: {type(exc).__name__}: {exc})", True)
 
     result = normalize_tool_result(

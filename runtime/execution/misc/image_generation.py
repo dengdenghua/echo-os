@@ -4,6 +4,7 @@ import base64
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import urllib.error
 import urllib.request
@@ -674,6 +675,56 @@ def _make_avatar_from_front(front_path: Path, avatar_path: Path) -> Path | None:
     return avatar_path
 
 
+# cmd.exe re-parses .bat/.cmd wrappers even when subprocess uses an argv list.
+_CMD_BATCH_METACHARS = frozenset('"&|<>^%!\r\n')
+_USER_TEMPLATE_FIELDS = ("agent_id", "display_name", "prompt")
+
+
+def _split_command_template(template: str) -> list[str]:
+    """Split an operator command template into argv tokens (no shell)."""
+    posix = os.name != "nt"
+    try:
+        tokens = shlex.split(template, posix=posix)
+    except ValueError as exc:
+        raise RuntimeError(f"ECHO_IMAGE_GEN_COMMAND could not be parsed: {exc}") from exc
+    if not posix:
+        cleaned: list[str] = []
+        for token in tokens:
+            if len(token) >= 2 and token[0] == token[-1] == "'":
+                token = token[1:-1]
+            cleaned.append(token.replace('"', ""))
+        tokens = cleaned
+    if not tokens:
+        raise RuntimeError("ECHO_IMAGE_GEN_COMMAND is empty")
+    return tokens
+
+
+def _command_template_argv(template: str, variables: dict[str, str]) -> list[str]:
+    """Substitute legacy quoted placeholders after splitting, as literal argv."""
+    argv = [
+        Template(token).safe_substitute(variables) for token in _split_command_template(template)
+    ]
+    resolved = shutil.which(argv[0])
+    if resolved:
+        argv[0] = resolved
+    if os.name == "nt" and argv[0].lower().endswith((".bat", ".cmd")):
+        unsafe = [
+            key
+            for key in _USER_TEMPLATE_FIELDS
+            if (f"${key}" in template or f"${{{key}}}" in template)
+            and any(ch in _CMD_BATCH_METACHARS for ch in str(variables.get(key, "")))
+        ]
+        if unsafe:
+            raise RuntimeError(
+                "refusing to pass "
+                + ", ".join(unsafe)
+                + " containing cmd.exe metacharacters to a .bat/.cmd image command; "
+                "point ECHO_IMAGE_GEN_COMMAND at a real executable or read the value "
+                "from the ECHO_IMAGE_GEN_PROMPT environment variable instead"
+            )
+    return argv
+
+
 def _generate_with_command(
     *,
     provider: str,
@@ -689,28 +740,34 @@ def _generate_with_command(
         raise RuntimeError("ECHO_IMAGE_GEN_COMMAND is required for this image provider")
 
     output = output_dir / "reference.png"
-    # 对用户可控的文本字段进行 shell 转义,防止命令注入。
-    # prompt / agent_id / display_name 可能包含 shell 元字符(如 ; ` $ 等),
-    # 必须用 shlex.quote 包裹后再代入模板,使模板中的 "$prompt" 等占位符
-    # 在 shell 中被解释为字面字符串。output/output_dir 是受控路径,同样转义以防边界情况。
+    # Split before substitution: quoted legacy placeholders remain one literal
+    # argument and user-controlled text never passes through a shell.
     variables = {
-        "agent_id": shlex.quote(agent_id),
-        "display_name": shlex.quote(display_name),
-        "prompt": shlex.quote(prompt),
-        "output": shlex.quote(str(output)),
-        "output_dir": shlex.quote(str(output_dir)),
+        "agent_id": agent_id,
+        "display_name": display_name,
+        "prompt": prompt,
+        "output": str(output),
+        "output_dir": str(output_dir),
     }
-    command = Template(command_template).safe_substitute(variables)
+    argv = _command_template_argv(command_template, variables)
+    env = {
+        **os.environ,
+        **{f"ECHO_IMAGE_GEN_{key.upper()}": value for key, value in variables.items()},
+    }
     timeout = int(os.getenv("ECHO_IMAGE_GEN_TIMEOUT_SECONDS") or "180")
-    completed = subprocess.run(  # nosec B602 — operator-configured template; every interpolated variable is shlex-quoted above
-        command,
-        cwd=str(output_dir),
-        shell=True,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(  # nosec B603 — literal argv elements, shell=False
+            argv,
+            cwd=str(output_dir),
+            shell=False,
+            env=env,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+            check=False,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"image generation command could not start: {exc}") from exc
     if completed.returncode != 0:
         stderr = completed.stderr.strip() or completed.stdout.strip()
         raise RuntimeError(

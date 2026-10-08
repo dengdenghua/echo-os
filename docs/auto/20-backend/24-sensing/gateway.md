@@ -40,6 +40,7 @@
 | `_config_endpoints_codex.py` | Principal-scoped Coder/Codex account and model control endpoints. |
 | `_config_endpoints_custom_models.py` | Custom-model lifecycle endpoints for the config router. |
 | `_config_endpoints_local_models.py` | Local-model discovery + one-click import endpoints for the config router. |
+| `_config_endpoints_local_setup.py` | Import a freshly verified local model without replacing another connection. |
 | `_config_endpoints_models.py` | Model listing & compatibility endpoints for the config router. |
 | `_config_endpoints_security.py` | Security & safety config endpoints for the config router. |
 | `_config_endpoints_system.py` | System / runtime-config endpoints for the config router. |
@@ -55,6 +56,7 @@
 | `_evolution_helpers.py` | — |
 | `_evolution_models.py` | — |
 | `_evolution_ops_insights.py` | Read-model builders for the evolution operator console. |
+| `_fs_router_content.py` | Authorized binary snapshots for workspace originals, separate from uploads. |
 | `_fs_router_diff.py` | Unified-diff parsing / reverse-apply helpers for the filesystem router. |
 | `_fs_router_endpoints.py` | Endpoint handlers for the filesystem router. |
 | `_fs_router_helpers.py` | Shared helpers for the filesystem router factory. |
@@ -65,11 +67,13 @@
 | `_meta_skill_install.py` | Skill install / uninstall filesystem helpers for the meta router. |
 | `_meta_skill_metadata.py` | Skill metadata assembly for the meta router. |
 | `_observability_auth.py` | Router-level auth helpers shared by the observability endpoint groups. |
+| `_observability_crashes.py` | Crash-report endpoints for the observability router. |
 | `_observability_helpers.py` | Shared helpers for the observability router factory. |
 | `_observability_journal.py` | Journal, reflect, evolution and tool-effect endpoints for the observability router. |
 | `_observability_kg.py` | Knowledge-graph endpoints for the observability router. |
 | `_observability_progress_stream.py` | Progress and SSE-stream endpoints for the observability router. |
 | `_observability_rollback_panels.py` | File-rollback, rewind, blackboard, hemolymph, regeneration, budget and run endpoints. |
+| `_observability_rollback_scope.py` | Bind rollback reads and writes to existing, currently authorized workspaces. |
 | `_observability_router_factory.py` | Factory for the observability router. |
 | `_observability_state.py` | Shared state container for the observability router endpoint groups. |
 | `_openai_gateway_router_helpers.py` | — |
@@ -213,10 +217,15 @@
 | `realtime_cerebrum.py` | Cerebrum-backed realtime runtime. |
 | `realtime_codex_backend.py` | Realtime driver for the isolated Codex App Server execution backend. |
 | `realtime_echo.py` | Echo runtime — reference :class:`RealtimeRuntime` implementation. |
+| `realtime_engine_history.py` | Project the authorized Echo journal into an external engine's missing context. |
 | `realtime_event_bridge.py` | React-event → ``item/*`` bridge state for the realtime runtime. |
+| `realtime_execution.py` | Realtime adapters for the engine-neutral execution supervisor. |
+| `realtime_execution_context.py` | Project a validated realtime turn into the shared engine request. |
+| `realtime_execution_evidence.py` | Persist the actual adapter/model before invoking it, without new storage. |
 | `realtime_frame_bounds.py` | Last-resort frame bounding for realtime WebSocket notifications. |
 | `realtime_gateway.py` | Realtime gateway — JSON-RPC 2.0 over WebSocket. |
 | `realtime_interrupt_control.py` | Authoritative cross-worker interrupt control for realtime turns. |
+| `realtime_opencode_backend.py` | Translate an official OpenCode session into Echo's ordinary realtime items. |
 | `realtime_react_policy.py` | Routing policy and event translation for realtime agent streams. |
 | `realtime_react_stream.py` | Single-agent stream drivers for the realtime runtime. |
 | `realtime_team_stream.py` | Multi-agent team-topology stream driver for the realtime runtime. |

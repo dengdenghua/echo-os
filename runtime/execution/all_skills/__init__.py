@@ -312,6 +312,9 @@ _CATALOG: dict[str, dict[str, Any]] = {
     "bb_read": {"group": "blackboard", "atomic": True},
     "bb_write": {"group": "blackboard", "atomic": True},
     "bb_keys": {"group": "blackboard", "atomic": True},
+    # Host protocol available to all group members. The app registers its
+    # handler only after constructing the shared authorized cowork service.
+    "collaboration": {"group": "agent_meta", "atomic": True},
     # ── self-scheduling (mid-turn cron · same store as the UI) ──
     "schedule_task": {"group": "cron", "atomic": False},
     "list_scheduled_tasks": {"group": "cron", "atomic": False},

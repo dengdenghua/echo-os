@@ -56,8 +56,14 @@ class CoordinationService:
 
     def check_running(self) -> None:
         session = current_session()
+        bound_group_member = (
+            session
+            and session.thread_id
+            and session.agent_id
+            and self.groups.state(session.thread_id).member(session.agent_id)
+        )
         task_id = session.metadata.get("_coordination_task_id") if session else None
-        if task_id:
+        if task_id or bound_group_member:
             record = self.current()
             queued = self.queue.get(record["id"])
             if record["status"] in TERMINAL or (queued and queued.status in TERMINAL):

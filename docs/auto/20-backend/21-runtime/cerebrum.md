@@ -4,11 +4,9 @@
 
 **Source**: `runtime/core/cerebrum/`
 
-## Exports
+## Package summary
 
-- `LLMPlanner`
-- `PlannerError`
-- `StaticPlanner`
+Native Echo planning exports, loaded only when requested.
 
 ## Modules
 
@@ -114,7 +112,7 @@
 
 ## Who imports this
 
-**59** file(s) reference this package:
+**62** file(s) reference this package:
 
 - **`runtime/cli_code.py/`** · 1 file(s)
   - `runtime/cli_code.py`
@@ -131,11 +129,11 @@
 - **`runtime/core/`** · 1 file(s)
   - `runtime/core/graph_runtime/runtime.py`
 - **`runtime/execution/`** · 8 file(s)
-  - `runtime/execution/codex_backend/dynamic_tools.py`
   - `runtime/execution/loops/_controller_attempt.py`
   - `runtime/execution/misc/parallel_runner.py`
   - `runtime/execution/parallel_agents/_orchestrator_models.py`
   - `runtime/execution/parallel_agents/stack_runner.py`
+  - `runtime/execution/subagents/react_drive.py`
   - _… and 3 more_
 - **`runtime/memory/`** · 4 file(s)
   - `runtime/memory/cowork/turn_plan.py`
@@ -149,18 +147,20 @@
   - `runtime/platform/ui/_app_parallel.py`
   - `runtime/platform/ui/_app_stack.py`
   - _… and 2 more_
-- **`runtime/safety/`** · 4 file(s)
+- **`runtime/safety/`** · 6 file(s)
   - `runtime/safety/experiments/prompt_optimizer.py`
+  - `runtime/safety/privacy.py`
   - `runtime/safety/recovery/gepa_bridge.py`
   - `runtime/safety/recovery/workflow_applier.py`
+  - `runtime/safety/storage_privacy.py`
   - `runtime/safety/validation/trust_signal.py`
-- **`runtime/sensing/`** · 26 file(s)
+- **`runtime/sensing/`** · 27 file(s)
   - `runtime/sensing/gateway/_agents_endpoints.py`
   - `runtime/sensing/gateway/_agents_endpoints_conversations.py`
   - `runtime/sensing/gateway/_agents_endpoints_tasks.py`
   - `runtime/sensing/gateway/_config_endpoints_system.py`
   - `runtime/sensing/gateway/_observability_journal.py`
-  - _… and 21 more_
+  - _… and 22 more_
 - **`runtime/tentacle/`** · 2 file(s)
   - `runtime/tentacle/coordinator.py`
   - `runtime/tentacle/mobile/cerebrum_adapter.py`

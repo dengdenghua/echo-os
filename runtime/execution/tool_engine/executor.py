@@ -865,8 +865,15 @@ class ToolExecutor:
                         from runtime.safety.approval.cancellation import current_cancellation_token
 
                         current_cancellation_token().throw_if_cancelled()
-                        _handler_executed = True
-                        return skill.handler(**handler_args)
+                        from runtime.execution.tool_engine.coordination_guard import (
+                            coordinated_resource,
+                            coordination_scope,
+                        )
+
+                        service = getattr(self.registry, "coordination", None)
+                        with coordination_scope(service), coordinated_resource(service, skill):
+                            _handler_executed = True
+                            return skill.handler(**handler_args)
 
                     with use_trust_engine(self.immunity):
                         output, retry_tags = _call_handler_with_transient_retry(

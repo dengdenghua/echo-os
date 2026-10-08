@@ -71,6 +71,10 @@ ATOMIC_SKILL_NAMES: frozenset[str] = frozenset(
         "bb_read",
         "bb_write",
         "bb_keys",
+        # Host-bound group protocol: the service resolves the member/actor and
+        # revalidates authority. Advertising it never grants another group's
+        # access or permission to delegate in on-demand chat mode.
+        "collaboration",
         # jobs · in-memory registry reads/writes, no I/O. ``job_output``
         # (wait may block) and ``call_agent_background`` (spawns a worker
         # thread) stay non-atomic.

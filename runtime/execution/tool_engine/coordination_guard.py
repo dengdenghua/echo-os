@@ -26,9 +26,7 @@ def coordination_scope(service):
 def invoke_coordinated(skill, args, *, service=None):
     """Use the ambient host guard for meta-tool and composite dispatch."""
     service = service or _service.get()
-    if service is not None:
-        service.check_running()
-    with coordinated_resource(service, skill):
+    with coordination_scope(service), coordinated_resource(service, skill):
         return skill.handler(**args)
 
 
