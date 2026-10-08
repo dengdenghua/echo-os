@@ -90,7 +90,7 @@ def test_local_dev_backend_loads_the_os_appliance_extension():
     assert "ECHO_APPLIANCE_TRUSTED_ORIGINS: trustedOrigins" in launcher
     assert "ECHO_APPLIANCE_DEV_PASSWORDLESS:" in launcher
     assert "persistedApplianceJwtSecret()" in launcher
-    assert 'const frontendPort = process.env.FRONTEND_PORT || "3000"' in launcher
+    assert "const frontendPort = String(settings.ports.frontend)" in launcher
     assert "`http://localhost:${frontendPort}`" in launcher
     assert "`http://127.0.0.1:${frontendPort}`" in launcher
     assert "FRONTEND_PORT must be a valid TCP port" in launcher
