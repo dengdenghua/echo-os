@@ -492,6 +492,9 @@ async def test_tool_does_not_execute_when_durable_start_pipeline_fails(
 
     side_effect = threading.Event()
     real_apply = drive._apply_react_event
+    # Only the tool_start durability is under test: the execution-evidence
+    # record written before the loop starts must still succeed.
+    fsync_armed = threading.Event()
 
     async def _tool_start_only_apply(
         runtime: Any,
@@ -502,13 +505,17 @@ async def test_tool_does_not_execute_when_durable_start_pipeline_fails(
         event: dict[str, Any],
     ) -> None:
         if event.get("type") == "tool_start":
+            fsync_armed.set()
             await real_apply(runtime, turn, log, emitter, state, event)
         elif event.get("type") == "react_error":
             turn.status = TurnStatus.FAILED
 
     if failure_stage == "fsync":
+        real_fsync = event_log_module.os.fsync
 
-        def _fail_fsync(_fd: int) -> None:
+        def _fail_fsync(fd: int) -> None:
+            if not fsync_armed.is_set():
+                return real_fsync(fd)
             raise OSError("fsync failed")
 
         monkeypatch.setattr(event_log_module.os, "fsync", _fail_fsync)

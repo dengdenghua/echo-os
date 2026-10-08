@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from runtime.execution.suckers import code_intelligence_skills as cis
 
 # ── _code_analyze ────────────────────────────────────────────
@@ -133,6 +135,7 @@ class _FakeEncoder:
 
 
 def test_code_search_embedding_backend(monkeypatch, tmp_path: Path) -> None:
+    pytest.importorskip("numpy")  # optional `code-intel` extra
     from runtime.execution.suckers import code_intelligence_skills as _cis
 
     (tmp_path / "a.py").write_text("def target():\n    pass\n", encoding="utf-8")

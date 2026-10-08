@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import stat
@@ -198,6 +199,9 @@ def read_history(path: Path = STATUS_PATH, *, owner: int = 0) -> dict[str, Any]:
     except FileNotFoundError:
         return {"schema": STATUS_SCHEMA, "attempts": []}
     except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            # O_NOFOLLOW refused a symlink: report it like the non-POSIX check.
+            raise NasDataBackupScheduleError("NAS backup history is unsafe") from exc
         raise NasDataBackupScheduleError("NAS backup history is unavailable") from exc
     try:
         before = os.fstat(descriptor)

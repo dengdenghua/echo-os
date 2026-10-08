@@ -5,7 +5,7 @@ import struct
 import wave
 from pathlib import Path
 
-import av
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from PIL import Image, ImageChops
@@ -15,6 +15,9 @@ from runtime.platform.plugins.bundled import clip_studio
 from runtime.platform.plugins.bundled.clip_studio import ClipStudioPlugin
 from runtime.platform.plugins.bundled.clip_studio.snapshot_renderer import render_project_frames
 from runtime.platform.plugins.plugin_base import ModuleContext
+
+# PyAV ships with the optional `video` / `desktop-core` extras only.
+av = pytest.importorskip("av")
 
 
 def _client() -> TestClient:

@@ -270,7 +270,8 @@ def test_versioned_evidence_distinguishes_completed_migration(tmp_path: Path) ->
     host_paths["remote_wrapper_path"].write_bytes(
         (source / host_migration.REMOTE_WRAPPER_SOURCE).read_bytes()
     )
-    host_paths["remote_credential_directory"].mkdir()
+    # A completed migration leaves the credential directory at exactly 0700.
+    host_paths["remote_credential_directory"].mkdir(mode=0o700)
     host_paths["remote_mount_directory"].mkdir()
     plan = host_migration.plan_migration(**probes)
 

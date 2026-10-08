@@ -35,7 +35,12 @@ def test_unattested_external_runner_setting_does_not_bypass_fail_closed(
 ) -> None:
     monkeypatch.setenv(HARDENED_RUNNER_ENV, "/tmp/unattested-runner")
 
-    with pytest.raises(FixtureInfrastructureError, match="cannot authorize execution"):
+    # Non-Linux hosts refuse outright; Linux validates (and rejects) the
+    # unattested attestation path. Either way execution stays fail-closed.
+    with pytest.raises(
+        FixtureInfrastructureError,
+        match="cannot authorize execution|hardened runner attestation rejected",
+    ):
         verifier_sandbox_provenance()
 
 

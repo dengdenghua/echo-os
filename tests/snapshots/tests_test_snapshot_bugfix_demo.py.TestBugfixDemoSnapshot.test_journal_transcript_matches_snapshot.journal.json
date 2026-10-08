@@ -522,7 +522,9 @@
       "after_sha256": "9f0ce13c6aad23e7152d64e3215d7f8af6b2cc95c23a62b783e6cc299a72bf98",
       "before_sha256": "0bb0f32d6103eabfd3b3db435a718a6a2abcd5062364400f42736d94afd9d4a5",
       "content": "\"\"\"Arithmetic utils. There is one bug.\"\"\"\n\ndef add(a, b):\n    return a - b     # BUG: should be `a + b`\n",
+      "expected_current_exists": true,
       "expected_current_sha256": "9f0ce13c6aad23e7152d64e3215d7f8af6b2cc95c23a62b783e6cc299a72bf98",
+      "hash_mode": "bytes-v1",
       "path": "{workdir}/demo_project/add.py",
       "reversible": true
     },

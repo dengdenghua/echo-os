@@ -182,12 +182,14 @@ def maybe_setup_prompt_evolution(
     from runtime.execution.model_services import background_model_router
 
     background_router = background_model_router(stack)
+    if prompt_variants_path is None:
+        return None, 0
     if background_router is None:
+        # Requested but unusable: say so instead of silently dropping it.
+        print(_yellow(color, "prompt A/B needs LLMPlanner (model router) · skipping"))
         return None, 0
     from runtime.core.cerebrum import LLMPlanner
 
-    if prompt_variants_path is None:
-        return None, 0
     if not prompt_variants_path.exists():
         print(_yellow(color, f"--prompt-variants not found: {prompt_variants_path} · skipping"))
         return None, 0
@@ -593,6 +595,18 @@ def run_serve(
     c = _Colors(color)
     try:
         cfg = load_from_yaml(config_path)
+        # Development launchers isolate device listeners without rewriting a
+        # user-owned config. Explicit overrides are validated before use.
+        ws_port_override = os.environ.get("ECHO_TENTACLE_WS_PORT")
+        if ws_port_override is not None:
+            if not ws_port_override.isascii() or not ws_port_override.isdecimal():
+                raise ConfigLoadError("ECHO_TENTACLE_WS_PORT must be a TCP port")
+            ws_port = int(ws_port_override)
+            if not 1 <= ws_port <= 65535:
+                raise ConfigLoadError("ECHO_TENTACLE_WS_PORT must be between 1 and 65535")
+            cfg = cfg.model_copy(
+                update={"tentacle": cfg.tentacle.model_copy(update={"ws_port": ws_port})}
+            )
     except ConfigLoadError as e:
         print(c.red(f"config error: {e}"), file=sys.stderr)
         return 2
@@ -946,7 +960,6 @@ def run_serve(
     try:
         if uds:
             import contextlib
-            import os
 
             with contextlib.suppress(FileNotFoundError):
                 os.unlink(uds)

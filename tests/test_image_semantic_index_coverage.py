@@ -357,6 +357,7 @@ def test_group_faces_clusters(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_search_face(monkeypatch, tmp_path: Path) -> None:
+    pytest.importorskip("numpy")  # optional `vision` extra
     from PIL import Image
 
     monkeypatch.setenv("ECHO_IMAGE_SEMANTIC", "auto")

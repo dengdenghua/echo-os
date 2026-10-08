@@ -160,8 +160,13 @@ class ConnectorRegistry:
             permission_store = CapabilityPermissionStore(permission_path)
         self._permissions = permission_store
 
-    def _requirements(self, connector_id: str) -> dict[str, Any]:
-        conn = self.get(connector_id)
+    def _requirements(
+        self, connector_id: str, conn: ConnectorDefinition | None = None
+    ) -> dict[str, Any]:
+        # ``list()`` passes the definition it already loaded; re-resolving it
+        # here reloaded the whole catalog (remote fetch included) per connector.
+        if conn is None:
+            conn = self.get(connector_id)
         if conn is None:
             raise KeyError(f"connector not found: {connector_id}")
         from runtime.platform.plugins.marketplace_package import (
@@ -344,7 +349,7 @@ class ConnectorRegistry:
                 installed=bool(st.get("installed")),
                 enabled=bool(st.get("enabled")),
             )
-            item.update(self._requirements(conn.id))
+            item.update(self._requirements(conn.id, conn))
             projection = self._permission_projection(
                 conn.id,
                 installed=bool(st.get("installed")),
