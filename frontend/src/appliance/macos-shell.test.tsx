@@ -48,7 +48,7 @@ const unverifiedAgentHealth = {
 };
 
 describe("Echo desktop shell", () => {
-  it("uses familiar system glyphs for built-in shell apps", () => {
+  it("uses Echo's own artwork for built-in shell apps in every surface", () => {
     const { container } = render(
       <MacAppIcon
         icon={GlobeIcon}
@@ -58,17 +58,14 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    const icon = container.querySelector('[data-icon-source="glyph"]');
+    const icon = container.querySelector('[data-icon-source="art"]');
     expect(icon).toBeInTheDocument();
-    expect(icon?.querySelector(".mac-app-icon-glyph")).toBeInTheDocument();
-    expect(icon?.querySelector(".mac-app-icon-art")).not.toBeInTheDocument();
+    expect(icon?.querySelector("svg.echo-app-glyph")).toBeInTheDocument();
+    expect(icon?.querySelector(".mac-app-icon-glyph")).not.toBeInTheDocument();
     expect(icon?.querySelector(".mac-app-icon-specular")).toBeInTheDocument();
     expect(
       icon?.querySelector(".mac-app-icon-liquid-backdrop > img"),
-    ).toHaveAttribute(
-      "src",
-      "/third-party/appletechie-macos/wallpaper-day2-2560.webp",
-    );
+    ).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     expect(
       icon?.querySelector(".mac-app-icon-liquid-backdrop > svg"),
     ).toBeNull();
@@ -85,7 +82,7 @@ describe("Echo desktop shell", () => {
 
     const icon = container.querySelector('[data-app-id="system:finder"]');
     expect(icon).toHaveAttribute("data-echo-family", "true");
-    expect(icon).toHaveAttribute("data-icon-source", "glyph");
+    expect(icon).toHaveAttribute("data-icon-source", "art");
     expect(icon?.querySelector(".mac-app-icon-tech-field")).toBeNull();
     expect(
       icon?.querySelector(".mac-app-icon-echo-signal"),
@@ -96,6 +93,29 @@ describe("Echo desktop shell", () => {
     expect(
       (icon as HTMLElement).style.getPropertyValue("--echo-app-surface"),
     ).toBe("#246bfd");
+  });
+
+  it("marks light icon surfaces so monochrome artwork switches to the accent colour", () => {
+    const { container } = render(
+      <>
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#f8fafc, #cbd5e1)"
+          appId="system:launchpad"
+        />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#6bc9ff, #1d78d4)"
+          appId="system:finder"
+        />
+      </>,
+    );
+    expect(
+      container.querySelector('[data-app-id="system:launchpad"]'),
+    ).toHaveAttribute("data-echo-surface", "light");
+    expect(
+      container.querySelector('[data-app-id="system:finder"]'),
+    ).not.toHaveAttribute("data-echo-surface");
   });
 
   it("keeps desktop shortcut artwork independent from glass presets", () => {
@@ -158,10 +178,7 @@ describe("Echo desktop shell", () => {
     const wallpaper = container.querySelector("img.desktop-wallpaper-art");
 
     expect(wallpaper).toBeInTheDocument();
-    expect(wallpaper).toHaveAttribute(
-      "src",
-      "/third-party/appletechie-macos/wallpaper-day2-2560.webp",
-    );
+    expect(wallpaper).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     expect(wallpaper).toHaveAttribute("alt", "");
   });
 
@@ -178,10 +195,7 @@ describe("Echo desktop shell", () => {
     );
     expect(samples.length).toBeGreaterThanOrEqual(2);
     samples.forEach((sample) => {
-      expect(sample).toHaveAttribute(
-        "src",
-        "/third-party/appletechie-macos/wallpaper-day2-2560.webp",
-      );
+      expect(sample).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     });
     expect(
       container.querySelector(".mac-surface-lens-raster > svg"),

@@ -14,7 +14,7 @@ const EXPECTED_RESOURCE_ENTRIES = [
   "liquid-glass",
   "native-shell-profile.json",
 ];
-const EXPECTED_GLASS_ENTRIES = ["NOTICE.txt", "wallpaper-day2.jpg"];
+const EXPECTED_GLASS_ENTRIES = ["wallpaper-echo.jpg"];
 const EXPECTED_PROFILE_CONTENT =
   '{ "schema": "echo.native_shell_profile.v1" }\n';
 const FORBIDDEN_RESOURCE_ENTRIES = new Set([

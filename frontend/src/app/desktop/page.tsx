@@ -2462,7 +2462,6 @@ export default function DesktopShellPage() {
               icon={FolderIcon}
               gradient="linear-gradient(150deg, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%)"
               appId="system:finder"
-              preferArtwork
             />
           </DockItem>
           <DockItem
@@ -2473,7 +2472,6 @@ export default function DesktopShellPage() {
               icon={MAC_SYSTEM_APPS.launchpad.icon}
               gradient={MAC_SYSTEM_APPS.launchpad.gradient}
               appId="system:launchpad"
-              preferArtwork
             />
           </DockItem>
           <DockItem onClick={openAppStore} title="Echo Hub" running={hubOpen}>
@@ -2482,7 +2480,6 @@ export default function DesktopShellPage() {
               iconUrl={appStoreApp?.iconDataUrl || undefined}
               gradient={MAC_SYSTEM_APPS.appStore.gradient}
               appId="system:app-store"
-              preferArtwork
             />
           </DockItem>
           {visibleDesktopApps
@@ -2506,7 +2503,6 @@ export default function DesktopShellPage() {
                     icon={Icon}
                     gradient={app.color}
                     appId={`echo:${app.route}`}
-                    preferArtwork
                     state={
                       app.route === "/workspace/realtime/new" &&
                       (taskProjection?.counts.active ?? 0) > 0
@@ -2592,7 +2588,6 @@ export default function DesktopShellPage() {
                 icon={ListChecksIcon}
                 gradient="linear-gradient(150deg, #a5b4fc 0%, #6366f1 60%, #4338ca 100%)"
                 appId="system:tasks"
-                preferArtwork
               />
               {(taskProjection?.counts.waitingApproval ?? 0) > 0 && (
                 <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border border-white/80 bg-amber-500 px-1 text-[9px] font-semibold leading-4 text-white shadow-sm">
@@ -2610,7 +2605,6 @@ export default function DesktopShellPage() {
               icon={CpuIcon}
               gradient="linear-gradient(150deg, #1e293b 0%, #0f172a 60%, #020617 100%)"
               appId="system:activity-monitor"
-              preferArtwork
             />
           </DockItem>
           <DockItem onClick={openSystemSettings} title="系统设置">
@@ -2618,7 +2612,6 @@ export default function DesktopShellPage() {
               icon={MAC_SYSTEM_APPS.settings.icon}
               gradient={MAC_SYSTEM_APPS.settings.gradient}
               appId="system:settings"
-              preferArtwork
             />
           </DockItem>
           {/* 任务轨：进行中的 Agent 任务和应用并列，窗口挡不住 */}

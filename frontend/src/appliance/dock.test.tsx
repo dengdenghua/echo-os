@@ -20,7 +20,7 @@ describe("Dock", () => {
     expect(lens).toHaveAttribute("aria-hidden", "true");
     expect(lens?.querySelector("img")).toHaveAttribute(
       "src",
-      "/third-party/appletechie-macos/wallpaper-day2-2560.webp",
+      "/echo/wallpaper-echo-2560.webp",
     );
 
     nav.style.columnGap = "5px";

@@ -47,11 +47,7 @@ async function fixture({
   fs.writeFileSync(path.join(packageRoot, "echo-os-desktop"), fakeElf());
   fs.chmodSync(path.join(packageRoot, "echo-os-desktop"), 0o755);
   fs.writeFileSync(
-    path.join(resources, "liquid-glass", "NOTICE.txt"),
-    "notice\n",
-  );
-  fs.writeFileSync(
-    path.join(resources, "liquid-glass", "wallpaper-day2.jpg"),
+    path.join(resources, "liquid-glass", "wallpaper-echo.jpg"),
     "jpeg\n",
   );
   fs.writeFileSync(

@@ -1,16 +1,15 @@
 /**
  * Shared desktop wallpaper URLs.
  *
- * The upstream artwork is 6400x3552 / 16 MB. Renderers only ever need display
- * resolution, so they use the WebP variants (2560 wide, 3840 for high-DPI
- * panels) through a shared srcset. The resampled JPEG at the original filename
- * stays in place for the native liquid-glass addon, which loads the path
- * directly and decodes it outside the renderer.
+ * "Echo" is Echo OS's own default wallpaper (no third-party licence). The
+ * renderer uses the WebP variants (2560 wide, 3840 for high-DPI panels) through
+ * a shared srcset; the 2560-wide JPEG is for the native liquid-glass addon,
+ * which loads the path directly and decodes it outside the renderer.
  *
- * See scripts/optimize-desktop-assets.py for the regeneration step.
+ * Regenerate with: node scripts/generate-echo-wallpaper.mjs
  */
 
-const WALLPAPER_BASE = "/third-party/appletechie-macos/wallpaper-day2";
+const WALLPAPER_BASE = "/echo/wallpaper-echo";
 
 /** Primary source: 2560 wide, matches the common full-screen desktop case. */
 export const DESKTOP_WALLPAPER_URL = `${WALLPAPER_BASE}-2560.webp`;

@@ -194,14 +194,13 @@
     linear-gradient(145deg, #ef9676, #ac4eb5 52%, #3e63ba);
 }
 
-/* Licensed wallpaper retained as the user's selected visual background.
-   WebP variants replace the 16 MB original; the 3840-wide candidate covers
-   high-DPI panels, so the browser never loads the oversized source. */
+/* Echo 原创默认壁纸（scripts/generate-echo-wallpaper.mjs 生成）。
+   3840 宽的候选覆盖高 DPI 屏，其余屏幕加载 2560 宽版本。 */
 .mac-wallpaper-orbit .desktop-wallpaper {
-  background-color: #3852a6;
+  background-color: #1c1d5e;
   /* Preserve the source colours; surfaces must not wash out the wallpaper. */
   filter: none;
-  background-image: url("/third-party/appletechie-macos/wallpaper-day2-2560.webp");
+  background-image: url("/echo/wallpaper-echo-2560.webp");
   background-position: center;
   background-size: cover;
   animation: none;
@@ -209,7 +208,7 @@
 
 @media (min-resolution: 1.5dppx) {
   .mac-wallpaper-orbit .desktop-wallpaper {
-    background-image: url("/third-party/appletechie-macos/wallpaper-day2-3840.webp");
+    background-image: url("/echo/wallpaper-echo-3840.webp");
   }
 }
 
@@ -7738,6 +7737,16 @@
   filter: drop-shadow(0 2px 2px rgba(0, 16, 38, 0.34))
     drop-shadow(0 6px 8px rgba(0, 16, 38, 0.14))
     drop-shadow(0 0 3px var(--echo-app-glow));
+}
+
+/* 浅色底座（钛灰、冰川）上，单色图形改用强调色。信号玻璃底色在所有壁纸
+   和主题下都会生效，所以这条规则不能只写在 orbit 作用域里；!important
+   用来压过各主题给图形统一设置的白色。 */
+.macos-desktop-root
+  .mac-app-icon[data-echo-family="true"][data-echo-surface="light"][data-icon-source]
+  :is(.mac-app-icon-art, .mac-app-icon-glyph) {
+  color: var(--echo-app-accent) !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12)) !important;
 }
 
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit

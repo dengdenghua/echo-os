@@ -349,15 +349,8 @@ function loadAddon(resourcesPath) {
 
 function resolveWallpaperPath({ packaged, resourcesPath }) {
   return packaged
-    ? path.join(resourcesPath, "liquid-glass", "wallpaper-day2.jpg")
-    : path.join(
-        __dirname,
-        "..",
-        "public",
-        "third-party",
-        "appletechie-macos",
-        "wallpaper-day2.jpg",
-      );
+    ? path.join(resourcesPath, "liquid-glass", "wallpaper-echo.jpg")
+    : path.join(__dirname, "..", "public", "echo", "wallpaper-echo.jpg");
 }
 
 class NativeLiquidGlassController {

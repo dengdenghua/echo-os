@@ -44,7 +44,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { EchoMark } from "@/components/brand/echo-mark";
-import { getMacAppArtwork } from "./mac-app-artworks";
+import { getEchoAppArtwork } from "./echo-app-artworks";
 import type {
   AgentDesktopHealth,
   AgentDesktopHealthState,
@@ -125,6 +125,17 @@ const ECHO_APP_ICON_PALETTES: Record<string, EchoAppIconPalette> = {
   "system:trash": ECHO_SIGNAL_GLASS.gunmetal,
 };
 
+/** 浅色底座上的单色图形改用强调色，否则白色图形会和底座融在一起。 */
+function isLightSurface(hex: string): boolean {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return false;
+  const value = Number.parseInt(match[1]!, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.72;
+}
+
 const ECHO_TECH_FIELD_APP_IDS = new Set([
   "echo:/storage-center",
   "echo:/workspace/observability",
@@ -146,24 +157,7 @@ export type MacShellApp = {
 
 export type MacAppIconState = "default" | "active" | "thinking" | "complete";
 
-/** Render authentic macOS-fidelity artwork for system apps, or branded Echo mark. */
-function MacAppArtwork({
-  appId,
-  preferArtwork = false,
-}: {
-  appId?: string;
-  preferArtwork?: boolean;
-}): ReactNode {
-  if (preferArtwork) return getMacAppArtwork(appId);
-  if (appId === "echo:/workspace/realtime/new") {
-    return (
-      <EchoMark tone="light" className="mac-app-icon-art mac-shell-icon-art" />
-    );
-  }
-  return null;
-}
-
-/** Original fluid ribbon artwork shared by the desktop and lock screen. */
+/** Echo 默认壁纸，桌面与锁屏共用。 */
 export function MacDesktopWallpaperArtwork() {
   return (
     <img
@@ -186,7 +180,6 @@ export function MacAppIcon({
   liquidBackdrop = false,
   state = "default",
   artwork,
-  preferArtwork = false,
 }: {
   icon: MacIcon;
   gradient: string;
@@ -196,11 +189,10 @@ export function MacAppIcon({
   liquidBackdrop?: boolean;
   state?: MacAppIconState;
   artwork?: ReactNode;
-  preferArtwork?: boolean;
 }) {
-  const appArtwork = iconUrl
-    ? null
-    : (artwork ?? MacAppArtwork({ appId, preferArtwork }));
+  // Dock、启动台、桌面和 Spotlight 共用同一套原创图形；没有专属图形的应用
+  // 回退到线性图标。
+  const appArtwork = iconUrl ? null : (artwork ?? getEchoAppArtwork(appId));
   const echoPalette = appId ? ECHO_APP_ICON_PALETTES[appId] : undefined;
   const showTechField = appId ? ECHO_TECH_FIELD_APP_IDS.has(appId) : false;
 
@@ -218,6 +210,9 @@ export function MacAppIcon({
       data-app-id={appId}
       data-icon-source={iconUrl ? "image" : appArtwork ? "art" : "glyph"}
       data-echo-family={echoPalette ? "true" : undefined}
+      data-echo-surface={
+        echoPalette && isLightSurface(echoPalette.surface) ? "light" : undefined
+      }
       data-liquid-backdrop={liquidBackdrop ? "true" : undefined}
       data-icon-state={state}
       aria-hidden

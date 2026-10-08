@@ -197,12 +197,8 @@
         "to": "native-shell-profile.json"
       },
       {
-        "from": "public/third-party/appletechie-macos/wallpaper-day2.jpg",
-        "to": "liquid-glass/wallpaper-day2.jpg"
-      },
-      {
-        "from": "public/third-party/appletechie-macos/NOTICE.txt",
-        "to": "liquid-glass/NOTICE.txt"
+        "from": "public/echo/wallpaper-echo.jpg",
+        "to": "liquid-glass/wallpaper-echo.jpg"
       }
     ],
     "mac": {

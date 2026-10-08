@@ -1,12 +1,7 @@
-"""Desktop asset optimizer: giant wallpaper + favicon.
+"""Desktop asset optimizer: favicon.
 
-The shipped wallpaper is 6400x3552 / 16 MB. Nothing in the desktop shell needs
-that resolution:
-
-* the renderer <img> layer gets WebP variants (2560 + 3840 wide) picked through
-  srcset, which cuts the payload by ~99%;
-* the native liquid-glass addon loads a real file path and decodes it itself, so
-  it keeps a JPEG at the same filename -- just resampled down.
+The default wallpaper is generated at display sizes by
+scripts/generate-echo-wallpaper.mjs, so it needs no optimisation pass here.
 
 The case-study JPEGs that used to live under public/images were removed (git
 history keeps them): all six were byte-corrupted in the repository -- JPEG
@@ -24,12 +19,6 @@ import sys
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-WALL_DIR = ROOT / "public" / "third-party" / "appletechie-macos"
-WALL_JPEG = WALL_DIR / "wallpaper-day2.jpg"
-WALL_WEBP_WIDTHS = [2560, 3840]
-JPEG_WIDTH = 2560
-JPEG_QUALITY = 85
-WEBP_QUALITY = 82
 
 
 def human(n: float) -> str:
@@ -52,32 +41,6 @@ def report_corruption() -> None:
         except Exception:
             state = "not decodable"
         print(f"  {path.name}: {len(data) / 1024:.0f} KB, U+FFFD x{marker}, {state}")
-
-
-def optimize_wallpaper() -> None:
-    before = WALL_JPEG.stat().st_size
-    with Image.open(WALL_JPEG) as im:
-        print(f"== wallpaper ==\n  source: {im.size[0]}x{im.size[1]}, {human(before)}")
-        rgb = im.convert("RGB")
-        for width in WALL_WEBP_WIDTHS:
-            height = round(rgb.height * width / rgb.width)
-            frame = rgb.resize((width, height), Image.LANCZOS)
-            out = WALL_DIR / f"wallpaper-day2-{width}.webp"
-            frame.save(out, "WEBP", quality=WEBP_QUALITY, method=6)
-            print(f"  wrote {out.name}: {frame.size[0]}x{frame.size[1]}, {human(out.stat().st_size)}")
-
-        if rgb.width > JPEG_WIDTH:
-            height = round(rgb.height * JPEG_WIDTH / rgb.width)
-            resampled = rgb.resize((JPEG_WIDTH, height), Image.LANCZOS)
-            tmp = WALL_JPEG.with_suffix(".jpg.tmp")
-            resampled.save(tmp, "JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True)
-            tmp.replace(WALL_JPEG)
-            print(
-                f"  rewrote {WALL_JPEG.name} for the native addon: "
-                f"{resampled.size[0]}x{resampled.size[1]}, {human(WALL_JPEG.stat().st_size)}"
-            )
-    print(f"  wallpaper total: {human(before)} -> "
-          f"{human(sum(p.stat().st_size for p in WALL_DIR.iterdir() if p.is_file()))}")
 
 
 def optimize_favicon() -> None:
@@ -103,7 +66,6 @@ def optimize_favicon() -> None:
 
 def main() -> int:
     report_corruption()
-    optimize_wallpaper()
     optimize_favicon()
     return 0
 
