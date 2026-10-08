@@ -64,4 +64,3 @@ def test_long_loop_attempt_renews_supervisor_lease(tmp_path) -> None:
     worker.join(timeout=15)
     assert not worker.is_alive()
     assert result["run"].status == LoopRunStatus.COMPLETED  # type: ignore[union-attr]
-

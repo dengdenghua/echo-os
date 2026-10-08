@@ -378,4 +378,3 @@ def test_resume_or_register_turn_forwards_wall_time_cap(monkeypatch):
         ).DEFAULT_TURN_WALL_TIME_CAP_S
     )
     assert turn is not None
-

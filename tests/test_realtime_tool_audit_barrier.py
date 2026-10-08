@@ -597,4 +597,3 @@ async def test_interrupt_arriving_during_tool_start_apply_prevents_execution(
     turn = await asyncio.wait_for(task, timeout=2.0)
     assert not side_effect.is_set()
     assert turn.status is TurnStatus.CANCELLED
-

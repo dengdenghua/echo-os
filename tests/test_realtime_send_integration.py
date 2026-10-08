@@ -482,4 +482,3 @@ def test_durable_report_lock_does_not_block_interrupt_or_lose_late_report(
         release_durable_lock.set()
         lock_holder.join(timeout=3.0)
         set_subagent_session_store(previous_store)
-

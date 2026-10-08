@@ -1400,4 +1400,3 @@ def test_kimi_swarm_next_stage_advances_only_with_replay_backed_stage_proofs(
     assert complete["recommended_payload"] is None
     assert complete["recommended_preflight"] is None
     assert complete["can_run_recommended_payload"] is False
-

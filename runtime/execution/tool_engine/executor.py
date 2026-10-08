@@ -453,7 +453,8 @@ class ToolExecutor:
             privacy_denial = tool_privacy_denial(skill)
             if privacy_denial:
                 return _reject_step(
-                    "failed", privacy_denial,
+                    "failed",
+                    privacy_denial,
                     span_attrs={"echo.privacy.blocked": True},
                 )
 

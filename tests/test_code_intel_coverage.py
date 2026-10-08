@@ -170,4 +170,3 @@ def test_code_search_ast_mode_validation(tmp_path: Path) -> None:
         sandbox_dir=None,
     )
     assert "invalid query_type" in out["error"]
-

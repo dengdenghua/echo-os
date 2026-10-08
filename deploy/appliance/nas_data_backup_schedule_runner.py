@@ -62,8 +62,10 @@ def _absolute_path(value: Any, label: str) -> str:
     if any(token in value for token in ("\0", "\r", "\n", "\\", "*", "?", "[")):
         raise NasDataBackupScheduleError(f"{label} is invalid")
     path = PurePosixPath(value)
-    if not path.is_absolute() or str(path) != value or any(
-        part in {"", ".", ".."} for part in path.parts[1:]
+    if (
+        not path.is_absolute()
+        or str(path) != value
+        or any(part in {"", ".", ".."} for part in path.parts[1:])
     ):
         raise NasDataBackupScheduleError(f"{label} is invalid")
     return str(path)
@@ -316,9 +318,7 @@ def record_attempt(
         descriptor = -1
         os.replace(temporary, path)
         if os.name == "posix":
-            directory_descriptor = os.open(
-                parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-            )
+            directory_descriptor = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
             try:
                 os.fsync(directory_descriptor)
             finally:
@@ -473,9 +473,7 @@ def run_scheduled_backup(
             raise NasDataBackupScheduleError("scheduled Btrfs snapshot set is incomplete")
         snapshot_name = timestamp.strftime("auto-%Y%m%dt%H%M%Sz")
         if (
-            _common_snapshot_name(
-                references, now=timestamp, inventory_reader=inventory_reader
-            )
+            _common_snapshot_name(references, now=timestamp, inventory_reader=inventory_reader)
             != snapshot_name
         ):
             raise NasDataBackupScheduleError("scheduled Btrfs snapshot set is incomplete")
