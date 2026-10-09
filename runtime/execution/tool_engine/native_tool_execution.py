@@ -205,7 +205,9 @@ def _execute_approved_native_call(
             from .coordination_guard import invoke_coordinated
 
             output = invoke_coordinated(
-                skill, normalized.arguments, service=getattr(executor.registry, "coordination", None)
+                skill,
+                normalized.arguments,
+                service=getattr(executor.registry, "coordination", None),
             )
         except TypeError as exc:
             return (f"(TypeError: {exc})", True)

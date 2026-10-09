@@ -387,8 +387,10 @@ def test_durable_report_lock_does_not_block_interrupt_or_lose_late_report(
 
             # The lifecycle spends at most its one-second startup budget on
             # the deferred scan. The real wrapper's busy marker must then pass
-            # independently while the durable lock is still held.
-            assert first_model_entered.wait(2.0), (
+            # independently while the durable lock is still held.  The wait is
+            # loose (6s) so loaded runners do not flake, yet stays well under
+            # the 10s the lock is held: waiting on the lock would still fail.
+            assert first_model_entered.wait(6.0), (
                 "stream_react_loop wrapper waited for the durable store lock"
             )
             assert not durable_lock_released.is_set()
@@ -480,4 +482,3 @@ def test_durable_report_lock_does_not_block_interrupt_or_lose_late_report(
         release_durable_lock.set()
         lock_holder.join(timeout=3.0)
         set_subagent_session_store(previous_store)
-

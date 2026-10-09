@@ -221,6 +221,7 @@ def test_legacy_protocol_state_is_read_as_closed_hub_state(
         ),
         encoding="utf-8",
     )
+    state_path.chmod(0o600)
 
     result = native_firewall.verify()
     assert result["state"]["schema"] == "echo.native-firewall.v3"
@@ -246,6 +247,7 @@ def test_v2_state_is_read_as_closed_dlna_state(
         ),
         encoding="utf-8",
     )
+    state_path.chmod(0o600)
 
     result = native_firewall.verify()
     assert result["state"]["schema"] == "echo.native-firewall.v3"

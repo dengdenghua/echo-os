@@ -282,6 +282,11 @@ def _state_path() -> Path:
     return path
 
 
+# Root owns the managed state in production; unprivileged source tests override
+# this constant (tests/appliance/conftest.py).
+_TRUSTED_UID = 0
+
+
 def _source_test_enabled() -> bool:
     return os.environ.get("ECHO_NATIVE_FIREWALL_SOURCE_TEST") == "USE-SOURCE-RUNTIME"
 
@@ -305,7 +310,7 @@ def _read_state() -> dict[str, Any]:
         return _default_state()
     if not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
         raise OSError("managed firewall state is not a regular file")
-    expected_uid = os.getuid() if _source_test_enabled() else 0
+    expected_uid = os.getuid() if _source_test_enabled() else _TRUSTED_UID
     if os.name == "posix" and (info.st_uid != expected_uid or stat.S_IMODE(info.st_mode) != 0o600):
         raise OSError("managed firewall state must be root-owned mode 0600")
     try:
@@ -326,7 +331,7 @@ def _write_state(state: dict[str, Any]) -> None:
     parent = path.parent.lstat()
     if not stat.S_ISDIR(parent.st_mode) or stat.S_ISLNK(parent.st_mode):
         raise OSError("managed firewall state directory is unsafe")
-    expected_uid = os.getuid() if _source_test_enabled() else 0
+    expected_uid = os.getuid() if _source_test_enabled() else _TRUSTED_UID
     if os.name == "posix" and parent.st_uid != expected_uid:
         raise OSError("managed firewall state directory must be root-owned")
     text = json.dumps(state, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n"

@@ -32,6 +32,10 @@ _LOCK_PATH = Path("/run/lock/echo-os-btrfs.lock")
 _THREAD_LOCK = threading.RLock()
 _BEGIN = "# BEGIN ECHO OS MANAGED BTRFS"
 _END = "# END ECHO OS MANAGED BTRFS"
+# Root owns host configuration in production.  Unprivileged source tests override
+# these two constants (tests/appliance/conftest.py); no runtime path does.
+_TRUSTED_UID = 0
+_TRUSTED_GID = 0
 _MAX_CONFIG_BYTES = 256 * 1024
 _MAX_OUTPUT_BYTES = 256 * 1024
 _FS_UUID_PATTERN = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -106,7 +110,7 @@ def _safe_directory(path: Path, *, description: str) -> None:
         raise OSError(f"{description} is unavailable: {path}") from exc
     if not stat.S_ISDIR(info.st_mode) or path.is_symlink():
         raise OSError(f"{description} is unsafe")
-    if os.name == "posix" and (info.st_uid != 0 or info.st_mode & 0o022):
+    if os.name == "posix" and (info.st_uid != _TRUSTED_UID or info.st_mode & 0o022):
         raise OSError(f"{description} ownership or mode is unsafe")
 
 
@@ -120,7 +124,7 @@ def _read_fstab(path: Path) -> bytes | None:
         not stat.S_ISREG(info.st_mode)
         or path.is_symlink()
         or info.st_size > _MAX_CONFIG_BYTES
-        or (os.name == "posix" and (info.st_uid != 0 or info.st_mode & 0o022))
+        or (os.name == "posix" and (info.st_uid != _TRUSTED_UID or info.st_mode & 0o022))
     ):
         raise OSError("fstab is unsafe")
     payload = path.read_bytes()
@@ -200,7 +204,7 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             os.fsync(handle.fileno())
         os.chmod(temporary, 0o644)
         if os.name == "posix":
-            os.chown(temporary, 0, 0)
+            os.chown(temporary, _TRUSTED_UID, _TRUSTED_GID)
         os.replace(temporary, path)
         if os.name == "posix":
             directory = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
@@ -491,7 +495,7 @@ def apply_btrfs_raid1(
             mountpoint_created = True
             os.chmod(mountpoint, 0o755)  # nosec B103 - mountpoint is chowned to root:root on the next line; it must stay traversable
             if os.name == "posix":
-                os.chown(mountpoint, 0, 0)
+                os.chown(mountpoint, _TRUSTED_UID, _TRUSTED_GID)
             filesystem_started = True
             _run_mutating(
                 "mkfs.btrfs",

@@ -147,6 +147,11 @@ def test_public_source_test_runner_rejects_unreviewed_cli_arguments(
         return 0
 
     monkeypatch.setattr(namespace["pytest"], "main", run_selected)
+    # This test exercises CLI routing, not the checkout's owner or Git state.
+    # The source hygiene checker has its own tests and remains a real CLI gate.
+    from tools.lint import untracked_source_check
+
+    monkeypatch.setattr(untracked_source_check, "main", lambda _arguments: 0)
     assert namespace["main"]([]) == 0
     assert captured[:2] == ["-q", "--confcutdir=tests/appliance"]
     assert "tests/appliance/test_delivery_workflow_policy.py" in captured

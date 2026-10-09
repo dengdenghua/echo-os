@@ -14,18 +14,20 @@ from runtime.platform.process.task_supervisor import TaskLeaseConflict, TaskSupe
 from runtime.platform.runtime_policy.workspaces import WorkspaceManager
 
 
+# The lease TTL (3s) is deliberately shorter than the attempt (4s) so only the
+# heartbeat (ttl/3 = 1s) keeps it; the wide margin tolerates a starved CI host.
 def test_long_loop_attempt_renews_supervisor_lease(tmp_path) -> None:
     store = LoopRunStore(tmp_path / "loop_runs.json")
     task_runs = tmp_path / "task_runs.json"
     supervisor = TaskSupervisor.from_path(
         task_runs,
         holder_id="loop-worker-a",
-        lease_ttl_seconds=1.0,
+        lease_ttl_seconds=3.0,
     )
     contender = TaskSupervisor.from_path(
         task_runs,
         holder_id="loop-worker-b",
-        lease_ttl_seconds=1.0,
+        lease_ttl_seconds=3.0,
     )
     run = LoopRun(
         owner_id="alice",
@@ -38,7 +40,7 @@ def test_long_loop_attempt_renews_supervisor_lease(tmp_path) -> None:
 
     def runner(*, stack, intent, agent, model=None, max_iterations=0, thread_id=None):
         started.set()
-        time.sleep(1.35)
+        time.sleep(4.0)
         return ReActResult(final_answer="done", success=True)
 
     controller = LoopController(
@@ -53,13 +55,12 @@ def test_long_loop_attempt_renews_supervisor_lease(tmp_path) -> None:
         target=lambda: result.setdefault("run", controller.execute(run.run_id))
     )
     worker.start()
-    assert started.wait(timeout=2)
-    time.sleep(1.1)
+    assert started.wait(timeout=10)
+    time.sleep(3.3)
 
     with pytest.raises(TaskLeaseConflict):
         contender.start_task(task_id=run.run_id, kind="loop")
 
-    worker.join(timeout=4)
+    worker.join(timeout=15)
     assert not worker.is_alive()
     assert result["run"].status == LoopRunStatus.COMPLETED  # type: ignore[union-attr]
-

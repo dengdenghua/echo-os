@@ -32,6 +32,10 @@ from appliance.omv_protocol import (
 _MDADM_CONFIG = Path("/etc/mdadm/mdadm.conf")
 _LOCK_PATH = Path("/run/lock/echo-os-mdraid.lock")
 _THREAD_LOCK = threading.RLock()
+# Root owns host configuration in production.  Unprivileged source tests override
+# these two constants (tests/appliance/conftest.py); no runtime path does.
+_TRUSTED_UID = 0
+_TRUSTED_GID = 0
 _MAX_CONFIG_BYTES = 256 * 1024
 _MAX_OUTPUT_BYTES = 256 * 1024
 _BEGIN = "# BEGIN ECHO OS MANAGED MDRAID"
@@ -135,7 +139,7 @@ def _safe_config_directory(path: Path) -> None:
         raise OSError(f"mdadm configuration directory is unavailable: {path}") from exc
     if not stat.S_ISDIR(info.st_mode) or path.is_symlink():
         raise OSError("mdadm configuration directory is unsafe")
-    if os.name == "posix" and (info.st_uid != 0 or info.st_mode & 0o022):
+    if os.name == "posix" and (info.st_uid != _TRUSTED_UID or info.st_mode & 0o022):
         raise OSError("mdadm configuration directory ownership or mode is unsafe")
 
 
@@ -149,7 +153,7 @@ def _read_config(path: Path = _MDADM_CONFIG) -> bytes | None:
         not stat.S_ISREG(info.st_mode)
         or path.is_symlink()
         or info.st_size > _MAX_CONFIG_BYTES
-        or (os.name == "posix" and (info.st_uid != 0 or info.st_mode & 0o022))
+        or (os.name == "posix" and (info.st_uid != _TRUSTED_UID or info.st_mode & 0o022))
     ):
         raise OSError("mdadm configuration file is unsafe")
     payload = path.read_bytes()
@@ -268,7 +272,7 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             os.fsync(handle.fileno())
         os.chmod(temporary, 0o644)
         if os.name == "posix":
-            os.chown(temporary, 0, 0)
+            os.chown(temporary, _TRUSTED_UID, _TRUSTED_GID)
         os.replace(temporary, path)
         if os.name == "posix":
             directory = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))

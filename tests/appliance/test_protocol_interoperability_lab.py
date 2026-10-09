@@ -357,6 +357,25 @@ def test_permissions_require_real_allowed_and_denied_smb_and_nfs_paths(tmp_path:
     nfs_denied.chmod(0o555)
     output = evidence / lab.PHASE_OUTPUTS["permissions"]
     try:
+        if os.geteuid() == 0:
+            # Root can write through mode 0555; the lab must reject this as
+            # evidence of a denied protocol identity instead of claiming a pass.
+            with pytest.raises(
+                lab.ProtocolInteroperabilityLabError, match="unexpectedly wrote data"
+            ):
+                lab.run_permissions(
+                    plan_path=plan_path,
+                    smb_allowed=smb_allowed,
+                    nfs_allowed=nfs_allowed,
+                    smb_denied=smb_denied,
+                    nfs_denied=nfs_denied,
+                    confirmation=plan["confirmations"]["permissions"],
+                    output=output,
+                    mount_probe=_mount_probe,
+                    system_name="Linux",
+                )
+            assert not output.exists()
+            return
         result = lab.run_permissions(
             plan_path=plan_path,
             smb_allowed=smb_allowed,

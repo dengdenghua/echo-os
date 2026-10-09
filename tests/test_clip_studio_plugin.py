@@ -703,5 +703,3 @@ def test_clip_studio_registers_agent_callable_skills(monkeypatch, tmp_path) -> N
     assert undone["stepsTaken"] == 1
     project = registry.get("clip_studio.project_get").handler(project_id="agent-edit", view="full")
     assert project["textClips"] == []
-
-

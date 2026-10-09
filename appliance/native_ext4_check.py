@@ -19,6 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from appliance import native_ext4 as _native_ext4
 from appliance.native_ext4 import _FSTAB_PATH, _managed_entries, _read_fstab, _volume_transaction
 from appliance.native_mdraid import _MDADM_CONFIG, managed_mdraid1_arrays
 from appliance.omv_protocol import (
@@ -299,7 +300,7 @@ def apply_ext4_check(
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
     desired = validate_ext4_check_desired(dict(desired_state))
-    if os.name == "posix" and os.geteuid() != 0:
+    if os.name == "posix" and os.geteuid() != _native_ext4._TRUSTED_UID:
         raise OSError("EXT4 offline check requires root")
     with _volume_transaction():
         plan = _build_plan(

@@ -233,4 +233,3 @@ def test_unmapped_wrapper_stays_fail_closed(
             timeout_seconds=30,
             expected_source_sha256=sha256(wrapper.read_bytes()).hexdigest(),
         )
-

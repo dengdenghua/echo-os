@@ -13,25 +13,25 @@ DEFAULT_CREDENTIAL = Path("/var/lib/echo-os/docker-proxy-token")
 _TOKEN = re.compile(rb"[0-9a-f]{64}")
 
 
-def _validate_directory(directory: Path) -> None:
+def _validate_directory(directory: Path, *, trusted_uid: int, trusted_gid: int) -> None:
     info = directory.lstat()
     if (
         directory.is_symlink()
         or not stat.S_ISDIR(info.st_mode)
-        or info.st_uid != 0
-        or info.st_gid != 0
+        or info.st_uid != trusted_uid
+        or info.st_gid != trusted_gid
         or stat.S_IMODE(info.st_mode) != 0o700
     ):
         raise RuntimeError("Docker credential directory must be root-owned mode 0700")
 
 
-def _validate_existing(path: Path) -> None:
+def _validate_existing(path: Path, *, trusted_uid: int, trusted_gid: int) -> None:
     info = path.lstat()
     if (
         path.is_symlink()
         or not stat.S_ISREG(info.st_mode)
-        or info.st_uid != 0
-        or info.st_gid != 0
+        or info.st_uid != trusted_uid
+        or info.st_gid != trusted_gid
         or stat.S_IMODE(info.st_mode) != 0o600
         or info.st_size != 64
     ):
@@ -45,17 +45,26 @@ def _validate_existing(path: Path) -> None:
         raise RuntimeError("Docker proxy credential has invalid content")
 
 
-def ensure_credential(path: Path = DEFAULT_CREDENTIAL) -> bool:
-    """Create one random token atomically; return whether a file was created."""
+def ensure_credential(
+    path: Path = DEFAULT_CREDENTIAL,
+    *,
+    trusted_uid: int = 0,
+    trusted_gid: int = 0,
+) -> bool:
+    """Create one random token atomically; return whether a file was created.
 
-    if os.geteuid() != 0:
+    ``trusted_uid``/``trusted_gid`` default to root and are only overridden by
+    tests that run unprivileged; production callers never pass them.
+    """
+
+    if os.geteuid() != trusted_uid:
         raise RuntimeError("Docker proxy credential provisioning requires root")
     if not path.is_absolute() or path.name != "docker-proxy-token":
         raise RuntimeError("Docker proxy credential path is not canonical")
     directory = path.parent
-    _validate_directory(directory)
+    _validate_directory(directory, trusted_uid=trusted_uid, trusted_gid=trusted_gid)
     try:
-        _validate_existing(path)
+        _validate_existing(path, trusted_uid=trusted_uid, trusted_gid=trusted_gid)
         return False
     except FileNotFoundError:
         pass
@@ -75,7 +84,7 @@ def ensure_credential(path: Path = DEFAULT_CREDENTIAL) -> bool:
             os.fsync(descriptor)
         finally:
             os.close(descriptor)
-        os.chown(temporary, 0, 0)
+        os.chown(temporary, trusted_uid, trusted_gid)
         os.chmod(temporary, 0o600)
         os.replace(temporary, path)
         directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
@@ -85,7 +94,7 @@ def ensure_credential(path: Path = DEFAULT_CREDENTIAL) -> bool:
             os.close(directory_fd)
     finally:
         temporary.unlink(missing_ok=True)
-    _validate_existing(path)
+    _validate_existing(path, trusted_uid=trusted_uid, trusted_gid=trusted_gid)
     return True
 
 

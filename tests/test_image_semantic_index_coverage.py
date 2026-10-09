@@ -164,8 +164,9 @@ def test_inference_wait_honors_cancellation(monkeypatch):
     worker = threading.Thread(target=hold_slot)
     worker.start()
     assert entered.wait(timeout=1)
-    with pytest.raises(isi.ImageInferenceCancelled), isi.inference_slot(
-        should_cancel=lambda: True, timeout=1
+    with (
+        pytest.raises(isi.ImageInferenceCancelled),
+        isi.inference_slot(should_cancel=lambda: True, timeout=1),
     ):
         pass
     release.set()
@@ -186,8 +187,9 @@ def test_inference_wait_honors_pause(monkeypatch):
     worker = threading.Thread(target=hold_slot)
     worker.start()
     assert entered.wait(timeout=1)
-    with pytest.raises(isi.ImageInferencePaused), isi.inference_slot(
-        should_pause=lambda: True, timeout=1
+    with (
+        pytest.raises(isi.ImageInferencePaused),
+        isi.inference_slot(should_pause=lambda: True, timeout=1),
     ):
         pass
     release.set()

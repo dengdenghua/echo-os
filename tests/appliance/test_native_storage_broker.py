@@ -562,7 +562,18 @@ def test_real_unix_socket_enforces_peer_identity_and_health_contract(tmp_path) -
     denied_thread = threading.Thread(target=denied.serve_forever, daemon=True)
     denied_thread.start()
     try:
-        with pytest.raises(NativeStorageBrokerError, match="not authorized"):
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as peer:
+            peer.settimeout(2.0)
+            peer.connect(str(socket_path))
+            with peer.makefile("rb") as stream:
+                rejection = json.loads(stream.readline(MAX_MESSAGE_BYTES + 1))
+        assert rejection["ok"] is False
+        assert rejection["error"]["type"] == "permission-denied"
+        assert "not authorized" in rejection["error"]["message"]
+        # Unauthorized peers are rejected before their request is read, so
+        # the denial cannot echo the request ID. The client rejects that
+        # uncorrelated response rather than accepting its error payload.
+        with pytest.raises(NativeStorageBrokerError, match="response identity is invalid"):
             NativeStorageBrokerClient(socket_path, timeout=2.0).probe()
     finally:
         denied.shutdown()

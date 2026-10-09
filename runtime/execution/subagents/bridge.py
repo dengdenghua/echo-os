@@ -1294,9 +1294,7 @@ def call_subagent(
         if _governance_store is None or not _governance_root_id:
             return None
         try:
-            return _public_governance_snapshot(
-                _governance_store.snapshot(_governance_root_id)
-            )
+            return _public_governance_snapshot(_governance_store.snapshot(_governance_root_id))
         except Exception as exc:  # noqa: BLE001 — telemetry must never fail a run
             _log.debug("subagent governance snapshot skipped: %s", exc)
             return None
@@ -1392,8 +1390,10 @@ def call_subagent(
             try:
                 from .governance import governance_required
             except ImportError:
+
                 def governance_required() -> bool:
                     return False
+
             if governance_required():
                 _required_reject = {
                     "status": "rejected",

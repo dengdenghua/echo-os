@@ -709,13 +709,13 @@ class TestCreateAppDefaultOrchestrator:
             )
             assert r.status_code == 200
             bid = r.json()["batch_id"]
-            for _ in range(100):
-                g = client.get(f"/api/agents/parallel/batch/{bid}").json()
-                if g["status"] == "completed":
-                    break
-                time.sleep(0.02)
+            # Synchronize with the actual completion event. A fixed two-second
+            # polling window mistakes a slow durable store for failed dispatch.
+            stream = client.get(f"/api/agents/parallel/stream/{bid}")
+            assert stream.status_code == 200
+            assert "event: batch_complete" in stream.text
             g = client.get(f"/api/agents/parallel/batch/{bid}").json()
-            assert g["completed_tasks"] == 1
+            assert g["completed_tasks"] == 1, g
             assert g["results"][0]["result"] == "ECHO[x]: hi"
         finally:
             orchestrator.shutdown(wait=False)
