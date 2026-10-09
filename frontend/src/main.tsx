@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { AppRouter } from "./router";
 import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
 import { I18nProvider } from "./core/i18n/context";
 import { getLocaleFromCookie } from "./core/i18n/cookies";
 import { detectLocale, normalizeLocale } from "./core/i18n/locale";
@@ -43,6 +44,9 @@ async function bootstrap() {
             <AuthProvider>
               <AppearanceBootstrap />
               <AppRouter />
+              {/* One toaster for the whole app shell: the desktop and in-process
+                  workbench routes share it, and the menu bar stays visible. */}
+              <Toaster position="top-right" offset={{ top: 40, right: 16 }} />
             </AuthProvider>
           </I18nProvider>
         </ThemeProvider>

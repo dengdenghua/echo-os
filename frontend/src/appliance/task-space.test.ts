@@ -7,6 +7,7 @@ import {
   projectionCounts,
   replaceProjectedTaskCounts,
   resumeEchoTaskExecution,
+  startEchoTask,
   takeoverEchoTask,
   useEchoTaskProjection,
 } from "./task-space";
@@ -108,6 +109,60 @@ describe("Echo task projection client", () => {
         body: JSON.stringify({ approved: true, reason: "设备管理员批准" }),
       },
     );
+  });
+
+  it("starts a background task from a desktop intent", async () => {
+    const payload = {
+      schema: "echo.task_run_start.v1",
+      accepted: true,
+      state: "turn_started",
+      thread_id: "t123",
+      turn_id: "trn_1",
+      user_item_id: "itm_user_1",
+      approval_delivery: "server_hold",
+    };
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(JSON.stringify(payload), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(startEchoTask("整理下载文件夹", "general")).resolves.toEqual(
+      payload,
+    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/task-runs/start", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer browser-session",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: "整理下载文件夹", agentId: "general" }),
+    });
+
+    await startEchoTask("写周报");
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/task-runs/start",
+      expect.objectContaining({ body: JSON.stringify({ prompt: "写周报" }) }),
+    );
+  });
+
+  it("explains why a background task could not start", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+        .mockResolvedValueOnce(new Response("{}", { status: 401 }))
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ schema: "other" }), { status: 202 }),
+        ),
+    );
+    await expect(startEchoTask("写周报")).rejects.toThrow("Agent 暂时不可用");
+    await expect(startEchoTask("写周报")).rejects.toThrow("登录已失效");
+    await expect(startEchoTask("写周报")).rejects.toThrow("不兼容的启动结果");
   });
 
   it("loads the read-only Agent task projection with appliance authentication", async () => {

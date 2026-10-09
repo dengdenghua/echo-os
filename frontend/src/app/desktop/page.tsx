@@ -126,11 +126,7 @@ import { DeviceLinkPanel } from "@/appliance/device-link-panel";
 import { resolveSystemSettingsSurface } from "@/appliance/system-settings-surface";
 import { TaskSpacePanel } from "@/appliance/task-space-panel";
 import { useAgents } from "@/core/agents/hooks";
-import {
-  discardPendingNewSession,
-  writePendingNewSession,
-} from "@/core/threads/pending-new-session";
-import type { EchoTaskProjection } from "@/appliance/task-space";
+import { startEchoTask, type EchoTaskProjection } from "@/appliance/task-space";
 import { DockTaskRail } from "@/appliance/dock-task-rail";
 import {
   SystemAppWindowProvider,
@@ -1964,21 +1960,31 @@ export default function DesktopShellPage() {
                 taskWorkspaceRoute({ prompt, agentId }),
               )
             }
-            onDispatchIntent={(prompt, agentId) => {
-              // 复用工作台"一次性自动发送"交接：新会话挂载时读出并立即发送，
-              // 读后即清，刷新不会重复发送。工作台窗口就是这条会话的客户端，
-              // 需要授权的操作照常在窗口里请用户确认，不会在后台被静默拒绝。
-              writePendingNewSession(prompt);
-              openApp(
-                DESKTOP_WORKBENCH_APP,
-                taskWorkspaceRoute({ prompt, agentId }),
-              );
-              // 任务登记后尽快出现在桌面上，不必等下一轮轮询。
-              window.setTimeout(refreshTaskProjection, 2_000);
-              // 工作台没能及时接手时撤回交接，避免之后手动打开的新会话被
-              // 意外自动发送；提示词仍留在工作台输入框里，可以手动发送。
-              window.setTimeout(() => discardPendingNewSession(prompt), 15_000);
-            }}
+            onDispatchIntent={(prompt, agentId) =>
+              // 后台启动，不开工作台窗口。需要授权的操作由服务端挂起，停在
+              // 任务空间等用户决定，不会因为没人看着而被超时拒绝。
+              startEchoTask(prompt, agentId).then(
+                () => {
+                  // 任务登记后尽快出现在桌面和任务轨上，不必等下一轮轮询。
+                  refreshTaskProjection();
+                  window.setTimeout(refreshTaskProjection, 2_000);
+                  return true;
+                },
+                (error: unknown) => {
+                  toast.error(
+                    error instanceof Error ? error.message : "无法启动任务",
+                    {
+                      description: "已在工作台里保留草稿，检查后可以手动发送。",
+                    },
+                  );
+                  openApp(
+                    DESKTOP_WORKBENCH_APP,
+                    taskWorkspaceRoute({ prompt, agentId }),
+                  );
+                  return false;
+                },
+              )
+            }
             onOpenApp={(appId) => {
               const app = visibleDesktopApps.find(
                 (entry) => entry.route === appId,

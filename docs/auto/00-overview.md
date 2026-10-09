@@ -22,6 +22,6 @@ OS 唯一前端提供，不依赖同级项目、不加载第二套 Agent WebUI�
 ## 规模
 
 - Python 模块：**1556** 个（runtime/）
-- TSX 组件：**845** 个（frontend/src）
-- 后端测试：**1274** 个
+- TSX 组件：**849** 个（frontend/src）
+- 后端测试：**1275** 个
 

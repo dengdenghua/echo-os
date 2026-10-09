@@ -871,3 +871,81 @@ def test_task_runs_router_terminal_recovery_is_marked_and_deduplicated(
     assert duplicate.json()["detail"] == "task recovery is already queued or running"
     assert len(gateway.calls) == 1
 
+
+def _start_app(tmp_path, gateway, *, require_auth: bool = False):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task_runs.json", holder_id="worker")
+    app = FastAPI()
+    if gateway is not None:
+        app.state.realtime_gateway = gateway
+    kwargs = {}
+    if require_auth:
+        identity_store = IdentityStore()
+        identity_store.add(Identity(actor_id="alice"), api_key_plaintext="sk-alice")
+        kwargs = {"identity_store": identity_store, "require_auth": True}
+    app.include_router(create_task_runs_router(supervisor=supervisor, **kwargs))
+    return TestClient(app)
+
+
+def test_start_runs_a_new_server_held_turn_for_the_caller(tmp_path):
+    gateway = _FakeRecoveryGateway()
+    client = _start_app(tmp_path, gateway, require_auth=True)
+
+    response = client.post(
+        "/api/task-runs/start",
+        json={"prompt": "  整理下载文件夹  ", "agentId": "general"},
+        headers={"Authorization": "Bearer sk-alice"},
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["state"] == "turn_started"
+    assert body["turn_id"] == "trn_recovery_1"
+    assert body["approval_delivery"] == "server_hold"
+    params, connection = gateway.calls[0]
+    assert params["threadId"] == body["thread_id"]
+    assert params["threadId"].startswith("t")
+    assert params["userItemId"] == body["user_item_id"]
+    assert params["userItemId"].startswith("itm_user_")
+    assert params["approvalPolicy"] == "on-request"
+    [block] = params["input"]
+    assert block["text"] == "整理下载文件夹"
+    context = block["metadata"]["context"]
+    assert context["agent_name"] == "general"
+    assert context["approval_delivery"] == "server_hold"
+    # The task belongs to the authenticated caller, so only they can approve it.
+    assert connection.actor_id == "alice"
+    # The synthetic owner detaches; it can never answer an approval itself.
+    assert gateway.unwatched == [body["thread_id"]]
+
+
+def test_start_requires_auth_and_a_prompt(tmp_path):
+    gateway = _FakeRecoveryGateway()
+    client = _start_app(tmp_path, gateway, require_auth=True)
+
+    unauthenticated = client.post("/api/task-runs/start", json={"prompt": "写周报"})
+    blank = client.post(
+        "/api/task-runs/start",
+        json={"prompt": "   "},
+        headers={"Authorization": "Bearer sk-alice"},
+    )
+    forged_agent = client.post(
+        "/api/task-runs/start",
+        json={"prompt": "写周报", "agentId": "../admin"},
+        headers={"Authorization": "Bearer sk-alice"},
+    )
+
+    assert unauthenticated.status_code == 401
+    assert blank.status_code == 422
+    assert forged_agent.status_code == 422
+    assert gateway.calls == []
+
+
+def test_start_reports_an_unavailable_runtime(tmp_path):
+    missing = _start_app(tmp_path, None).post("/api/task-runs/start", json={"prompt": "写周报"})
+    busy = _start_app(
+        tmp_path,
+        _FakeRecoveryGateway(error=_RpcError(JsonRpcErrorCode.SERVER_BUSY, "busy")),
+    ).post("/api/task-runs/start", json={"prompt": "写周报"})
+
+    assert missing.status_code == 503
+    assert busy.status_code == 503

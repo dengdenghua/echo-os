@@ -48,7 +48,11 @@ __all__ = [
     "_consume_paused_task_resume_intent",
     "_record_pending_resume_intent",
 ]
-from runtime.sensing.gateway.realtime_approval import GatewayApprovalProvider
+from runtime.sensing.gateway.realtime_approval import (
+    SERVER_HOLD_APPROVAL,
+    GatewayApprovalProvider,
+    ServerHoldApprovalProvider,
+)
 from runtime.sensing.gateway.realtime_execution import (
     TurnExecutionRequest,
     bind_turn_execution,
@@ -961,9 +965,9 @@ async def _start_turn(
         # The private intent marker is preferred, but an authenticated
         # transport may carry the authoritative scope only on Session. Never
         # let a missing marker widen checkpoint selection to the whole store.
-        resume_scope = trusted_scope_from_user_context(intent.user_context) or trusted_scope_from_session(
-            current_session()
-        )
+        resume_scope = trusted_scope_from_user_context(
+            intent.user_context
+        ) or trusted_scope_from_session(current_session())
         try:
             confirmed_resume_intent = await runtime._consume_confirmed_resume_intent(
                 thread_id, text, scope=resume_scope
@@ -1046,7 +1050,18 @@ async def _start_turn(
             turn_id=turn.id,
             trace_store=runtime._trace_store,
         )
-        provider: ApprovalProvider = runtime._wrap_with_policy(gateway_provider)
+        interactive_provider: ApprovalProvider = gateway_provider
+        if intent.user_context.get("approval_delivery") == SERVER_HOLD_APPROVAL:
+            # Desktop-dispatched turns have no client watching the socket.
+            # Park approvals on the task record (Task Space answers them)
+            # instead of a prompt nobody sees; policy decisions are unchanged.
+            interactive_provider = ServerHoldApprovalProvider(
+                gateway_provider,
+                thread_id=thread_id,
+                turn_id=turn.id,
+                trace_store=runtime._trace_store,
+            )
+        provider: ApprovalProvider = runtime._wrap_with_policy(interactive_provider)
         agent = runtime._resolve_agent(validated)
         agent = _resolve_cowork_responder_agent(
             runtime,
@@ -1131,11 +1146,13 @@ async def _start_turn(
             )
             if _team_pattern_execution == "focused":
                 topology_id = None
-            group_fanout = _team_pattern_execution in {"fanout", "presence"} or str(
-                _cowork_context.get("serve_mesh") or ""
-            ).strip() == "1" or (
-                bool(_cowork_context.get("cowork_is_multi"))
-                and len(_cowork_context.get("cowork_responders") or []) > 1
+            group_fanout = (
+                _team_pattern_execution in {"fanout", "presence"}
+                or str(_cowork_context.get("serve_mesh") or "").strip() == "1"
+                or (
+                    bool(_cowork_context.get("cowork_is_multi"))
+                    and len(_cowork_context.get("cowork_responders") or []) > 1
+                )
             )
             coordinated = _team_pattern_execution == "orchestrated"
             orchestrated = (
@@ -1246,8 +1263,7 @@ async def _start_turn(
                     "code": (
                         "execution_unavailable"
                         if selection_error
-                        else
-                        "codex_event_backpressure"
+                        else "codex_event_backpressure"
                         if event_backpressure
                         else "turn_driver_exception"
                     ),

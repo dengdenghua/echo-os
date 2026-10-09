@@ -11,6 +11,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import threading
+import time
+from collections.abc import Callable
 from concurrent.futures import CancelledError
 from typing import Any
 
@@ -19,11 +23,31 @@ from runtime.safety.approval.approval_gate import (
     ApprovalDecision,
     ApprovalProvider,
     ApprovalRequest,
+    approval_action_for_tool,
 )
 from runtime.safety.approval.cancellation import current_cancellation_token
 from runtime.sensing.gateway.realtime_gateway import EventEmitter, _ApprovalError
 
 _logger = logging.getLogger(__name__)
+
+#: Per-turn opt-in carried in the turn context. Only this exact value is
+#: honoured; it changes *where* an ask/confirm decision is answered, never
+#: whether one is required.
+SERVER_HOLD_APPROVAL = "server_hold"
+_SERVER_HOLD_POLL_S = 0.5
+_SERVER_HOLD_DEFAULT_MAX_S = 3600.0
+_SERVER_HOLD_MIN_S = 30.0
+_SERVER_HOLD_MAX_S = 24 * 3600.0
+
+
+def _server_hold_max_seconds() -> float:
+    """How long a parked task waits for a decision (env-tunable, clamped)."""
+    raw = os.environ.get("ECHO_SERVER_HOLD_APPROVAL_MAX_S", "").strip()
+    try:
+        value = float(raw) if raw else _SERVER_HOLD_DEFAULT_MAX_S
+    except ValueError:
+        value = _SERVER_HOLD_DEFAULT_MAX_S
+    return min(max(value, _SERVER_HOLD_MIN_S), _SERVER_HOLD_MAX_S)
 
 
 class GatewayApprovalProvider(ApprovalProvider):
@@ -134,3 +158,214 @@ class GatewayApprovalProvider(ApprovalProvider):
             )
         except Exception:  # noqa: BLE001
             _logger.debug("approval bridge: trace record failed", exc_info=True)
+
+
+class ServerHoldApprovalProvider(ApprovalProvider):
+    """Answer approvals from the durable task record instead of a socket prompt.
+
+    A desktop-dispatched turn runs with nobody watching its WebSocket. Asking
+    over the socket there means a silent "timeout" denial after the dialog
+    deadline. This provider instead parks the task as ``waiting_approval``
+    (so the Task Space and the desktop show it), keeps the turn and its lease
+    alive, and waits for ``POST /api/task-runs/{id}/approval-decision``. The
+    exact call that was held then proceeds or is declined in the same turn, so
+    nothing needs a resume turn or a manual "continue" message.
+
+    Only *where* the question is answered changes: the risk matrix, deny
+    rules, auto-approve and bypass are decided before this provider is asked.
+    Holds are serialised per turn so one decision never covers parallel calls.
+    Without a bound execution lease there is no record to park, so the
+    interactive provider is used unchanged.
+    """
+
+    def __init__(
+        self,
+        interactive: ApprovalProvider,
+        *,
+        thread_id: str,
+        turn_id: str,
+        trace_store: Any = None,
+        max_wait_s: float | None = None,
+        poll_interval_s: float = _SERVER_HOLD_POLL_S,
+        sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._interactive = interactive
+        self._thread_id = thread_id
+        self._turn_id = turn_id
+        self._trace_store = trace_store
+        self._max_wait_s = _server_hold_max_seconds() if max_wait_s is None else max_wait_s
+        self._poll_interval_s = poll_interval_s
+        self._sleep = sleep
+        self._clock = clock
+        self._lock = threading.Lock()
+
+    def request(self, req: ApprovalRequest, *, timeout: float = 120.0) -> ApprovalDecision:
+        from runtime.platform.process.session import current_session
+
+        guard = getattr(current_session(), "execution_lease", None)
+        if guard is None or guard.bound_task_id is None:
+            return self._interactive.request(req, timeout=timeout)
+        # The caller's dialog timeout is for an interactive prompt; a parked
+        # task waits for its own (much longer) deadline.
+        with self._lock:
+            return self._hold(guard, req)
+
+    def _hold(self, guard: Any, req: ApprovalRequest) -> ApprovalDecision:
+        from runtime.platform.observability.redactor import redact_text
+        from runtime.platform.process.task_supervisor import LostTaskLease, TaskRunStatus
+
+        try:
+            record = guard.assert_held()
+            seen = len(record.metadata.get("approval_decisions") or [])
+            risk, action, _policy = approval_action_for_tool(req.tool_name, req.args_preview)
+            reason = req.detail or f"{req.tool_name} requires your approval"
+            guard.transition(
+                TaskRunStatus.WAITING_APPROVAL,
+                require_open=True,
+                reason=reason,
+                metadata_patch={
+                    "approval_required": True,
+                    "approval_denied": False,
+                    "approval_tool_name": req.tool_name,
+                    "approval_action": getattr(action, "value", str(action)),
+                    "approval_reason": reason,
+                    "approval_delivery": SERVER_HOLD_APPROVAL,
+                    "approval_hold": {
+                        "tool_call_id": req.tool_call_id,
+                        "turn_id": self._turn_id,
+                        "risk": getattr(risk, "level", None),
+                        "args_preview": redact_text(req.args_preview or "")[:300],
+                    },
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 — no record to park on; deny safely
+            _logger.warning("server-hold approval: cannot park %s: %s", req.tool_name, exc)
+            return self._finish(
+                guard=None,
+                req=req,
+                approved=False,
+                reason="error: approval hold unavailable",
+                label="error",
+            )
+
+        deadline = self._clock() + self._max_wait_s
+        cancellation = current_cancellation_token()
+        while True:
+            if cancellation.is_cancelled:
+                return self._finish(
+                    guard=guard, req=req, approved=False, reason="interrupted", label="interrupted"
+                )
+            try:
+                record = guard.assert_held()
+            except LostTaskLease:
+                # Taken over, expired or the turn is closing: nobody here can
+                # act on a decision any more.
+                return self._finish(
+                    guard=None,
+                    req=req,
+                    approved=False,
+                    reason="connection_lost",
+                    label="connection_lost",
+                )
+            if record.status != TaskRunStatus.WAITING_APPROVAL:
+                new_decisions = list(record.metadata.get("approval_decisions") or [])[seen:]
+                if not new_decisions:
+                    # An operator may pause the task without answering the
+                    # approval. Releasing this waiter must not undo that pause.
+                    return self._finish(
+                        guard=guard,
+                        req=req,
+                        approved=False,
+                        reason="interrupted",
+                        label="interrupted",
+                        resume_task=False,
+                    )
+                approved = new_decisions[0].get("approved") is True
+                return self._finish(
+                    guard=guard,
+                    req=req,
+                    approved=approved,
+                    reason="accept" if approved else "decline",
+                    label="approved" if approved else "rejected",
+                )
+            if self._clock() >= deadline:
+                return self._finish(
+                    guard=guard, req=req, approved=False, reason="timeout", label="timeout"
+                )
+            self._sleep(self._poll_interval_s)
+
+    def _finish(
+        self,
+        *,
+        guard: Any,
+        req: ApprovalRequest,
+        approved: bool,
+        reason: str,
+        label: str,
+        resume_task: bool = True,
+    ) -> ApprovalDecision:
+        """Hand the turn back in the state an interactive answer leaves it in.
+
+        A socket prompt never changes the task status, so the loops expect a
+        running task afterwards: an approval continues, a rejection reaches the
+        agent as a declined observation, and a timeout takes the existing
+        "could not reach the user" path.
+        """
+        if guard is not None:
+            from runtime.platform.process.task_supervisor import (
+                TERMINAL_TASK_STATUSES,
+                TaskRunStatus,
+            )
+
+            try:
+                record = guard.assert_held()
+                if record.status not in TERMINAL_TASK_STATUSES:
+                    status = record.status
+                    if resume_task and (
+                        status == TaskRunStatus.WAITING_APPROVAL
+                        or (label == "rejected" and status == TaskRunStatus.PAUSED)
+                    ):
+                        status = TaskRunStatus.RUNNING
+                    guard.transition(
+                        status,
+                        require_open=True,
+                        reason="" if status == TaskRunStatus.RUNNING else record.terminal_reason,
+                        metadata_patch={
+                            "approval_required": False,
+                            "approval_hold": None,
+                            "approval_hold_outcome": label,
+                        },
+                    )
+            except Exception:  # noqa: BLE001 — the loop's own lease checks report a lost task
+                _logger.debug("server-hold approval: could not resume task", exc_info=True)
+        if not approved:
+            _logger.info("server-hold approval: %s denied (%s)", req.tool_name, label)
+        result = ApprovalDecision(approved=approved, reason=reason)
+        self._record_approval(req, result, decision_label=label)
+        return result
+
+    def _record_approval(
+        self,
+        req: ApprovalRequest,
+        decision: ApprovalDecision,
+        *,
+        decision_label: str,
+    ) -> None:
+        if self._trace_store is None:
+            return
+        try:
+            from runtime.safety.audit.trust_gateway import trace_metadata_for_tool
+
+            self._trace_store.record_approval(
+                thread_id=self._thread_id or req.thread_id,
+                turn_id=self._turn_id,
+                tool_name=req.tool_name,
+                tool_call_id=req.tool_call_id,
+                args_preview=req.args_preview,
+                decision=decision_label,
+                reason=decision.reason or "",
+                metadata=trace_metadata_for_tool(req, detail=req.detail),
+            )
+        except Exception:  # noqa: BLE001
+            _logger.debug("server-hold approval: trace record failed", exc_info=True)

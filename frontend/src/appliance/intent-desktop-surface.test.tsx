@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   IntentDesktopSurface,
@@ -293,8 +299,8 @@ describe("IntentDesktopSurface", () => {
     );
   });
 
-  it("dispatches the intent to the agent on Enter and keeps drafting as an explicit choice", () => {
-    const onDispatchIntent = vi.fn();
+  it("dispatches the intent to the agent on Enter and keeps drafting as an explicit choice", async () => {
+    const onDispatchIntent = vi.fn().mockResolvedValue(true);
     const onOpenWorkbench = vi.fn();
     renderSurface({ onDispatchIntent, onOpenWorkbench, tasks: [] });
     const input = screen.getByPlaceholderText(/输入意图/i);
@@ -308,9 +314,11 @@ describe("IntentDesktopSurface", () => {
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onDispatchIntent).toHaveBeenCalledWith("整理下载文件夹", "general");
     expect(onOpenWorkbench).not.toHaveBeenCalled();
-    expect(toast.success).toHaveBeenCalledWith(
-      "已交给 Echo，开始执行",
-      expect.anything(),
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "已交给 Echo，在后台执行",
+        expect.anything(),
+      ),
     );
     expect((input as HTMLInputElement).value).toBe("");
 
@@ -322,6 +330,19 @@ describe("IntentDesktopSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: "在工作台中编辑" }));
     expect(onOpenWorkbench).toHaveBeenLastCalledWith("总结照片", "general");
     expect(onDispatchIntent).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not announce a dispatch the server did not accept", async () => {
+    const onDispatchIntent = vi.fn().mockResolvedValue(false);
+    renderSurface({ onDispatchIntent, tasks: [] });
+    const input = screen.getByPlaceholderText(/输入意图/i);
+    fireEvent.change(input, { target: { value: "整理下载文件夹" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(onDispatchIntent).toHaveBeenCalledTimes(1));
+    // 让 dispatch 的 then 回调跑完再断言。
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("ignores Enter while an input method is composing", () => {

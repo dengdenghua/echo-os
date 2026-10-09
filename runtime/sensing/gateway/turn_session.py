@@ -222,6 +222,11 @@ def build_turn_metadata(
         value = stored_meta.get("personal_workspace_enabled")
     if isinstance(value, bool):
         metadata["personal_workspace_enabled"] = value
+    # Where this turn's ask/confirm approvals are answered. Per turn only
+    # (never inherited from the thread) and only the exact opt-in value: it
+    # moves the question to the Task Space, it cannot skip or weaken it.
+    if ctx.get("approval_delivery") == "server_hold":
+        metadata["approval_delivery"] = "server_hold"
 
     runtime_surfaces = ctx.get("runtime_surfaces")
     if runtime_surfaces is None and not explicit_conversation_mode:

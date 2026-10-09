@@ -7427,6 +7427,35 @@
         "title": "TaskResumeExecutionRequest",
         "type": "object"
       },
+      "TaskStartRequest": {
+        "description": "Start one agent task from a one-line intent (the desktop intent box).",
+        "properties": {
+          "agentId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentid"
+          },
+          "prompt": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "TaskStartRequest",
+        "type": "object"
+      },
       "TaskTakeoverRequest": {
         "properties": {
           "reason": {
@@ -46131,6 +46160,50 @@
           }
         },
         "summary": "Api Task Runs Recovery Queue",
+        "tags": [
+          "task-runs"
+        ]
+      }
+    },
+    "/api/task-runs/start": {
+      "post": {
+        "description": "Start an agent task on a new thread with nobody watching it.\n\nThis is the same server-resident ``turn/start`` a workbench sends,\nreusing the recovery bridge above, with one difference: the turn opts\ninto ``approval_delivery: server_hold``. Its ask/confirm approvals then\npark the task as ``waiting_approval`` for the Task Space instead of\ntiming out on a socket nobody watches. Auth, ownership, the risk matrix\nand auto-approve/bypass rules are exactly those of a workbench turn.",
+        "operationId": "api_task_run_start_api_task_runs_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Task Run Start Api Task Runs Start Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Task Run Start",
         "tags": [
           "task-runs"
         ]

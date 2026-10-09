@@ -293,6 +293,49 @@ export async function decideEchoTaskApproval(
   return result;
 }
 
+export type EchoTaskStartResponse = {
+  schema: "echo.task_run_start.v1";
+  accepted: boolean;
+  state: "turn_started" | "queued" | "finished";
+  thread_id: string;
+  turn_id: string | null;
+  user_item_id: string;
+  approval_delivery: "server_hold";
+};
+
+/**
+ * 从桌面意图直接启动一个后台任务：不需要打开工作台窗口。需要授权的操作
+ * 会停在任务空间里等用户决定，而不是因为没人看着而被超时拒绝。
+ */
+export async function startEchoTask(
+  prompt: string,
+  agentId?: string,
+): Promise<EchoTaskStartResponse> {
+  const response = await fetch("/api/task-runs/start", {
+    method: "POST",
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt, ...(agentId ? { agentId } : {}) }),
+  });
+  if (!response.ok) {
+    const detail = await response
+      .json()
+      .then((body) => body?.detail)
+      .catch(() => null);
+    if (response.status === 401) throw new Error("登录已失效，请重新登录");
+    if (response.status === 503)
+      throw new Error("Agent 暂时不可用，请稍后再试");
+    throw new Error(typeof detail === "string" ? detail : "无法启动任务");
+  }
+  const result = (await response.json()) as EchoTaskStartResponse;
+  if (result.schema !== "echo.task_run_start.v1" || !result.thread_id) {
+    throw new Error("任务服务返回了不兼容的启动结果");
+  }
+  return result;
+}
+
 export function projectionCounts(tasks: EchoTaskProjection[]): EchoTaskCounts {
   const counts: EchoTaskCounts = {
     total: tasks.length,

@@ -653,6 +653,122 @@ def test_real_approval_wait_retains_lease_and_executes_only_after_accept(
     assert saved is not None and saved.status.value == "completed"
 
 
+def _wait_until(predicate: Any, *, timeout: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        time.sleep(0.02)
+    raise AssertionError("condition not reached")
+
+
+@pytest.mark.parametrize("approved", [True, False])
+def test_server_held_approval_waits_without_a_client_then_resumes_in_place(
+    lease_gateway: SimpleNamespace, monkeypatch: pytest.MonkeyPatch, approved: bool
+) -> None:
+    """A desktop-dispatched turn parks in the Task Space instead of timing out.
+
+    The client disconnects right after the task is admitted, like the desktop
+    intent box. The held call must neither run nor be silently denied after
+    the socket approval timeout (2 s in this fixture); the Task Space decision
+    then lets exactly that call run (or be declined) in the same turn.
+    """
+    import runtime.sensing.gateway._realtime_react_stream_drive as drive_rs
+
+    case = lease_gateway
+    case.executor.registry.register(
+        Skill(
+            name="write_lease_marker",
+            description="Write a synthetic marker after explicit user approval.",
+            affinity=["write"],
+            trusted_source="skill://public/lease-marker",
+            handler=case.marker_handler,
+        ),
+        verify_tests=False,
+    )
+    case.runtime._default_agent.extra_skills.append("write_lease_marker")
+    case.model.sequence = [("write_lease_marker", "first")]
+    monkeypatch.setattr(drive_rs, "_SINGLE_AGENT_HEARTBEAT_INTERVAL_S", 0.02)
+    monkeypatch.setattr(drive_rs, "_lease_renewal_interval_s", lambda ttl: 0.02)
+
+    with case.client.websocket_connect("/api/realtime") as ws:
+        ws.send_text(
+            encode_message(
+                JsonRpcRequest(
+                    id=1,
+                    method="turn/start",
+                    params={
+                        "threadId": f"lease-hold-{case.branch}",
+                        "mode": "react",
+                        "input": [
+                            {
+                                "type": "text",
+                                "text": "Use write_lease_marker once.",
+                                "metadata": {"context": {"approval_delivery": "server_hold"}},
+                            }
+                        ],
+                        "approvalPolicy": "on-request",
+                    },
+                )
+            )
+        )
+        _wait_until(lambda: bool(case.admitted))
+    # Nobody is watching the thread any more.
+    task_id = case.admitted[0].task_id
+
+    def status() -> str:
+        record = case.supervisor.store.get(task_id)
+        return record.status.value if record is not None else "missing"
+
+    _wait_until(lambda: status() == "waiting_approval")
+    parked = case.supervisor.store.get(task_id)
+    assert parked is not None
+    assert parked.metadata["approval_delivery"] == "server_hold"
+    assert parked.metadata["approval_tool_name"] == "write_lease_marker"
+    assert not case.marker.exists(), "A held call cannot run before the decision"
+
+    # Longer than the gateway's socket approval timeout: still parked, not denied.
+    time.sleep(2.5)
+    assert status() == "waiting_approval"
+    assert not case.marker.exists()
+
+    terminal = {"completed", "failed", "cancelled", "disconnected"}
+    decided_calls: set[str] = set()
+    # A rejected react agent may propose the call again; each new proposal is
+    # its own hold and must be decided separately, never covered by the first.
+    for _ in range(8):  # the fixture caps the loop at 5 iterations
+        record = case.supervisor.store.get(task_id)
+        assert record is not None
+        call_id = str((record.metadata.get("approval_hold") or {}).get("tool_call_id"))
+        assert call_id not in decided_calls, "a decided call was held again"
+        decided_calls.add(call_id)
+        decision = case.client.post(
+            f"/api/task-runs/{task_id}/approval-decision", json={"approved": approved}
+        )
+        assert decision.status_code == 200, decision.text
+
+        def settled(previous: str = call_id) -> bool:
+            current = case.supervisor.store.get(task_id)
+            if current is None or current.status.value in terminal:
+                return True
+            hold = current.metadata.get("approval_hold") or {}
+            return (
+                current.status.value == "waiting_approval"
+                and str(hold.get("tool_call_id")) != previous
+            )
+
+        _wait_until(settled)
+        if status() in terminal:
+            break
+        assert not approved, "an approved call should not be proposed again"
+    assert status() in terminal
+    if approved:
+        assert case.marker.read_text(encoding="utf-8").splitlines() == ["first"]
+        assert status() == "completed"
+    else:
+        assert not case.marker.exists(), "A rejected call must never reach its handler"
+
+
 def test_app_state_cannot_silently_disable_supervisor_after_store_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

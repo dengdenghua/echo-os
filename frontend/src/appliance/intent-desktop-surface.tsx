@@ -156,10 +156,11 @@ export interface IntentDesktopSurfaceProps {
   /** 打开工作台并带上意图草稿；agentId 缺省时由工作台使用默认 Agent。 */
   onOpenWorkbench?: (prompt?: string, agentId?: string) => void;
   /**
-   * 把意图直接交给 Agent 开始执行（工作台窗口打开并自动发送）。未提供时，
-   * 提交意图退化为只在工作台里准备草稿。
+   * 把意图直接交给 Agent 在后台执行（不打开工作台窗口）。任务被接受时
+   * resolve 为 true；为 false 表示调用方已经提示过失败并接管了草稿。
+   * 未提供时，提交意图退化为只在工作台里准备草稿。
    */
-  onDispatchIntent?: (prompt: string, agentId?: string) => void;
+  onDispatchIntent?: (prompt: string, agentId?: string) => Promise<boolean>;
   onOpenApp?: (appId: string) => void;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
   /** 任务投影；undefined 表示尚未加载。 */
@@ -630,10 +631,13 @@ export function IntentDesktopSurface({
     if (!trimmed) return;
     const agentName = selectedAgent?.name ?? "Echo";
     if (intent === "dispatch" && onDispatchIntent) {
-      onDispatchIntent(trimmed, selectedAgent?.id);
-      toast.success(`已交给 ${agentName}，开始执行`, {
-        description:
-          "进展会显示在工作台窗口和桌面任务卡片上；需要授权的操作会请你确认。",
+      // 等服务端真正接受后再报喜；失败时调用方会提示并把草稿留在工作台。
+      void onDispatchIntent(trimmed, selectedAgent?.id).then((accepted) => {
+        if (!accepted) return;
+        toast.success(`已交给 ${agentName}，在后台执行`, {
+          description:
+            "进展会出现在桌面卡片和 Dock 任务轨上；需要授权时会停在任务空间等你批准。",
+        });
       });
     } else if (onOpenWorkbench) {
       onOpenWorkbench(trimmed, selectedAgent?.id);

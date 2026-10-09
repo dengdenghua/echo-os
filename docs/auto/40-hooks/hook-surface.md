@@ -25,16 +25,16 @@
 
 ## `session_start` · 2 处
 
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:713`
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:721`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:717`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:725`
 
 ## `stop` · 2 处
 
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:253`
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:260`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:257`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:264`
 
 ## `user_prompt` · 2 处
 
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:714`
-- `runtime/sensing/gateway/realtime_turn_lifecycle.py:723`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:718`
+- `runtime/sensing/gateway/realtime_turn_lifecycle.py:727`
 

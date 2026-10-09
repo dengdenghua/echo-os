@@ -65,6 +65,28 @@ class TaskTakeoverRequest(BaseModel):
         return text or None
 
 
+_MAX_START_PROMPT_CHARS = 8000
+
+
+class TaskStartRequest(BaseModel):
+    """Start one agent task from a one-line intent (the desktop intent box)."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    prompt: str = Field(min_length=1, max_length=_MAX_START_PROMPT_CHARS)
+    agent_id: str | None = Field(
+        default=None,
+        alias="agentId",
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+    )
+
+    @field_validator("prompt", mode="before")
+    @classmethod
+    def _normalize_prompt(cls, value: Any) -> str:
+        return str(value or "").strip()
+
+
 class TaskResumeExecutionRequest(BaseModel):
     """One explicit operator request to continue a checkpointed objective."""
 
@@ -737,6 +759,106 @@ def create_task_runs_router(
             "lease_health": task_lease_health(task),
         }
 
+    @router.post("/api/task-runs/start", status_code=202)
+    async def api_task_run_start(request: Request, body: TaskStartRequest) -> dict[str, Any]:
+        """Start an agent task on a new thread with nobody watching it.
+
+        This is the same server-resident ``turn/start`` a workbench sends,
+        reusing the recovery bridge above, with one difference: the turn opts
+        into ``approval_delivery: server_hold``. Its ask/confirm approvals then
+        park the task as ``waiting_approval`` for the Task Space instead of
+        timing out on a socket nobody watches. Auth, ownership, the risk matrix
+        and auto-approve/bypass rules are exactly those of a workbench turn.
+        """
+
+        actor = _auth(request)
+        gateway = getattr(request.app.state, "realtime_gateway", None)
+        invoke_turn_start = getattr(gateway, "_invoke_turn_start", None)
+        if gateway is None or not callable(invoke_turn_start):
+            raise HTTPException(503, "Agent realtime runtime is unavailable")
+
+        thread_id = f"t{uuid4().hex[:24]}"
+        user_item_id = f"itm_user_{uuid4().hex}"
+        # Mirrors the workbench's defaults for a new task; everything else
+        # (model, permissions) resolves server-side as for any new thread.
+        context: dict[str, Any] = {
+            "mode": "code",
+            "capability_mode": "code",
+            "code_mode": "solo",
+            "approval_delivery": "server_hold",
+        }
+        if body.agent_id:
+            context["agent_name"] = body.agent_id
+
+        loop = asyncio.get_running_loop()
+        started: asyncio.Future[dict[str, Any]] = loop.create_future()
+        connection = _RecoveryTurnConnection(
+            gateway=gateway,
+            thread_id=thread_id,
+            actor_id=actor,
+            tenant_id=_tenant_id(actor),
+            started=started,
+        )
+        params = {
+            "threadId": thread_id,
+            "userItemId": user_item_id,
+            "input": [{"type": "text", "text": body.prompt, "metadata": {"context": context}}],
+            "approvalPolicy": "on-request",
+        }
+
+        def _detach_trigger() -> None:
+            connection._closed = True
+            if thread_id in connection.watched_threads:
+                with suppress(Exception):
+                    gateway._unwatch_thread(thread_id)
+                connection.watched_threads.discard(thread_id)
+
+        job = asyncio.create_task(
+            invoke_turn_start(params, connection),
+            name=f"task-start:{thread_id}",
+        )
+        job.add_done_callback(lambda _done: _detach_trigger())
+        _track_resume_job(request.app, job)
+
+        done, _pending = await asyncio.wait(
+            {job, started},
+            timeout=_RESUME_START_TIMEOUT_SECONDS,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        turn_id: str | None = None
+        state = "queued"
+        if started in done:
+            turn_id = _task_started_turn_id(started.result())
+            state = "turn_started"
+        elif job in done:
+            try:
+                result = job.result()
+            except Exception as exc:  # noqa: BLE001
+                _detach_trigger()
+                from runtime.protocol import JsonRpcErrorCode
+                from runtime.sensing.gateway._realtime_gateway_types import _RpcError
+
+                if isinstance(exc, _RpcError) and exc.code not in {
+                    JsonRpcErrorCode.SERVER_BUSY,
+                    JsonRpcErrorCode.INTERNAL_ERROR,
+                }:
+                    raise HTTPException(409, exc.message) from exc
+                raise HTTPException(503, "Agent could not start the task") from exc
+            turn = result.get("turn") if isinstance(result, dict) else None
+            turn_id = str(turn.get("id") or "").strip() or None if isinstance(turn, dict) else None
+            state = "finished"
+
+        _detach_trigger()
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": state,
+            "thread_id": thread_id,
+            "turn_id": turn_id,
+            "user_item_id": user_item_id,
+            "approval_delivery": "server_hold",
+        }
+
     return router
 
 
@@ -750,6 +872,7 @@ def _task_run_payload(task: Any) -> dict[str, Any]:
 __all__ = [
     "TaskApprovalDecisionRequest",
     "TaskResumeExecutionRequest",
+    "TaskStartRequest",
     "TaskTakeoverRequest",
     "create_task_runs_router",
 ]
