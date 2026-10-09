@@ -373,7 +373,7 @@ def test_source_plan_writes_private_plan_and_public_source_backup_off_device(
         boot_id_reader=lambda: "11111111-1111-4111-8111-111111111111",
         machine_id_reader=lambda: "d" * 64,
         effective_uid=0,
-        trusted_uid=Path().stat().st_uid,
+        trusted_uid=tmp_path.stat().st_uid,
         system_name="Linux",
         machine="x86_64",
         user_state_file=tmp_path / "user-backup-state.json",
@@ -403,9 +403,9 @@ def test_recovery_tool_validation_does_not_require_docker(tmp_path: Path) -> Non
     )
     paths["docker"].unlink()
 
-    lab._validated_tools(tools, trusted_uid=Path().stat().st_uid, recovery=True)
+    lab._validated_tools(tools, trusted_uid=tmp_path.stat().st_uid, recovery=True)
     with pytest.raises(lab.systemd.OperationsSystemdError, match="docker"):
-        lab._validated_tools(tools, trusted_uid=Path().stat().st_uid, recovery=False)
+        lab._validated_tools(tools, trusted_uid=tmp_path.stat().st_uid, recovery=False)
 
 
 def test_private_plan_binds_destructive_phase_confirmations_and_rejects_tampering(
@@ -491,9 +491,9 @@ def test_phase_sequence_requires_every_prior_valid_read_only_record(tmp_path: Pa
     (root / lab.PHASE_OUTPUTS[first]).write_bytes(evidence_record(plan, first, details[first]))
     (root / lab.PHASE_OUTPUTS[first]).chmod(0o444)
 
-    lab._phase_dependencies(root, lab.RUN_PHASES[0], plan=plan, trusted_uid=Path().stat().st_uid)
+    lab._phase_dependencies(root, lab.RUN_PHASES[0], plan=plan, trusted_uid=tmp_path.stat().st_uid)
     with pytest.raises(lab.BareMetalRecoveryLabError, match="sequence"):
-        lab._phase_dependencies(root, first, plan=plan, trusted_uid=Path().stat().st_uid)
+        lab._phase_dependencies(root, first, plan=plan, trusted_uid=tmp_path.stat().st_uid)
 
 
 @pytest.mark.parametrize(
@@ -532,7 +532,7 @@ def test_verify_evidence_binds_all_eight_phases_and_nine_gate_checks(
     write_evidence(plan, valid_details(plan))
     bypass_candidate_recheck(monkeypatch, plan)
 
-    report = lab.verify_evidence(path, trusted_uid=Path().stat().st_uid)
+    report = lab.verify_evidence(path, trusted_uid=tmp_path.stat().st_uid)
 
     assert report["allPassed"] is True
     assert set(report["phases"]) == set(lab.PHASES)
@@ -550,4 +550,4 @@ def test_verify_evidence_rejects_a_claim_without_final_nas_validation(
     bypass_candidate_recheck(monkeypatch, plan)
 
     with pytest.raises(lab.BareMetalRecoveryLabError, match="final-verify"):
-        lab.verify_evidence(path, trusted_uid=Path().stat().st_uid)
+        lab.verify_evidence(path, trusted_uid=tmp_path.stat().st_uid)
