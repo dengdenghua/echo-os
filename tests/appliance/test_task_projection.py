@@ -571,9 +571,11 @@ def test_takeover_fails_closed_before_mutation_when_audit_is_unavailable(
     assert "takeover_by" not in after.metadata
 
 
+@pytest.mark.parametrize("server_hold", [False, True])
 def test_resume_execution_uses_agent_checkpoint_route_and_audits_handoff(
     tmp_path,
     monkeypatch,
+    server_hold,
 ) -> None:
     audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
     supervisor = TaskSupervisor.from_path(
@@ -589,6 +591,16 @@ def test_resume_execution_uses_agent_checkpoint_route_and_audits_handoff(
         title="继续整理照片",
         metadata={"agent_id": "echo-eve"},
     )
+    if server_hold:
+        supervisor.transition(
+            task_id,
+            TaskRunStatus.WAITING_APPROVAL,
+            metadata_patch={
+                "approval_delivery": "server_hold",
+                "approval_hold": {"tool_call_id": "call-73"},
+                "approval_required": True,
+            },
+        )
     supervisor.store.mutate(
         task_id,
         lambda current: current.model_copy(

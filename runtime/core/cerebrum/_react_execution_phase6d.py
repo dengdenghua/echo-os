@@ -33,6 +33,7 @@ from runtime.core.cerebrum._react_execution_results import (
     _is_scoped_artifact_write,
     _tool_event_extras_from_beak_step,
 )
+from runtime.core.cerebrum.react_approval_checkpoint import persist_server_hold_boundary
 from runtime.core.cerebrum.react_context import _prefetch_related_files
 from runtime.core.cerebrum.react_convergence import (
     build_direct_answer_directive,
@@ -549,6 +550,7 @@ def _phase_6d_dispatch_and_observe(
             _last_public_update_key = _public_update_key
 
         if tool_action_requested:
+            persist_server_hold_boundary(state)
             _result_handoff_ready = False
             observation = None
             step.observation = ""

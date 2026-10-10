@@ -231,6 +231,7 @@ def _write_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
     return material
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_build_plan_binds_operator_detach_and_third_blank_disk(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -274,6 +275,7 @@ def test_build_plan_binds_operator_detach_and_third_blank_disk(
     assert plan["confirmations"]["repair"].endswith(plan["planId"])
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_three_phases_use_real_http_replacement_and_verify_reboot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -326,6 +328,7 @@ def test_three_phases_use_real_http_replacement_and_verify_reboot(
     assert evidence["details"]["currentBootId"] == "boot-b"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_survivor_identity_drift_blocks_before_approval(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -355,6 +358,7 @@ def test_survivor_identity_drift_blocks_before_approval(
     assert not any(call[1].endswith("/approvals") for call in api.calls)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_repair_requires_hot_detach_without_reboot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

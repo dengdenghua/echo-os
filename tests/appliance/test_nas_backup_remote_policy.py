@@ -194,6 +194,7 @@ def test_create_plan_rejects_unsafe_remote_values(tmp_path: Path, field: str, va
         remote.plan_remote(_desired(**{field: value}), **runtime)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_create_and_remove_are_verified_and_leave_no_plaintext(tmp_path: Path) -> None:
     runtime = _runtime(tmp_path)
     mounted = False
@@ -265,6 +266,7 @@ def test_remove_refuses_a_remote_bound_to_the_backup_schedule(tmp_path: Path) ->
         remote.plan_remote(_remove(), **runtime)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_failed_mount_verification_rolls_back_every_created_artifact(tmp_path: Path) -> None:
     runtime = _runtime(tmp_path)
     actions: list[tuple[str, str]] = []

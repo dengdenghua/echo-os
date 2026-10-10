@@ -240,7 +240,13 @@ def _execution_recovery(task: Any, realtime_gateway: Any) -> dict[str, Any]:
         "phase": None,
         "reason": "当前任务没有可恢复的执行检查点",
     }
-    if status in {"completed", "waiting_approval", "pending"}:
+    stale_hold = (
+        status == "waiting_approval"
+        and requires_takeover
+        and metadata.get("approval_delivery") == "server_hold"
+        and bool(metadata.get("approval_hold"))
+    )
+    if status in {"completed", "pending"} or (status == "waiting_approval" and not stale_hold):
         base["reason"] = (
             "任务正在等待原审批" if status == "waiting_approval" else "当前状态不能恢复执行"
         )

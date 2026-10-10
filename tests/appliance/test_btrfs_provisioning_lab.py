@@ -189,6 +189,7 @@ def _run_args(tmp_path: Path, api: FakeApi) -> dict[str, Any]:
     }
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_plan_binds_candidate_bundle_platform_and_hashed_disk_identities(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -211,6 +212,7 @@ def test_plan_binds_candidate_bundle_platform_and_hashed_disk_identities(
     ("devices", "volume_name"),
     [(["/dev/vdb"], "btrfslab"), (DEVICES, "bad/name"), (["/dev/vdb", "/dev/vdb"], "x")],
 )
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_plan_rejects_unsafe_selection_before_api_access(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -249,6 +251,7 @@ def test_plan_requires_linux_root(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_provision_uses_one_shot_approval_then_reboot_verifies_probe(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -281,6 +284,7 @@ def test_provision_uses_one_shot_approval_then_reboot_verifies_probe(
     assert evidence["details"]["probe"] == probe
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_provision_rejects_disk_identity_drift_before_approval(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -298,6 +302,7 @@ def test_provision_rejects_disk_identity_drift_before_approval(
     assert not any(call[1].endswith("/approvals") for call in api.calls)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_failure_after_apply_begins_preserves_host_for_inspection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -314,6 +319,7 @@ def test_failure_after_apply_begins_preserves_host_for_inspection(
         )
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_reboot_verification_requires_a_new_kernel_boot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

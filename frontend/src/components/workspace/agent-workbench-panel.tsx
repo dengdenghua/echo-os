@@ -59,6 +59,7 @@ import { useAgentWorkbenchSnapshot } from "./agent-workbench-snapshot";
 import { deriveAgentPhases, type AgentPhase } from "./agent-phases";
 import { type AgentRunState, workbenchRunState } from "./agent-run-status";
 import { MachineScopeRail } from "./agent-workbench-panel/machine-scope-rail";
+import { TaskApprovalBanner } from "./agent-workbench-panel/task-approval-banner";
 import { EmptyShellView } from "./agent-workbench-panel/empty-shell-view";
 import {
   WorkbenchTabHeader,
@@ -817,6 +818,10 @@ function AgentWorkbenchPanelImpl({
         showWorkspaceLabel
         mainRunStatusLabel={mainRunStatus.label}
       />
+
+      {threadId ? (
+        <TaskApprovalBanner key={threadId} threadId={threadId} />
+      ) : null}
 
       {threadId &&
       effectiveActiveTab !== "project" &&

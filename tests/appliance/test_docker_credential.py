@@ -8,7 +8,8 @@ import pytest
 
 from appliance.docker_credential import ensure_credential
 
-pytestmark = pytest.mark.skipif(os.name != "posix", reason="root-owned POSIX credential contract")
+if os.name != "posix":
+    pytest.skip("root-owned POSIX credential contract", allow_module_level=True)
 
 # Production trusts uid/gid 0; unprivileged CI runs trust the invoking identity.
 TRUST = {"trusted_uid": os.getuid(), "trusted_gid": os.getgid()}

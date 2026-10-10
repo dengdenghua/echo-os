@@ -567,8 +567,22 @@ class TaskSupervisor:
                     "takeover_events": events,
                 }
             )
+            stale_hold = (
+                existing.status == TaskRunStatus.WAITING_APPROVAL
+                and metadata.get("approval_delivery") == "server_hold"
+                and bool(metadata.get("approval_hold"))
+            )
+            if stale_hold:
+                metadata.update(
+                    approval_required=False,
+                    approval_denied=False,
+                    approval_hold=None,
+                    approval_hold_outcome="worker_lost",
+                )
             next_status = (
-                TaskRunStatus.WAITING_APPROVAL
+                TaskRunStatus.PAUSED
+                if stale_hold
+                else TaskRunStatus.WAITING_APPROVAL
                 if existing.status == TaskRunStatus.WAITING_APPROVAL
                 else requested_status
             )

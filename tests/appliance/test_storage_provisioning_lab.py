@@ -210,6 +210,7 @@ def _build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, api: FakeApi) -> dic
     )
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_plan_binds_api_disk_identities_and_destructive_backend_plan(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -226,6 +227,7 @@ def test_plan_binds_api_disk_identities_and_destructive_backend_plan(
         assert (tmp_path / "plan.json").stat().st_mode & 0o777 == 0o400
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_provision_uses_two_one_shot_approvals_then_reboot_verifies_persistence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -275,6 +277,7 @@ def test_provision_uses_two_one_shot_approvals_then_reboot_verifies_persistence(
     assert evidence["details"]["dataPreserved"] is True
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_provision_rejects_identity_drift_before_issuing_approval(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -304,6 +307,7 @@ def test_provision_rejects_identity_drift_before_issuing_approval(
     assert not any(call[1].endswith("/approvals") for call in api.calls)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_plan_rejects_non_loopback_appliance_origin(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

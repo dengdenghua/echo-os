@@ -198,6 +198,7 @@ def _write_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
     return material
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_build_plan_binds_third_blank_disk_and_provisioning_identity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -237,6 +238,7 @@ def test_build_plan_binds_third_blank_disk_and_provisioning_identity(
     assert plan["confirmations"]["repair"].endswith(plan["planId"])
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_three_phases_use_real_replacement_api_and_verify_reboot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -295,6 +297,7 @@ def test_three_phases_use_real_replacement_api_and_verify_reboot(
     assert final["details"]["currentBootId"] == "boot-b"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Linux uid/gid and private filesystem contract")
 def test_identity_drift_blocks_before_member_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
