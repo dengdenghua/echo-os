@@ -234,7 +234,7 @@ sudo ./packaging/image/configure-linux-image-runner-hooks.sh \
 `run.sh` 且归服务账号所有的规范目录，把四份注册/凭据文件和原子更新的 `.env` 固定为
 mode-`0600`，且应用目录固定为 `/opt/actions-runner`。随后由安装在 runner 应用目录之外的
 `verify-linux-image-runner-registration.py` 以非 root 服务账号读取官方 `.runner` 数据，要求
-`GitHubUrl` 精确指向 `dengdenghua/octopus-os`、`WorkFolder` 精确指向已验收 work root、当前
+`GitHubUrl` 精确指向 `dengdenghua/echo-os`、`WorkFolder` 精确指向已验收 work root、当前
 GitHub V2 消息流、非 ephemeral、未禁用官方安全更新，并核对已启用的官方 systemd unit、两个
 固定 cleanup hook 与 mode-`0600` host evidence。成功会输出唯一
 `ECHO_IMAGE_RUNNER_REGISTRATION_READY` marker。它同时启用 root-owned、应用目录外的

@@ -13,24 +13,29 @@
 | CLI 命令 | `echo` / `echo-agent` / `echo-storage` | 已统一 |
 | 桌面应用 | `Echo OS Desktop`（`com.echo.os.desktop`） | 已统一 |
 | 容器镜像 | `ghcr.io/dengdenghua/echo-os` | **有意保留 echo 品牌，禁改** |
-| **git 仓库** | **`github.com/dengdenghua/octopus-os`** | **必须用这个** |
+| **git 仓库** | **`github.com/dengdenghua/echo-os`** | 已统一（旧名 octopus-os 为重定向） |
 | 执行引擎 ID | `octopus` | **持久化契约，禁改** |
 
-## 二、仓库名：为什么是 octopus-os
+## 二、仓库名：为什么曾经是 octopus-os，以及后来为什么改回来
 
-这是 fork 后的历史结果，不是疏忽。**实测两个 URL：**
+这是 fork 后的历史结果。**时间线：**
 
-| URL | HTTP 状态 |
-| --- | --- |
-| `https://github.com/dengdenghua/echo-os` | **404（不存在）** |
-| `https://github.com/dengdenghua/octopus-os` | 200 |
+| 时间 | 事实 | 仓库内写法 |
+| --- | --- | --- |
+| ~2026-09-05 | `dengdenghua/echo-os` **返回 404**，`octopus-os` 是唯一可用地址 | 全部指向 `octopus-os` |
+| 2026-09-09 | 统一修正（31 个文件、60 处），并写下本文档锁定该结论 | `octopus-os` |
+| **2026-10-12** | **仓库已改名为 `echo-os`，旧名保留 HTTP 重定向** | **`echo-os`（本文档更新）** |
 
-历史上仓库内曾大量指向不存在的 `echo-os`。2026-09-09 已统一修正（涉及 31 个文件、60 处），
-包括 `scripts/install.sh`、`pyproject.toml` 的 `[project.urls]`、前端「关于」页四种语言的
-GitHub 链接，以及首页取 star 数的 API 地址。
+2026-09-09 当时写 `octopus-os` 是**被迫的保守选择**，不是疏忽：仓库内曾大量指向
+不存在的 `echo-os`，包括 `scripts/install.sh`、`pyproject.toml` 的 `[project.urls]`、
+前端「关于」页四种语言的 GitHub 链接，以及首页取 star 数的 API 地址。
+
+仓库改名后两个 URL 指向同一个仓库（旧名自动重定向），原先的阻塞条件已消失，
+因此全量改回 `echo-os`（25 个代码/配置/测试文件，另同步 12 个测试文件的期望值）。
+`tests/test_naming_contract.py` 的对应断言方向也已反转。
 
 **GHCR 镜像名保持 `echo-os` 不变**——它在 `appliance-release.yml:106` 里是显式指定的
-对外品牌，与仓库名无关，跟着仓库改名反而会破坏已发布的镜像引用。
+对外品牌，与仓库名无关；本次改名前后它都叫 `echo-os`，未受影响。
 
 ## 三、`octopus` 的四类不可改契约（P0）
 
@@ -101,13 +106,18 @@ done
 
 > ⚠️ 该测试位于 `tests/` 根目录，而 `pyproject.toml:273` 的 `testpaths` 目前只指向
 > `tests/appliance`。**在 testpaths 修好之前，CI 不会执行它**，需要本地手动跑。
+> 2026-10-12 改动时已本地执行确认通过，但这个 testpaths 缺口仍未修。
 
-## 五、如果将来真要统一成 echo-os
+## 五、统一成 echo-os 的条件（已于 2026-10-12 满足）
 
-必须同时满足（缺一不可）：
+本文档最初写下时，`echo-os` 仓库不存在，所以约定「满足以下全部条件后才能改」。
+仓库改名为 `echo-os`（旧名保留 HTTP 重定向）后，条件已达成，改动已完成：
 
-1. GitHub 上创建 `echo-os` 仓库，或把 `octopus-os` 改名（改名自带重定向，旧 ISO 仍可用）
-2. 全文替换 `dengdenghua/octopus-os` → `dengdenghua/echo-os`（**仅限 git 仓库 URL，GHCR 除外**）
-3. 为引擎 ID 与 schema 前缀写数据迁移，否则旧记录读不出来
-4. `provision-lib.sh` 的账号探测**仍要保留** `octopus`，否则老装机机器 crash-loop
-5. 更新本文档与 `tests/test_naming_contract.py`
+1. ✅ GitHub 上创建/改名为 `echo-os` 仓库 —— 已完成，旧名重定向可用
+2. ✅ 全文替换 `dengdenghua/octopus-os` → `dengdenghua/echo-os`（**仅限 git 仓库 URL，GHCR 除外**）
+   —— 25 个代码/配置/测试文件，另同步 12 个测试文件的期望值
+3. ✅ 引擎 ID 与 schema 前缀**保持不变**，无需数据迁移（它们从来就不在本次改动范围内）
+4. ✅ `provision-lib.sh` 的账号探测仍保留 `octopus`，老装机机器不受影响
+5. ✅ 更新本文档与 `tests/test_naming_contract.py`（断言方向已反转）
+
+仍然禁改的三项，见第一节速查表：容器镜像名、执行引擎 ID、schema 命名空间。

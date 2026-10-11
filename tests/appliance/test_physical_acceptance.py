@@ -59,7 +59,7 @@ def _candidate() -> dict[str, Any]:
         "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "commit": OS_COMMIT,
             "agentRepository": "dengdenghua/echo-agent",
             "agentCommit": AGENT_COMMIT,

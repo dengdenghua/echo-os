@@ -13,6 +13,12 @@ const TOKEN_KEY = "echo_auth_token";
 const USER_KEY = "echo_user";
 const TOKEN_TIMESTAMP_KEY = "echo_auth_ts";
 const SESSION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+let authSessionRevision = 0;
+
+/** Tracks local login/logout transitions, including HttpOnly cookie sessions. */
+export function getAuthSessionRevision(): number {
+  return authSessionRevision;
+}
 const DEFAULT_STARTUP_RETRY_MS = 3_000;
 const MIN_STARTUP_RETRY_MS = 1_000;
 const MAX_STARTUP_RETRY_MS = 10_000;
@@ -100,6 +106,7 @@ function _readToken(): string | null {
 }
 
 export function _writeToken(token: string, user: unknown): void {
+  authSessionRevision += 1;
   if (!canUseBrowserStorage()) return;
   // Audit S-07: sessionStorage only — no token in localStorage.
   window.sessionStorage.setItem(TOKEN_KEY, token);
@@ -111,6 +118,7 @@ export function _writeToken(token: string, user: unknown): void {
 }
 
 export function _clearTokens(): void {
+  authSessionRevision += 1;
   if (!canUseBrowserStorage()) return;
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(USER_KEY);
@@ -271,6 +279,7 @@ export async function getMe(): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
+  authSessionRevision += 1;
   await fetch(`${getBackendBaseURL()}/api/auth/logout`, {
     method: "POST",
     headers: authHeaders(),

@@ -1,6 +1,6 @@
 [Unit]
 Description=Echo OS first-boot provisioning
-Documentation=https://github.com/dengdenghua/octopus-os
+Documentation=https://github.com/dengdenghua/echo-os
 After=network-online.target
 Wants=network-online.target
 # 全部阶段跑完才会生成 services 哨兵;未跑完时重开机会自动续跑(脚本幂等)。

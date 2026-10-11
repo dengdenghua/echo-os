@@ -47,7 +47,7 @@ def _candidate(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
         "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "commit": OS_COMMIT,
             "agentRepository": "dengdenghua/echo-agent",
             "agentCommit": AGENT_COMMIT,
@@ -1105,7 +1105,7 @@ def test_plan_command_writes_one_deterministic_read_only_candidate_bound_six_gat
     assert plan["schemaVersion"] == 17
     assert plan["candidate"] == {
         "indexId": candidate["indexId"],
-        "osRepository": "dengdenghua/octopus-os",
+        "osRepository": "dengdenghua/echo-os",
         "sourceRevision": OS_COMMIT,
         "agentRepository": "dengdenghua/echo-agent",
         "agentRevision": AGENT_COMMIT,
@@ -2224,7 +2224,7 @@ def test_device_result_binds_four_machine_phases_and_all_common_checks(tmp_path:
             "indexPath": str(candidate_path.resolve()),
             "indexId": candidate["indexId"],
             "indexSha256": _digest(candidate_path.read_bytes()),
-            "osRepository": "dengdenghua/octopus-os",
+            "osRepository": "dengdenghua/echo-os",
             "sourceRevision": OS_COMMIT,
             "agentRepository": "dengdenghua/echo-agent",
             "agentRevision": AGENT_COMMIT,

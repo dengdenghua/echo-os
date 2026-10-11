@@ -21,7 +21,7 @@ LOG_TAG="echo-firstboot"
 [ -r /etc/echo-os/firstboot.env ] && . /etc/echo-os/firstboot.env
 
 # 由 build-iso.sh 或环境变量注入
-OS_REPO="${ECHO_OS_REPO:-https://github.com/dengdenghua/octopus-os.git}"
+OS_REPO="${ECHO_OS_REPO:-https://github.com/dengdenghua/echo-os.git}"
 OS_BRANCH="${ECHO_OS_BRANCH:-p3-provision}"
 DEBIAN_MIRROR="${DEBIAN_MIRROR:-https://deb.debian.org/debian}"
 

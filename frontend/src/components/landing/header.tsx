@@ -94,7 +94,7 @@ function StarCounter() {
     (async () => {
       try {
         const response = await fetch(
-          "https://api.github.com/repos/dengdenghua/octopus-os",
+          "https://api.github.com/repos/dengdenghua/echo-os",
           {
             headers: env.GITHUB_OAUTH_TOKEN
               ? {

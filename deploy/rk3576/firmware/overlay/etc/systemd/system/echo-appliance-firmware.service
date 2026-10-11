@@ -1,6 +1,6 @@
 [Unit]
 Description=Echo OS appliance backend (RK3576 firmware · NAS control plane + agent runtime)
-Documentation=https://github.com/dengdenghua/octopus-os
+Documentation=https://github.com/dengdenghua/echo-os
 # 与 deploy/provision/base/echo-appliance.service 同构(平行 ARM 版,互不修改)。
 # 固件形态差异:无 docker 依赖(未烘焙),After 收窄到 network-online。
 After=network-online.target

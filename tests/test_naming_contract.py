@@ -58,10 +58,16 @@ def test_provision_still_cleans_legacy_octopus_units():
 
 
 def test_canonical_repository_points_at_the_existing_repo():
-    """``dengdenghua/echo-os`` does not exist and returns 404."""
+    """The repository was renamed to ``echo-os``; the old name now redirects.
+
+    This assertion used to point the other way: it asserted ``echo-os`` was
+    absent because that URL returned 404. ``dengdenghua/echo-os`` was
+    therefore used everywhere as the only working name. Both names now resolve
+    to the same repository, so the canonical name follows the repository.
+    """
     text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    assert "dengdenghua/octopus-os" in text
-    assert "github.com/dengdenghua/echo-os" not in text
+    assert "dengdenghua/echo-os" in text
+    assert "dengdenghua/octopus-os" not in text
 
 
 def test_container_image_keeps_the_echo_brand():

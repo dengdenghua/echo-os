@@ -429,7 +429,7 @@ fi
 # 后续更新和不含 bundle 的旧版/VM 测试介质。
 cat >"$PAYLOAD/echo-env.sh" <<EOF
 # 由 build-iso.sh 生成;首次开机脚本会 source 它
-ECHO_OS_REPO="${ECHO_OS_REPO:-https://github.com/dengdenghua/octopus-os.git}"
+ECHO_OS_REPO="${ECHO_OS_REPO:-https://github.com/dengdenghua/echo-os.git}"
 ECHO_OS_BRANCH="${ECHO_OS_BRANCH:-p3-provision}"
 ECHO_OVERLAY="${ECHO_OVERLAY:-/opt/echo-os-overlay.tar.gz}"
 ECHO_SOURCE_BUNDLE="/opt/echo-os-source.bundle"

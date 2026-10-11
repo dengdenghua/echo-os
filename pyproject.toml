@@ -219,15 +219,15 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dengdenghua/octopus-os"
-Documentation = "https://github.com/dengdenghua/octopus-os/blob/main/README.md"
-Repository = "https://github.com/dengdenghua/octopus-os"
-Issues = "https://github.com/dengdenghua/octopus-os/issues"
-Changelog = "https://github.com/dengdenghua/octopus-os/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/dengdenghua/echo-os"
+Documentation = "https://github.com/dengdenghua/echo-os/blob/main/README.md"
+Repository = "https://github.com/dengdenghua/echo-os"
+Issues = "https://github.com/dengdenghua/echo-os/issues"
+Changelog = "https://github.com/dengdenghua/echo-os/blob/main/CHANGELOG.md"
 
 # ─── Single source of truth for the canonical repo URL ──────────
 [tool.echo]
-repo_url = "https://github.com/dengdenghua/octopus-os"
+repo_url = "https://github.com/dengdenghua/echo-os"
 
 [project.scripts]
 echo-lint = "tools.lint.invariant_check:main"

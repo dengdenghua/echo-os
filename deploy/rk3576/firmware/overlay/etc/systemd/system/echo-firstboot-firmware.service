@@ -1,6 +1,6 @@
 [Unit]
 Description=Echo OS first-boot provisioning (RK3576 firmware · offline)
-Documentation=https://github.com/dengdenghua/octopus-os
+Documentation=https://github.com/dengdenghua/echo-os
 After=local-fs.target network-online.target
 Wants=local-fs.target network-online.target
 # 固件载荷全部构建期烘焙,首启只做设备相关三步,无网络依赖。

@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dengdenghua/octopus-os.git",
+    "url": "https://github.com/dengdenghua/echo-os.git",
     "directory": "frontend"
   },
   "private": true,

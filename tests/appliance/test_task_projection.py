@@ -241,10 +241,12 @@ def test_projection_joins_agent_task_and_capability_audit(tmp_path) -> None:
     assert waiting["status"] == "waiting_approval"
     assert waiting["approval"] == {
         "required": True,
+        "version": waiting["approval"]["version"],
         "tool": "apps.start",
         "action": "app.start",
         "reason": "需要管理员确认",
     }
+    assert len(waiting["approval"]["version"]) == 64
     assert waiting["capabilityDecisions"][0]["capabilityId"] == "apps.start"
     photo = body["tasks"][1]
     assert photo["progressPercent"] == 25.0

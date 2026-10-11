@@ -970,7 +970,7 @@ python3 tools/product_delivery_bundle.py verify "$PWD"
 signer fingerprint，不能只看目录名称。
 
 ```bash
-git clone https://github.com/dengdenghua/octopus-os.git
+git clone https://github.com/dengdenghua/echo-os.git
 cd echo-os
 
 # 从当前同一源码快照生成统一 wheel、运行资源、Linux Codex 与完整性清单

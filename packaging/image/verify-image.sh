@@ -2483,7 +2483,7 @@ require_pattern "$IMAGE_DIR/runner-host/echo-os-image-runner.modules.conf" '^loo
 require_pattern "$IMAGE_DIR/runner-host/echo-os-image-runner.modules.conf" '^nbd$' "runner host loads the NBD module at boot"
 require_pattern "$IMAGE_DIR/runner-host/echo-os-image-runner.modprobe.conf" '^options loop max_loop=64$' "runner host persists loop capacity across reboot"
 require_pattern "$IMAGE_DIR/runner-host/echo-os-image-runner.modprobe.conf" '^options nbd nbds_max=16 max_part=16$' "runner host persists NBD capacity across reboot"
-require_pattern "$IMAGE_DIR/verify-linux-image-runner-registration.py" '^EXPECTED_REPOSITORY = "dengdenghua/octopus-os"$' "registered image runner is scoped to the reviewed GitHub repository"
+require_pattern "$IMAGE_DIR/verify-linux-image-runner-registration.py" '^EXPECTED_REPOSITORY = "dengdenghua/echo-os"$' "registered image runner is scoped to the reviewed GitHub repository"
 require_pattern "$IMAGE_DIR/verify-linux-image-runner-registration.py" '^RUNNER_WORK_ROOT = Path\("/srv/echo-os-image-runner"\)$' "registered image runner retains the verified host work root"
 require_pattern "$IMAGE_DIR/verify-linux-image-runner-registration.py" 'settings\.get\("WorkFolder"\) != str\(work_root\)' "registration fails closed on an incorrect official runner work folder"
 require_pattern "$IMAGE_DIR/verify-linux-image-runner-registration.py" 'ECHO_IMAGE_RUNNER_REGISTRATION_READY' "registration emits one bounded local readiness marker"

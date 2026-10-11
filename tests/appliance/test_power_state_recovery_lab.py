@@ -31,7 +31,7 @@ def _candidate_index(tmp_path: Path, report: dict[str, Any]) -> Path:
         "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "commit": "1" * 40,
             "agentRepository": "dengdenghua/echo-agent",
             "agentCommit": "2" * 40,

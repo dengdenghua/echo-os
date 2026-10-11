@@ -48,7 +48,7 @@ def _with_evidence_id(value: dict[str, Any]) -> dict[str, Any]:
 
 def _source() -> dict[str, Any]:
     return {
-        "repository": "https://github.com/dengdenghua/octopus-os.git",
+        "repository": "https://github.com/dengdenghua/echo-os.git",
         "commit": OS_COMMIT,
         "tree": OS_TREE,
         "commit_time": "2026-08-27T00:00:00+00:00",
@@ -75,9 +75,9 @@ def _preflight() -> dict[str, Any]:
         "expectedBranch": "os-main",
         "branch": "os-main",
         "sourceRevision": OS_COMMIT,
-        "osRepository": "dengdenghua/octopus-os",
+        "osRepository": "dengdenghua/echo-os",
         "agentSource": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "commit": AGENT_COMMIT,
         },
         "requiredWorkflows": list(release_index.REQUIRED_WORKFLOWS),
@@ -183,12 +183,12 @@ def _appliance() -> dict[str, Any]:
         "createdAt": "2026-08-27T00:00:00Z",
         "release": {"tag": RELEASE_TAG, "version": "1.0.0"},
         "source": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "ref": f"refs/tags/{RELEASE_TAG}",
             "commit": OS_COMMIT,
         },
         "agentSource": {
-            "repository": "dengdenghua/octopus-os",
+            "repository": "dengdenghua/echo-os",
             "commit": AGENT_COMMIT,
         },
         "image": {
@@ -248,7 +248,7 @@ def _candidate_preflight(digests: dict[str, str]) -> dict[str, Any]:
             "workflow": workflow,
             "event": "push",
             "headBranch": RELEASE_TAG if name == "appliance" else "os-main",
-            "htmlUrl": f"https://github.com/dengdenghua/octopus-os/actions/runs/{100 + index}",
+            "htmlUrl": f"https://github.com/dengdenghua/echo-os/actions/runs/{100 + index}",
         }
         for index, (name, workflow) in enumerate(workflows.items(), start=1)
     }
@@ -256,7 +256,7 @@ def _candidate_preflight(digests: dict[str, str]) -> dict[str, Any]:
     for name, (run_name, branch_ref) in release_index.CANDIDATE_ATTESTATIONS.items():
         attestations[name] = {
             "sha256": digests[name],
-            "signerWorkflow": (f"github.com/dengdenghua/octopus-os/{workflows[run_name]}"),
+            "signerWorkflow": (f"github.com/dengdenghua/echo-os/{workflows[run_name]}"),
             "sourceRef": f"refs/tags/{RELEASE_TAG}" if branch_ref is None else branch_ref,
             "runnerPolicy": release_index.CANDIDATE_RUNNER_POLICIES[run_name],
             "verificationCount": 1,
@@ -265,7 +265,7 @@ def _candidate_preflight(digests: dict[str, str]) -> dict[str, Any]:
         "schemaVersion": 1,
         "kind": "echo.delivery-release-candidate-preflight",
         "ready": True,
-        "repository": "dengdenghua/octopus-os",
+        "repository": "dengdenghua/echo-os",
         "sourceRevision": OS_COMMIT,
         "releaseTag": RELEASE_TAG,
         "releaseTagRevision": OS_COMMIT,
@@ -388,9 +388,9 @@ def test_builds_one_source_bound_candidate_without_claiming_product_delivery() -
     report = release_index.build_index(**_inputs())
 
     assert report["source"] == {
-        "repository": "dengdenghua/octopus-os",
+        "repository": "dengdenghua/echo-os",
         "commit": OS_COMMIT,
-        "agentRepository": "dengdenghua/octopus-os",
+        "agentRepository": "dengdenghua/echo-os",
         "agentCommit": AGENT_COMMIT,
         "releaseTag": RELEASE_TAG,
     }
