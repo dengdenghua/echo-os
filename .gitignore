@@ -48,6 +48,13 @@ docs/auto/_coverage_tmp/
 Thumbs.db
 .git.broken*
 .marvis_static/
+desktop.ini
+
+# Windows UI Automation (uiautomation / pywinauto) writes this into the CWD when
+# CoInitialize fails in the current thread — it is an environment error dump, not a
+# repo artifact. Starts with "@" so it is easy to miss in `git status`.
+@AutomationLog.txt
+*@AutomationLog.txt
 
 # Local runtime artifacts
 data/
