@@ -19,7 +19,7 @@ const TermsPage = lazy(() => import("./app/terms/page"));
 const PrivacyPage = lazy(() => import("./app/privacy/page"));
 const PublicThreadSharePage = lazy(() => import("./app/share/[token]/page"));
 const DesktopPage = lazy(() => import("./app/desktop/page"));
-const TopBrowserPage = lazy(() => import("./app/browser/page"));
+const TopBrowserPage = lazy(() => import("./components/desktop-browser-entry"));
 const MediaAppPage = lazy(() => import("./app/apps/media/page"));
 const SLOW_PAGE_LOADING_MS = 8_000;
 

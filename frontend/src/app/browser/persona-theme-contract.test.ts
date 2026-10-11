@@ -24,7 +24,7 @@ describe("shared persona theme scope", () => {
     // own shell class, not which syntax applies them.
     expect(workspaceSource).toContain("persona-shell workspace-shell");
     expect(workspaceSource).toContain("data-persona-theme={personaThemeId}");
-    expect(browserSource).toContain('className="persona-shell browser-shell');
+    expect(browserSource).toContain("persona-shell browser-shell");
     expect(browserSource).toContain("data-persona-theme={personaThemeId}");
     expect(browserSource).toContain(
       "workspacePresetForAgent(activeAgentId).themeId",

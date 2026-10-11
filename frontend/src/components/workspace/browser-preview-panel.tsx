@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/automation-capsule";
 import {
   browserOpenUrlRequestStorageKey,
+  BROWSER_OPEN_URL_REQUEST_EVENT,
   type BrowserOpenUrlRequest,
   type BrowserTab,
 } from "@/components/browser/browser-store";
@@ -1531,11 +1532,21 @@ export function BrowserPreviewPanel({
           browserOpenUrlRequestStorageKey(),
           JSON.stringify(request),
         );
+        window.dispatchEvent(
+          new CustomEvent<BrowserOpenUrlRequest>(
+            BROWSER_OPEN_URL_REQUEST_EVENT,
+            { detail: request },
+          ),
+        );
       } catch (e) {
         swallow(e);
       }
     }
-    window.location.hash = BROWSER_WORKSPACE_ROUTE;
+    if (!/^#\/?desktop(?:[?#]|$)/.test(window.location.hash)) {
+      window.location.hash = BROWSER_WORKSPACE_ROUTE;
+    } else if (!target) {
+      window.location.hash = "/desktop?app=browser";
+    }
   }, [devicePreview, pageInfo.title, pageInfo.url, sessionId, urlInput]);
 
   const runtimeLabel = session?.runtime || session?.mode || "mock";

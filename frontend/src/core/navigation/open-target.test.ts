@@ -12,6 +12,26 @@ import { setLinkOpenTarget } from "@/core/settings/automation-preferences";
 import { openTarget, shouldRouteAnchorClick } from "./open-target";
 
 describe("openTarget", () => {
+  it("opens a browser target without replacing an existing desktop route", async () => {
+    window.location.hash = "#/desktop?workspace=retained";
+    const before = window.location.hash;
+    window.addEventListener(
+      BROWSER_OPEN_URL_REQUEST_EVENT,
+      (event) => {
+        const request = (event as CustomEvent<BrowserOpenUrlRequest>).detail;
+        window.dispatchEvent(
+          new CustomEvent<BrowserOpenUrlAck>(BROWSER_OPEN_URL_ACK_EVENT, {
+            detail: { requestId: request.requestId!, accepted: true },
+          }),
+        );
+      },
+      { once: true },
+    );
+    await expect(
+      openTarget("https://example.com/desktop", { target: "in_app" }),
+    ).resolves.toBe("in_app");
+    expect(window.location.hash).toBe(before);
+  });
   beforeEach(() => {
     window.localStorage.clear();
     window.location.hash = "#/workspace";

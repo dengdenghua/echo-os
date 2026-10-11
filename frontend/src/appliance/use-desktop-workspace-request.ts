@@ -19,6 +19,7 @@ export function useDesktopWorkspaceRequest({
   useEffect(() => {
     if (!ready || location.pathname !== "/desktop") return;
     const params = new URLSearchParams(location.search);
+    if (params.get("app") === "browser") return;
     if (!params.has("workspace") && !params.has("returnTo")) return;
     // Include the actor so an auth transition cannot inherit the previous
     // account's consumed marker when a pending desktop URL is retained.

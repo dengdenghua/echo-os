@@ -123,7 +123,9 @@ export async function openTarget(
         detail: request,
       }),
     );
-    window.location.hash = `#${BROWSER_WORKSPACE_ROUTE}`;
+    if (!/^#\/?desktop(?:[?#]|$)/.test(previousHash)) {
+      window.location.hash = `#${BROWSER_WORKSPACE_ROUTE}`;
+    }
     if (await acknowledged) return "in_app";
     removePendingRequest(request.requestId!);
     if (window.location.hash === `#${BROWSER_WORKSPACE_ROUTE}`) {

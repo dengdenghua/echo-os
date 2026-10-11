@@ -5,6 +5,9 @@ import {
 import { AppOpenChoice } from "@/appliance/app-open-choice";
 import { useDesktopWorkspaces } from "@/appliance/use-desktop-workspaces";
 import { useDesktopWorkspaceRequest } from "@/appliance/use-desktop-workspace-request";
+import { useDesktopBrowserRequest } from "@/appliance/use-desktop-browser-request";
+import { BROWSER_OPEN_URL_REQUEST_EVENT } from "@/components/browser/browser-store";
+import type { BrowserSearchRequest } from "@/app/browser/page";
 import { useDesktopAction } from "@/appliance/use-desktop-action";
 import { revealFileRequest } from "@/appliance/desktop-actions";
 import { desktopAgentDraft } from "@/appliance/desktop-agent-context";
@@ -32,9 +35,12 @@ import {
   useMemo,
   useRef,
   useState,
+  lazy,
+  Suspense,
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
+const BrowserPage = lazy(() => import("@/app/browser/page"));
 import {
   AppWindowIcon,
   ArchiveIcon,
@@ -541,6 +547,27 @@ export default function DesktopShellPage() {
   useEffect(() => {
     if (!isDeviceOperator) setAccountSecurityOpen(false);
   }, [isDeviceOperator, setAccountSecurityOpen]);
+  const [browserOpen, setBrowserOpen] = useSystemAppWindow(
+    "browser",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [browserSearchRequest, setBrowserSearchRequest] =
+    useState<BrowserSearchRequest | null>(null);
+  const browserSearchRevision = useRef(0);
+  const openBrowser = useCallback(
+    (query?: string) => {
+      if (query?.trim()) {
+        setBrowserSearchRequest({
+          query: query.trim(),
+          revision: ++browserSearchRevision.current,
+        });
+      }
+      setBrowserOpen(true);
+    },
+    [setBrowserOpen],
+  );
   const [photoSearchRequest, setPhotoSearchRequest] = useState<{
     query: string;
     selectedPath?: string;
@@ -792,6 +819,19 @@ export default function DesktopShellPage() {
       (authStatus?.enabled === false || isAuthenticated),
     onOpen: openWorkspace,
   });
+  const browserSessionReady =
+    !authLoading &&
+    !authError &&
+    (authStatus?.enabled === false || isAuthenticated) &&
+    applianceAuthed === true;
+  useDesktopBrowserRequest({ ready: browserSessionReady, onOpen: openBrowser });
+  useEffect(() => {
+    if (!browserSessionReady) return;
+    const open = () => openBrowser();
+    window.addEventListener(BROWSER_OPEN_URL_REQUEST_EVENT, open);
+    return () =>
+      window.removeEventListener(BROWSER_OPEN_URL_REQUEST_EVENT, open);
+  }, [browserSessionReady, openBrowser]);
   useEffect(() => {
     if (authLoading || authError) {
       setApplianceAuthRequired(null);
@@ -1002,6 +1042,12 @@ export default function DesktopShellPage() {
       toast.info("家庭成员不能打开设备级管理工具");
       return;
     }
+    if (app.route === "/browser") {
+      openBrowser();
+      setOverlay("launchpad", false);
+      setOverlay("spotlight", false);
+      return;
+    }
     if (app.route === "/photos") {
       setPhotosOpen(true);
       setOverlay("launchpad", false);
@@ -1208,15 +1254,17 @@ export default function DesktopShellPage() {
           ? ("thinking" as const)
           : undefined,
       running:
-        app.route === "/photos"
-          ? photosOpen
-          : app.route === "/storage-center"
-            ? storageCenterOpen
-            : app.route === "/device-link"
-              ? deviceLinkOpen
-              : app.route === "/hub"
-                ? hubOpen
-                : app.windowed && isAppWindowOpen(app.route),
+        app.route === "/browser"
+          ? browserOpen
+          : app.route === "/photos"
+            ? photosOpen
+            : app.route === "/storage-center"
+              ? storageCenterOpen
+              : app.route === "/device-link"
+                ? deviceLinkOpen
+                : app.route === "/hub"
+                  ? hubOpen
+                  : app.windowed && isAppWindowOpen(app.route),
       onOpen: () => chooseAppPresentation(app),
     })),
     ...libraryApplianceApps.map((app) => ({
@@ -1528,7 +1576,7 @@ export default function DesktopShellPage() {
       return;
     }
     setOverlay("spotlight", false);
-    navigate(`/browser?q=${encodeURIComponent(query.trim())}`);
+    openBrowser(query.trim());
   };
 
   const retryDesktopAuth = () => {
@@ -1637,6 +1685,9 @@ export default function DesktopShellPage() {
     else if (app === "settings") {
       if (settingsBusy) return;
       setAccountSecurityOpen(false);
+    } else if (app === "browser") {
+      setBrowserSearchRequest(null);
+      setBrowserOpen(false);
     } else setTaskSpaceOpen(false);
   };
 
@@ -1644,6 +1695,24 @@ export default function DesktopShellPage() {
   // 搜索某张照片）才能送达已经打开的窗口。
   const renderSystemApp = (app: SystemAppId): ReactNode => {
     switch (app) {
+      case "browser":
+        return (
+          <Suspense
+            fallback={
+              <p role="status" className="p-6 text-sm text-slate-500">
+                正在打开 AI 浏览器…
+              </p>
+            }
+          >
+            <BrowserPage
+              active={
+                focusedWin === "system:browser" &&
+                !minimized.has("system:browser")
+              }
+              searchRequest={browserSearchRequest}
+            />
+          </Suspense>
+        );
       case "settings":
         return isDeviceOperator ? (
           <AccountSecurityPanel
@@ -2520,11 +2589,13 @@ export default function DesktopShellPage() {
             .map((app) => {
               const Icon = app.icon;
               const running =
-                app.route === "/photos"
-                  ? photosOpen
-                  : app.route === "/storage-center"
-                    ? storageCenterOpen
-                    : app.windowed && isAppWindowOpen(app.route);
+                app.route === "/browser"
+                  ? browserOpen
+                  : app.route === "/photos"
+                    ? photosOpen
+                    : app.route === "/storage-center"
+                      ? storageCenterOpen
+                      : app.windowed && isAppWindowOpen(app.route);
               return (
                 <DockItem
                   key={app.name}

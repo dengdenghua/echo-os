@@ -119,6 +119,7 @@ export type SystemAppId =
   | "device-link"
   | "activity-monitor"
   | "settings"
+  | "browser"
   | "task-space";
 
 /**
@@ -156,6 +157,11 @@ export const SYSTEM_APP_WINDOWS: Record<
     title: "系统设置",
     size: { w: 1120, h: 740 },
     chromeHeight: 44,
+  },
+  browser: {
+    title: "AI 浏览器",
+    size: { w: 1180, h: 760 },
+    chromeHeight: 40,
   },
 };
 
