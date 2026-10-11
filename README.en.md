@@ -1,21 +1,20 @@
 # Echo OS
 
-Echo OS is the Agent operating system for personal devices: Agent runtime,
-desktop, launcher, files, and system capabilities ship from this repository as
-one versioned distribution. The visible workbench belongs to the single Echo
-frontend, and development and release use this checkout as their source of truth.
+Echo OS is the Echo family's always-on private-cloud execution environment, deployed on a user-owned server, NAS, or private VM. The Agent runtime, browser-based desktop, launcher, files, and system capabilities ship as one versioned distribution. Its workbench is the private-cloud management and execution surface.
 
 中文读者：[README.md](README.md)
 
-## Project family
+## The Echo product family
 
-| Project | Responsibility |
-| --- | --- |
-| `echo-agent` | Agent capability name and compatibility command embedded in Echo OS |
-| `echo-os` | Single release unit: Agent runtime, desktop, files, and system capabilities |
-| `echo-mobile` | Android automation client |
-| `echo-enterprise` | Enterprise AI project management |
-| `echo-storage` | Local secure data coprocessor (File Agent) |
+| Product | Positioning | Usage and execution |
+| --- | --- | --- |
+| [Echo AI](https://github.com/dengdenghua/echo-ai) | Desktop AI workspace | Deep work with local files, code, applications, and tools; the interaction reference is Codex on desktop. |
+| [Echo Mobile](https://github.com/dengdenghua/echo-mobile) | Mobile AI entry point | Conversations, voice interaction, task initiation, and results on a phone; the interaction reference is GPT conversations on mobile. |
+| [Echo OS](https://github.com/dengdenghua/echo-os) | Always-on private-cloud execution environment | Runs on a user-owned server, NAS, or private VM for background tasks, browsers, and computation; the execution reference is a Dot's cloud computer. |
+
+These are product roles and the intended integration direction, not a claim that all cross-device features are implemented. Desktop tasks can execute locally, and desktop or mobile clients can connect to private-cloud execution. Assistants and White Ghost squads are execution members; nodes are execution environments, without a required one-to-one mapping. Shared identity, projects, tasks, and execution nodes are the integration direction. Consult each repository for implementation status.
+
+`echo-agent` remains the embedded Agent capability and compatibility command; `echo-enterprise` and `echo-storage` are related enterprise and data services.
 
 ## Repository layout
 
