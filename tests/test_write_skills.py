@@ -238,6 +238,22 @@ class TestMultiEditFile:
 
 
 class TestExecShell:
+    def test_string_command_preserves_quoted_arguments(self, tmp_path: Path):
+        import json
+        import shlex
+        import subprocess
+        import sys
+
+        script = tmp_path / "quoted command.py"
+        script.write_text("import json, sys; print(json.dumps(sys.argv[1:]))", encoding="utf-8")
+        arguments = ["two words", 'a"quote', "C:\\a path\\", "", "literal$(expression)"]
+        argv = [sys.executable, str(script), *arguments]
+        command = subprocess.list2cmdline(argv) if sys.platform == "win32" else shlex.join(argv)
+        result = _exec_shell(command=command)
+        assert "error" not in result, result
+        assert result["exit_code"] == 0, result
+        assert json.loads(result["stdout"]) == arguments
+
     def test_simple_str_command_platform_neutral(self):
         """Implementation note."""
         import sys

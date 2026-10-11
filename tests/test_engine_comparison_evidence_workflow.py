@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -20,19 +22,32 @@ def _step(name: str) -> dict:
 
 
 def test_all_engine_evidence_shell_steps_parse() -> None:
+    # Resolve bash through PATH: on Windows a bare "bash" makes CreateProcess
+    # pick System32\bash.exe (the WSL launcher) ahead of PATH entries.
+    bash = shutil.which("bash")
+    if sys.platform == "win32" and (
+        bash is None or Path(bash).parent.name.lower() in {"system32", "windowsapps"}
+    ):
+        git = shutil.which("git")
+        candidate = Path(git).parent.parent / "bin" / "bash.exe" if git else None
+        bash = str(candidate) if candidate is not None and candidate.is_file() else None
+    if bash is None:
+        pytest.skip("bash is not installed")
     for step in _job()["steps"]:
         script = step.get("run")
         if script is None:
             continue
+        # Feed bytes: a text-mode pipe on Windows rewrites LF as CRLF, and bash
+        # then reports bogus syntax errors such as `$'do\r'`.
         parsed = subprocess.run(
-            ["bash", "-n"],
-            input=script,
+            [bash, "-n"],
+            input=script.encode("utf-8"),
             capture_output=True,
-            text=True,
             timeout=10,
             check=False,
         )
-        assert parsed.returncode == 0, f"{step.get('name')}: {parsed.stderr}"
+        stderr = parsed.stderr.decode("utf-8", errors="replace")
+        assert parsed.returncode == 0, f"{step.get('name')}: {stderr}"
 
 
 def test_engine_evidence_requires_protected_preprovisioned_linux_runner() -> None:
@@ -57,6 +72,13 @@ def test_engine_evidence_requires_protected_preprovisioned_linux_runner() -> Non
     assert ".sources.contract_sha256" in preflight
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason=(
+        "benchmarks/linux_hardened_verifier.py is deliberately Linux-only (top-level fcntl "
+        "and resource imports) and its bytes are bound by the runner attestation"
+    ),
+)
 def test_launcher_validate_cli_runs_as_an_isolated_absolute_script(tmp_path: Path) -> None:
     launcher = REPO_ROOT / "benchmarks/linux_hardened_verifier.py"
     environment = {
@@ -218,8 +240,7 @@ def test_protected_runtime_inputs_are_rechecked_without_publishing_auth_identity
     assert "auth.json" not in provenance
     assert "protected-identities" not in upload
     assert (
-        "ECHO_PROTECTED_IDENTITY_BASELINE"
-        in _step("Stop the isolated Echo control plane")["run"]
+        "ECHO_PROTECTED_IDENTITY_BASELINE" in _step("Stop the isolated Echo control plane")["run"]
     )
 
 
@@ -236,4 +257,3 @@ def test_engine_evidence_is_oidc_signed_verified_and_uploaded() -> None:
     assert "evidence-provenance.sig" in upload["path"]
     assert "evidence-provenance.pem" in upload["path"]
     assert upload["if-no-files-found"] == "error"
-

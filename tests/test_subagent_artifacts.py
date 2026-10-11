@@ -67,14 +67,15 @@ def test_too_large_rejected(tmp_path: Path) -> None:
 
 
 def test_fallback_to_project_root(tmp_path: Path, monkeypatch) -> None:
-    # no workspace_path → falls back to the project's .echo/artifacts
+    # Isolate the fallback from the caller's real project artifact directory.
+    from runtime.execution.subagents import artifacts
+
+    monkeypatch.setattr(artifacts, "_project_root", lambda: tmp_path)
     ref = save_artifact("x", name="n.txt", root_thread_id="r", sub_thread_id="s")
     assert ref["ok"] is True
-    assert ".echo" in ref["path"]
-    assert "/artifacts/" in ref["path"]
+    assert Path(ref["path"]) == tmp_path / ".echo" / "artifacts" / "r" / "s" / "n.txt"
 
 
 def test_read_missing_returns_error(tmp_path: Path) -> None:
     back = read_artifact(str(tmp_path / "nope.txt"))
     assert back["ok"] is False
-

@@ -30,7 +30,6 @@ from runtime.core.cerebrum._react_execution_phase6g import (
 )
 from runtime.core.cerebrum._react_execution_results import (
     _background_task_info_from_observation,
-    _is_scoped_artifact_write,
     _tool_event_extras_from_beak_step,
 )
 from runtime.core.cerebrum.react_approval_checkpoint import persist_server_hold_boundary
@@ -73,7 +72,6 @@ from runtime.execution.tool_engine.tool_protocol import (
 )
 from runtime.safety.hooks.tool_edge_hooks import post_write_diagnostic_record
 from runtime.safety.validation.prompt_injection import (
-    injection_taint_gates,
     is_untrusted_tool,
     mark_injection_taint,
     scan_for_injection,
@@ -562,6 +560,19 @@ def _phase_6d_dispatch_and_observe(
         # below untouched — that branch only runs when there is
         # exactly one action, preserving every existing
         # approval/retry/cancel/background-task behavior.
+        from runtime.core.cerebrum._react_action_review import review_tool_action
+
+        def _review_batch_action(name, arguments, batch_call_id):
+            return review_tool_action(
+                state,
+                resolved_name=name,
+                input_preview=arguments,
+                call_id=batch_call_id,
+                iteration=i + 1,
+                guardian_reviewer=_guardian_reviewer,
+                auto_review_provider=_auto_review_provider,
+            )
+
         _parallel_handled = False
         if tool_action_requested and len(step.actions) > 1:
             _parallel_obs, _parallel_results = yield from _dispatch_parallel_actions(
@@ -573,6 +584,7 @@ def _phase_6d_dispatch_and_observe(
                 agent=agent,
                 intent=intent,
                 beak_step_sink=executed_beak_steps,
+                review_action=_review_batch_action,
             )
             if _parallel_obs is not None:
                 observation = _parallel_obs
@@ -622,193 +634,28 @@ def _phase_6d_dispatch_and_observe(
                             origin="react_compat",
                         )
                     )
-                    _auto_approve = intent.user_context.get(
-                        "auto_approve", False
-                    ) or intent.flags.get("auto_approve", False)
                     from runtime.safety.approval.approval_gate import (
                         ApprovalRequest,
                         AutoDenyProvider,
-                        approval_action_for_tool,
                     )
 
-                    try:
-                        from runtime.platform.process.session import current_session as _cs_ap
-
-                        _sess_ap = _cs_ap()
-                        _risk_policy_raw = (
-                            (getattr(_sess_ap, "metadata", {}) or {}).get("approval_risk_policy")
-                            if _sess_ap is not None
-                            else None
-                        )
-                    except (AttributeError, TypeError):
-                        _risk_policy_raw = None
-                    _approval_risk, _approval_action, _approval_policy = approval_action_for_tool(
-                        resolved_name,
-                        str(_input_preview)[:500] if _input_preview else "",
-                        policy=_risk_policy_raw,
+                    _review = yield from review_tool_action(
+                        state,
+                        resolved_name=resolved_name,
+                        input_preview=_input_preview,
+                        call_id=call_id,
+                        iteration=i + 1,
+                        guardian_reviewer=_guardian_reviewer,
+                        auto_review_provider=_auto_review_provider,
                     )
-                    _scoped_artifact_write = _is_scoped_artifact_write(
-                        resolved_name,
-                        _input_preview,
-                    )
-                    # Injection taint gate (hard): if untrusted content
-                    # carrying injection markers entered this turn, a
-                    # risky tool can no longer auto-run — force it through
-                    # human approval, overriding auto_approve and the
-                    # scoped-write / accept-edits fast paths. This is the
-                    # escalation from the in-context warning to an actual
-                    # stop: a poisoned page can't drive an exec_shell /
-                    # write / send behind the user's back. Gate at medium+
-                    # so EXFILTRATION (egress tools = medium — the classic
-                    # injection payload) is caught, not just destructive
-                    # high-risk tools; only pure low-risk reads still
-                    # auto-run after taint.
-                    if injection_taint_gates() and _approval_risk.level in {
-                        "medium",
-                        "high",
-                        "critical",
-                    }:
-                        _auto_approve = False
-                        _scoped_artifact_write = False
-                        if _approval_action not in {"ask", "confirm", "deny"}:
-                            _approval_action = "ask"
-                        _approval_risk = _approval_risk.with_injection_taint()
-                    _permission_context = {
-                        **state.metadata,
-                        **intent.user_context,
-                    }
-                    if _approval_action in {
-                        "ask",
-                        "confirm",
-                    } and _workspace_sandbox_handles_ordinary_action(
-                        resolved_name,
-                        _approval_risk,
-                        _permission_context,
-                    ):
-                        _approval_action = "allow"
-                    # Guardian independent review (opt-in, after the taint
-                    # gate so tainted actions still route to the human): a
-                    # guardian deny tightens ask/confirm/allow to deny; an
-                    # allow or a failure keeps the rule engine's action.
-                    _approval_deny_reason: str | None = None
-                    if _guardian_reviewer is not None:
-                        from runtime.safety.approval.guardian_review import (
-                            decide_with_guardian,
-                        )
-
-                        _guardian_user_intent = _latest_human_intent(messages)
-                        _guardian_action, _guardian_note = decide_with_guardian(
-                            rule_engine_action=_approval_action,
-                            rule_engine_risk=_approval_risk.level,
-                            rule_engine_categories=_approval_risk.categories,
-                            reviewer=_guardian_reviewer,
-                            thread_id=thread_id,
-                            tool_name=resolved_name,
-                            args_preview=(str(_input_preview)[:500] if _input_preview else ""),
-                            user_intent=_guardian_user_intent,
-                        )
-                        if _guardian_action == "deny":
-                            _approval_action = "deny"
-                            _approval_deny_reason = _guardian_note
-                    if (
-                        _approval_action == "deny"
-                        and not _auto_approve
-                        and not _scoped_artifact_write
-                    ):
-                        yield {
-                            "type": "tool_end",
-                            "tool_name": resolved_name,
-                            "tool_call_id": call_id,
-                            "iteration": i + 1,
-                            "status": "rejected",
-                            "output_preview": (
-                                _approval_deny_reason
-                                or f"Denied by approval risk policy "
-                                f"(risk={_approval_risk.level}: {_approval_risk.reason})"
-                            ),
-                            "duration_ms": int((time.monotonic() - _tool_started_at) * 1000),
-                            "risk": _approval_risk.to_dict(),
-                            "approval_action": _approval_action,
-                            "approval_policy": _approval_policy.to_dict(),
-                        }
-                        observation = (
-                            "(工具被风险策略拒绝) 此操作被 approval risk policy 拒绝，"
-                            "请换一种方式或询问用户。"
-                        )
-                        _record_rejected_step(steps, messages, step, observation)
-                        _flush_guard_notices(state, messages)
-                        return _LoopControl.NEXT_ITERATION
-                    if (
-                        _approval_action in {"ask", "confirm"}
-                        and not _auto_approve
-                        and not _scoped_artifact_write
-                    ):
-                        _provider = _auto_review_provider or approval_provider or AutoDenyProvider()
-                        _approval_detail = (
-                            f"{resolved_name} wants to execute "
-                            f"(risk={_approval_risk.level}: {_approval_risk.reason})"
-                        )
-                        if _auto_review_provider is None:
-                            yield {
-                                "type": "tool_approval_request",
-                                "tool_name": resolved_name,
-                                "tool_call_id": call_id,
-                                "args_preview": (
-                                    str(_input_preview)[:500] if _input_preview else ""
-                                ),
-                                "detail": _approval_detail,
-                                "risk": _approval_risk.to_dict(),
-                                "approval_action": _approval_action,
-                                "approval_policy": _approval_policy.to_dict(),
-                            }
-                        _decision = _provider.request(
-                            ApprovalRequest(
-                                thread_id=thread_id,
-                                tool_name=resolved_name,
-                                tool_call_id=call_id,
-                                args_preview=str(_input_preview)[:500] if _input_preview else "",
-                                detail=_approval_detail,
-                            ),
-                            timeout=600.0,
-                        )
-                        if not _decision.approved:
-                            if _approval_could_not_reach_user(
-                                _decision
-                            ) and _pause_for_unavailable_approval(
-                                state,
-                                iteration=i,
-                                tool_name=resolved_name,
-                                detail=_approval_detail,
-                            ):
-                                yield {
-                                    "type": "tool_end",
-                                    "tool_name": resolved_name,
-                                    "tool_call_id": call_id,
-                                    "iteration": i + 1,
-                                    "status": "waiting_approval",
-                                    "output_preview": (
-                                        "审批界面暂不可用，任务已保存并暂停，等待用户授权后继续。"
-                                    ),
-                                    "duration_ms": int(
-                                        (time.monotonic() - _tool_started_at) * 1000
-                                    ),
-                                }
-                                return _LoopControl.CONTINUE
-                            yield {
-                                "type": "tool_end",
-                                "tool_name": resolved_name,
-                                "tool_call_id": call_id,
-                                "iteration": i + 1,
-                                "status": "rejected",
-                                "output_preview": _decision.reason or "User denied tool execution",
-                                "duration_ms": int((time.monotonic() - _tool_started_at) * 1000),
-                            }
-                            observation = (
-                                "(工具审批未通过) 此操作未获批准，请换一种更安全的方式或询问用户。"
-                            )
+                    _auto_approve = _review.auto_approve
+                    _approval_policy = _review.approval_policy
+                    if not _review.allowed:
+                        observation = _review.observation
+                        if _review.control == _LoopControl.NEXT_ITERATION:
                             _record_rejected_step(steps, messages, step, observation)
                             _flush_guard_notices(state, messages)
-                            return _LoopControl.NEXT_ITERATION
+                        return _review.control
                     if output_chunk_sink is not None:
                         from runtime.core.cerebrum.tool_output_sink import push_sink
 
@@ -917,7 +764,7 @@ def _phase_6d_dispatch_and_observe(
                                     "requires_approval": True,
                                 },
                                 "approval_action": "confirm",
-                                "approval_policy": _approval_policy.to_dict(),
+                                "approval_policy": _approval_policy,
                                 "sandbox_escalation": True,
                             }
                         _escalation_decision = _escalation_provider.request(

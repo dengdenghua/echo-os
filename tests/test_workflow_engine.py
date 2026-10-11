@@ -8,6 +8,7 @@ result materialization, lifecycle events, and the model-facing skill.
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Any
 
 import pytest
@@ -336,18 +337,23 @@ def test_unserializable_result_fails_loud() -> None:
 
 
 def test_cancel_mid_run() -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+
     async def slow_dispatch(request: dict[str, Any]) -> dict[str, Any]:
-        await asyncio.sleep(0.5)
+        started.set()
+        await release.wait()
         return {"ok": True, "output": "OUT", "structured": None, "stop_reason": "completed"}
 
     async def scenario() -> Any:
         engine = _engine(child_dispatch=slow_dispatch, dispose_grace_ms=1000)
         run = engine.start({"script": "a = await agent('long')\nreturn a", "meta": FAKE_META})
-        await asyncio.sleep(0.2)
-        run.cancel("user asked to stop")
         try:
+            await asyncio.wait_for(started.wait(), timeout=5)
+            run.cancel("user asked to stop")
             return await asyncio.wait_for(run.result, timeout=10)
         finally:
+            release.set()
             await run.dispose()
 
     result = asyncio.run(scenario())
@@ -504,6 +510,9 @@ def test_run_total_duration_cap() -> None:
     assert result.agents_started == 1
 
 
+@pytest.mark.skipif(
+    not hasattr(os, "getsid"), reason="POSIX session IDs are unavailable on Windows"
+)
 def test_worker_runs_in_own_session() -> None:
     """The worker subprocess must be a session leader so tree termination
     can kill its children (audit T-10)."""
@@ -528,4 +537,3 @@ def test_worker_runs_in_own_session() -> None:
     result, session_of_worker = asyncio.run(scenario())
     assert result.stop_reason == "completed"
     assert session_of_worker != os.getsid(0)
-

@@ -350,7 +350,9 @@ def _turn_id_state_locked(path: Path, proposed: TurnScore) -> str:
 
 
 def _sync_score_file_locked(path: Path) -> None:
-    flags = os.O_RDONLY
+    # Windows _commit requires a writable descriptor. Read-write does not
+    # truncate the evidence or append another score on an uncertain retry.
+    flags = os.O_RDONLY if os.name == "posix" else os.O_RDWR
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     fd = os.open(path, flags)

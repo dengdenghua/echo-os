@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -50,7 +51,8 @@ def test_share_store_persists_only_a_capability_token_hash(tmp_path: Path) -> No
     assert persisted["token_hash"] == token_hash
     assert persisted["share_id"].startswith("shr_")
     assert persisted["expires_at"]
-    assert files[0].stat().st_mode & 0o777 == 0o600
+    expected_mode = 0o600 if os.name == "posix" else 0o666
+    assert files[0].stat().st_mode & 0o777 == expected_mode
 
     loaded = store.get(token)
     assert loaded is not None
@@ -377,4 +379,3 @@ def test_share_router_uses_configured_cloud_relay_without_persisting_local_snaps
     assert calls[0][1][:3] == ("thread-relay", "alice", "tenant-a")
     assert calls[1][1] == ("thread-relay", "alice", "tenant-a")
     assert calls[2][1] == ("shr_remote", "alice", "tenant-a")
-

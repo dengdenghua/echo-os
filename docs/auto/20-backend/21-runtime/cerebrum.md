@@ -14,6 +14,7 @@ Native Echo planning exports, loaded only when requested.
 | --- | --- |
 | `_planner_helpers.py` | Pure helper functions extracted from :mod:`runtime.core.cerebrum.llm_planner`. |
 | `_planner_parse.py` | Plan-JSON extraction + node validation for :class:`LLMPlanner`. |
+| `_react_action_review.py` | One approval gate shared by single actions and multi-action batches. |
 | `_react_context_attachments.py` | User-message content assembly (attachments, images, JSONL manifest), message checkpoint (de)serialization helpers, and related-file prefetching. |
 | `_react_context_code.py` | Compatibility exports for context builders moved out of the ReAct engine. |
 | `_react_context_helpers.py` | Token estimation, context-compression helpers, and skill-catalog formatting for the ReAct loop. |
@@ -55,6 +56,7 @@ Native Echo planning exports, loaded only when requested.
 | `plugin_auto_load.py` | Auto-activate pinned plugins/skill-packs from user mentions. |
 | `prompt_persistence.py` | — |
 | `react_action_outcomes.py` | Action outcome bookkeeping for the ReAct loop. |
+| `react_approval_checkpoint.py` | Persist completed work before a server-held approval can outlive its worker. |
 | `react_auto_verify.py` | Runtime-side auto-verification salvage for final-answer guard deadlocks. |
 | `react_browser_guards.py` | Browser-interaction and mixed-mode completion guards. |
 | `react_browser_iteration.py` | Browser-surface gating and per-task iteration limits for the ReAct loop. |

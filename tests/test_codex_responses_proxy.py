@@ -580,9 +580,7 @@ async def test_proxy_token_only_enters_app_server_environment(tmp_path: Path) ->
         assert launch_env["NO_PROXY"] == "127.0.0.1,localhost,::1"
         assert launch_env["no_proxy"] == "127.0.0.1,localhost,::1"
         assert "UPSTREAM_API_KEY" not in launch_env
-        assert parsed["model_providers"]["echo_proxy"]["env_key"] == (
-            "ECHO_CODEX_PROXY_TOKEN"
-        )
+        assert parsed["model_providers"]["echo_proxy"]["env_key"] == ("ECHO_CODEX_PROXY_TOKEN")
         assert "ECHO_CODEX_PROXY_TOKEN" not in parsed["shell_environment_policy"]["set"]
         assert token not in config_text
         assert token not in repr(profile)
@@ -721,6 +719,20 @@ async def test_real_codex_app_server_completes_scoped_text_and_tool_loop(
                     {"threadId": execution.inner_thread_id},
                     timeout_s=20.0,
                 )
+                # The reply acknowledges scheduling, not completion. Compaction
+                # uses a new turn ID, outside the execution's turn filter.
+                while True:
+                    notification = await execution._require_client().next_notification(
+                        timeout_s=10.0
+                    )
+                    notifications.append(notification)
+                    item = notification.params.get("item")
+                    if notification.method == "thread/compacted" or (
+                        notification.method == "item/completed"
+                        and isinstance(item, dict)
+                        and item.get("type") == "contextCompaction"
+                    ):
+                        break
         finally:
             await execution.close()
 
@@ -742,5 +754,3 @@ async def test_real_codex_app_server_completes_scoped_text_and_tool_loop(
         ):
             agent_texts.append(str(item.get("text") or ""))
     assert any("real proxy tool loop complete" in text for text in agent_texts)
-
-

@@ -1051,7 +1051,9 @@ class JSONLJournal(Journal):
         try:
             import os as _os
 
-            with self._path.open("rb") as journal_file:
+            # Windows fsync needs write access. r+b preserves existing bytes
+            # and refuses to create an absent recovered journal.
+            with self._path.open("rb" if _os.name == "posix" else "r+b") as journal_file:
                 _os.fsync(journal_file.fileno())
             _fsync_parent_directory(
                 self._path,

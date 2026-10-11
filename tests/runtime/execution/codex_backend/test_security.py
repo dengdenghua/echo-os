@@ -969,6 +969,7 @@ def test_cleanup_refuses_invalid_markers_and_outside_paths(tmp_path: Path) -> No
         forged.cleanup()
     assert outside.exists()
 
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows SQLite path layout")
 def test_windows_sqlite_uses_compact_persistent_scoped_path(tmp_path: Path) -> None:
     manager, workspace, state_root = _manager(tmp_path)
@@ -995,3 +996,50 @@ def test_windows_sqlite_keeps_existing_legacy_database_and_wal(tmp_path: Path) -
     assert _config(resumed)["sqlite_home"] == str(legacy)
     assert (legacy / "state.sqlite").read_bytes() == b"existing database"
     assert (legacy / "state.sqlite-wal").read_bytes() == b"pending writes"
+
+
+def test_versioned_feature_is_locked_only_where_the_executable_defines_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from runtime.execution.codex_backend import security as security_module
+
+    supported: dict[str, frozenset[str] | None] = {
+        "new-codex": frozenset({"apps", "api_key_model_discovery"}),
+        "old-codex": frozenset({"apps"}),
+    }
+    monkeypatch.setattr(
+        security_module,
+        "supported_codex_features",
+        lambda executable: supported.get(executable or ""),
+    )
+    manager, workspace, _state_root = _manager(tmp_path)
+
+    newer = manager.prepare(
+        realm_id="realm-a",
+        tenant_id="tenant-a",
+        thread_id="thread-new",
+        task_id="task-a",
+        workspace=workspace,
+        codex_executable="new-codex",
+    )
+    newer_features = _config(newer)["features"]
+    assert newer_features["api_key_model_discovery"] is False  # type: ignore[index]
+    newer.validate_effective_config({"config": _config(newer)})
+
+    # An older build would reject the unknown key under --strict-config.
+    for executable in ("old-codex", None):
+        older = manager.prepare(
+            realm_id="realm-a",
+            tenant_id="tenant-a",
+            thread_id=f"thread-{executable}",
+            task_id="task-a",
+            workspace=workspace,
+            codex_executable=executable,
+        )
+        assert "api_key_model_discovery" not in _config(older)["features"]  # type: ignore[operator]
+
+    # If detection missed it and the build enables it by default, fail closed.
+    drifted = copy.deepcopy(_config(older))
+    drifted["features"]["api_key_model_discovery"] = True  # type: ignore[index]
+    with pytest.raises(CodexSecurityError, match="unknown executable feature"):
+        older.validate_effective_config({"config": drifted})

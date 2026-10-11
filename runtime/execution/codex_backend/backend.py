@@ -310,6 +310,7 @@ class CodexExecutionSession:
                 approval_reviewer=self.request.approval_reviewer,
                 provider_profile=self.request.provider_profile,
                 selected_app_ids=self.request.selected_app_ids,
+                codex_executable=self.request.command[0],
                 # This attestation is derived from the effective BackendChoice
                 # that will actually wrap the process, never from a
                 # caller-owned bool or a bypassed nested-incompatible backend.
@@ -605,7 +606,10 @@ class CodexExecutionSession:
             if self._closed:
                 return
             self._closed = True
-            if self._privacy_monitor is not None and self._privacy_monitor is not asyncio.current_task():
+            if (
+                self._privacy_monitor is not None
+                and self._privacy_monitor is not asyncio.current_task()
+            ):
                 self._privacy_monitor.cancel()
             first_error: BaseException | None = None
             if self._client is not None:

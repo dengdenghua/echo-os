@@ -37,19 +37,13 @@ def mount_routers_a(
 
     from runtime.sensing.gateway.system_router import create_system_router
 
-    def _reset_runtime_memory() -> None:
-        clear_threads = getattr(ctx.thread_store, "clear", None)
-        if callable(clear_threads):
-            clear_threads()
-        clear_teams = getattr(ctx.team_rooms_router, "reset_state", None)
-        if callable(clear_teams):
-            clear_teams()
+    from ._app_reset import reset_runtime_memory
 
     app.include_router(
         create_system_router(
             project_root=ctx.project_root,
             identity_store=ctx.identity_store,
-            memory_reset_callback=_reset_runtime_memory,
+            memory_reset_callback=lambda: reset_runtime_memory(ctx),
             require_auth=ctx.require_auth,
             jwt_secret=ctx.jwt_secret,
             jwt_issuer=ctx.jwt_issuer,

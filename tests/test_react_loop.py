@@ -8390,6 +8390,7 @@ def test_write_tool_in_parallel_block_forces_serial_dispatch(tmp_path, monkeypat
             _intent("mixed batch"),
             agent=None,
             max_iterations=3,
+            approval_provider=_ApprovingApprovalProvider(),
         )
     )
     assert result is not None and result.success

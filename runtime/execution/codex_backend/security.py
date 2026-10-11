@@ -59,6 +59,7 @@ from ._security_support import (
     _validate_workspace,
     _write_marker,
 )
+from .feature_support import supported_codex_features
 from .types import CodexProviderProfile
 
 CodexSandboxMode = Literal["read-only", "workspace-write", "danger-full-access"]
@@ -124,6 +125,7 @@ _LOCKED_OFF_FEATURES = (
     "shell_snapshot",
     "tool_suggest",
 )
+_VERSIONED_LOCKED_OFF_FEATURES = ("api_key_model_discovery",)
 _ALLOWED_ENABLED_FEATURES = frozenset({"mentions_v2"})
 _PROTECTED_WORKSPACE_SUBPATHS = (".git", ".agents", ".codex")
 
@@ -216,6 +218,7 @@ class CodexSidecarContext:
     _launch_env: Mapping[str, str] = field(repr=False)
     provider_profile: CodexProviderProfile | None = field(default=None, repr=False)
     selected_app_ids: tuple[str, ...] = ()
+    locked_off_features: tuple[str, ...] = _LOCKED_OFF_FEATURES
 
     @property
     def sqlite_home(self) -> Path:
@@ -314,7 +317,7 @@ class CodexSidecarContext:
 
         features = _mapping_at(config, "features", errors)
         if features is not None:
-            for feature_name in _LOCKED_OFF_FEATURES:
+            for feature_name in self.locked_off_features:
                 _expect_value(
                     features,
                     feature_name,
@@ -324,7 +327,7 @@ class CodexSidecarContext:
                 )
             for feature_name, enabled in features.items():
                 if (
-                    feature_name not in _LOCKED_OFF_FEATURES
+                    feature_name not in self.locked_off_features
                     and feature_name not in _ALLOWED_ENABLED_FEATURES
                     and enabled not in (None, False)
                 ):
@@ -508,6 +511,7 @@ class CodexSidecarSecurity:
         approval_reviewer: CodexApprovalReviewer = "user",
         provider_profile: CodexProviderProfile | None = None,
         selected_app_ids: tuple[str, ...] = (),
+        codex_executable: str | None = None,
         outer_hard_sandbox_active: bool = False,
         host_env: Mapping[str, str] | None = None,
     ) -> CodexSidecarContext:
@@ -651,6 +655,7 @@ class CodexSidecarSecurity:
             task_key=task_key,
             provider_profile=provider_profile,
             selected_app_ids=tuple(dict.fromkeys(selected_app_ids)),
+            locked_off_features=_locked_off_features_for(codex_executable),
             _launch_env=MappingProxyType(launch_env),
         )
         _read_binding_file(context)
@@ -769,6 +774,15 @@ def _sqlite_home(state_root: Path, codex_home: Path) -> Path:
     return state_root / "sqlite" / key
 
 
+def _locked_off_features_for(codex_executable: str | None) -> tuple[str, ...]:
+    supported = supported_codex_features(codex_executable)
+    if not supported:
+        return _LOCKED_OFF_FEATURES
+    return _LOCKED_OFF_FEATURES + tuple(
+        name for name in _VERSIONED_LOCKED_OFF_FEATURES if name in supported
+    )
+
+
 def _render_codex_config(context: CodexSidecarContext) -> str:
     tool_env = _tool_environment(context)
     lines = [
@@ -846,7 +860,7 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             "[features]",
             *[
                 f"{name} = {str(bool(context.selected_app_ids) if name == 'apps' else False).lower()}"
-                for name in _LOCKED_OFF_FEATURES
+                for name in context.locked_off_features
             ],
             "",
             f"[permissions.{PERMISSION_PROFILE}]",

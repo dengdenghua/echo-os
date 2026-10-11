@@ -43,7 +43,15 @@ class TestBugfixDemoSnapshot:
         snapshot.match(
             "journal",
             events,
-            rebase_map={str(tmp_path): "{workdir}", sys.executable: "{python}"},
+            rebase_map={
+                str(
+                    tmp_path / "demo_project" / "test_add.py"
+                ): "{workdir}/demo_project/test_add.py",
+                str(tmp_path / "demo_project" / "add.py"): "{workdir}/demo_project/add.py",
+                str(tmp_path / "demo_project"): "{workdir}/demo_project",
+                str(tmp_path): "{workdir}",
+                sys.executable: "{python}",
+            },
             scrub_keys=_VOLATILE_KEYS,
         )
 
@@ -60,4 +68,3 @@ class TestBugfixDemoSnapshot:
             for step in result["steps"]
         ]
         snapshot.match("steps", steps, rebase_map={str(tmp_path): "{workdir}"})
-

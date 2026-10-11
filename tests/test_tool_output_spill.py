@@ -86,7 +86,8 @@ def test_save_text_spill_writes_private_session_scoped_file(tmp_path) -> None:
     assert os.path.exists(path)
     assert Path(path).read_text(encoding="utf-8") == "hello world"
     # session-scoped dir: <root>/session-<sha256 prefix>
-    assert os.path.dirname(path).startswith(f"{tmp_path}/session-")
+    assert Path(path).parent.parent == tmp_path
+    assert Path(path).parent.name.startswith("session-")
     assert str(session_spill_dir(tmp_path, SPILL_SESSION)) == os.path.dirname(path)
     # random prefix + safe name
     assert os.path.basename(path).endswith("-web_fetch.txt")
@@ -462,4 +463,3 @@ def test_spill_master_switch_reads_env_at_import() -> None:
     assert (os.environ.get("ECHO_TOOL_SPILL", "1") != "0") == (
         tool_output_spill.TOOL_RESULT_SPILL_ENABLED
     )
-

@@ -177,12 +177,18 @@ def test_quotes_tls_vhost_is_independent_authenticated_and_narrow() -> None:
 
 def test_release_scripts_are_executable_syntax_checked_and_atomic() -> None:
     bash = shutil.which("bash")
+    if os.name == "nt":
+        # System32/bash.exe is the WSL launcher, not a Windows-path-aware
+        # shell. Use Git Bash for syntax checks on this Windows checkout.
+        git = shutil.which("git")
+        git_bash = Path(git).parent.parent / "bin/bash.exe" if git else None
+        bash = str(git_bash) if git_bash and git_bash.is_file() else None
     for name in ("build-release-artifact.sh", "deploy-release.sh", "rollback-release.sh"):
         path = DEPLOY / name
         script = path.read_text(encoding="utf-8")
         assert os.access(path, os.X_OK)
         if bash is not None:
-            subprocess.run([bash, "-n", str(path)], check=True)
+            subprocess.run([bash, "-n", path.as_posix()], check=True)
         assert "rm -rf" not in script
 
     for name in ("deploy-release.sh", "rollback-release.sh"):

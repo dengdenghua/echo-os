@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from types import SimpleNamespace
 
 from runtime.sensing.gateway import comfyui_manager
@@ -13,7 +14,7 @@ def test_worker_commands_are_fixed_to_managed_stable_install(monkeypatch, tmp_pa
     update = comfyui_manager._worker_command("update")
 
     assert install == [
-        str(tmp_path / "venv" / "bin" / "comfy"),
+        str(tmp_path / "venv" / ("Scripts/comfy.exe" if os.name == "nt" else "bin/comfy")),
         f"--workspace={tmp_path / 'workspace'}",
         "--skip-prompt",
         "install",
@@ -193,4 +194,3 @@ def test_model_inventory_remove_and_restore_are_recoverable(monkeypatch, tmp_pat
     assert len(backups) == 1
     assert comfyui_manager.restore_managed_model(backups[0]["id"]) == "restored"
     assert model.read_bytes() == b"weights"
-

@@ -15,6 +15,7 @@ Misclassification is fail-safe: unknown/mutating subcommands are left alone.
 from __future__ import annotations
 
 import pytest
+from pathlib import Path
 
 from runtime.execution.suckers._write_skills_exec import (
     _exec_shell,
@@ -22,8 +23,8 @@ from runtime.execution.suckers._write_skills_exec import (
     _read_only_git_rewrite,
 )
 
-_REPO = "/workspace/repo"
-_WORK = "/workspace/repo/.echo-work/t1"
+_REPO = str(Path("/workspace/repo").resolve())
+_WORK = str(Path(_REPO) / ".echo-work" / "t1")
 
 
 def test_is_read_only_git_status() -> None:
@@ -137,4 +138,3 @@ def test_exec_shell_mutating_git_stays_confined(
     # git add is not read-only → no rewrite → cwd outside the sandbox fails.
     result = _exec_shell("git add .", cwd=str(tmp_path), sandbox_dir=str(work))
     assert "path_escapes_sandbox" in result.get("error", "")
-

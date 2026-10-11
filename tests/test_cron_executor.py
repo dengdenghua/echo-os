@@ -599,6 +599,27 @@ def test_recover_clears_stale_marker_and_prevents_refire(tmp_path: Path) -> None
     assert fired["fired"] == 0
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows process liveness")
+def test_windows_liveness_probe_is_read_only(monkeypatch) -> None:
+    import os
+
+    from runtime.execution.cron_executor import _process_group_alive
+
+    def unexpected_signal(*_args):
+        pytest.fail("checking process liveness must not signal a process")
+
+    monkeypatch.setattr(os, "kill", unexpected_signal)
+    assert _process_group_alive(os.getpid()) is True
+    assert _process_group_alive(0) is False
+    with subprocess.Popen(
+        [sys.executable, "-c", "pass"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ) as child:
+        child.wait(timeout=10)
+        assert _process_group_alive(child.pid) is False
+
+
 def test_recover_kills_live_orphan_process_group(tmp_path: Path) -> None:
     """Startup recovery kills a surviving process group left by a crash."""
     import sys as _sys
@@ -689,4 +710,3 @@ def test_trim_ledger_oldest_half_keeps_valid_records(tmp_path: Path) -> None:
     for line in ledger.read_text(encoding="utf-8").splitlines():
         rec = json.loads(line)
         assert "name" in rec
-
