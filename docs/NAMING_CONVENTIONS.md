@@ -104,9 +104,12 @@ done
 
 已做负向验证：把 `OCTOPUS = "octopus"` 改成 `"echo"` 后该测试立即失败，恢复后转绿。
 
-> ⚠️ 该测试位于 `tests/` 根目录，而 `pyproject.toml:273` 的 `testpaths` 目前只指向
-> `tests/appliance`。**在 testpaths 修好之前，CI 不会执行它**，需要本地手动跑。
-> 2026-10-12 改动时已本地执行确认通过，但这个 testpaths 缺口仍未修。
+> ℹ️ 该测试位于 `tests/` 根目录，而 `pyproject.toml` 的 `testpaths` 只写了
+> `tests/appliance`，因此**裸跑 `pytest` 不会执行它**。
+> 但 CI 不受影响：`ci.yml` 的 cross-platform job 显式传了 `tests/` 路径
+> （`uv run pytest tests/ --collect-only -q` 与 `uv run pytest tests/ -q -rf`），
+> 实测可收集 17420 个用例、本文件相关的 9 个全部在内。
+> 本地想跑守门测试请显式指定：`pytest tests/test_naming_contract.py`。
 
 ## 五、统一成 echo-os 的条件（已于 2026-10-12 满足）
 
