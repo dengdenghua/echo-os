@@ -60,6 +60,34 @@ describe("SystemAppFrame", () => {
   });
 });
 
+it("opens, minimizes, restores and closes activity monitor through the window manager", () => {
+  const { result } = renderHook(() => {
+    const desktop = useDesktopWindows();
+    const [open, setOpen] = useSystemAppWindow(
+      "activity-monitor",
+      desktop.windows,
+      desktop.openWindow,
+      desktop.closeWindow,
+    );
+    return { desktop, open, setOpen };
+  });
+  act(() => result.current.setOpen(true));
+  const id = systemAppWindowId("activity-monitor");
+  expect(result.current.desktop.windows[0]).toMatchObject({
+    id,
+    title: "活动监视器",
+    integratedChrome: true,
+  });
+  expect(systemAppForWindow(id)).toBe("activity-monitor");
+  act(() => result.current.desktop.minimizeWindow(id));
+  expect(result.current.desktop.minimized.has(id)).toBe(true);
+  act(() => result.current.setOpen(true));
+  expect(result.current.desktop.windows).toHaveLength(1);
+  expect(result.current.desktop.minimized.has(id)).toBe(false);
+  act(() => result.current.setOpen(false));
+  expect(result.current.desktop.windows).toEqual([]);
+});
+
 describe("useSystemAppWindow", () => {
   it("opens, raises and closes a system app through the window manager", () => {
     const { result } = renderHook(() => {

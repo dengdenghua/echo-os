@@ -125,6 +125,7 @@ import { StorageCenterPanel } from "@/appliance/storage-center-panel";
 import { DeviceLinkPanel } from "@/appliance/device-link-panel";
 import { resolveSystemSettingsSurface } from "@/appliance/system-settings-surface";
 import { TaskSpacePanel } from "@/appliance/task-space-panel";
+import { ActivityMonitorPanel } from "@/appliance/activity-monitor-panel";
 import { useAgents } from "@/core/agents/hooks";
 import { startEchoTask, type EchoTaskProjection } from "@/appliance/task-space";
 import { DockTaskRail } from "@/appliance/dock-task-rail";
@@ -401,15 +402,6 @@ export default function DesktopShellPage() {
     useState<DesktopCategory["key"]>("all");
   const [desktopSearch, setDesktopSearch] = useState("");
   const organizerEnabled = true;
-  const [showWidget, setShowWidget] = useState(false);
-  const [systemInfo, setSystemInfo] = useState<{
-    cpu: { model: string; cores: number; usage: number };
-    memory: { total: number; used: number; percent: number };
-    uptime: number;
-  } | null>(null);
-  const [systemInfoStatus, setSystemInfoStatus] = useState<
-    "idle" | "loading" | "ready" | "unavailable" | "error"
-  >("idle");
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
@@ -530,6 +522,12 @@ export default function DesktopShellPage() {
   );
   const [taskSpaceOpen, setTaskSpaceOpen] = useSystemAppWindow(
     "task-space",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [showWidget, setShowWidget] = useSystemAppWindow(
+    "activity-monitor",
     windows,
     openWindow,
     closeWindow,
@@ -1354,55 +1352,6 @@ export default function DesktopShellPage() {
   }, [organizerEnabled]);
 
   useEffect(() => {
-    if (!showWidget) {
-      setSystemInfoStatus("idle");
-      return;
-    }
-    const getSystemInfo = window.echo?.desktop?.getSystemInfo;
-    if (!getSystemInfo) {
-      setSystemInfo(null);
-      setSystemInfoStatus("unavailable");
-      return;
-    }
-    let alive = true;
-    setSystemInfoStatus("loading");
-    const poll = async () => {
-      try {
-        const result = await getSystemInfo();
-        if (!alive) return;
-        if (
-          result.ok &&
-          result.cpu &&
-          result.memory &&
-          typeof result.uptime === "number"
-        ) {
-          setSystemInfo({
-            cpu: result.cpu,
-            memory: result.memory,
-            uptime: result.uptime,
-          });
-          setSystemInfoStatus("ready");
-        } else {
-          setSystemInfoStatus("error");
-        }
-      } catch {
-        if (alive) setSystemInfoStatus("error");
-      }
-    };
-    const tick = () => {
-      // 页面不可见时暂停 systemInfo 轮询，回到前台立即补一次
-      if (document.hidden) return;
-      void poll();
-    };
-    poll();
-    const id = setInterval(tick, 3000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [showWidget]);
-
-  useEffect(() => {
     if (!desktopDrawerOpen) return;
     const timer = setTimeout(() => {
       closeButtonRef.current?.focus();
@@ -1671,6 +1620,7 @@ export default function DesktopShellPage() {
     else if (app === "hub") setHubOpen(false);
     else if (app === "storage-center") setStorageCenterOpen(false);
     else if (app === "device-link") setDeviceLinkOpen(false);
+    else if (app === "activity-monitor") setShowWidget(false);
     else setTaskSpaceOpen(false);
   };
 
@@ -1678,6 +1628,13 @@ export default function DesktopShellPage() {
   // 搜索某张照片）才能送达已经打开的窗口。
   const renderSystemApp = (app: SystemAppId): ReactNode => {
     switch (app) {
+      case "activity-monitor":
+        return (
+          <ActivityMonitorPanel
+            onClose={() => setShowWidget(false)}
+            visible={!minimized.has("system:activity-monitor")}
+          />
+        );
       case "files":
         return (
           <FileManager
@@ -2603,7 +2560,7 @@ export default function DesktopShellPage() {
             </div>
           </DockItem>
           <DockItem
-            onClick={() => setShowWidget((value) => !value)}
+            onClick={() => setShowWidget(true)}
             title="活动监视器"
             running={showWidget}
           >
@@ -2689,107 +2646,6 @@ export default function DesktopShellPage() {
             />
           </DockItem>
         </Dock>
-        {showWidget && (
-          <div
-            data-desktop-interactive
-            role="dialog"
-            aria-label="活动监视器"
-            className="absolute bottom-24 right-8 z-20 w-64 rounded-2xl border border-white/34 bg-white/78 p-4 text-slate-800 shadow-2xl shadow-black/24 backdrop-blur-2xl"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500">
-                活动监视器
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowWidget(false)}
-                aria-label="关闭活动监视器"
-                className="grid size-5 place-items-center rounded-full text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
-              >
-                <XIcon className="size-3" />
-              </button>
-            </div>
-            {systemInfo ? (
-              <div className="mt-3 space-y-3">
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <CpuIcon className="size-3" /> CPU
-                    </span>
-                    <span className="font-medium">{systemInfo.cpu.usage}%</span>
-                  </div>
-                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        systemInfo.cpu.usage > 80
-                          ? "bg-red-500"
-                          : systemInfo.cpu.usage > 50
-                            ? "bg-amber-500"
-                            : "bg-emerald-500",
-                      )}
-                      style={{ width: `${systemInfo.cpu.usage}%` }}
-                    />
-                  </div>
-                  <div className="mt-0.5 text-[10px] text-slate-400">
-                    {systemInfo.cpu.model.split(" ").slice(0, 3).join(" ")} ·{" "}
-                    {systemInfo.cpu.cores} 核心
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <HardDriveIcon className="size-3" /> 内存
-                    </span>
-                    <span className="font-medium">
-                      {systemInfo.memory.percent}%
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        systemInfo.memory.percent > 80
-                          ? "bg-red-500"
-                          : systemInfo.memory.percent > 50
-                            ? "bg-amber-500"
-                            : "bg-blue-500",
-                      )}
-                      style={{ width: `${systemInfo.memory.percent}%` }}
-                    />
-                  </div>
-                  <div className="mt-0.5 text-[10px] text-slate-400">
-                    {systemInfo.memory.used} / {systemInfo.memory.total} GB
-                  </div>
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  运行时间: {Math.floor(systemInfo.uptime / 60)} 小时{" "}
-                  {systemInfo.uptime % 60} 分钟
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3 rounded-xl border border-slate-200/80 bg-white/55 px-3 py-4 text-center">
-                {systemInfoStatus === "loading" ? (
-                  <Loader2Icon className="mx-auto size-5 animate-spin text-blue-500" />
-                ) : (
-                  <MonitorIcon className="mx-auto size-5 text-slate-400" />
-                )}
-                <p className="mt-2 text-xs font-medium text-slate-600">
-                  {systemInfoStatus === "loading"
-                    ? "正在读取系统状态…"
-                    : systemInfoStatus === "error"
-                      ? "暂时无法读取系统状态"
-                      : "浏览器模式未连接系统监控"}
-                </p>
-                {systemInfoStatus !== "loading" && (
-                  <p className="mt-1 text-[10px] leading-4 text-slate-400">
-                    在 Echo OS 桌面客户端中可查看实时 CPU、内存与运行时间。
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </section>
 
       <div
