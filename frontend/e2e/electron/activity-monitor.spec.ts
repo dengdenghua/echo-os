@@ -9,7 +9,7 @@ const repoRoot = path.resolve(
   "../../..",
 );
 
-test("activity monitor uses native readings and desktop window controls", async () => {
+test("system windows show native readings and preserve settings drafts", async () => {
   const profile = await mkdtemp(path.join(tmpdir(), "echo-activity-monitor-"));
   const app = await electron.launch({
     args: [
@@ -91,6 +91,53 @@ test("activity monitor uses native readings and desktop window controls", async 
       .getByRole("button", { name: "关闭活动监视器", exact: true })
       .click();
     await expect(monitor).toHaveCount(0);
+
+    await win.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("echo:open-system-settings", {
+          detail: { section: "models" },
+        }),
+      );
+    });
+    const settings = win.locator('[data-window-id="system:settings"]');
+    await expect(settings).toBeVisible();
+    await expect(
+      settings.getByRole("heading", { name: "模型与用量", exact: true }),
+    ).toBeVisible();
+    await settings
+      .getByRole("button", { name: "账户与安全", exact: true })
+      .click();
+    await settings
+      .getByLabel("当前密码", { exact: true })
+      .fill("unsent-test-draft");
+    await settings
+      .getByRole("button", { name: "最小化系统设置", exact: true })
+      .click();
+    await expect(settings).toBeHidden();
+    await win
+      .getByRole("button", { name: "系统设置 · 点击恢复窗口", exact: true })
+      .click();
+    await expect(settings).toBeVisible();
+    await expect(settings.getByLabel("当前密码", { exact: true })).toHaveValue(
+      "unsent-test-draft",
+    );
+    await settings
+      .getByRole("button", { name: "全部退出…", exact: true })
+      .click();
+    await expect(win.getByRole("alertdialog")).toBeVisible();
+    // Exercise the real window-close guard independently of the modal's
+    // pointer interception. No credential mutation is submitted.
+    await settings
+      .getByRole("button", { name: "关闭系统设置", exact: true })
+      .evaluate((button: HTMLButtonElement) => button.click());
+    await expect(settings).toHaveCount(1);
+    await win.keyboard.press("Escape");
+    await expect(win.getByRole("alertdialog")).toHaveCount(0);
+    await expect(settings).toBeVisible();
+    await settings
+      .getByRole("button", { name: "关闭系统设置", exact: true })
+      .click();
+    await expect(settings).toHaveCount(0);
   } finally {
     await app.close();
     await rm(profile, { recursive: true, force: true });

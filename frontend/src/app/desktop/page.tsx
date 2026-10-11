@@ -368,7 +368,6 @@ export default function DesktopShellPage() {
     notificationsOpen,
     liquidGlassOpen,
     aboutOpen,
-    accountSecurityOpen,
     setOverlay,
     toggleOverlay,
     closeTransient,
@@ -532,6 +531,16 @@ export default function DesktopShellPage() {
     openWindow,
     closeWindow,
   );
+  const [accountSecurityOpen, setAccountSecurityOpen] = useSystemAppWindow(
+    "settings",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  useEffect(() => {
+    if (!isDeviceOperator) setAccountSecurityOpen(false);
+  }, [isDeviceOperator, setAccountSecurityOpen]);
   const [photoSearchRequest, setPhotoSearchRequest] = useState<{
     query: string;
     selectedPath?: string;
@@ -684,7 +693,7 @@ export default function DesktopShellPage() {
     setOverlay("about", false);
     const openEchoSettings = () => {
       setAccountSecuritySection(section);
-      setOverlay("accountSecurity", true);
+      setAccountSecurityOpen(true);
     };
     const nativeAppsApi = window.echo?.apps;
     if (
@@ -717,11 +726,15 @@ export default function DesktopShellPage() {
   const openStorageSettings = () => openSystemSettingsSection("storage");
   const openSystemAgentSettings = useCallback(
     (section: OsAgentSettingsSection = "models") => {
+      if (!isDeviceOperator) {
+        toast.info("家庭成员不能修改设备级设置");
+        return;
+      }
       setAgentSettingsSection(section);
       setAccountSecuritySection(section === "models" ? "models" : "agent");
-      setOverlay("accountSecurity", true);
+      setAccountSecurityOpen(true);
     },
-    [setOverlay],
+    [isDeviceOperator, setAccountSecurityOpen],
   );
 
   useEffect(() => {
@@ -1621,13 +1634,70 @@ export default function DesktopShellPage() {
     else if (app === "storage-center") setStorageCenterOpen(false);
     else if (app === "device-link") setDeviceLinkOpen(false);
     else if (app === "activity-monitor") setShowWidget(false);
-    else setTaskSpaceOpen(false);
+    else if (app === "settings") {
+      if (settingsBusy) return;
+      setAccountSecurityOpen(false);
+    } else setTaskSpaceOpen(false);
   };
 
   // 系统应用窗口的内容每次渲染时按当前状态生成，打开请求（定位到某个文件、
   // 搜索某张照片）才能送达已经打开的窗口。
   const renderSystemApp = (app: SystemAppId): ReactNode => {
     switch (app) {
+      case "settings":
+        return isDeviceOperator ? (
+          <AccountSecurityPanel
+            open={accountSecurityOpen}
+            onBusyChange={setSettingsBusy}
+            initialSection={accountSecuritySection}
+            initialAgentSection={agentSettingsSection}
+            systemDeviceSettings={{
+              controls: systemControls,
+              wallpaper: wallpaper,
+              notificationCount: nativeNotifications.length,
+              notificationServiceAvailable,
+              updateCapabilities: systemUpdateCapabilities,
+              updateStatus: systemUpdateStatus,
+              updateBusy: systemUpdateBusy,
+              lockAvailable: availableSystemActions.lock,
+              onSetWifiEnabled: (enabled) =>
+                applySystemControl("Wi-Fi", () =>
+                  window.echo!.systemControls!.setWifiEnabled(enabled),
+                ),
+              onSetBluetoothEnabled: (enabled) =>
+                applySystemControl("蓝牙", () =>
+                  window.echo!.systemControls!.setBluetoothEnabled(enabled),
+                ),
+              onSetAudioVolume: (percentage) =>
+                applySystemControl("音量", () =>
+                  window.echo!.systemControls!.setAudioVolume(percentage),
+                ),
+              onSetDisplayBrightness: (percentage) =>
+                applySystemControl("显示器亮度", () =>
+                  window.echo!.systemControls!.setDisplayBrightness(percentage),
+                ),
+              onWallpaperChange: setWallpaper,
+              onOpenNotifications: () => {
+                setAccountSecurityOpen(false);
+                setOverlay("notifications", true);
+              },
+              onLock: () => void lockScreen(),
+              onRefreshUpdate: () => void refreshSystemUpdate(),
+              onApplyUpdate: () => void applySystemUpdate(),
+              onOpenGettingStarted: () => {
+                setAccountSecurityOpen(false);
+                window.dispatchEvent(new Event(OPEN_DESKTOP_START_GUIDE_EVENT));
+              },
+            }}
+            onClose={() => setAccountSecurityOpen(false)}
+            onSessionEnded={(message) => {
+              setAccountSecurityOpen(false);
+              setApplianceRole(null);
+              setApplianceAuthed(false);
+              toast.success(message);
+            }}
+          />
+        ) : null;
       case "activity-monitor":
         return (
           <ActivityMonitorPanel
@@ -2742,7 +2812,9 @@ export default function DesktopShellPage() {
         }}
         onCloseWindow={(id) => {
           playSystemSound("toggle");
-          closeWindow(id);
+          const app = systemAppForWindow(id);
+          if (app) closeSystemApp(app);
+          else closeWindow(id);
         }}
         onClose={() => {
           playSystemSound("whoosh");
@@ -2817,58 +2889,7 @@ export default function DesktopShellPage() {
             : undefined
         }
       />
-      {isDeviceOperator && (
-        <AccountSecurityPanel
-          open={accountSecurityOpen}
-          initialSection={accountSecuritySection}
-          initialAgentSection={agentSettingsSection}
-          systemDeviceSettings={{
-            controls: systemControls,
-            wallpaper: wallpaper,
-            notificationCount: nativeNotifications.length,
-            notificationServiceAvailable,
-            updateCapabilities: systemUpdateCapabilities,
-            updateStatus: systemUpdateStatus,
-            updateBusy: systemUpdateBusy,
-            lockAvailable: availableSystemActions.lock,
-            onSetWifiEnabled: (enabled) =>
-              applySystemControl("Wi-Fi", () =>
-                window.echo!.systemControls!.setWifiEnabled(enabled),
-              ),
-            onSetBluetoothEnabled: (enabled) =>
-              applySystemControl("蓝牙", () =>
-                window.echo!.systemControls!.setBluetoothEnabled(enabled),
-              ),
-            onSetAudioVolume: (percentage) =>
-              applySystemControl("音量", () =>
-                window.echo!.systemControls!.setAudioVolume(percentage),
-              ),
-            onSetDisplayBrightness: (percentage) =>
-              applySystemControl("显示器亮度", () =>
-                window.echo!.systemControls!.setDisplayBrightness(percentage),
-              ),
-            onWallpaperChange: setWallpaper,
-            onOpenNotifications: () => {
-              setOverlay("accountSecurity", false);
-              setOverlay("notifications", true);
-            },
-            onLock: () => void lockScreen(),
-            onRefreshUpdate: () => void refreshSystemUpdate(),
-            onApplyUpdate: () => void applySystemUpdate(),
-            onOpenGettingStarted: () => {
-              setOverlay("accountSecurity", false);
-              window.dispatchEvent(new Event(OPEN_DESKTOP_START_GUIDE_EVENT));
-            },
-          }}
-          onClose={() => setOverlay("accountSecurity", false)}
-          onSessionEnded={(message) => {
-            setOverlay("accountSecurity", false);
-            setApplianceRole(null);
-            setApplianceAuthed(false);
-            toast.success(message);
-          }}
-        />
-      )}
+
       <MacSystemActionDialog
         action={pendingSystemAction}
         busy={systemActionBusy}

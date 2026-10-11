@@ -118,6 +118,7 @@ export type SystemAppId =
   | "storage-center"
   | "device-link"
   | "activity-monitor"
+  | "settings"
   | "task-space";
 
 /**
@@ -150,6 +151,11 @@ export const SYSTEM_APP_WINDOWS: Record<
     title: "活动监视器",
     size: { w: 660, h: 440 },
     chromeHeight: 48,
+  },
+  settings: {
+    title: "系统设置",
+    size: { w: 1120, h: 740 },
+    chromeHeight: 44,
   },
 };
 

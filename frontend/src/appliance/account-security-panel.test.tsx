@@ -11,6 +11,7 @@ import {
   rotateAdminPassword,
 } from "./account-security";
 import { AccountSecurityPanel } from "./account-security-panel";
+import { SystemAppWindowProvider } from "./system-app-window";
 import { requestHighRiskApproval } from "./approval";
 import {
   fetchNativeFilesystems,
@@ -69,6 +70,35 @@ vi.mock(
     ),
   }),
 );
+
+it("keeps desktop settings inline while retaining nested approval and busy guards", async () => {
+  const user = userEvent.setup();
+  const onClose = vi.fn();
+  const onBusyChange = vi.fn();
+  render(
+    <SystemAppWindowProvider>
+      <button type="button">另一窗口</button>
+      <AccountSecurityPanel
+        open
+        onClose={onClose}
+        onSessionEnded={vi.fn()}
+        onBusyChange={onBusyChange}
+      />
+    </SystemAppWindowProvider>,
+  );
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await user.type(screen.getByLabelText("当前密码"), "unsent-password");
+  await user.click(screen.getByRole("button", { name: "另一窗口" }));
+  expect(screen.getByRole("button", { name: "另一窗口" })).toHaveFocus();
+  expect(screen.getByLabelText("当前密码")).toHaveValue("unsent-password");
+  await user.click(screen.getByRole("button", { name: "全部退出…" }));
+  expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+  await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(true));
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(onClose).not.toHaveBeenCalled();
+  await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
+});
 
 beforeEach(() => {
   vi.mocked(requestHighRiskApproval).mockResolvedValue({
