@@ -80,6 +80,11 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "runtime.sensing.gateway._realtime_turn_lifecycle_resume",
             "_resume_checkpoint_metadata",
         ),
+        _Symbol(
+            "approval_request_version",
+            "runtime.platform.process._task_approval_identity",
+            "approval_request_version",
+        ),
     ),
     "catalog": (
         _Symbol(
