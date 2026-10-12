@@ -25,7 +25,7 @@ export function LiveDeviceList({
       {status?.devices.map((device) => (
         <div
           key={device.id}
-          className="flex items-center gap-2 rounded-lg border border-slate-200/60 p-2"
+          className="flex items-center gap-2 rounded-lg border border-border p-2"
         >
           <div className="min-w-0 flex-1">
             <p className="truncate">
@@ -33,7 +33,7 @@ export function LiveDeviceList({
                 device.id}
             </p>
             <p
-              className="truncate text-[10px] text-slate-500"
+              className="truncate text-[10px] text-muted-foreground"
               title={device.id}
             >
               {device.platform} · {device.online ? "在线" : "离线"} ·{" "}
@@ -45,12 +45,12 @@ export function LiveDeviceList({
               type="button"
               disabled={!device.online}
               onClick={() => onOpen(device)}
-              className="rounded bg-blue-600 px-2 py-1 text-white disabled:opacity-40"
+              className="rounded bg-primary px-2 py-1 text-primary-foreground disabled:opacity-40"
             >
               打开手机
             </button>
           ) : (
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-muted-foreground">
               {device.capabilities?.length || 0} 项能力
             </span>
           )}
@@ -65,7 +65,7 @@ export function LiveDeviceList({
           <p key={device.id} className="rounded border p-2">
             {device.name} · 附近待配对
             <br />
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-muted-foreground">
               {device.address} · 在设备连接中创建邀请，手机确认后才能操作
             </span>
           </p>

@@ -159,7 +159,7 @@ export function MarketBoard() {
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                   isActive
-                    ? "border-rose-300/60 bg-rose-500/10 text-rose-600 dark:border-rose-400/30 dark:text-rose-300"
+                    ? "border-breach/30 bg-breach/10 text-breach"
                     : "border-transparent bg-muted/35 text-muted-foreground hover:bg-muted/65 hover:text-foreground",
                 )}
               >
@@ -207,9 +207,9 @@ export function MarketBoard() {
           <button
             type="button"
             onClick={() => setListOpen(true)}
-            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-rose-300 hover:bg-rose-500/5 hover:text-rose-600"
+            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-breach/30 hover:bg-breach/5 hover:text-breach"
           >
-            <PlusIcon className="size-4 text-rose-500" />
+            <PlusIcon className="size-4 text-breach" />
             上架
           </button>
         </div>
@@ -344,7 +344,7 @@ export function ListModal({
                   className={cn(
                     "aspect-[4/3] overflow-hidden rounded-md ring-2 transition",
                     cover === c
-                      ? "ring-rose-500"
+                      ? "ring-breach/30"
                       : "ring-transparent hover:ring-border-default",
                   )}
                 >
@@ -365,7 +365,7 @@ export function ListModal({
             className={cn(
               "rounded-md px-4 py-1.5 text-sm font-semibold transition-colors",
               canSubmit
-                ? "bg-rose-500 text-white hover:bg-rose-600"
+                ? "bg-breach text-primary-foreground hover:bg-breach"
                 : "cursor-not-allowed bg-muted text-muted-foreground/50",
             )}
           >

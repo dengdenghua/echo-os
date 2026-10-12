@@ -42,9 +42,9 @@ function stateLabel(device: OmvUpsDevice) {
 }
 
 function stateStyle(device: OmvUpsDevice) {
-  if (device.state === "online") return "bg-emerald-100 text-emerald-800";
-  if (device.state === "onBattery") return "bg-amber-100 text-amber-900";
-  return "bg-red-100 text-red-800";
+  if (device.state === "online") return "bg-core/10 text-core";
+  if (device.state === "onBattery") return "bg-warning/10 text-warning";
+  return "bg-breach/10 text-breach";
 }
 
 export function UpsPanel() {
@@ -142,13 +142,13 @@ export function UpsPanel() {
 
   return (
     <>
-      <section className="mt-5 rounded-[22px] bg-white/80 p-5 shadow-sm ring-1 ring-white/90">
+      <section className="mt-5 rounded-[22px] bg-card/80 p-5 shadow-sm ring-1 ring-border">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <PlugZapIcon className="size-5 text-indigo-600" /> UPS 电源保护
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <PlugZapIcon className="size-5 text-core" /> UPS 电源保护
             </h2>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               只连接本机 NUT；不会读取 UPS 序列号、凭据或远端设备。
             </p>
           </div>
@@ -157,7 +157,7 @@ export function UpsPanel() {
             onClick={() => void refresh()}
             disabled={loading}
             aria-label="刷新 UPS 状态"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-50"
           >
             {loading ? (
               <Loader2Icon className="size-4 animate-spin" />
@@ -170,12 +170,12 @@ export function UpsPanel() {
         {error ? (
           <div
             role="alert"
-            className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700"
+            className="mt-4 rounded-xl bg-breach/10 p-3 text-xs text-breach"
           >
             {error}
           </div>
         ) : snapshot?.state === "unavailable" ? (
-          <div className="mt-4 flex gap-3 rounded-xl bg-amber-50 p-3 text-amber-900">
+          <div className="mt-4 flex gap-3 rounded-xl bg-warning/10 p-3 text-warning">
             <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
             <p className="text-xs leading-5">
               {snapshot.code === "toolMissing"
@@ -184,7 +184,7 @@ export function UpsPanel() {
             </p>
           </div>
         ) : snapshot?.state === "notConfigured" ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+          <p className="mt-4 rounded-xl bg-background p-3 text-xs leading-5 text-muted-foreground">
             NUT 客户端可用，但尚未登记 UPS。当前不会自动执行低电量关机。
           </p>
         ) : (
@@ -192,15 +192,15 @@ export function UpsPanel() {
             {snapshot?.devices.map((device) => (
               <article
                 key={device.name}
-                className="rounded-2xl bg-slate-50/90 p-4 ring-1 ring-slate-200"
+                className="rounded-2xl bg-background/90 p-4 ring-1 ring-border"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-xs font-semibold text-slate-900">
+                    <h3 className="text-xs font-semibold text-foreground">
                       {device.manufacturer || "UPS"}{" "}
                       {device.model || device.name}
                     </h3>
-                    <p className="mt-1 font-mono text-[10px] text-slate-400">
+                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                       {device.name}
                     </p>
                   </div>
@@ -211,44 +211,44 @@ export function UpsPanel() {
                   </span>
                 </div>
                 <div className="mt-4 flex items-end gap-3">
-                  <BatteryChargingIcon className="size-6 text-indigo-600" />
-                  <strong className="text-2xl font-semibold text-slate-900">
+                  <BatteryChargingIcon className="size-6 text-core" />
+                  <strong className="text-2xl font-semibold text-foreground">
                     {device.chargePercent === null
                       ? "—"
                       : `${device.chargePercent}%`}
                   </strong>
-                  <span className="pb-1 text-[11px] text-slate-500">
+                  <span className="pb-1 text-[11px] text-muted-foreground">
                     {runtimeLabel(device.runtimeSeconds)}
                   </span>
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-2 text-[10px]">
-                  <div className="rounded-lg bg-white p-2">
-                    <dt className="text-slate-400">负载</dt>
-                    <dd className="mt-1 font-semibold text-slate-700">
+                  <div className="rounded-lg bg-card p-2">
+                    <dt className="text-muted-foreground">负载</dt>
+                    <dd className="mt-1 font-semibold text-foreground">
                       {device.loadPercent === null
                         ? "未知"
                         : `${device.loadPercent}%`}
                     </dd>
                   </div>
-                  <div className="rounded-lg bg-white p-2">
-                    <dt className="text-slate-400">温度</dt>
-                    <dd className="mt-1 font-semibold text-slate-700">
+                  <div className="rounded-lg bg-card p-2">
+                    <dt className="text-muted-foreground">温度</dt>
+                    <dd className="mt-1 font-semibold text-foreground">
                       {device.temperatureC === null
                         ? "未知"
                         : `${device.temperatureC}°C`}
                     </dd>
                   </div>
-                  <div className="rounded-lg bg-white p-2">
-                    <dt className="text-slate-400">输入电压</dt>
-                    <dd className="mt-1 font-semibold text-slate-700">
+                  <div className="rounded-lg bg-card p-2">
+                    <dt className="text-muted-foreground">输入电压</dt>
+                    <dd className="mt-1 font-semibold text-foreground">
                       {device.inputVoltage === null
                         ? "未知"
                         : `${device.inputVoltage} V`}
                     </dd>
                   </div>
-                  <div className="rounded-lg bg-white p-2">
-                    <dt className="text-slate-400">输出电压</dt>
-                    <dd className="mt-1 font-semibold text-slate-700">
+                  <div className="rounded-lg bg-card p-2">
+                    <dt className="text-muted-foreground">输出电压</dt>
+                    <dd className="mt-1 font-semibold text-foreground">
                       {device.outputVoltage === null
                         ? "未知"
                         : `${device.outputVoltage} V`}
@@ -261,13 +261,13 @@ export function UpsPanel() {
         )}
 
         {policy && (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="mt-4 rounded-2xl border border-border bg-background/80 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-xs font-semibold text-slate-900">
+                <h3 className="text-xs font-semibold text-foreground">
                   低电量自动关机
                 </h3>
-                <p className="mt-1 max-w-xl text-[11px] leading-5 text-slate-500">
+                <p className="mt-1 max-w-xl text-[11px] leading-5 text-muted-foreground">
                   {policy.enabled
                     ? `已启用：连续 ${policy.requiredConsecutiveSamples} 次检测到电池供电且低电量后关机；NUT FSD 信号会立即保护关机。`
                     : "默认关闭。启用后仅响应本机 NUT 的 OB+LB 或 FSD 状态，没有远程关机入口。"}
@@ -276,15 +276,15 @@ export function UpsPanel() {
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                   policy.enabled
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-slate-200 text-slate-600"
+                    ? "bg-core/10 text-core"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {policy.enabled ? "保护已开启" : "保护已关闭"}
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-2">
-              <label className="text-[11px] text-slate-600">
+              <label className="text-[11px] text-muted-foreground">
                 连续确认次数
                 <select
                   aria-label="低电量连续确认次数"
@@ -293,7 +293,7 @@ export function UpsPanel() {
                   onChange={(event) =>
                     setSampleCount(Number(event.currentTarget.value))
                   }
-                  className="ml-2 h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  className="ml-2 h-8 rounded-lg border border-border bg-card px-2 text-xs"
                 >
                   {Array.from({ length: 11 }, (_, index) => index + 2).map(
                     (value) => (
@@ -310,7 +310,7 @@ export function UpsPanel() {
                     type="button"
                     disabled={!policyCapable || policyBusy}
                     onClick={() => void previewPolicy(true)}
-                    className="h-8 rounded-lg bg-indigo-600 px-3 text-[11px] font-semibold text-white disabled:opacity-40"
+                    className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
                   >
                     保存确认次数
                   </button>
@@ -324,15 +324,15 @@ export function UpsPanel() {
                     (!snapshot?.configured || !snapshot.available))
                 }
                 onClick={() => void previewPolicy(!policy.enabled)}
-                className={`h-8 rounded-lg px-3 text-[11px] font-semibold text-white disabled:opacity-40 ${
-                  policy.enabled ? "bg-slate-600" : "bg-blue-600"
+                className={`h-8 rounded-lg px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40 ${
+                  policy.enabled ? "bg-slate-600" : "bg-primary"
                 }`}
               >
                 {policy.enabled ? "关闭自动关机" : "启用低电量关机"}
               </button>
             </div>
             {!policyCapable && (
-              <p className="mt-2 text-[10px] text-amber-700">
+              <p className="mt-2 text-[10px] text-warning">
                 当前系统缺少本机 NUT 或 systemd 能力，策略不可编辑。
               </p>
             )}

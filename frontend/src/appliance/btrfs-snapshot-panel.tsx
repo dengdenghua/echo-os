@@ -344,11 +344,11 @@ export function BtrfsSnapshotPanel({
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50/70 p-3 text-[10px] text-violet-950">
+    <div className="mt-3 rounded-lg border border-core/30 bg-core/10 p-3 text-[10px] text-core">
       <div className="flex flex-wrap items-center gap-2">
-        <CameraIcon className="size-3.5 text-violet-600" />
+        <CameraIcon className="size-3.5 text-core" />
         <strong className="text-[11px]">只读文件快照</strong>
-        <span className="text-violet-600">
+        <span className="text-core">
           {loading ? "正在读取…" : `${snapshots.length}/256`}
         </span>
         <button
@@ -356,18 +356,18 @@ export function BtrfsSnapshotPanel({
           aria-label={`刷新 ${sharedFolderName} 的快照`}
           onClick={() => void refresh()}
           disabled={loading}
-          className="ml-auto rounded p-1 text-violet-600 hover:bg-violet-100 disabled:opacity-50"
+          className="ml-auto rounded p-1 text-core hover:bg-core/10 disabled:opacity-50"
         >
           <RefreshCwIcon
             className={`size-3 ${loading ? "animate-spin" : ""}`}
           />
         </button>
       </div>
-      <p className="mt-1 leading-4 text-violet-700">
+      <p className="mt-1 leading-4 text-core">
         同卷、只读、崩溃一致；不会暂停应用，也暂不提供整卷恢复。
       </p>
       {canSchedule && schedule && (
-        <div className="mt-2 rounded-md border border-violet-200 bg-white/75 p-2">
+        <div className="mt-2 rounded-md border border-core/30 bg-card/75 p-2">
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex items-center gap-1.5 font-medium">
               <input
@@ -397,7 +397,7 @@ export function BtrfsSnapshotPanel({
                   );
                   setSchedulePlan(null);
                 }}
-                className="h-7 rounded border border-violet-200 bg-white px-1.5 outline-none focus:border-violet-500 disabled:opacity-50"
+                className="h-7 rounded border border-core/30 bg-card px-1.5 outline-none focus:border-core/30 disabled:opacity-50"
               >
                 <option value="latest">最新数量</option>
                 <option value="days">最近天数</option>
@@ -417,7 +417,7 @@ export function BtrfsSnapshotPanel({
                   );
                   setSchedulePlan(null);
                 }}
-                className="h-7 w-14 rounded border border-violet-200 bg-white px-1.5 text-center outline-none focus:border-violet-500 disabled:opacity-50"
+                className="h-7 w-14 rounded border border-core/30 bg-card px-1.5 text-center outline-none focus:border-core/30 disabled:opacity-50"
               />
               {retentionMode === "latest"
                 ? "个"
@@ -429,17 +429,17 @@ export function BtrfsSnapshotPanel({
               type="button"
               onClick={() => void previewSchedule()}
               disabled={schedulePlanning}
-              className="h-7 rounded-lg border border-violet-300 bg-white px-2.5 font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+              className="h-7 rounded-lg border border-core/30 bg-card px-2.5 font-medium text-core hover:bg-core/10 disabled:opacity-50"
             >
               {schedulePlanning ? "正在预览…" : "预览策略"}
             </button>
           </div>
-          <p className="mt-1 text-violet-600">
+          <p className="mt-1 text-core">
             每日 02:15
             后随机错峰；只自动清理调度器创建的快照，手工快照不受影响。
           </p>
           {schedulePlan && (
-            <div className="mt-2 flex items-center justify-between gap-2 border-t border-violet-100 pt-2">
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-core/30 pt-2">
               <span>
                 {schedulePlan.operation === "none"
                   ? "策略没有变化。"
@@ -453,7 +453,7 @@ export function BtrfsSnapshotPanel({
                   onClick={() =>
                     setPending({ kind: "schedule", plan: schedulePlan })
                   }
-                  className="h-7 shrink-0 rounded-lg bg-amber-500 px-2.5 font-medium text-white hover:bg-amber-600"
+                  className="h-7 shrink-0 rounded-lg bg-warning px-2.5 font-medium text-primary-foreground hover:bg-warning"
                 >
                   管理员确认
                 </button>
@@ -476,13 +476,13 @@ export function BtrfsSnapshotPanel({
               setName(event.currentTarget.value);
               setPlan(null);
             }}
-            className="h-8 min-w-[190px] flex-1 rounded-lg border border-violet-200 bg-white px-2.5 text-[11px] outline-none focus:border-violet-500"
+            className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[11px] outline-none focus:border-core/30"
           />
           <button
             type="button"
             onClick={() => void previewCreate()}
             disabled={planning || !name.trim() || snapshots.length >= 256}
-            className="inline-flex h-8 items-center gap-1 rounded-lg bg-violet-600 px-3 font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+            className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
           >
             {planning && <Loader2Icon className="size-3 animate-spin" />}
             预览创建
@@ -490,7 +490,7 @@ export function BtrfsSnapshotPanel({
         </div>
       )}
       {plan && (
-        <div className="mt-2 flex items-center justify-between gap-2 border-t border-violet-200 pt-2">
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-core/30 pt-2">
           <span>
             {plan.operation === "none"
               ? "同名快照已经存在，不会覆盖。"
@@ -500,7 +500,7 @@ export function BtrfsSnapshotPanel({
             <button
               type="button"
               onClick={() => setPending({ kind: "create", plan })}
-              className="h-7 shrink-0 rounded-lg bg-amber-500 px-2.5 font-medium text-white hover:bg-amber-600"
+              className="h-7 shrink-0 rounded-lg bg-warning px-2.5 font-medium text-primary-foreground hover:bg-warning"
             >
               管理员确认
             </button>
@@ -508,7 +508,7 @@ export function BtrfsSnapshotPanel({
         </div>
       )}
       {canRestore && restoreSnapshot && (
-        <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50/80 p-2 text-emerald-950">
+        <div className="mt-2 rounded-md border border-core/30 bg-core/10 p-2 text-core">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">
               从 {restoreSnapshot.name} 创建可写恢复副本
@@ -524,13 +524,13 @@ export function BtrfsSnapshotPanel({
                 setRestoreName(event.currentTarget.value);
                 setRestorePlan(null);
               }}
-              className="h-8 min-w-[190px] flex-1 rounded-lg border border-emerald-200 bg-white px-2.5 text-[11px] outline-none focus:border-emerald-500"
+              className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[11px] outline-none focus:border-core/30"
             />
             <button
               type="button"
               onClick={() => void previewRestore()}
               disabled={planning || !restoreName.trim()}
-              className="h-8 rounded-lg bg-emerald-600 px-3 font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              className="h-8 rounded-lg bg-core px-3 font-medium text-primary-foreground hover:bg-core disabled:opacity-50"
             >
               预览恢复
             </button>
@@ -540,17 +540,17 @@ export function BtrfsSnapshotPanel({
                 setRestoreSnapshot(null);
                 setRestorePlan(null);
               }}
-              className="h-8 rounded-lg border border-emerald-200 bg-white px-3 text-emerald-700 hover:bg-emerald-100"
+              className="h-8 rounded-lg border border-core/30 bg-card px-3 text-core hover:bg-core/10"
             >
               取消
             </button>
           </div>
-          <p className="mt-1 text-emerald-700">
+          <p className="mt-1 text-core">
             新目录与原共享位于同一 Btrfs 卷；不会覆盖原共享，也不会自动启用
             SMB/NFS。
           </p>
           {restorePlan && (
-            <div className="mt-2 flex items-center justify-between gap-2 border-t border-emerald-200 pt-2">
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-core/30 pt-2">
               <span>
                 将创建可写共享目录 {restorePlan.desired.name}
                 ；源共享和只读快照保持不变。
@@ -560,7 +560,7 @@ export function BtrfsSnapshotPanel({
                 onClick={() =>
                   setPending({ kind: "restore", plan: restorePlan })
                 }
-                className="h-7 shrink-0 rounded-lg bg-amber-500 px-2.5 font-medium text-white hover:bg-amber-600"
+                className="h-7 shrink-0 rounded-lg bg-warning px-2.5 font-medium text-primary-foreground hover:bg-warning"
               >
                 管理员确认
               </button>
@@ -569,16 +569,16 @@ export function BtrfsSnapshotPanel({
         </div>
       )}
       {!loading && snapshots.length > 0 && (
-        <ul className="mt-2 space-y-1 border-t border-violet-200 pt-2">
+        <ul className="mt-2 space-y-1 border-t border-core/30 pt-2">
           {snapshots.map((snapshot) => (
             <li
               key={snapshot.snapshotId}
-              className="flex items-center gap-2 rounded-md bg-white px-2 py-1.5 ring-1 ring-violet-100"
+              className="flex items-center gap-2 rounded-md bg-card px-2 py-1.5 ring-1 ring-core/30"
             >
               <span className="min-w-0 flex-1 truncate font-medium">
                 {snapshot.name}
               </span>
-              <span className="text-violet-500">
+              <span className="text-core">
                 {snapshot.kind === "automatic" ? "自动 · 只读" : "手工 · 只读"}
                 {snapshot.locked ? " · 已锁定" : ""}
               </span>
@@ -588,7 +588,7 @@ export function BtrfsSnapshotPanel({
                   aria-label={`${snapshot.locked ? "解锁" : "锁定"}快照 ${snapshot.name}`}
                   disabled={planning}
                   onClick={() => void previewLock(snapshot)}
-                  className="rounded p-1 text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+                  className="rounded p-1 text-core hover:bg-core/10 disabled:opacity-50"
                 >
                   {snapshot.locked ? (
                     <LockOpenIcon className="size-3" />
@@ -603,7 +603,7 @@ export function BtrfsSnapshotPanel({
                   aria-label={`从快照 ${snapshot.name} 创建恢复副本`}
                   disabled={planning}
                   onClick={() => beginRestore(snapshot)}
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-core hover:bg-core/10 disabled:opacity-50"
                 >
                   <FolderSyncIcon className="size-3" />
                   恢复副本
@@ -615,7 +615,7 @@ export function BtrfsSnapshotPanel({
                   aria-label={`删除快照 ${snapshot.name}`}
                   disabled={planning}
                   onClick={() => void previewDelete(snapshot)}
-                  className="rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  className="rounded p-1 text-breach hover:bg-breach/10 disabled:opacity-50"
                 >
                   <Trash2Icon className="size-3" />
                 </button>
@@ -627,7 +627,7 @@ export function BtrfsSnapshotPanel({
       {error && (
         <p
           role="alert"
-          className="mt-2 rounded-md bg-red-50 px-2 py-1.5 text-red-700"
+          className="mt-2 rounded-md bg-breach/10 px-2 py-1.5 text-breach"
         >
           {error}
         </p>

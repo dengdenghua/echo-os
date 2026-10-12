@@ -122,13 +122,13 @@ export function NutDeviceConfigPanel() {
     status?.localOnly === false;
   return (
     <>
-      <section className="mt-5 rounded-[22px] bg-white/80 p-5 shadow-sm ring-1 ring-white/90">
+      <section className="mt-5 rounded-[22px] bg-card/80 p-5 shadow-sm ring-1 ring-border">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <CableIcon className="size-5 text-indigo-600" /> 本机 USB UPS
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <CableIcon className="size-5 text-core" /> 本机 USB UPS
             </h2>
-            <p className="mt-1 max-w-2xl text-[11px] leading-5 text-slate-500">
+            <p className="mt-1 max-w-2xl text-[11px] leading-5 text-muted-foreground">
               {status?.enabled
                 ? `已登记 echo-ups，驱动 ${status.driver}，端口自动探测；数据服务仅监听本机回环地址。`
                 : "登记一台直连 USB UPS。不会配置网络 UPS、串口路径或 NUT upsmon；自动关机仍由上方独立审批策略控制。"}
@@ -137,8 +137,8 @@ export function NutDeviceConfigPanel() {
           <span
             className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
               status?.enabled
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-200 text-slate-600"
+                ? "bg-core/10 text-core"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {status?.enabled ? "已登记" : "未登记"}
@@ -146,7 +146,7 @@ export function NutDeviceConfigPanel() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="min-w-56 text-[11px] font-medium text-slate-600">
+          <label className="min-w-56 text-[11px] font-medium text-muted-foreground">
             USB 驱动
             <select
               aria-label="USB UPS 驱动"
@@ -155,7 +155,7 @@ export function NutDeviceConfigPanel() {
               onChange={(event) =>
                 setDriver(event.target.value as NutUsbDriver)
               }
-              className="mt-1 block h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-700 disabled:opacity-50"
+              className="mt-1 block h-9 w-full rounded-lg border border-border bg-card px-2 text-xs text-foreground disabled:opacity-50"
             >
               {DRIVER_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -168,7 +168,7 @@ export function NutDeviceConfigPanel() {
             type="button"
             disabled={loading || busy || !status || blocked}
             onClick={() => status && void preview(!status.enabled)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[11px] font-semibold text-slate-700 disabled:opacity-40"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold text-foreground disabled:opacity-40"
           >
             {(loading || busy) && (
               <Loader2Icon className="size-3 animate-spin" />
@@ -178,23 +178,23 @@ export function NutDeviceConfigPanel() {
         </div>
 
         {status?.externallyManaged && (
-          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2 text-[11px] text-warning">
             检测到非 Echo 管理的 NUT
             设备段，为避免覆盖现有配置，本页面保持只读。
           </p>
         )}
         {status?.localOnly === false && (
-          <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] text-red-700">
+          <p className="mt-3 rounded-xl bg-breach/10 px-3 py-2 text-[11px] text-breach">
             upsd 正在监听非回环地址；Echo 拒绝接管可能暴露到局域网的配置。
           </p>
         )}
         {!loading && !capable && !status?.externallyManaged && (
-          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2 text-[11px] text-warning">
             本机 NUT 驱动或 systemd 工具不完整，暂不能登记 UPS。
           </p>
         )}
         {error && (
-          <p role="alert" className="mt-3 text-[11px] text-red-700">
+          <p role="alert" className="mt-3 text-[11px] text-breach">
             {error}
           </p>
         )}

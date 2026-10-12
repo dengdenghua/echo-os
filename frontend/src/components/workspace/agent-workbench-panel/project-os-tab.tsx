@@ -285,15 +285,15 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_TONE: Record<string, string> = {
   planning: "border-border-default bg-muted text-muted-foreground",
   pending: "border-border-default bg-muted text-muted-foreground",
-  ready: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  active: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  in_progress: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  running: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  blocked: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  done: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  completed: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  failed: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  rejected: "border-orange-500/25 bg-orange-500/10 text-orange-600",
+  ready: "border-core/30 bg-core/10 text-core",
+  active: "border-core/30 bg-core/10 text-core",
+  in_progress: "border-core/30 bg-core/10 text-core",
+  running: "border-core/30 bg-core/10 text-core",
+  blocked: "border-breach/30 bg-breach/10 text-breach",
+  done: "border-core/30 bg-core/10 text-core",
+  completed: "border-core/30 bg-core/10 text-core",
+  failed: "border-breach/30 bg-breach/10 text-breach",
+  rejected: "border-warning/30 bg-warning/10 text-warning",
 };
 
 const HEALTH_LABEL: Record<Health, string> = {
@@ -305,24 +305,24 @@ const HEALTH_LABEL: Record<Health, string> = {
 };
 
 const HEALTH_TONE: Record<Health, string> = {
-  on_track: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  at_risk: "border-amber-500/25 bg-amber-500/10 text-amber-700",
-  overdue: "border-orange-500/25 bg-orange-500/10 text-orange-600",
-  blocked: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  completed: "border-sky-500/25 bg-sky-500/10 text-sky-600",
+  on_track: "border-core/30 bg-core/10 text-core",
+  at_risk: "border-warning/30 bg-warning/10 text-warning",
+  overdue: "border-warning/30 bg-warning/10 text-warning",
+  blocked: "border-breach/30 bg-breach/10 text-breach",
+  completed: "border-core/30 bg-core/10 text-core",
 };
 
 const HEALTH_DOT: Record<Health, string> = {
-  on_track: "bg-emerald-500",
-  at_risk: "bg-amber-500",
-  overdue: "bg-orange-500",
-  blocked: "bg-rose-500",
-  completed: "bg-sky-500",
+  on_track: "bg-core",
+  at_risk: "bg-warning",
+  overdue: "bg-warning",
+  blocked: "bg-breach",
+  completed: "bg-primary",
 };
 
 const PRIORITY_TONE: Record<string, string> = {
-  P0: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  P1: "border-amber-500/25 bg-amber-500/10 text-amber-700",
+  P0: "border-breach/30 bg-breach/10 text-breach",
+  P1: "border-warning/30 bg-warning/10 text-warning",
   P2: "border-border-default bg-muted/70 text-muted-foreground",
   P3: "border-border-default bg-muted/40 text-muted-foreground/80",
 };
@@ -684,7 +684,7 @@ export function ProjectOsTabError({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center bg-background/70 p-5">
       <div role="alert" className="max-w-64 text-center">
-        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
+        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-breach/10 text-breach">
           <AlertTriangleIcon className="size-5" />
         </div>
         <div className="mt-3 text-sm font-medium">项目工作台加载失败</div>
@@ -1359,7 +1359,7 @@ function OverviewTab({
               return (
                 <article
                   key={decision.id}
-                  className="rounded-lg border border-sky-500/15 bg-sky-500/[0.045] px-2.5 py-2"
+                  className="rounded-lg border border-core/30 bg-sky-500/[0.045] px-2.5 py-2"
                 >
                   <h5 className="text-[11px] font-medium leading-relaxed text-foreground">
                     {decision.title}
@@ -1477,7 +1477,7 @@ function OverviewTab({
             {blockers.map((blocker, index) => (
               <div
                 key={`blocker:${index}`}
-                className="flex items-start gap-2 rounded-lg border border-rose-500/15 bg-rose-500/[0.06] px-2.5 py-2 text-[11px] text-rose-700 dark:text-rose-300"
+                className="flex items-start gap-2 rounded-lg border border-breach/30 bg-rose-500/[0.06] px-2.5 py-2 text-[11px] text-breach"
               >
                 <XCircleIcon className="mt-px size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1">{blocker}</span>
@@ -1486,7 +1486,7 @@ function OverviewTab({
             {risks.slice(0, 4).map((risk, index) => (
               <div
                 key={`risk:${risk.task_id ?? risk.milestone ?? index}`}
-                className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-2 text-[11px] text-amber-800 dark:text-amber-300"
+                className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-500/[0.06] px-2.5 py-2 text-[11px] text-warning"
               >
                 <AlertTriangleIcon className="mt-px size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1">{safeRiskDetail(risk)}</span>
@@ -1497,9 +1497,9 @@ function OverviewTab({
       ) : null}
 
       {retro ? (
-        <section className="space-y-2 rounded-xl border border-sky-500/20 bg-sky-500/[0.05] p-3">
+        <section className="space-y-2 rounded-xl border border-core/30 bg-sky-500/[0.05] p-3">
           <SectionTitle
-            icon={<ClipboardListIcon className="size-3.5 text-sky-600" />}
+            icon={<ClipboardListIcon className="size-3.5 text-core" />}
             title="项目复盘"
             meta={
               retro.duration_days == null
@@ -1522,7 +1522,7 @@ function OverviewTab({
                   key={`${recommendation}:${index}`}
                   className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground"
                 >
-                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-sky-600" />
+                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-core" />
                   <span>{recommendation}</span>
                 </li>
               ))}
@@ -1553,7 +1553,7 @@ function MetricCard({
       {...(onClick ? { type: "button" as const, onClick } : {})}
       className={cn(
         "flex min-w-0 items-center gap-2 rounded-xl border bg-card/60 p-2.5 text-left shadow-[var(--shadow-xs)]",
-        tone === "warning" && "border-amber-500/20 bg-amber-500/[0.05]",
+        tone === "warning" && "border-warning/30 bg-amber-500/[0.05]",
         onClick &&
           "transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
@@ -1561,7 +1561,7 @@ function MetricCard({
       <span
         className={cn(
           "flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground",
-          tone === "warning" && "bg-amber-500/10 text-amber-700",
+          tone === "warning" && "bg-warning/10 text-warning",
         )}
       >
         {icon}
@@ -1613,7 +1613,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
           <div className="flex min-w-0 items-start gap-2.5">
             <div className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-border-default bg-background text-[10px] font-semibold text-muted-foreground">
               {milestone.health === "completed" ? (
-                <CheckCircle2Icon className="size-3.5 text-sky-600" />
+                <CheckCircle2Icon className="size-3.5 text-core" />
               ) : (
                 index + 1
               )}
@@ -1663,7 +1663,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
                 : "事项待拆解"}
             </span>
             {milestone.failed > 0 ? (
-              <span className="text-rose-600">{milestone.failed} 个异常</span>
+              <span className="text-breach">{milestone.failed} 个异常</span>
             ) : null}
             {milestone.due_at ? (
               <span className="inline-flex items-center gap-1">
@@ -1688,7 +1688,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
                       key={`${criterion}:${criterionIndex}`}
                       className="flex items-start gap-1.5 text-[10px] leading-relaxed text-muted-foreground"
                     >
-                      <CheckCircle2Icon className="mt-0.5 size-3 shrink-0 text-emerald-600/70" />
+                      <CheckCircle2Icon className="mt-0.5 size-3 shrink-0 text-core" />
                       <span>{criterion}</span>
                     </li>
                   ))}
@@ -1785,11 +1785,11 @@ function TasksTab({
                     className={cn(
                       "mt-1 size-2 shrink-0 rounded-full",
                       task.status === "done"
-                        ? "bg-sky-500"
+                        ? "bg-primary"
                         : task.status === "running"
-                          ? "animate-pulse bg-emerald-500"
+                          ? "animate-pulse bg-core"
                           : ATTENTION_TASK_STATUSES.has(task.status)
-                            ? "bg-rose-500"
+                            ? "bg-breach"
                             : "bg-muted-foreground/45",
                     )}
                   />
@@ -2054,10 +2054,10 @@ function MembersTab({
                 className={cn(
                   "rounded-xl text-xs font-semibold",
                   member.kind === "agent"
-                    ? "bg-violet-500/10 text-violet-600"
+                    ? "bg-core/10 text-core"
                     : member.kind === "role"
-                      ? "bg-amber-500/10 text-amber-700"
-                      : "bg-sky-500/10 text-sky-600",
+                      ? "bg-warning/10 text-warning"
+                      : "bg-core/10 text-core",
                 )}
               >
                 {member.kind === "agent" ? (

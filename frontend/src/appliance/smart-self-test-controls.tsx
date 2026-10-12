@@ -94,9 +94,9 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
   const running = status?.state === "inProgress";
   return (
     <>
-      <div className="col-span-3 mt-1 border-t border-slate-200 pt-2">
+      <div className="col-span-3 mt-1 border-t border-border pt-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <ActivityIcon className="size-3.5" />
             {loading
               ? "正在读取自检状态…"
@@ -111,7 +111,7 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
             aria-label="刷新 SMART 自检状态"
             disabled={loading || busy}
             onClick={() => void refresh()}
-            className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40"
+            className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
           >
             {loading ? (
               <Loader2Icon className="size-3 animate-spin" />
@@ -126,7 +126,7 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
               type="button"
               disabled={busy}
               onClick={() => void preview("short")}
-              className="h-7 rounded-lg border border-slate-300 bg-white px-2.5 text-[10px] font-medium text-slate-700 disabled:opacity-40"
+              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[10px] font-medium text-foreground disabled:opacity-40"
             >
               短时自检
             </button>
@@ -134,14 +134,14 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
               type="button"
               disabled={busy}
               onClick={() => void preview("long")}
-              className="h-7 rounded-lg border border-slate-300 bg-white px-2.5 text-[10px] font-medium text-slate-700 disabled:opacity-40"
+              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[10px] font-medium text-foreground disabled:opacity-40"
             >
               长时自检
             </button>
           </div>
         )}
         {error && (
-          <p role="alert" className="mt-2 text-[10px] text-red-700">
+          <p role="alert" className="mt-2 text-[10px] text-breach">
             {error}
           </p>
         )}

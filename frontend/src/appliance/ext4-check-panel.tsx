@@ -105,14 +105,13 @@ export function Ext4CheckPanel() {
 
   return (
     <>
-      <section className="mt-4 rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
+      <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <FileSearchIcon className="size-5 text-violet-600" /> EXT4
-              离线只读检查
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileSearchIcon className="size-5 text-core" /> EXT4 离线只读检查
             </h2>
-            <p className="mt-2 max-w-2xl text-[11px] leading-5 text-slate-500">
+            <p className="mt-2 max-w-2xl text-[11px] leading-5 text-muted-foreground">
               只接受 Echo 登记且位于健康 RAID1 上的
               EXT4。卷必须事先卸载；系统不会自动停止共享、
               卸载、挂载或修复。检查期间仅执行 e2fsck
@@ -124,7 +123,7 @@ export function Ext4CheckPanel() {
             aria-label="刷新 EXT4 检查状态"
             onClick={() => void refresh()}
             disabled={loading || busy}
-            className="grid size-8 place-items-center rounded-full bg-slate-50 text-slate-500 ring-1 ring-slate-200 disabled:opacity-40"
+            className="grid size-8 place-items-center rounded-full bg-background text-muted-foreground ring-1 ring-border disabled:opacity-40"
           >
             <RefreshCwIcon
               className={cn("size-3.5", loading && "animate-spin")}
@@ -133,7 +132,7 @@ export function Ext4CheckPanel() {
         </div>
 
         {error && (
-          <p role="alert" className="mt-3 text-xs text-red-700">
+          <p role="alert" className="mt-3 text-xs text-breach">
             {error}
           </p>
         )}
@@ -143,8 +142,8 @@ export function Ext4CheckPanel() {
             className={cn(
               "mt-3 flex items-start gap-2 rounded-xl px-3 py-2 text-xs",
               message.tone === "ok"
-                ? "bg-emerald-50 text-emerald-800"
-                : "bg-amber-50 text-amber-800",
+                ? "bg-core/10 text-core"
+                : "bg-warning/10 text-warning",
             )}
           >
             {message.tone === "ok" ? (
@@ -157,16 +156,16 @@ export function Ext4CheckPanel() {
         )}
 
         {loading ? (
-          <p className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+          <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2Icon className="size-4 animate-spin" /> 正在核验 EXT4
             挂载状态…
           </p>
         ) : !available ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+          <p className="mt-4 rounded-xl bg-background p-3 text-xs text-muted-foreground">
             当前主机缺少受控 EXT4 离线检查能力。
           </p>
         ) : filesystems.length === 0 ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+          <p className="mt-4 rounded-xl bg-background p-3 text-xs text-muted-foreground">
             当前没有 Echo 登记的 EXT4 数据卷。
           </p>
         ) : (
@@ -174,13 +173,13 @@ export function Ext4CheckPanel() {
             {filesystems.map((filesystem) => (
               <article
                 key={filesystem.filesystemUuid}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-background px-3 py-3"
               >
                 <div>
-                  <p className="text-xs font-semibold text-slate-800">
+                  <p className="text-xs font-semibold text-foreground">
                     {filesystem.name}
                   </p>
-                  <p className="mt-1 text-[10px] text-slate-500">
+                  <p className="mt-1 text-[10px] text-muted-foreground">
                     {filesystem.mountpoint} ·{" "}
                     {filesystem.mounted ? "已挂载，不能检查" : "已卸载，可检查"}
                   </p>
@@ -189,7 +188,7 @@ export function Ext4CheckPanel() {
                   type="button"
                   disabled={!filesystem.canCheck || busy}
                   onClick={() => void preview(filesystem)}
-                  className="h-8 rounded-lg bg-violet-600 px-3 text-[11px] font-semibold text-white disabled:opacity-40"
+                  className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {filesystem.canCheck ? "预览离线检查" : "需先安全卸载"}
                 </button>

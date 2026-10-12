@@ -244,7 +244,7 @@ describe("native storage health settings", () => {
     render(<OmvStorageHealth />);
 
     const summary = await screen.findByRole("region", { name: "存储健康检查" });
-    expect(summary).toHaveClass("bg-emerald-50");
+    expect(summary).toHaveClass("bg-core/10");
     expect(
       within(summary).getByText("本次检查已完成，已检查项目未发现异常"),
     ).toBeInTheDocument();
@@ -264,7 +264,7 @@ describe("native storage health settings", () => {
       const summary = await screen.findByRole("region", {
         name: "存储健康检查",
       });
-      expect(summary).not.toHaveClass("bg-emerald-50");
+      expect(summary).not.toHaveClass("bg-core/10");
       expect(summary).not.toHaveTextContent("未发现异常");
       expect(summary).toHaveTextContent("尚无足够检查结果判断整体健康");
       expect(screen.getByText("Family")).toBeInTheDocument();
@@ -285,7 +285,7 @@ describe("native storage health settings", () => {
       const summary = await screen.findByRole("region", {
         name: "存储健康检查",
       });
-      expect(summary).not.toHaveClass("bg-emerald-50");
+      expect(summary).not.toHaveClass("bg-core/10");
       expect(summary).not.toHaveTextContent("未发现异常");
     },
   );
@@ -329,7 +329,7 @@ describe("native storage health settings", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "存储健康检查" }),
-    ).not.toHaveClass("bg-emerald-50");
+    ).not.toHaveClass("bg-core/10");
     expect(screen.queryByText(/当前是直连磁盘/)).not.toBeInTheDocument();
   });
 
@@ -370,8 +370,8 @@ describe("native storage health settings", () => {
     render(<OmvStorageHealth />);
 
     expect(await screen.findByText("Family")).toBeInTheDocument();
-    expect(screen.getByText("PASSED")).toHaveClass("text-emerald-700");
-    expect(screen.getByText("健康状态未知")).toHaveClass("text-slate-600");
+    expect(screen.getByText("PASSED")).toHaveClass("text-core");
+    expect(screen.getByText("健康状态未知")).toHaveClass("text-muted-foreground");
     expect(screen.getByText(/SMART 组件尚未安装/)).toBeInTheDocument();
     expect(screen.queryByText(/发现严重故障/)).not.toBeInTheDocument();
   });
@@ -390,7 +390,7 @@ describe("native storage health settings", () => {
       );
       expect(
         screen.getByRole("region", { name: "存储健康检查" }),
-      ).not.toHaveClass("bg-emerald-50");
+      ).not.toHaveClass("bg-core/10");
     },
   );
 
@@ -406,7 +406,7 @@ describe("native storage health settings", () => {
 
     expect(await screen.findByText("软件阵列已降级")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "存储健康检查" })).toHaveClass(
-      "bg-red-50",
+      "bg-breach/10",
     );
     expect(
       screen.getByText(/当前数据不完整或已过期，已知告警仍需处理/),
@@ -461,9 +461,9 @@ describe("native storage health settings", () => {
     render(<OmvStorageHealth />);
 
     expect(await screen.findByText("健康状态未知")).toHaveClass(
-      "text-slate-600",
+      "text-muted-foreground",
     );
-    expect(screen.getByText("FAILED")).toHaveClass("text-amber-800");
+    expect(screen.getByText("FAILED")).toHaveClass("text-warning");
     expect(screen.queryByText("PASSED")).not.toBeInTheDocument();
     expect(screen.getByText("Family")).toBeInTheDocument();
   });

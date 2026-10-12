@@ -355,9 +355,7 @@ export function MacWorkspaceDropdown({
         <span
           className={cn(
             "size-1.5 rounded-full transition-transform",
-            desktopMode === "pure"
-              ? "bg-emerald-400 animate-pulse"
-              : "bg-blue-400",
+            desktopMode === "pure" ? "bg-core animate-pulse" : "bg-primary",
           )}
         />
         <span className="text-[11px] font-medium tracking-tight">
@@ -378,7 +376,7 @@ export function MacWorkspaceDropdown({
           className="mac-menu-dropdown w-52 left-1/2 -translate-x-1/2 top-[25px]"
           data-liquid-surface="thick"
         >
-          <div className="px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-white/50 tracking-wider">
+          <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground tracking-wider">
             桌面模式
           </div>
           <button
@@ -393,9 +391,7 @@ export function MacWorkspaceDropdown({
               <span
                 className={cn(
                   "size-2 rounded-full",
-                  desktopMode === "pure"
-                    ? "bg-emerald-500"
-                    : "bg-slate-300 dark:bg-white/20",
+                  desktopMode === "pure" ? "bg-core" : "bg-slate-300 ",
                 )}
               />
               <span>意图纯净态</span>
@@ -414,9 +410,7 @@ export function MacWorkspaceDropdown({
               <span
                 className={cn(
                   "size-2 rounded-full",
-                  desktopMode === "workspace"
-                    ? "bg-blue-500"
-                    : "bg-slate-300 dark:bg-white/20",
+                  desktopMode === "workspace" ? "bg-primary" : "bg-slate-300 ",
                 )}
               />
               <span>多窗口工作台</span>
@@ -426,7 +420,7 @@ export function MacWorkspaceDropdown({
 
           <div className="mac-menu-separator" />
 
-          <div className="px-2 py-1 text-[10px] font-semibold text-slate-500 dark:text-white/50 tracking-wider">
+          <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground tracking-wider">
             协作空间 (OpenRoom)
           </div>
           {OPEN_ROOMS.map((room) => {
@@ -451,7 +445,7 @@ export function MacWorkspaceDropdown({
                     {room.title.split(" ")[0]}
                   </span>
                 </span>
-                {isSelected && <CheckIcon className="size-3.5 text-blue-500" />}
+                {isSelected && <CheckIcon className="size-3.5 text-core" />}
               </button>
             );
           })}
@@ -762,11 +756,11 @@ export function MacMenuBar({
             title={`当前主题：${desktopTheme === "theme-white" ? "雪白" : desktopTheme === "theme-glass" ? "神经玻璃" : "石墨"} · 点击快速切换`}
           >
             {desktopTheme === "theme-white" ? (
-              <SunIcon className="size-[15px] text-amber-500" />
+              <SunIcon className="size-[15px] text-warning" />
             ) : desktopTheme === "theme-glass" ? (
-              <PaletteIcon className="size-[15px] text-cyan-400" />
+              <PaletteIcon className="size-[15px] text-core" />
             ) : (
-              <MoonIcon className="size-[15px] text-purple-400" />
+              <MoonIcon className="size-[15px] text-core" />
             )}
           </button>
         )}
@@ -985,15 +979,15 @@ export function MacLiquidGlassPanel({
               className={cn(
                 "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
                 desktopTheme === "theme-white"
-                  ? "border-amber-500/60 bg-amber-500/15 text-amber-900 shadow-sm dark:bg-amber-400/20 dark:text-amber-200 ring-1 ring-amber-500/40"
-                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+                  ? "border-warning/30 bg-warning/15 text-warning shadow-sm ring-1 ring-warning/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
               )}
               onClick={() => onDesktopThemeChange?.("theme-white")}
               aria-pressed={desktopTheme === "theme-white"}
             >
-              <SunIcon className="size-4 text-amber-500" />
+              <SunIcon className="size-4 text-warning" />
               <span>雪白</span>
-              <small className="text-[10px] font-normal text-slate-400">
+              <small className="text-[10px] font-normal text-muted-foreground">
                 轻柔晨光
               </small>
             </button>
@@ -1003,15 +997,15 @@ export function MacLiquidGlassPanel({
               className={cn(
                 "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
                 desktopTheme === "theme-glass"
-                  ? "border-blue-500/60 bg-blue-500/15 text-blue-900 shadow-sm dark:bg-blue-400/20 dark:text-blue-200 ring-1 ring-blue-500/40"
-                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+                  ? "border-core/30 bg-core/15 text-core shadow-sm ring-1 ring-core/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
               )}
               onClick={() => onDesktopThemeChange?.("theme-glass")}
               aria-pressed={desktopTheme === "theme-glass"}
             >
-              <DropletsIcon className="size-4 text-blue-500" />
+              <DropletsIcon className="size-4 text-core" />
               <span>神经玻璃</span>
-              <small className="text-[10px] font-normal text-slate-400">
+              <small className="text-[10px] font-normal text-muted-foreground">
                 澄澈流光
               </small>
             </button>
@@ -1021,15 +1015,15 @@ export function MacLiquidGlassPanel({
               className={cn(
                 "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
                 desktopTheme === "theme-dark"
-                  ? "border-purple-500/60 bg-purple-500/15 text-purple-900 shadow-sm dark:bg-purple-400/20 dark:text-purple-200 ring-1 ring-purple-500/40"
-                  : "border-black/5 bg-white/40 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10",
+                  ? "border-core/30 bg-core/15 text-core shadow-sm ring-1 ring-core/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
               )}
               onClick={() => onDesktopThemeChange?.("theme-dark")}
               aria-pressed={desktopTheme === "theme-dark"}
             >
-              <MoonIcon className="size-4 text-purple-400" />
+              <MoonIcon className="size-4 text-core" />
               <span>石墨</span>
-              <small className="text-[10px] font-normal text-slate-400">
+              <small className="text-[10px] font-normal text-muted-foreground">
                 冷光玻璃
               </small>
             </button>

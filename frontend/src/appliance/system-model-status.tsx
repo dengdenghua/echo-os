@@ -81,14 +81,14 @@ export function SystemModelStatus({
         label: "检查中",
         iconState: "checking" as const,
         detail: "正在检查模型执行连接。",
-        className: "bg-amber-400",
+        className: "bg-warning",
       }
     : profile.isError
       ? {
           label: "连接异常",
           iconState: "unavailable" as const,
           detail: "模型状态暂时无法确认，请打开模型设置检查连接。",
-          className: "bg-red-400",
+          className: "bg-breach",
         }
       : profile.data?.execution_available === false ||
           profile.data?.compatible === false
@@ -99,14 +99,14 @@ export function SystemModelStatus({
               profile.data.execution_unavailable_reason ||
               profile.data.compatibility_reason ||
               "当前模型路由暂时不可执行。",
-            className: "bg-red-400",
+            className: "bg-breach",
           }
         : profile.data
           ? {
               label: "已连接",
               iconState: "connected" as const,
               detail: "当前模型路由可以接收新的任务。",
-              className: "bg-emerald-400",
+              className: "bg-core",
             }
           : {
               label: "状态未知",

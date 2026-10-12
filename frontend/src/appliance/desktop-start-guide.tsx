@@ -144,13 +144,13 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
         <button
           type="button"
           onClick={() => setCollapsed(false)}
-          className="group flex items-center gap-1.5 rounded-full border border-black/10 bg-background/90 px-3 py-1.5 text-xs font-semibold shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-background dark:border-white/15"
+          className="group flex items-center gap-1.5 rounded-full border border-black/10 bg-background/90 px-3 py-1.5 text-xs font-semibold shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-background"
           title="点击展开新手使用向导"
           aria-label="展开新手引导"
         >
-          <CompassIcon className="size-3.5 text-blue-500" />
+          <CompassIcon className="size-3.5 text-core" />
           <span>新手引导</span>
-          <span className="rounded-full bg-blue-500/10 px-1.5 py-0.2 text-[10px] text-blue-600 dark:text-blue-400">
+          <span className="rounded-full bg-core/10 px-1.5 py-0.2 text-[10px] text-core">
             {finished ? "已完成" : "4步"}
           </span>
           <ChevronRightIcon className="size-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -169,7 +169,7 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
     >
       <section
         aria-label="开始使用 Echo"
-        className="rounded-2xl border border-white/40 bg-background/95 p-4 text-foreground shadow-lg"
+        className="rounded-2xl border border-border bg-background/95 p-4 text-foreground shadow-lg"
       >
         <div
           onPointerDown={handleGuideDragStart}
@@ -182,7 +182,7 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
             title="收起引导至小标签"
             aria-label="收起新手引导"
           >

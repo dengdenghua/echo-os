@@ -186,6 +186,10 @@ function applyThemeClass(theme: DesktopTheme) {
     "theme-dark",
   );
   document.documentElement.classList.add(theme);
+  // Radix menus, popovers and dialogs portal to <body>, outside the desktop
+  // root's .dark scope; scope the ECHO tokens on <html> so they match the desktop.
+  document.documentElement.dataset.echoTheme =
+    theme === "theme-white" ? "snow" : "graphite";
 }
 
 export function useDesktopAppearance() {

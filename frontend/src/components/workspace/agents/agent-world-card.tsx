@@ -157,7 +157,7 @@ export function AgentWorldCard({
                 <AuthenticatedImage
                   src={withAgentAvatarVersion(agent.avatar_url)}
                   alt={agent.display_name}
-                  className="h-full w-full bg-white object-cover [image-rendering:pixelated]"
+                  className="h-full w-full bg-card object-cover [image-rendering:pixelated]"
                   fallback={iconFallback}
                 />
               ) : (

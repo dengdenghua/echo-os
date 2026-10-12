@@ -385,7 +385,7 @@ function ImageLightbox({
         type="button"
         onClick={onClose}
         aria-label="关闭"
-        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
       >
         <XIcon className="size-5" />
       </button>
@@ -395,7 +395,7 @@ function ImageLightbox({
             type="button"
             onClick={() => go(-1)}
             aria-label="上一张"
-            className="absolute left-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            className="absolute left-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
           >
             <ChevronLeftIcon className="size-5" />
           </button>
@@ -403,7 +403,7 @@ function ImageLightbox({
             type="button"
             onClick={() => go(1)}
             aria-label="下一张"
-            className="absolute right-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            className="absolute right-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
           >
             <ChevronRightIcon className="size-5" />
           </button>
@@ -681,8 +681,8 @@ export function CommunityPostCard({
               className={cn(
                 "shrink-0 rounded p-0.5 transition-colors",
                 isFavorite
-                  ? "text-amber-500"
-                  : "text-muted-foreground/50 hover:text-amber-500",
+                  ? "text-warning"
+                  : "text-muted-foreground/50 hover:text-warning",
               )}
             >
               <StarIcon

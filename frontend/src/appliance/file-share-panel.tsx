@@ -112,16 +112,16 @@ export function FileSharePanel({
 
   return (
     <div className="absolute inset-0 z-[80] grid place-items-center bg-slate-950/25 p-6">
-      <section className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl">
-        <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <section className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <header className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <h2 className="font-semibold text-slate-900">文件分享</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="font-semibold text-foreground">文件分享</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               链接默认 7 天失效，最多下载 100 次
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭文件分享">
-            <XIcon className="size-5 text-slate-500" />
+            <XIcon className="size-5 text-muted-foreground" />
           </button>
         </header>
 
@@ -130,7 +130,7 @@ export function FileSharePanel({
             type="button"
             disabled={!selected || selected.kind !== "file" || busy}
             onClick={() => void beginCreate()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white disabled:bg-slate-300"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:bg-slate-300"
           >
             {busy ? (
               <Loader2Icon className="size-4 animate-spin" />
@@ -143,15 +143,15 @@ export function FileSharePanel({
           </button>
 
           {createdUrl && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-              <p className="text-xs font-medium text-emerald-800">
+            <div className="rounded-xl border border-core/30 bg-core/10 p-3">
+              <p className="text-xs font-medium text-core">
                 链接已创建并尝试复制
               </p>
               <div className="mt-2 flex gap-2">
                 <input
                   readOnly
                   value={createdUrl}
-                  className="min-w-0 flex-1 rounded-lg border border-emerald-200 bg-white px-2 py-1.5 text-xs"
+                  className="min-w-0 flex-1 rounded-lg border border-core/30 bg-card px-2 py-1.5 text-xs"
                 />
                 <button
                   type="button"
@@ -159,7 +159,7 @@ export function FileSharePanel({
                     void navigator.clipboard?.writeText(createdUrl)
                   }
                   aria-label="复制分享链接"
-                  className="rounded-lg bg-white p-2 text-emerald-700"
+                  className="rounded-lg bg-card p-2 text-core"
                 >
                   <CopyIcon className="size-4" />
                 </button>
@@ -170,18 +170,18 @@ export function FileSharePanel({
           {error && (
             <p
               role="alert"
-              className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+              className="rounded-lg bg-breach/10 px-3 py-2 text-xs text-breach"
             >
               {error}
             </p>
           )}
 
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               我的链接
             </h3>
             {shares.length === 0 ? (
-              <p className="rounded-xl bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">
+              <p className="rounded-xl bg-background px-3 py-5 text-center text-sm text-muted-foreground">
                 暂无分享链接
               </p>
             ) : (
@@ -189,14 +189,14 @@ export function FileSharePanel({
                 {shares.map((share) => (
                   <li
                     key={share.id}
-                    className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5"
+                    className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5"
                   >
-                    <Link2Icon className="size-4 shrink-0 text-blue-500" />
+                    <Link2Icon className="size-4 shrink-0 text-core" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800">
+                      <p className="truncate text-sm font-medium text-foreground">
                         {share.filename}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         {share.downloadCount}/{share.maxDownloads} 次 ·{" "}
                         {share.active
                           ? `${new Date(share.expiresAt * 1000).toLocaleString()} 到期`
@@ -209,7 +209,7 @@ export function FileSharePanel({
                       onClick={() => void beginRevoke(share)}
                       title="立即撤销"
                       aria-label={`撤销 ${share.filename}`}
-                      className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                      className="rounded-lg p-2 text-breach hover:bg-breach/10"
                     >
                       <ShieldOffIcon className="size-4" />
                     </button>

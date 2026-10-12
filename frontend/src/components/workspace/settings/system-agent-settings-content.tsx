@@ -50,10 +50,10 @@ function SettingsContentSkeleton() {
       role="status"
       aria-label="正在加载设置"
     >
-      <div className="h-7 w-44 rounded bg-slate-200" />
-      <div className="h-4 w-80 max-w-full rounded bg-slate-200/80" />
-      <div className="h-32 rounded-2xl bg-slate-200/70" />
-      <div className="h-24 rounded-2xl bg-slate-200/60" />
+      <div className="h-7 w-44 rounded bg-muted" />
+      <div className="h-4 w-80 max-w-full rounded bg-muted/80" />
+      <div className="h-32 rounded-2xl bg-muted/70" />
+      <div className="h-24 rounded-2xl bg-muted/60" />
     </div>
   );
 }

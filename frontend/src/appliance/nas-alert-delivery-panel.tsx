@@ -121,31 +121,33 @@ export function NasAlertDeliveryPanel() {
         : "未启用；浏览器关闭时不会发送外部告警";
 
   return (
-    <div className="border-b border-slate-100 px-5 py-4">
+    <div className="border-b border-border px-5 py-4">
       <div className="flex items-start gap-4">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-warning/10 text-warning">
           <SendIcon className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm font-semibold">无人值守 NAS 告警</strong>
             {status?.enabled ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+              <span className="rounded-full bg-core/10 px-2 py-0.5 text-[10px] font-semibold text-core">
                 后台运行
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">{statusText}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {statusText}
+          </p>
           {status?.enabled ? (
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="text-slate-500">
+              <span className="text-muted-foreground">
                 上次成功：
                 {status.lastSuccessAt
                   ? new Date(status.lastSuccessAt).toLocaleString()
                   : "尚未投递"}
               </span>
               {status.consecutiveFailures > 0 ? (
-                <span className="inline-flex items-center gap-1 text-amber-700">
+                <span className="inline-flex items-center gap-1 text-warning">
                   <AlertTriangleIcon className="size-3.5" /> 连续失败{" "}
                   {status.consecutiveFailures} 次
                 </span>
@@ -156,7 +158,7 @@ export function NasAlertDeliveryPanel() {
                 onClick={() =>
                   setPending({ kind: "test", revision: status.revision })
                 }
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-medium hover:bg-slate-50 disabled:opacity-40"
+                className="rounded-lg border border-border bg-card px-2.5 py-1.5 font-medium hover:bg-background disabled:opacity-40"
               >
                 发送测试通知…
               </button>
@@ -164,7 +166,7 @@ export function NasAlertDeliveryPanel() {
                 type="button"
                 disabled={busy}
                 onClick={() => void preview(false)}
-                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 font-medium text-red-700 hover:bg-red-100 disabled:opacity-40"
+                className="rounded-lg border border-breach/30 bg-breach/10 px-2.5 py-1.5 font-medium text-breach hover:bg-breach/10 disabled:opacity-40"
               >
                 关闭并清除…
               </button>
@@ -179,7 +181,7 @@ export function NasAlertDeliveryPanel() {
                 disabled={busy}
                 onChange={(event) => setUrl(event.currentTarget.value)}
                 placeholder="https://hooks.example.com/echo"
-                className="h-9 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                className="h-9 min-w-0 rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-core/30 focus:ring-2 focus:ring-core/30"
               />
               <input
                 type="password"
@@ -189,13 +191,13 @@ export function NasAlertDeliveryPanel() {
                 disabled={busy}
                 onChange={(event) => setBearerToken(event.currentTarget.value)}
                 placeholder="Bearer Token（可选）"
-                className="h-9 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                className="h-9 min-w-0 rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-core/30 focus:ring-2 focus:ring-core/30"
               />
               <button
                 type="button"
                 disabled={busy || !url.trim()}
                 onClick={() => void preview(true)}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
               >
                 {busy ? (
                   <Loader2Icon className="size-3.5 animate-spin" />
@@ -204,19 +206,19 @@ export function NasAlertDeliveryPanel() {
               </button>
             </div>
           )}
-          <p className="mt-2 text-[10px] leading-4 text-slate-400">
+          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
             仅允许公网 HTTPS 443，禁止重定向；完整 URL 与 Token
             只加密保存在设备私密状态中。
           </p>
           {error ? (
-            <p role="alert" className="mt-2 text-xs text-red-600">
+            <p role="alert" className="mt-2 text-xs text-breach">
               {error}
             </p>
           ) : null}
           {success ? (
             <p
               role="status"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-700"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-core"
             >
               <CheckCircle2Icon className="size-3.5" /> {success}
             </p>

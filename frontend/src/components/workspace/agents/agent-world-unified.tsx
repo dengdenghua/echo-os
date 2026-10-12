@@ -164,20 +164,16 @@ const BUILTIN_APP_ICONS = {
   community: CompassIcon,
 } satisfies Record<WorkbenchBuiltinIcon, typeof LayoutGridIcon>;
 
+// ECHO: apps are told apart by glyph, not colour — one neutral tile for all.
 const BUILTIN_APP_ICON_STYLES = {
-  database: "bg-blue-500/10 text-blue-600",
-  projects: "bg-blue-500/10 text-blue-600 ring-blue-500/15 dark:text-blue-400",
-  trading:
-    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/15 dark:text-emerald-400",
-  design:
-    "bg-violet-500/10 text-violet-600 ring-violet-500/15 dark:text-violet-400",
-  narrative:
-    "bg-fuchsia-500/10 text-fuchsia-600 ring-fuchsia-500/15 dark:text-fuchsia-400",
-  evolution:
-    "bg-violet-500/10 text-violet-600 ring-violet-500/15 dark:text-violet-400",
-  intelligence: "bg-sky-500/10 text-sky-600 ring-sky-500/15 dark:text-sky-400",
-  community:
-    "bg-amber-500/10 text-amber-600 ring-amber-500/15 dark:text-amber-400",
+  database: "bg-muted text-foreground ring-border",
+  projects: "bg-muted text-foreground ring-border",
+  trading: "bg-muted text-foreground ring-border",
+  design: "bg-muted text-foreground ring-border",
+  narrative: "bg-muted text-foreground ring-border",
+  evolution: "bg-muted text-foreground ring-border",
+  intelligence: "bg-muted text-foreground ring-border",
+  community: "bg-muted text-foreground ring-border",
 } satisfies Record<WorkbenchBuiltinIcon, string>;
 
 function normalizeAgentNameKey(value: string): string {
@@ -342,8 +338,7 @@ export function AgentsTab({
             "aoi",
           ],
           domains: ["general", "automation"],
-          accent:
-            "from-violet-100/90 via-fuchsia-50/70 to-background dark:from-violet-950/55 dark:via-fuchsia-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "product-lab",
@@ -351,8 +346,7 @@ export function AgentsTab({
           description: "从需求拆解、架构实现到桌面验收，组成一支小型交付团队。",
           memberIds: ["coder", "desktop_operator", "general"],
           domains: ["coding", "automation"],
-          accent:
-            "from-sky-100/90 via-cyan-50/70 to-background dark:from-sky-950/55 dark:via-cyan-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "investment-room",
@@ -361,8 +355,7 @@ export function AgentsTab({
             "聚合市场研究、信息验证与商业判断，形成可执行的投资结论。",
           memberIds: ["market_researcher", "general", "ecommerce_mind"],
           domains: ["research", "finance"],
-          accent:
-            "from-emerald-100/90 via-teal-50/70 to-background dark:from-emerald-950/55 dark:via-teal-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "growth-studio",
@@ -370,8 +363,7 @@ export function AgentsTab({
           description: "把用户洞察、内容创意与商业转化串成一条完整增长链路。",
           memberIds: ["vibe_selling", "general", "ecommerce_mind"],
           domains: ["creative", "ecommerce"],
-          accent:
-            "from-amber-100/90 via-orange-50/70 to-background dark:from-amber-950/55 dark:via-orange-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "automation-cell",
@@ -379,8 +371,7 @@ export function AgentsTab({
           description: "代码、桌面和流程三线并行，适合批量操作与长链路任务。",
           memberIds: ["desktop_operator", "coder", "aoi"],
           domains: ["automation", "coding"],
-          accent:
-            "from-slate-200/90 via-blue-50/60 to-background dark:from-slate-800/80 dark:via-blue-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
       ]
         .filter(
@@ -613,7 +604,7 @@ export function AgentsTab({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 rounded-lg border-violet-500/25 bg-violet-500/5 px-2.5 text-xs font-medium text-violet-700 shadow-none hover:bg-violet-500/10 dark:text-violet-300"
+                className="h-8 rounded-lg border-core/30 bg-core/5 px-2.5 text-xs font-medium text-core shadow-none hover:bg-core/10"
                 onClick={() => setSmartTeamOpen(true)}
               >
                 <SparklesIcon className="mr-1.5 size-3.5" />
@@ -1732,7 +1723,7 @@ export function AgentWorldUnified() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-8 rounded-md border-violet-500/25 bg-violet-500/5 px-2.5 text-xs text-violet-700 shadow-none hover:bg-violet-500/10 dark:text-violet-300"
+                  className="h-8 rounded-md border-core/30 bg-core/5 px-2.5 text-xs text-core shadow-none hover:bg-core/10"
                   onClick={() => setHubSmartTeamOpen(true)}
                 >
                   <SparklesIcon className="mr-1.5 size-3.5" />
@@ -1928,7 +1919,7 @@ export function AgentWorldUnified() {
                               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                                 {app.description}
                               </span>
-                              <span className="mt-0.5 block text-micro text-fuchsia-600 dark:text-fuchsia-300">
+                              <span className="mt-0.5 block text-micro text-resonance">
                                 {APP_PRESENTATION_LABELS[app.presentation]}
                               </span>
                               {isBroken || isIncompatible ? (
@@ -1942,11 +1933,11 @@ export function AgentWorldUnified() {
                                   有可用更新
                                 </span>
                               ) : isInstalled && !isRuntimeEnabled ? (
-                                <span className="mt-0.5 block text-micro text-amber-600 dark:text-amber-300">
+                                <span className="mt-0.5 block text-micro text-warning">
                                   已停用 · 点击重新启用
                                 </span>
                               ) : !isInstalled && recoveries.length > 0 ? (
-                                <span className="mt-0.5 block text-micro text-emerald-600 dark:text-emerald-300">
+                                <span className="mt-0.5 block text-micro text-core">
                                   有可恢复的作品
                                 </span>
                               ) : null}
@@ -2215,7 +2206,7 @@ export function AgentWorldUnified() {
               检测到此前卸载时保存的作品。应用代码会重新下载，作品是否恢复由你决定。
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/8 p-3 text-sm">
+          <div className="rounded-xl border border-core/30 bg-core/8 p-3 text-sm">
             <span className="font-medium text-foreground">
               可恢复内容已保留
             </span>
@@ -2288,7 +2279,7 @@ export function AgentWorldUnified() {
               className={cn(
                 "w-full rounded-xl border p-3 text-left transition",
                 uninstallDataPolicy === "trash"
-                  ? "border-amber-500 bg-amber-500/8"
+                  ? "border-warning/30 bg-warning/8"
                   : "border-border hover:bg-muted/40",
               )}
             >

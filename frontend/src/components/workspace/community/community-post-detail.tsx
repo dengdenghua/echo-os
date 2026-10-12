@@ -242,7 +242,7 @@ export function CommunityPostDetail({
                 className={cn(
                   "flex items-center gap-1 text-sm transition-colors",
                   isFavorite
-                    ? "text-amber-500"
+                    ? "text-warning"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >

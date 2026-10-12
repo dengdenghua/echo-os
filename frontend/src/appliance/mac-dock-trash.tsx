@@ -133,7 +133,7 @@ export const MacDockTrash = memo(function MacDockTrash({
       {/* 有内容时显示数量 */}
       {itemCount > 0 && (
         <span
-          className="absolute -top-1 -right-1 grid min-w-4 h-4 place-items-center rounded-full border border-white/80 bg-slate-700/90 px-1 text-[9px] font-semibold leading-none text-white shadow-sm backdrop-blur-sm pointer-events-none"
+          className="absolute -top-1 -right-1 grid min-w-4 h-4 place-items-center rounded-full border border-border bg-slate-700/90 px-1 text-[9px] font-semibold leading-none text-white shadow-sm backdrop-blur-sm pointer-events-none"
           aria-hidden="true"
         >
           {Math.min(itemCount, 99)}

@@ -149,7 +149,7 @@ export function SmartTeamDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <SparklesIcon className="size-5 text-violet-500" />
+            <SparklesIcon className="size-5 text-core" />
             智能组队
           </DialogTitle>
           <DialogDescription>
@@ -203,9 +203,7 @@ export function SmartTeamDialog({
                         </span>
                       </span>
                       {!agent.is_installed ? (
-                        <span className="text-[10px] text-amber-600">
-                          需安装
-                        </span>
+                        <span className="text-[10px] text-warning">需安装</span>
                       ) : null}
                     </div>
                   ))}

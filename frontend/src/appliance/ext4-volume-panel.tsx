@@ -131,10 +131,10 @@ export function Ext4VolumePanel() {
     <div className="mx-auto w-full max-w-[980px] px-7 pt-7">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-[25px] font-semibold tracking-tight text-foreground">
             EXT4 数据卷
           </h1>
-          <p className="mt-1 text-[12px] text-slate-500">
+          <p className="mt-1 text-[12px] text-muted-foreground">
             把空白 Echo RAID1 格式化，并按 UUID 持久挂载到 /data
           </p>
         </div>
@@ -142,7 +142,7 @@ export function Ext4VolumePanel() {
           type="button"
           onClick={() => void refresh()}
           disabled={loading || busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/78 px-3.5 text-[11px] font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200 disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -154,7 +154,7 @@ export function Ext4VolumePanel() {
       {error && (
         <div
           role="alert"
-          className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-xs text-red-700 ring-1 ring-red-100"
+          className="mt-5 rounded-2xl bg-breach/10 px-4 py-3 text-xs text-breach ring-1 ring-breach/30"
         >
           {error}
         </div>
@@ -162,28 +162,28 @@ export function Ext4VolumePanel() {
       {success && (
         <div
           role="status"
-          className="mt-5 flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-xs text-emerald-800 ring-1 ring-emerald-100"
+          className="mt-5 flex items-center gap-2 rounded-2xl bg-core/10 px-4 py-3 text-xs text-core ring-1 ring-core/30"
         >
           <CheckCircle2Icon className="size-4" /> {success}
         </div>
       )}
 
       {loading && !status ? (
-        <div className="grid min-h-36 place-items-center text-sm text-slate-400">
+        <div className="grid min-h-36 place-items-center text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
             <Loader2Icon className="size-5 animate-spin" /> 正在核验 EXT4 能力…
           </span>
         </div>
       ) : !available ? (
-        <section className="mt-5 rounded-[22px] bg-white/78 p-5 text-sm text-slate-600 ring-1 ring-white/90">
+        <section className="mt-5 rounded-[22px] bg-card/78 p-5 text-sm text-muted-foreground ring-1 ring-border">
           当前主机未提供受控 EXT4 创建与挂载能力。
         </section>
       ) : (
         <>
-          <section className="mt-5 rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
+          <section className="mt-5 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
             <div className="flex items-center gap-2">
-              <DatabaseIcon className="size-5 text-emerald-600" />
-              <h2 className="text-sm font-semibold text-slate-900">
+              <DatabaseIcon className="size-5 text-core" />
+              <h2 className="text-sm font-semibold text-foreground">
                 1. 选择空白 RAID1
               </h2>
             </div>
@@ -201,31 +201,31 @@ export function Ext4VolumePanel() {
                   className={cn(
                     "rounded-2xl p-4 text-left ring-1 transition",
                     arrayUuid === array.uuid
-                      ? "bg-emerald-50 ring-emerald-300"
-                      : "bg-slate-50/80 ring-slate-200 hover:bg-white",
+                      ? "bg-core/10 ring-core/30"
+                      : "bg-background/80 ring-border hover:bg-card",
                   )}
                 >
-                  <span className="block text-sm font-semibold text-slate-900">
+                  <span className="block text-sm font-semibold text-foreground">
                     {array.devicefile}
                   </span>
-                  <span className="mt-1 block font-mono text-[10px] text-slate-400">
+                  <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
                     {array.uuid}
                   </span>
                 </button>
               ))}
               {candidates.length === 0 && (
-                <p className="col-span-full rounded-2xl bg-amber-50 p-4 text-xs leading-5 text-amber-800">
+                <p className="col-span-full rounded-2xl bg-warning/10 p-4 text-xs leading-5 text-warning">
                   没有健康、未挂载且无文件系统签名的 Echo RAID1。
                 </p>
               )}
             </div>
           </section>
 
-          <section className="mt-4 rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
-            <h2 className="text-sm font-semibold text-slate-900">
+          <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+            <h2 className="text-sm font-semibold text-foreground">
               2. 命名并确认格式化
             </h2>
-            <label className="mt-4 block text-xs font-medium text-slate-700">
+            <label className="mt-4 block text-xs font-medium text-foreground">
               数据卷名称
               <input
                 value={name}
@@ -235,13 +235,13 @@ export function Ext4VolumePanel() {
                 }}
                 placeholder="例如 family"
                 pattern="[a-z][a-z0-9_-]{0,15}"
-                className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
+                className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
               />
-              <span className="mt-1 block text-[10px] font-normal text-slate-400">
+              <span className="mt-1 block text-[10px] font-normal text-muted-foreground">
                 同时作为 EXT4 标签与 /data 下目录名，最多 16 字符
               </span>
             </label>
-            <label className="mt-4 flex items-start gap-2 rounded-2xl bg-red-50 p-4 text-xs leading-5 text-red-800 ring-1 ring-red-100">
+            <label className="mt-4 flex items-start gap-2 rounded-2xl bg-breach/10 p-4 text-xs leading-5 text-breach ring-1 ring-breach/30">
               <input
                 type="checkbox"
                 checked={confirmed}
@@ -258,7 +258,7 @@ export function Ext4VolumePanel() {
               type="button"
               onClick={() => void preview()}
               disabled={!desired || busy}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white disabled:opacity-40"
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-core px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
             >
               {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
               生成格式化预览
@@ -266,31 +266,31 @@ export function Ext4VolumePanel() {
           </section>
 
           {plan && (
-            <section className="mt-4 rounded-[22px] bg-red-950 p-5 text-white shadow-lg">
+            <section className="mt-4 rounded-[22px] bg-breach p-5 text-primary-foreground shadow-lg">
               <div className="flex items-center gap-2">
-                <ShieldAlertIcon className="size-5 text-red-300" />
+                <ShieldAlertIcon className="size-5 text-breach" />
                 <h2 className="text-sm font-semibold">最终破坏性复核</h2>
               </div>
-              <p className="mt-3 text-xs leading-5 text-red-100/80">
+              <p className="mt-3 text-xs leading-5 text-breach">
                 将把 {plan.array.devicefile} 格式化为 EXT4，并按新文件系统 UUID
                 挂载到 {plan.mountpoint}。
                 不使用强制格式化参数；执行前会重新核验阵列与配置状态。
               </p>
-              <label className="mt-4 block text-xs font-medium text-red-50">
+              <label className="mt-4 block text-xs font-medium text-breach">
                 设备管理员密码
                 <input
                   type="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-xl border border-red-700/60 bg-white/10 px-3 text-sm text-white outline-none focus:border-red-300"
+                  className="mt-2 h-10 w-full rounded-xl border border-breach/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-breach/30"
                 />
               </label>
               <button
                 type="button"
                 onClick={() => void apply()}
                 disabled={!password || busy}
-                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-red-500 px-4 text-xs font-semibold text-white disabled:opacity-40"
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-breach px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
               >
                 {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
                 确认格式化并挂载

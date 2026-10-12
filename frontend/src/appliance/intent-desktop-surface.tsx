@@ -179,11 +179,11 @@ export interface IntentDesktopSurfaceProps {
 const DESKTOP_CARD_LIMIT = 4;
 
 const TONE_CHIP: Record<TaskTone, string> = {
-  active: "bg-primary/10 text-core ",
-  attention: "bg-warning/15 text-warning ",
-  done: "bg-core/10 text-core ",
-  failed: "bg-breach/10 text-breach ",
-  muted: "bg-slate-500/10 text-muted-foreground ",
+  active: "bg-core/10 text-core",
+  attention: "bg-warning/15 text-warning",
+  done: "bg-core/10 text-core",
+  failed: "bg-breach/10 text-breach",
+  muted: "bg-slate-500/10 text-muted-foreground",
 };
 
 interface IntentExample {
@@ -731,7 +731,7 @@ export function IntentDesktopSurface({
                 )}
               />
               <span>{mode === "pure" ? "意图纯净态" : "多窗口工作台"}</span>
-              <kbd className="rounded border border-black/10 bg-black/5 px-1 py-0.2 text-[9px] text-muted-foreground  ">
+              <kbd className="rounded border border-black/10 bg-black/5 px-1 py-0.2 text-[9px] text-muted-foreground">
                 Space
               </kbd>
             </button>
@@ -753,8 +753,8 @@ export function IntentDesktopSurface({
                   className={cn(
                     "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all",
                     activeRoom === room.id
-                      ? "bg-card text-foreground shadow-sm   font-semibold"
-                      : "text-muted-foreground hover:text-foreground  ",
+                      ? "bg-card text-foreground shadow-sm font-semibold"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   title={room.desc}
                 >
@@ -791,7 +791,7 @@ export function IntentDesktopSurface({
               onClick={() => handleSelectTheme("theme-glass")}
               className={cn(
                 "flex items-center gap-1 rounded-md px-2 py-0.5 transition-all",
-                theme === "theme-glass" && "bg-primary/20 text-core shadow-sm",
+                theme === "theme-glass" && "bg-core/20 text-core shadow-sm",
               )}
             >
               <DropletIcon className="size-3" />
@@ -829,7 +829,7 @@ export function IntentDesktopSurface({
           <button
             type="button"
             onClick={toggleMode}
-            className="group order-last mt-5 inline-flex items-center gap-2 rounded-full border border-transparent bg-transparent px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:scale-[1.02] hover:bg-card/20 active:scale-[0.98] "
+            className="group order-last mt-5 inline-flex items-center gap-2 rounded-full border border-transparent bg-transparent px-3 py-1 text-xs font-medium text-muted-foreground transition-all duration-200 hover:scale-[1.02] hover:bg-card/20 active:scale-[0.98]"
             title="点击在【极简意图态】与【多窗口工作台】间切换 (快捷键: Alt+D / Space)"
             aria-label="双态形态切换"
           >
@@ -848,13 +848,13 @@ export function IntentDesktopSurface({
                   : "收起到纯净态"}
               </span>
             </span>
-            <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground   ">
+            <kbd className="rounded border border-black/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground">
               Alt+D
             </kbd>
           </button>
 
           {mode === "pure" && (
-            <h1 className="text-2xl font-medium tracking-tight text-foreground  sm:text-3xl">
+            <h1 className="text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
               今天想完成什么？
             </h1>
           )}
@@ -886,7 +886,7 @@ export function IntentDesktopSurface({
                 <button
                   type="button"
                   onClick={() => handleSubmitIntent("draft")}
-                  className="shrink-0 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground   "
+                  className="shrink-0 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
                   title="先在工作台里修改，再自己发送 (Shift+Enter)"
                 >
                   在工作台中编辑
@@ -899,8 +899,8 @@ export function IntentDesktopSurface({
                 className={cn(
                   "flex size-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
                   intentInput.trim()
-                    ? "bg-primary text-primary-foreground shadow-md shadow-blue-500/30 hover:scale-105 active:scale-95"
-                    : "cursor-not-allowed bg-slate-800/20 text-muted-foreground opacity-40  ",
+                    ? "bg-primary text-primary-foreground shadow-md shadow-black/20 hover:scale-105 active:scale-95"
+                    : "cursor-not-allowed bg-slate-800/20 text-muted-foreground opacity-40",
                 )}
                 aria-label="提交意图"
                 title={
@@ -932,8 +932,7 @@ export function IntentDesktopSurface({
                     "group inline-flex cursor-pointer select-none items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-150 active:scale-95",
                     "border-black/10 bg-black/[0.04] text-foreground hover:bg-black/[0.07] hover:text-foreground",
                     " dark:bg-white/[0.06]   ",
-                    isAgentMenuOpen &&
-                      "border-core/30 bg-primary/10 text-core   ",
+                    isAgentMenuOpen && "border-core/30 bg-core/10 text-core",
                   )}
                   aria-label={`选择 Agent：${selectedAgent?.name ?? "默认 Agent"}`}
                   aria-haspopup="menu"
@@ -984,7 +983,7 @@ export function IntentDesktopSurface({
                             className={cn(
                               "flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left transition-colors",
                               checked
-                                ? "bg-primary/10 text-core "
+                                ? "bg-core/10 text-core"
                                 : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]",
                             )}
                           >
@@ -996,7 +995,7 @@ export function IntentDesktopSurface({
                                 {agent.name}
                               </span>
                               {agent.description && (
-                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4 text-muted-foreground ">
+                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4 text-muted-foreground">
                                   {agent.description}
                                 </span>
                               )}
@@ -1022,7 +1021,7 @@ export function IntentDesktopSurface({
                     type="button"
                     onClick={() => handleApplyExample(example)}
                     title={example.prompt}
-                    className="shrink-0 truncate rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-black/[0.06] hover:text-foreground  dark:bg-white/[0.05]   "
+                    className="shrink-0 truncate rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-black/[0.06] hover:text-foreground dark:bg-white/[0.05]"
                   >
                     {example.label}
                   </button>
@@ -1078,7 +1077,7 @@ export function IntentDesktopSurface({
                         <span className="text-base" aria-hidden>
                           {agentIcon(task.agentId)}
                         </span>
-                        <span className="truncate text-[13px] font-semibold text-muted-foreground ">
+                        <span className="truncate text-[13px] font-semibold text-muted-foreground">
                           {agentLabel(task.agentId)}
                         </span>
                       </div>
@@ -1097,7 +1096,7 @@ export function IntentDesktopSurface({
                         <button
                           type="button"
                           onClick={() => handlePinToPip(task)}
-                          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground  "
+                          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
                           title="钉到右下角画中画"
                           aria-label="钉在画中画"
                         >
@@ -1106,7 +1105,7 @@ export function IntentDesktopSurface({
                         <button
                           type="button"
                           onClick={() => handleHideTask(task)}
-                          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground  "
+                          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
                           title="从桌面隐藏（不影响任务本身）"
                           aria-label="从桌面隐藏"
                         >
@@ -1120,7 +1119,7 @@ export function IntentDesktopSurface({
                         {task.title}
                       </h3>
                       {headline && (
-                        <p className="line-clamp-2 text-sm leading-6 text-muted-foreground ">
+                        <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
                           {headline}
                         </p>
                       )}
@@ -1147,9 +1146,9 @@ export function IntentDesktopSurface({
                         </div>
                       )}
                       {task.displayStatus === "waiting_approval" && (
-                        <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-[13px]  ">
-                          <ShieldAlertIcon className="mt-0.5 size-4 shrink-0 text-warning " />
-                          <span className="min-w-0 flex-1 text-warning ">
+                        <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-[13px]">
+                          <ShieldAlertIcon className="mt-0.5 size-4 shrink-0 text-warning" />
+                          <span className="min-w-0 flex-1 text-warning">
                             {approvalText(task)}
                           </span>
                           {onOpenTaskSpace && (
@@ -1172,7 +1171,7 @@ export function IntentDesktopSurface({
                               onClick={() =>
                                 openTask(task, artifact.resourceId)
                               }
-                              className="inline-flex max-w-[14rem] items-center gap-1.5 truncate rounded-lg bg-black/[0.04] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-black/[0.08] hover:text-foreground dark:bg-white/[0.06]  "
+                              className="inline-flex max-w-[14rem] items-center gap-1.5 truncate rounded-lg bg-black/[0.04] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-black/[0.08] hover:text-foreground dark:bg-white/[0.06]"
                               title={`打开产物：${artifact.relativePath}`}
                             >
                               <FileTextIcon className="size-3.5 shrink-0" />
@@ -1189,7 +1188,7 @@ export function IntentDesktopSurface({
                     </div>
 
                     <footer className="flex items-center justify-between gap-3 border-t border-black/5 px-5 py-3 text-xs ">
-                      <span className="min-w-0 truncate text-muted-foreground ">
+                      <span className="min-w-0 truncate text-muted-foreground">
                         {updated
                           ? `更新于 ${formatTimeAgo(updated, "zh-CN")}`
                           : ""}
@@ -1200,7 +1199,7 @@ export function IntentDesktopSurface({
                           <button
                             type="button"
                             onClick={() => onOpenTaskSpace(task.id)}
-                            className="rounded-lg px-2 py-1 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground   "
+                            className="rounded-lg px-2 py-1 text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
                           >
                             查看详情
                           </button>
@@ -1209,7 +1208,7 @@ export function IntentDesktopSurface({
                           <button
                             type="button"
                             onClick={() => openTask(task)}
-                            className="rounded-lg bg-primary px-3 py-1 font-semibold text-primary-foreground shadow-sm shadow-blue-500/30 transition-colors hover:bg-primary"
+                            className="rounded-lg bg-primary px-3 py-1 font-semibold text-primary-foreground shadow-sm shadow-black/20 transition-colors hover:bg-primary"
                           >
                             打开 →
                           </button>
@@ -1226,7 +1225,7 @@ export function IntentDesktopSurface({
             <button
               type="button"
               onClick={() => onOpenTaskSpace()}
-              className="pointer-events-auto rounded-full bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-card hover:text-foreground   "
+              className="pointer-events-auto rounded-full bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-card hover:text-foreground"
             >
               还有 {overflowCount} 个任务 · 打开任务空间 →
             </button>
@@ -1251,7 +1250,7 @@ export function IntentDesktopSurface({
                     ? "现在没有需要你关注的任务"
                     : `${activeRoomInfo.title.split(" ")[0]}里暂时没有任务`}
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground ">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {!tasksAvailable
                   ? "稍后会自动重试；已有任务不会丢失。"
                   : "在上方写下想完成的事，交给 Agent 后，进行中和等你批准的任务都会出现在这里。"}
@@ -1260,7 +1259,7 @@ export function IntentDesktopSurface({
                 <button
                   type="button"
                   onClick={() => onOpenTaskSpace()}
-                  className="mt-3 text-xs font-medium text-core hover:underline "
+                  className="mt-3 text-xs font-medium text-core hover:underline"
                 >
                   查看全部任务
                 </button>

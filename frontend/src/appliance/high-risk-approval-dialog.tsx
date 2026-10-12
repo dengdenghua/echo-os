@@ -75,15 +75,15 @@ export function HighRiskApprovalDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative w-full max-w-[430px] overflow-hidden rounded-[22px] border border-white/75 bg-white/95 text-slate-900 shadow-[0_28px_90px_rgba(15,23,42,0.35)]"
+        className="relative w-full max-w-[430px] overflow-hidden rounded-[22px] border border-border bg-card/95 text-foreground shadow-[0_28px_90px_rgba(15,23,42,0.35)]"
       >
         <div className="flex items-start gap-3.5 px-5 pb-3 pt-5">
           <div
             className={cn(
               "grid size-11 shrink-0 place-items-center rounded-2xl",
               destructive
-                ? "bg-red-50 text-red-600"
-                : "bg-amber-50 text-amber-600",
+                ? "bg-breach/10 text-breach"
+                : "bg-warning/10 text-warning",
             )}
           >
             {destructive ? (
@@ -101,12 +101,12 @@ export function HighRiskApprovalDialog({
             </h2>
             <p
               id={descriptionId}
-              className="mt-1 text-[13px] leading-5 text-slate-500"
+              className="mt-1 text-[13px] leading-5 text-muted-foreground"
             >
               {description}
             </p>
             {targetLabel && (
-              <p className="mt-2 truncate rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-[11px] text-slate-600">
+              <p className="mt-2 truncate rounded-lg bg-muted px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground">
                 {targetLabel}
               </p>
             )}
@@ -135,12 +135,12 @@ export function HighRiskApprovalDialog({
         >
           <label
             htmlFor={passwordId}
-            className="mb-1.5 block text-xs font-medium text-slate-600"
+            className="mb-1.5 block text-xs font-medium text-muted-foreground"
           >
             设备管理员密码
           </label>
           <div className="relative">
-            <LockKeyholeIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <LockKeyholeIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               id={passwordId}
               ref={passwordRef}
@@ -149,17 +149,17 @@ export function HighRiskApprovalDialog({
               value={password}
               disabled={busy}
               onChange={(event) => setPassword(event.currentTarget.value)}
-              className="h-10 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 disabled:opacity-60"
+              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30 disabled:opacity-60"
               placeholder="输入密码以证明是你本人"
             />
           </div>
-          <p className="mt-2 text-[11px] leading-4 text-slate-400">
+          <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
             本次授权只用于上方操作，短时有效且使用一次后立即作废。
           </p>
           {error && (
             <p
               role="alert"
-              className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 text-xs text-red-700"
+              className="mt-2 rounded-lg bg-breach/10 px-2.5 py-2 text-xs text-breach"
             >
               {error}
             </p>
@@ -169,7 +169,7 @@ export function HighRiskApprovalDialog({
               type="button"
               disabled={busy}
               onClick={onCancel}
-              className="h-9 rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              className="h-9 rounded-xl border border-border bg-card px-4 text-sm font-medium text-muted-foreground transition hover:bg-background disabled:opacity-50"
             >
               取消
             </button>
@@ -179,8 +179,8 @@ export function HighRiskApprovalDialog({
               className={cn(
                 "inline-flex h-9 min-w-24 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-medium text-white transition disabled:opacity-50",
                 destructive
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-blue-600 hover:bg-blue-700",
+                  ? "bg-breach hover:bg-breach"
+                  : "bg-primary hover:bg-primary",
               )}
             >
               {busy && <Loader2Icon className="size-3.5 animate-spin" />}

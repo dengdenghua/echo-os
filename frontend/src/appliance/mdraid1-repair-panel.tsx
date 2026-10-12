@@ -137,16 +137,16 @@ export function MdRaid1RepairPanel() {
 
   return (
     <div className="mx-auto w-full max-w-[980px] px-7 pt-5">
-      <section className="rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
+      <section className="rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <WrenchIcon className="size-5 text-amber-600" />
-              <h2 className="text-sm font-semibold text-slate-900">
+              <WrenchIcon className="size-5 text-warning" />
+              <h2 className="text-sm font-semibold text-foreground">
                 降级 RAID1 换盘修复
               </h2>
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-slate-500">
+            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
               仅处理 Echo 自管双盘 RAID1：一块内核确认正常、一块已故障或缺失。
               不会主动标坏正常盘，也不提供强制模式。
             </p>
@@ -156,7 +156,7 @@ export function MdRaid1RepairPanel() {
             aria-label="刷新 RAID1 修复候选"
             onClick={() => void refresh()}
             disabled={loading || busy}
-            className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-50 text-slate-500 ring-1 ring-slate-200 disabled:opacity-40"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-background text-muted-foreground ring-1 ring-border disabled:opacity-40"
           >
             <RefreshCwIcon
               className={cn("size-3.5", loading && "animate-spin")}
@@ -167,7 +167,7 @@ export function MdRaid1RepairPanel() {
         {error && (
           <div
             role="alert"
-            className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700"
+            className="mt-4 rounded-xl bg-breach/10 px-3 py-2 text-xs text-breach"
           >
             {error}
           </div>
@@ -175,22 +175,22 @@ export function MdRaid1RepairPanel() {
         {success && (
           <div
             role="status"
-            className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800"
+            className="mt-4 flex items-center gap-2 rounded-xl bg-core/10 px-3 py-2 text-xs text-core"
           >
             <CheckCircle2Icon className="size-4" /> {success}
           </div>
         )}
 
         {loading && !status ? (
-          <p className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+          <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2Icon className="size-4 animate-spin" /> 正在核验降级阵列…
           </p>
         ) : !available ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+          <p className="mt-4 rounded-xl bg-background p-3 text-xs text-muted-foreground">
             当前主机未提供受控 RAID1 故障盘替换能力。
           </p>
         ) : candidates.length === 0 ? (
-          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">
+          <p className="mt-4 rounded-xl bg-core/10 p-3 text-xs text-core">
             当前没有符合安全边界的单盘故障 RAID1。
           </p>
         ) : (
@@ -198,20 +198,20 @@ export function MdRaid1RepairPanel() {
             {candidates.map((candidate) => (
               <article
                 key={candidate.array.uuid}
-                className="rounded-2xl bg-amber-50/70 p-4 ring-1 ring-amber-100"
+                className="rounded-2xl bg-warning/10 p-4 ring-1 ring-warning/30"
               >
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                  <ShieldAlertIcon className="size-4 text-amber-600" />
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <ShieldAlertIcon className="size-4 text-warning" />
                   {candidate.array.devicefile}
                 </div>
-                <p className="mt-2 text-[11px] text-slate-600">
+                <p className="mt-2 text-[11px] text-muted-foreground">
                   存活盘 {candidate.survivingMember.devicefile} · 缺失角色{" "}
                   {candidate.missingSlot}
                   {candidate.failedMember
                     ? ` · 故障盘 ${candidate.failedMember.devicefile}`
                     : " · 原盘已离线"}
                 </p>
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="mt-1 text-[10px] text-muted-foreground">
                   新盘至少 {formatBytes(candidate.minimumReplacementBytes)}
                   ；只显示通过空盘与稳定身份检查的磁盘
                 </p>
@@ -222,14 +222,14 @@ export function MdRaid1RepairPanel() {
                       type="button"
                       onClick={() => void preview(candidate, device.devicefile)}
                       disabled={busy}
-                      className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 ring-1 ring-amber-200 disabled:opacity-40"
+                      className="inline-flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-xs font-semibold text-foreground ring-1 ring-warning/30 disabled:opacity-40"
                     >
                       <HardDriveIcon className="size-4" />
                       {device.devicefile} · {formatBytes(device.sizeBytes)}
                     </button>
                   ))}
                   {candidate.replacementDevices.length === 0 && (
-                    <span className="text-xs text-amber-800">
+                    <span className="text-xs text-warning">
                       没有容量足够的安全空盘
                     </span>
                   )}
@@ -243,7 +243,7 @@ export function MdRaid1RepairPanel() {
       {plan && (
         <section className="mt-4 rounded-[22px] bg-slate-950 p-5 text-white shadow-lg">
           <h2 className="text-sm font-semibold">最终换盘复核</h2>
-          <p className="mt-3 text-xs leading-5 text-slate-300">
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
             将从 {plan.array.devicefile} 移除已确认故障的成员（若仍存在），加入{" "}
             {plan.replacement.devicefile}
             ，随后由内核后台重建。服务端执行前会重新核验全部身份和状态。
@@ -255,14 +255,14 @@ export function MdRaid1RepairPanel() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 h-10 w-full rounded-xl border border-slate-700 bg-white/10 px-3 text-sm text-white outline-none focus:border-amber-300"
+              className="mt-2 h-10 w-full rounded-xl border border-foreground/20 bg-card/10 px-3 text-sm text-white outline-none focus:border-warning/30"
             />
           </label>
           <button
             type="button"
             onClick={() => void apply()}
             disabled={!password || busy}
-            className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-amber-500 px-4 text-xs font-semibold text-slate-950 disabled:opacity-40"
+            className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-warning px-4 text-xs font-semibold text-foreground disabled:opacity-40"
           >
             {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
             确认换盘并开始重建

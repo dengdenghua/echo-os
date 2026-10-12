@@ -107,12 +107,12 @@ export function DailyClaimDialog({
         className="sm:max-w-md overflow-hidden p-0 gap-0 border-0"
       >
         {/* Purple gradient header — mirrors Dangbei's reference screenshot */}
-        <div className="relative bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 px-6 pt-6 pb-10">
+        <div className="relative bg-gradient-to-br from-primary via-primary to-primary px-6 pt-6 pb-10">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+            className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-card/15 text-white transition hover:bg-card/25"
           >
             <X className="size-4" />
           </button>
@@ -123,8 +123,8 @@ export function DailyClaimDialog({
 
           {/* Gift illustration — lucide icon inside a soft disk */}
           <div className="absolute right-6 top-6 flex size-24 items-center justify-center">
-            <div className="absolute inset-0 rounded-full bg-white/10 blur-sm" />
-            <div className="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-200 to-destructive shadow-[var(--shadow-md)]">
+            <div className="absolute inset-0 rounded-full bg-card/10 blur-sm" />
+            <div className="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-resonance to-destructive shadow-[var(--shadow-md)]">
               <Gift className="size-10 text-destructive" strokeWidth={2.2} />
             </div>
             <Sparkles className="absolute -top-1 -left-1 size-4 text-warning" />

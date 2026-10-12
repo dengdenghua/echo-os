@@ -299,7 +299,7 @@ export function ApplianceSessionGate({
           <button
             type="button"
             onClick={onRetry}
-            className="mt-3 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-sm font-medium text-white transition hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="mt-3 rounded-full border border-border bg-card/15 px-5 py-2 text-sm font-medium text-white transition hover:bg-card/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
           >
             重试连接
           </button>

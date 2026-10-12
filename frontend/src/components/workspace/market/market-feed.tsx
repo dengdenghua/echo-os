@@ -37,7 +37,7 @@ export function MarketCard({
         />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent" />
         {category && (
-          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-black/40 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
             <span
               className="size-1.5 rounded-full"
               style={{ backgroundColor: category.color }}
@@ -56,7 +56,7 @@ export function MarketCard({
         </span>
         {item.sold && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-            <span className="rotate-[-12deg] rounded border-2 border-white/80 px-4 py-1 text-sm font-bold tracking-widest text-white">
+            <span className="rotate-[-12deg] rounded border-2 border-border px-4 py-1 text-sm font-bold tracking-widest text-white">
               已售出
             </span>
           </div>
@@ -90,7 +90,7 @@ export function MarketCard({
               "flex min-h-9 min-w-0 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-[background-color,transform,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 active:scale-[0.97] sm:min-h-8 sm:min-w-[5.25rem] sm:px-3",
               item.sold || item.mine
                 ? "cursor-default bg-muted text-muted-foreground/60"
-                : "bg-rose-500 text-white shadow-sm hover:bg-rose-600 hover:shadow-md",
+                : "bg-breach text-primary-foreground shadow-sm hover:bg-breach hover:shadow-md",
             )}
           >
             {item.mine ? (

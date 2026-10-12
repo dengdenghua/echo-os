@@ -31,10 +31,10 @@ export function CoreAppCard({
   const agentId = useActiveAgentId() ?? "general";
   const pinned = useUserEnabledModuleIds(agentId).includes(app.moduleId);
   return (
-    <article className="flex flex-col gap-3 rounded-2xl bg-white/80 p-4 text-slate-900">
+    <article className="flex flex-col gap-3 rounded-2xl bg-card/80 p-4 text-foreground">
       <h3 className="font-semibold">{app.name}</h3>
-      <p className="text-xs text-slate-500">系统内置 · 已安装</p>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">系统内置 · 已安装</p>
+      <p className="text-xs text-muted-foreground">
         {standalone && workbench
           ? "独立窗口 · 工作台内嵌"
           : standalone
@@ -43,7 +43,7 @@ export function CoreAppCard({
               ? "工作台内嵌"
               : "未声明呈现方式"}
       </p>
-      <p className="flex-1 text-sm text-slate-600">{app.description}</p>
+      <p className="flex-1 text-sm text-muted-foreground">{app.description}</p>
       <div className="flex flex-wrap justify-end gap-2 text-xs">
         {workbench && (
           <button

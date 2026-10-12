@@ -123,8 +123,7 @@ export function MessageFeedback({
         className={cn(
           "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
           "rounded-md p-1.5 disabled:opacity-50",
-          existingFeedback?.feedback_type === "thumbs_up" &&
-            "text-green-600 dark:text-green-400",
+          existingFeedback?.feedback_type === "thumbs_up" && "text-core",
           compact && "p-1",
         )}
         title="Thumbs up (right-click for details)"
@@ -144,8 +143,7 @@ export function MessageFeedback({
         className={cn(
           "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
           "rounded-md p-1.5 disabled:opacity-50",
-          existingFeedback?.feedback_type === "thumbs_down" &&
-            "text-red-600 dark:text-red-400",
+          existingFeedback?.feedback_type === "thumbs_down" && "text-breach",
           compact && "p-1",
         )}
         title="Thumbs down (right-click for details)"
@@ -163,7 +161,7 @@ export function MessageFeedback({
             className={cn(
               "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
               "rounded-md p-1.5 disabled:opacity-50",
-              existingFeedback?.comment && "text-blue-600 dark:text-blue-400",
+              existingFeedback?.comment && "text-core",
               compact && "p-1",
             )}
             title="Add comment"

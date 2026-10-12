@@ -80,11 +80,11 @@ function AgentNodeRow({
   const indent = node.depth * 16;
 
   const statusColor = {
-    running: "text-blue-500",
-    waiting_approval: "text-yellow-500",
-    done: "text-green-500",
-    pending: "text-gray-400",
-    error: "text-red-500",
+    running: "text-core",
+    waiting_approval: "text-warning",
+    done: "text-core",
+    pending: "text-muted-foreground",
+    error: "text-breach",
   }[node.tile.status];
 
   return (

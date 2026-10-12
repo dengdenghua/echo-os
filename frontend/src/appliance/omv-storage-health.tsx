@@ -289,7 +289,7 @@ export function OmvStorageHealth() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-[24px] font-semibold tracking-tight">存储健康</h1>
-          <p className="mt-1 text-[13px] text-slate-500">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             只读显示本机存储卷、磁盘健康与阵列状态
           </p>
         </div>
@@ -297,7 +297,7 @@ export function OmvStorageHealth() {
           type="button"
           onClick={() => setReloadKey((value) => value + 1)}
           disabled={loading}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm transition hover:bg-background disabled:opacity-50"
         >
           <RefreshCwIcon
             className={`size-3.5 ${loading ? "animate-spin" : ""}`}
@@ -306,13 +306,13 @@ export function OmvStorageHealth() {
         </button>
       </header>
 
-      <section className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <span
             className={`grid size-10 place-items-center rounded-xl ${
               status?.available
-                ? "bg-blue-50 text-blue-600"
-                : "bg-amber-50 text-amber-600"
+                ? "bg-core/10 text-core"
+                : "bg-warning/10 text-warning"
             }`}
           >
             {loading ? (
@@ -333,7 +333,7 @@ export function OmvStorageHealth() {
                     ? "未检测到存储设备"
                     : "存储连接尚未确认"}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {status?.available
                 ? "此页为只读检查，连接成功不代表磁盘健康状态已确认。"
                 : "请检查磁盘连接、设备映射与读取权限后刷新。下方保留已取得的检查结果。"}
@@ -347,12 +347,12 @@ export function OmvStorageHealth() {
           aria-label="存储健康检查"
           className={`mt-3 rounded-2xl border p-4 text-xs ${
             critical
-              ? "border-red-200 bg-red-50 text-red-800"
+              ? "border-breach/30 bg-breach/10 text-breach"
               : warning || healthSnapshot?.state === "degraded"
-                ? "border-amber-200 bg-amber-50 text-amber-800"
+                ? "border-warning/30 bg-warning/10 text-warning"
                 : confirmedHealthy
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-slate-200 bg-slate-50 text-slate-700"
+                  ? "border-core/30 bg-core/10 text-core"
+                  : "border-border bg-background text-foreground"
           }`}
         >
           <div className="flex items-start justify-between gap-3">
@@ -407,7 +407,7 @@ export function OmvStorageHealth() {
               {healthSnapshot.activeAlerts.map((alert) => (
                 <article
                   key={alert.id}
-                  className="rounded-lg bg-white/70 px-3 py-2"
+                  className="rounded-lg bg-card/70 px-3 py-2"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="font-medium">{alert.message}</span>
@@ -461,7 +461,7 @@ export function OmvStorageHealth() {
       {readErrors.length > 0 && (
         <div
           role="alert"
-          className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-800"
+          className="mt-3 rounded-xl bg-warning/10 px-4 py-3 text-xs text-warning"
         >
           {readErrors.map((message) => (
             <p key={message}>{message}</p>
@@ -475,28 +475,28 @@ export function OmvStorageHealth() {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700"
+          className="mt-3 rounded-xl bg-breach/10 px-4 py-3 text-xs text-breach"
         >
           {error}
         </p>
       )}
 
       {!loading && filesystems.length === 0 && (
-        <p className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">
+        <p className="mt-4 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground shadow-sm">
           当前没有可显示的已挂载数据卷；请结合上方检查结果确认挂载状态。
         </p>
       )}
 
       {!loading && devices.length > 0 && (
-        <section className="mt-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+        <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[15px] font-semibold">物理磁盘</h2>
-              <p className="mt-0.5 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
                 原生 SMART 枚举 · 已隐藏序列号和 by-id 路径
               </p>
             </div>
-            <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
               {devices.length} 块
             </span>
           </div>
@@ -522,18 +522,18 @@ export function OmvStorageHealth() {
                   key={device.devicefile}
                   className={`rounded-xl border p-3 ${
                     (!isHealthy && !isUnknown) || isHot
-                      ? "border-amber-200 bg-amber-50/70"
-                      : "border-slate-200 bg-slate-50"
+                      ? "border-warning/30 bg-warning/10"
+                      : "border-border bg-background"
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
                     <span
                       className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${
                         isHealthy && !isHot
-                          ? "bg-emerald-100 text-emerald-700"
+                          ? "bg-core/10 text-core"
                           : isUnknown && !isHot
-                            ? "bg-slate-200 text-slate-600"
-                            : "bg-amber-100 text-amber-700"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-warning/10 text-warning"
                       }`}
                     >
                       {isHealthy && !isHot ? (
@@ -543,10 +543,10 @@ export function OmvStorageHealth() {
                       )}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <strong className="block truncate text-xs text-slate-800">
+                      <strong className="block truncate text-xs text-foreground">
                         {device.model || "未知磁盘"}
                       </strong>
-                      <span className="mt-0.5 block text-[10px] text-slate-400">
+                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
                         {device.devicefile}
                         {device.sizeBytes == null
                           ? ""
@@ -556,10 +556,10 @@ export function OmvStorageHealth() {
                         <span
                           className={
                             isHealthy
-                              ? "text-emerald-700"
+                              ? "text-core"
                               : isUnknown
-                                ? "text-slate-600"
-                                : "text-amber-800"
+                                ? "text-muted-foreground"
+                                : "text-warning"
                           }
                         >
                           {isUnknown ? "健康状态未知" : currentReport.health}
@@ -567,8 +567,8 @@ export function OmvStorageHealth() {
                         <span
                           className={
                             isHot
-                              ? "font-semibold text-red-700"
-                              : "text-slate-600"
+                              ? "font-semibold text-breach"
+                              : "text-muted-foreground"
                           }
                         >
                           {currentReport.temperatureC == null
@@ -577,13 +577,13 @@ export function OmvStorageHealth() {
                         </span>
                       </div>
                       {isUnknown && (
-                        <p className="mt-2 text-[10px] text-slate-500">
+                        <p className="mt-2 text-[10px] text-muted-foreground">
                           未取得完整健康结论，请检查 SMART
                           组件、磁盘支持与读取权限。
                         </p>
                       )}
                       {detail ? (
-                        <p className="mt-2 text-[10px] text-slate-500">
+                        <p className="mt-2 text-[10px] text-muted-foreground">
                           通电 {detail.powerOnHours ?? "未知"} 小时 · 启停{" "}
                           {detail.powerCycles ?? "未知"} 次
                         </p>
@@ -592,7 +592,7 @@ export function OmvStorageHealth() {
                           type="button"
                           disabled={smartLoading === device.devicefile}
                           onClick={() => void readSmart(device.devicefile)}
-                          className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                          className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-core hover:text-core disabled:opacity-50"
                         >
                           {smartLoading === device.devicefile && (
                             <Loader2Icon className="size-3 animate-spin" />
@@ -620,30 +620,30 @@ export function OmvStorageHealth() {
       )}
 
       {!loading && topology && (
-        <section className="mt-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+        <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[15px] font-semibold">存储拓扑</h2>
-              <p className="mt-0.5 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
                 物理盘、软件 RAID 与 LVM 的只读关系
               </p>
             </div>
-            <Layers3Icon className="size-5 text-blue-500" />
+            <Layers3Icon className="size-5 text-core" />
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-medium">
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+            <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               物理盘 {physicalCount}
             </span>
-            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+            <span className="rounded-full bg-core/10 px-2.5 py-1 text-core">
               阵列 {raidCount}
             </span>
-            <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700">
+            <span className="rounded-full bg-core/10 px-2.5 py-1 text-core">
               LVM {lvmCount}
             </span>
           </div>
 
           {topologyLayers.length === 0 ? (
-            <p className="mt-3 rounded-xl bg-slate-50 px-3 py-3 text-xs text-slate-500">
+            <p className="mt-3 rounded-xl bg-background px-3 py-3 text-xs text-muted-foreground">
               {topology.devices.length > 0
                 ? "当前已读取的拓扑中没有软件 RAID / LVM 层。"
                 : "尚未取得设备拓扑，请检查磁盘枚举结果后刷新。"}
@@ -658,26 +658,26 @@ export function OmvStorageHealth() {
                 return (
                   <article
                     key={node.devicefile}
-                    className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px]"
+                    className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-[11px]"
                   >
-                    <span className="min-w-0 text-slate-500">
+                    <span className="min-w-0 text-muted-foreground">
                       {node.parentDevicefiles.length > 0
                         ? node.parentDevicefiles.join(" + ")
                         : "未识别上游设备"}
                     </span>
-                    <ArrowRightIcon className="size-3.5 shrink-0 text-slate-400" />
-                    <strong className="text-slate-800">
+                    <ArrowRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                    <strong className="text-foreground">
                       {node.devicefile}
                     </strong>
-                    <span className="rounded bg-white px-1.5 py-0.5 font-medium text-slate-600">
+                    <span className="rounded bg-card px-1.5 py-0.5 font-medium text-muted-foreground">
                       {topologyKind(node.type)}
                     </span>
                     {array && (
                       <span
                         className={`ml-auto rounded-full px-2 py-0.5 font-medium ${
                           arrayHealthy
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-amber-100 text-amber-800"
+                            ? "bg-core/10 text-core"
+                            : "bg-warning/10 text-warning"
                         }`}
                       >
                         {array.level.toUpperCase()} · {raidStatus(array.status)}
@@ -709,10 +709,10 @@ export function OmvStorageHealth() {
           return (
             <article
               key={`${filesystem.devicefile}:${filesystem.mountpoint}`}
-              className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-border bg-card p-5 shadow-sm"
             >
               <div className="flex items-start gap-4">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                   <HardDriveIcon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -721,25 +721,25 @@ export function OmvStorageHealth() {
                       <h2 className="truncate text-[15px] font-semibold">
                         {filesystem.label || filesystem.devicefile}
                       </h2>
-                      <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {filesystem.type.toUpperCase()} ·{" "}
                         {filesystem.mountpoint}
                       </p>
                     </div>
                     {filesystem.readOnly && (
-                      <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+                      <span className="rounded-full bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning">
                         只读挂载
                       </span>
                     )}
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                     <div
                       className={`h-full rounded-full ${
                         used != null && used >= 90
-                          ? "bg-red-500"
+                          ? "bg-breach"
                           : used != null && used >= 75
-                            ? "bg-amber-500"
-                            : "bg-blue-500"
+                            ? "bg-warning"
+                            : "bg-primary"
                       }`}
                       style={{
                         width:
@@ -749,7 +749,7 @@ export function OmvStorageHealth() {
                       }}
                     />
                   </div>
-                  <div className="mt-1.5 flex justify-between text-[11px] text-slate-500">
+                  <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground">
                     <span>
                       {used == null ? "容量使用率未知" : `已使用 ${used}%`}
                     </span>
@@ -761,28 +761,28 @@ export function OmvStorageHealth() {
                   </div>
 
                   {report ? (
-                    <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 text-xs">
+                    <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-background p-3 text-xs">
                       <div>
-                        <span className="block text-[10px] text-slate-400">
+                        <span className="block text-[10px] text-muted-foreground">
                           SMART
                         </span>
                         <strong
                           className={
                             healthy(report.health) && !reportUnknown
-                              ? "text-emerald-600"
+                              ? "text-core"
                               : reportUnknown
-                                ? "text-slate-600"
-                                : "text-amber-700"
+                                ? "text-muted-foreground"
+                                : "text-warning"
                           }
                         >
                           {reportUnknown ? "健康状态未知" : report.health}
                         </strong>
                       </div>
                       <div>
-                        <span className="block text-[10px] text-slate-400">
+                        <span className="block text-[10px] text-muted-foreground">
                           温度
                         </span>
-                        <strong className="inline-flex items-center gap-1 text-slate-700">
+                        <strong className="inline-flex items-center gap-1 text-foreground">
                           <ThermometerIcon className="size-3" />
                           {report.temperatureC == null
                             ? "未知"
@@ -790,17 +790,17 @@ export function OmvStorageHealth() {
                         </strong>
                       </div>
                       <div>
-                        <span className="block text-[10px] text-slate-400">
+                        <span className="block text-[10px] text-muted-foreground">
                           通电时间
                         </span>
-                        <strong className="text-slate-700">
+                        <strong className="text-foreground">
                           {report.powerOnHours == null
                             ? "未知"
                             : `${report.powerOnHours} 小时`}
                         </strong>
                       </div>
                       {report.model && (
-                        <p className="col-span-3 truncate border-t border-slate-200 pt-2 text-[10px] text-slate-500">
+                        <p className="col-span-3 truncate border-t border-border pt-2 text-[10px] text-muted-foreground">
                           {report.model}
                         </p>
                       )}
@@ -810,7 +810,7 @@ export function OmvStorageHealth() {
                       type="button"
                       disabled={smartLoading === device}
                       onClick={() => void readSmart(device)}
-                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[11px] font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
                     >
                       {smartLoading === device ? (
                         <Loader2Icon className="size-3.5 animate-spin" />
@@ -820,7 +820,7 @@ export function OmvStorageHealth() {
                       {smartLoading === device ? "正在读取…" : "查看 SMART"}
                     </button>
                   ) : (
-                    <p className="mt-3 text-[10px] text-slate-400">
+                    <p className="mt-3 text-[10px] text-muted-foreground">
                       尚未关联到可读取 SMART 的物理磁盘；请检查设备拓扑、SMART
                       组件与读取权限。
                     </p>
@@ -832,7 +832,7 @@ export function OmvStorageHealth() {
         })}
       </div>
 
-      <p className="mt-4 text-[11px] leading-5 text-slate-400">
+      <p className="mt-4 text-[11px] leading-5 text-muted-foreground">
         {healthSnapshot?.monitoring
           ? "后台监测已启用，最近告警变化显示在上方。"
           : "当前为按需检查；点击“刷新”重新读取，尚未启用后台持续监测。"}

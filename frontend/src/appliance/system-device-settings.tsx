@@ -75,7 +75,7 @@ export interface SystemDeviceSettingsProps {
 
 function SettingsCard({ children }: { children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       {children}
     </section>
   );
@@ -93,13 +93,13 @@ function SettingsRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-slate-100 px-4 py-4 last:border-b-0 xl:flex xl:gap-4 xl:px-5">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+    <div className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 py-4 last:border-b-0 xl:flex xl:gap-4 xl:px-5">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
         <Icon className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-sm font-semibold">{title}</strong>
-        <small className="mt-1 block text-xs leading-5 text-slate-500">
+        <small className="mt-1 block text-xs leading-5 text-muted-foreground">
           {description}
         </small>
       </span>
@@ -130,11 +130,11 @@ function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative h-7 w-12 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${
-        checked ? "bg-blue-600" : "bg-slate-300"
+        checked ? "bg-primary" : "bg-slate-300"
       }`}
     >
       <span
-        className={`absolute top-1 size-5 rounded-full bg-white shadow transition ${
+        className={`absolute top-1 size-5 rounded-full bg-card shadow transition ${
           checked ? "left-6" : "left-1"
         }`}
       />
@@ -171,7 +171,7 @@ function ControlSlider({
         }
         onKeyUp={(event) => void onCommit?.(Number(event.currentTarget.value))}
       />
-      <span className="w-10 text-right text-xs tabular-nums text-slate-500">
+      <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
         {preview}%
       </span>
     </div>
@@ -370,7 +370,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
           }
         >
           {battery?.present && typeof battery.percentage === "number" ? (
-            <strong className="text-2xl font-semibold tabular-nums text-slate-800">
+            <strong className="text-2xl font-semibold tabular-nums text-foreground">
               {battery.percentage}%
             </strong>
           ) : null}
@@ -389,7 +389,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
       <SettingsCard>
         <div className="p-5">
           <h2 className="text-sm font-semibold">桌面壁纸</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             液态玻璃效果统一采样当前系统壁纸，不再使用独立工作台主题。
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -401,10 +401,10 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => props.onWallpaperChange?.(item.id)}
-                  className={`overflow-hidden rounded-xl border bg-white p-1.5 text-left transition ${
+                  className={`overflow-hidden rounded-xl border bg-card p-1.5 text-left transition ${
                     selected
-                      ? "border-blue-600 ring-2 ring-blue-600/20"
-                      : "border-slate-200 hover:border-slate-400"
+                      ? "border-core/30 ring-2 ring-core/30"
+                      : "border-border hover:border-border"
                   }`}
                 >
                   <span
@@ -426,7 +426,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
                   <span className="mt-2 flex items-center justify-between px-1 text-xs font-medium">
                     {item.label}
                     {selected ? (
-                      <CheckCircle2Icon className="size-4 text-blue-600" />
+                      <CheckCircle2Icon className="size-4 text-core" />
                     ) : null}
                   </span>
                 </button>
@@ -454,7 +454,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
             type="button"
             disabled={!props.notificationServiceAvailable}
             onClick={props.onOpenNotifications}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-background disabled:opacity-40"
           >
             打开通知中心
           </button>
@@ -492,7 +492,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
             type="button"
             disabled={props.updateBusy}
             onClick={props.onRefreshUpdate}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-background disabled:opacity-40"
           >
             <RefreshCwIcon
               className={`size-3.5 ${props.updateBusy ? "animate-spin" : ""}`}
@@ -504,7 +504,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
               type="button"
               disabled={!canApply || props.updateBusy}
               onClick={props.onApplyUpdate}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
             >
               <DownloadIcon className="size-3.5" />
               安装更新
@@ -537,7 +537,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
           aria-label="刷新系统服务健康"
           disabled={serviceHealthBusy}
           onClick={() => setServiceHealthRefresh((value) => value + 1)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-background disabled:opacity-40"
         >
           <RefreshCwIcon
             className={`size-3.5 ${serviceHealthBusy ? "animate-spin" : ""}`}
@@ -553,7 +553,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
         <button
           type="button"
           onClick={props.onOpenGettingStarted}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-background disabled:opacity-40"
         >
           <BookOpenCheckIcon className="size-3.5" />
           打开使用引导
@@ -569,7 +569,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
             type="button"
             disabled={diagnosticsBusy}
             onClick={() => void exportDiagnostics()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-background disabled:opacity-40"
           >
             <DownloadIcon className="size-3.5" />
             {diagnosticsBusy ? "正在生成…" : "导出诊断包"}
@@ -577,7 +577,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
           {diagnosticsMessage ? (
             <p
               role={diagnosticsError ? "alert" : "status"}
-              className={`mt-1.5 text-[11px] ${diagnosticsError ? "text-red-600" : "text-emerald-600"}`}
+              className={`mt-1.5 text-[11px] ${diagnosticsError ? "text-breach" : "text-core"}`}
             >
               {diagnosticsMessage}
             </p>

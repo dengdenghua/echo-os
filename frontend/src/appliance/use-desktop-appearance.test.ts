@@ -75,6 +75,10 @@ it("links the glass preset when the theme changes", () => {
   expect(result.current.liquidGlassStyle).toBe("crystal");
   expect(result.current.liquidGlassIntensity).toBe("strong");
   expect(document.documentElement.classList.contains("theme-dark")).toBe(true);
+  // Portalled menus and dialogs follow the desktop through the token scope.
+  expect(document.documentElement.dataset.echoTheme).toBe("graphite");
+  act(() => result.current.setTheme("theme-white"));
+  expect(document.documentElement.dataset.echoTheme).toBe("snow");
 });
 
 it("keeps the glass preset when the caller opts out of linking", () => {

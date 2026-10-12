@@ -1943,7 +1943,7 @@ function VideoAssetTile({
           <FilmIcon className="size-7 text-muted-foreground" />
         )}
         <span className="absolute inset-0 grid place-items-center bg-black/0 transition-colors group-hover:bg-black/20">
-          <span className="grid size-8 place-items-center rounded-full bg-white/90 text-foreground opacity-0 shadow-[var(--shadow-xs)] transition-opacity group-hover:opacity-100">
+          <span className="grid size-8 place-items-center rounded-full bg-card/90 text-foreground opacity-0 shadow-[var(--shadow-xs)] transition-opacity group-hover:opacity-100">
             <PlayIcon className="size-4" />
           </span>
         </span>
@@ -2665,9 +2665,8 @@ function PreviewPanel({
                       key={index}
                       className={cn(
                         "block",
-                        line.startsWith("-") && "bg-red-500/10 text-red-700",
-                        line.startsWith("+") &&
-                          "bg-emerald-500/10 text-emerald-700",
+                        line.startsWith("-") && "bg-breach/10 text-breach",
+                        line.startsWith("+") && "bg-core/10 text-core",
                         !/^[+-]/.test(line) && "text-muted-foreground",
                       )}
                     >

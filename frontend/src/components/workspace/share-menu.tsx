@@ -313,7 +313,7 @@ export function ShareMenu({
             <DialogTitle>{qrTitle}</DialogTitle>
             <DialogDescription>{qrHint}</DialogDescription>
           </DialogHeader>
-          <div className="flex min-h-[236px] items-center justify-center rounded-2xl border border-border-default bg-white p-5">
+          <div className="flex min-h-[236px] items-center justify-center rounded-2xl border border-border-default bg-card p-5">
             {qrUrl ? (
               <QRCodeSVG
                 value={qrUrl}

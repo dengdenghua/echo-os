@@ -240,7 +240,7 @@ export function AgentPipMonitor({
         onPointerDown={(e) => handlePointerDown(e, true)}
         onDoubleClick={handleResetPosition}
         className={cn(
-          "fixed z-50 flex cursor-grab items-center gap-2 rounded-full border border-black/10 bg-white/85 px-3 py-1.5 shadow-xl backdrop-blur-xl transition-all hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:cursor-grabbing dark:border-white/15 dark:bg-slate-900/85 dark:hover:bg-slate-900",
+          "fixed z-50 flex cursor-grab items-center gap-2 rounded-full border border-black/10 bg-card/85 px-3 py-1.5 shadow-xl backdrop-blur-xl transition-all hover:scale-105 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-core/30 active:cursor-grabbing",
           !position && "bottom-24 right-4",
           isDragging && "cursor-grabbing select-none transition-none",
           className,
@@ -269,14 +269,14 @@ export function AgentPipMonitor({
         title="点击展开 · 按住拖拽 · 双击复位"
       >
         <span className="relative flex size-2 items-center justify-center">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-60" />
-          <span className="relative inline-flex size-1.5 rounded-full bg-blue-500" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
         </span>
-        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+        <span className="text-[11px] font-semibold text-foreground">
           {agentFirstName} PiP · {pillLabel}
           {demo ? " · 演示" : ""}
         </span>
-        <ChevronUpIcon className="size-3 text-slate-400" />
+        <ChevronUpIcon className="size-3 text-muted-foreground" />
       </div>
     );
   }
@@ -285,7 +285,7 @@ export function AgentPipMonitor({
     <div
       ref={containerRef}
       className={cn(
-        "fixed z-50 flex w-80 max-w-[calc(100vw-32px)] max-h-[calc(100dvh-140px)] flex-col overflow-y-auto rounded-2xl border border-black/10 bg-white/90 text-slate-800 shadow-2xl shadow-black/15 backdrop-blur-2xl dark:border-white/15 dark:bg-slate-900/90 dark:text-slate-100",
+        "fixed z-50 flex w-80 max-w-[calc(100vw-32px)] max-h-[calc(100dvh-140px)] flex-col overflow-y-auto rounded-2xl border border-black/10 bg-card/90 text-foreground shadow-2xl shadow-black/15 backdrop-blur-2xl",
         !position && "bottom-24 right-4",
         isDragging ? "select-none transition-none" : "transition-all",
         className,
@@ -308,35 +308,35 @@ export function AgentPipMonitor({
         onPointerDown={(e) => handlePointerDown(e, false)}
         onDoubleClick={handleResetPosition}
         className={cn(
-          "flex h-8 select-none items-center justify-between border-b border-black/5 bg-black/[0.02] px-3 dark:border-white/10 dark:bg-white/[0.02]",
+          "flex h-8 select-none items-center justify-between border-b border-black/5 bg-black/[0.02] px-3  dark:bg-white/[0.02]",
           isDragging ? "cursor-grabbing" : "cursor-grab",
         )}
         title="按住拖拽移动窗口 · 双击还原至右下角"
       >
         <div className="flex items-center gap-1.5">
-          <GripHorizontalIcon className="size-3 text-slate-400 opacity-60 hover:opacity-100" />
+          <GripHorizontalIcon className="size-3 text-muted-foreground opacity-60 hover:opacity-100" />
           <span className="relative flex size-2 items-center justify-center">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-core opacity-60" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-core" />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             任务画中画 · {agentFirstName}
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-slate-400">
+        <div className="flex items-center gap-1 text-muted-foreground">
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowCastMenu((value) => !value)}
               aria-label="选择手机"
               title="选择手机"
-              className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded p-1 hover:bg-black/5 "
             >
               <CastIcon className="size-3" />
             </button>
             {showCastMenu && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-black/10 bg-white/95 p-3 text-slate-800 shadow-2xl backdrop-blur-xl dark:border-white/15 dark:bg-slate-900/95 dark:text-slate-100">
+              <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-black/10 bg-card/95 p-3 text-foreground shadow-2xl backdrop-blur-xl">
                 <LiveDeviceList
                   onOpen={
                     onOpenPhoneMirror
@@ -354,7 +354,7 @@ export function AgentPipMonitor({
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            className="rounded p-1 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200"
+            className="rounded p-1 hover:bg-black/5 hover:text-foreground"
             title="最小化为胶囊"
             aria-label="最小化"
           >
@@ -363,7 +363,7 @@ export function AgentPipMonitor({
           <button
             type="button"
             onClick={onExpandToWindow}
-            className="rounded p-1 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200"
+            className="rounded p-1 hover:bg-black/5 hover:text-foreground"
             title="放大为全屏窗口"
             aria-label="放大为全屏窗口"
           >
@@ -375,7 +375,7 @@ export function AgentPipMonitor({
               setIsDismissed(true);
               onClose?.();
             }}
-            className="rounded p-1 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-200"
+            className="rounded p-1 hover:bg-black/5 hover:text-foreground"
             title="关闭画中画"
             aria-label="关闭画中画"
           >
@@ -386,22 +386,22 @@ export function AgentPipMonitor({
 
       <div className="p-3">
         {demo && (
-          <p className="mb-2 text-xs font-medium text-slate-500">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
             演示预览 · 非实时数据，不执行操作
           </p>
         )}
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="truncate pr-2">{task.title}</span>
-          <span className="shrink-0 text-[10px] text-blue-600 dark:text-blue-400 font-mono">
+          <span className="shrink-0 text-[10px] text-core font-mono">
             {progressLabel}
           </span>
         </div>
 
         {/* 紧凑进度条 */}
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-black/5 ">
           <div
             className={cn(
-              "h-full bg-blue-500 transition-all duration-300",
+              "h-full bg-primary transition-all duration-300",
               task.progress == null && "w-1/3 animate-pulse",
             )}
             style={
@@ -411,19 +411,19 @@ export function AgentPipMonitor({
         </div>
 
         {/* 控制台微预览 */}
-        <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-black/[0.04] p-2 font-mono text-[10px] leading-relaxed text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">
-          <TerminalIcon className="mt-0.5 size-3 shrink-0 text-slate-400" />
+        <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-black/[0.04] p-2 font-mono text-[10px] leading-relaxed text-muted-foreground dark:bg-white/[0.04]">
+          <TerminalIcon className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <span className="line-clamp-2">{task.stepText}</span>
         </div>
 
         {/* 关键安全决策卡片 (Human-in-the-loop 快速批准) */}
         {task.needsApproval && !approvalHandled && (
-          <div className="mt-2.5 rounded-lg border border-amber-500/30 bg-amber-50/70 p-2 text-[11px] dark:border-amber-400/30 dark:bg-amber-950/40">
-            <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
+          <div className="mt-2.5 rounded-lg border border-warning/30 bg-warning/10 p-2 text-[11px]">
+            <div className="flex items-center gap-1.5 font-semibold text-warning">
               <AlertCircleIcon className="size-3.5 shrink-0" />
               <span>需要操作授权</span>
             </div>
-            <p className="mt-1 text-[10px] text-slate-600 dark:text-slate-300">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               {task.approvalRiskMessage}
             </p>
             {onReviewApproval ? (
@@ -431,7 +431,7 @@ export function AgentPipMonitor({
                 <button
                   type="button"
                   onClick={() => onReviewApproval(task)}
-                  className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700"
+                  className="rounded-md bg-warning px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm hover:bg-warning"
                 >
                   去处理
                 </button>
@@ -442,7 +442,7 @@ export function AgentPipMonitor({
                   type="button"
                   onClick={() => void handleDecision(false)}
                   disabled={demo || !onReject || approvalPending}
-                  className="rounded-md border border-black/10 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-white/15 dark:bg-white/10 dark:text-slate-300"
+                  className="rounded-md border border-black/10 bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-background disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   拦截
                 </button>
@@ -450,7 +450,7 @@ export function AgentPipMonitor({
                   type="button"
                   onClick={() => void handleDecision(true)}
                   disabled={demo || !onApprove || approvalPending}
-                  className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-md bg-warning px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm hover:bg-warning disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   批准放行
                 </button>

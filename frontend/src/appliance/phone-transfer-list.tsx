@@ -23,7 +23,7 @@ function RecoverTransfer({ job }: { job: PhoneTransfer }) {
   return (
     <div className="mt-2 space-y-1">
       {job.upload ? (
-        <label className="inline-flex cursor-pointer text-blue-700">
+        <label className="inline-flex cursor-pointer text-core">
           选择原文件继续传输
           <input
             type="file"
@@ -39,7 +39,7 @@ function RecoverTransfer({ job }: { job: PhoneTransfer }) {
       ) : (
         <button onClick={() => recover()}>重新下载</button>
       )}
-      <p className="text-[10px] text-slate-500">
+      <p className="text-[10px] text-muted-foreground">
         {job.upload
           ? "校验原文件后，从手机已确认的位置继续。"
           : "将从头下载并重新校验文件。"}
@@ -85,7 +85,7 @@ export function PhoneTransferList({ deviceId }: { deviceId?: string }) {
       {jobs.map((job) => (
         <div
           key={job.id}
-          className="rounded-xl border border-slate-200 bg-white p-3 text-slate-700"
+          className="rounded-xl border border-border bg-card p-3 text-foreground"
         >
           <p className="truncate font-medium">{job.name}</p>
           <p className="mt-1 break-all text-[10px]">
@@ -113,7 +113,7 @@ export function PhoneTransferList({ deviceId }: { deviceId?: string }) {
             }
           </p>
           {job.state === "done" && (
-            <p className="mt-1 text-emerald-700">
+            <p className="mt-1 text-core">
               {job.upload
                 ? "已送达。手机 Echo 文件收发中可打开、分享或保存。"
                 : "已交给浏览器下载，可在下载列表打开。"}
@@ -169,7 +169,7 @@ export function PhoneTransferList({ deviceId }: { deviceId?: string }) {
               <RecoverTransfer job={job} />
             ) : (
               job.state === "running" && (
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-muted-foreground">
                   其他窗口正在传输；关闭原页面后，约 45 秒可在这里恢复。
                 </p>
               )

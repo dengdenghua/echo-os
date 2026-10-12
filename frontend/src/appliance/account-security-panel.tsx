@@ -255,7 +255,7 @@ export function AccountSecurityPanel({
       blocked={busy || totpBusy || revokeOpen}
       nestedApprovalOpen={revokeOpen}
     >
-      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white/80 p-3 md:hidden">
+      <div className="flex shrink-0 items-center gap-3 border-b border-border bg-card/80 p-3 md:hidden">
         {inWindow && <SystemAppLightsSpacer />}
         <label htmlFor="system-settings-category" className="sr-only">
           设置分类
@@ -266,7 +266,7 @@ export function AccountSecurityPanel({
           onChange={(event) =>
             setSection(event.target.value as AccountSecuritySection)
           }
-          className="h-11 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"
+          className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-core/30"
         >
           <option value="account">账户与安全</option>
           {SYSTEM_DEVICE_SETTINGS_ITEMS.map((item) => (
@@ -285,13 +285,13 @@ export function AccountSecurityPanel({
             type="button"
             disabled={busy || totpBusy}
             onClick={onClose}
-            className="h-11 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-blue-600"
+            className="h-11 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-core/30"
           >
             关闭设置
           </button>
         )}
       </div>
-      <aside className="hidden w-52 shrink-0 overflow-y-auto border-r border-slate-300/70 bg-white/55 px-3 py-4 backdrop-blur-2xl md:block">
+      <aside className="hidden w-52 shrink-0 overflow-y-auto border-r border-border bg-card/55 px-3 py-4 backdrop-blur-2xl md:block">
         <div className="mb-5 flex items-center gap-2 px-1">
           {inWindow ? (
             <SystemAppLightsSpacer />
@@ -309,13 +309,13 @@ export function AccountSecurityPanel({
             </div>
           )}
         </div>
-        <div className="mb-4 flex items-center gap-3 rounded-xl bg-white/72 p-2.5 shadow-sm ring-1 ring-slate-200/70">
-          <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-white">
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-card/72 p-2.5 shadow-sm ring-1 ring-border">
+          <span className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
             <UserRoundIcon className="size-4.5" />
           </span>
           <span className="min-w-0">
             <strong className="block truncate text-sm">admin</strong>
-            <small className="block text-[11px] text-slate-500">
+            <small className="block text-[11px] text-muted-foreground">
               设备管理员
             </small>
           </span>
@@ -325,14 +325,14 @@ export function AccountSecurityPanel({
           onClick={() => setSection("account")}
           className={`flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
             section === "account"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-700 hover:bg-white/70"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-foreground hover:bg-card/70"
           }`}
         >
           <ShieldCheckIcon className="size-4" />
           账户与安全
         </button>
-        <div className="my-2 border-t border-slate-300/60" />
+        <div className="my-2 border-t border-border" />
         {SYSTEM_DEVICE_SETTINGS_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
@@ -342,8 +342,8 @@ export function AccountSecurityPanel({
               onClick={() => setSection(item.id)}
               className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
                 section === item.id
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-700 hover:bg-white/70"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-foreground hover:bg-card/70"
               }`}
             >
               <Icon className="size-4" />
@@ -351,11 +351,11 @@ export function AccountSecurityPanel({
             </button>
           );
         })}
-        <div className="my-2 border-t border-slate-300/60" />
+        <div className="my-2 border-t border-border" />
         <button
           type="button"
           onClick={() => setSection("models")}
-          className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${section === "models" ? "bg-blue-600 text-white shadow-sm" : "text-slate-700 hover:bg-white/70"}`}
+          className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${section === "models" ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground hover:bg-card/70"}`}
         >
           <BotIcon className="size-4" />
           模型与用量
@@ -365,8 +365,8 @@ export function AccountSecurityPanel({
           onClick={() => setSection("agent")}
           className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
             section === "agent"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-700 hover:bg-white/70"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-foreground hover:bg-card/70"
           }`}
         >
           <BotIcon className="size-4" />
@@ -377,8 +377,8 @@ export function AccountSecurityPanel({
           onClick={() => setSection("storage")}
           className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
             section === "storage"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-700 hover:bg-white/70"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-foreground hover:bg-card/70"
           }`}
         >
           <HardDriveIcon className="size-4" />
@@ -389,8 +389,8 @@ export function AccountSecurityPanel({
           onClick={() => setSection("sharing")}
           className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
             section === "sharing"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-700 hover:bg-white/70"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-foreground hover:bg-card/70"
           }`}
         >
           <FoldersIcon className="size-4" />
@@ -401,8 +401,8 @@ export function AccountSecurityPanel({
           onClick={() => setSection("audit")}
           className={`mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] font-medium ${
             section === "audit"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-700 hover:bg-white/70"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-foreground hover:bg-card/70"
           }`}
         >
           <FileClockIcon className="size-4" />
@@ -421,7 +421,7 @@ export function AccountSecurityPanel({
                   )?.label
                 }
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 管理 Echo OS 原生设备与桌面能力
               </p>
             </header>
@@ -438,11 +438,11 @@ export function AccountSecurityPanel({
               <h1 className="text-[24px] font-semibold tracking-tight">
                 模型与用量
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 管理系统模型连接、默认模型与账户用量
               </p>
             </header>
-            <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+            <section className="mt-5 rounded-2xl border border-border bg-card p-5">
               <SystemAgentSettingsContent section="models" />
             </section>
           </>
@@ -452,13 +452,13 @@ export function AccountSecurityPanel({
               <h1 className="text-[24px] font-semibold tracking-tight">
                 AI 与 Agent
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 统一管理 Echo 的工具、记忆、自动化与执行安全
               </p>
             </header>
             <nav
               aria-label="AI 与 Agent 设置分类"
-              className="mt-5 flex flex-wrap gap-1.5 border-b border-slate-200 pb-3"
+              className="mt-5 flex flex-wrap gap-1.5 border-b border-border pb-3"
             >
               {OS_AGENT_SETTINGS_ITEMS.filter(
                 (item) => item.id !== "models",
@@ -470,15 +470,15 @@ export function AccountSecurityPanel({
                   onClick={() => setAgentSection(item.id)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                     agentSection === item.id
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-card/70 text-muted-foreground hover:bg-card hover:text-foreground"
                   }`}
                 >
                   {item.label}
                 </button>
               ))}
             </nav>
-            <section className="mt-5 min-w-0 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+            <section className="mt-5 min-w-0 rounded-2xl border border-border bg-card p-5 shadow-sm">
               <SystemAgentSettingsContent section={agentSection} />
             </section>
           </>
@@ -494,19 +494,19 @@ export function AccountSecurityPanel({
               <h1 className="text-[24px] font-semibold tracking-tight">
                 账户与安全
               </h1>
-              <p className="mt-1 text-[13px] text-slate-500">
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 管理 Echo OS 设备密码和已登录会话
               </p>
             </header>
 
-            <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-              <div className="flex gap-4 border-b border-slate-100 p-5">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+            <section className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <div className="flex gap-4 border-b border-border p-5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                   <KeyRoundIcon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-[15px] font-semibold">更改管理员密码</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     更新后会退出全部设备，旧密码、旧会话和未使用的操作授权立即失效。
                   </p>
                 </div>
@@ -518,7 +518,7 @@ export function AccountSecurityPanel({
                   if (!busy) void rotate();
                 }}
               >
-                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                   <span>当前密码</span>
                   <input
                     id={currentPasswordId}
@@ -529,10 +529,10 @@ export function AccountSecurityPanel({
                     onChange={(event) =>
                       setCurrentPassword(event.currentTarget.value)
                     }
-                    className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                    className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                   />
                 </label>
-                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                   <span>新密码</span>
                   <input
                     id={newPasswordId}
@@ -543,10 +543,10 @@ export function AccountSecurityPanel({
                     onChange={(event) =>
                       setNewPassword(event.currentTarget.value)
                     }
-                    className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                    className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                   />
                 </label>
-                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                   <span>确认新密码</span>
                   <input
                     id={confirmationId}
@@ -557,11 +557,11 @@ export function AccountSecurityPanel({
                     onChange={(event) =>
                       setConfirmation(event.currentTarget.value)
                     }
-                    className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                    className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                   />
                 </label>
                 {error && (
-                  <p role="alert" className="ml-[131px] text-xs text-red-600">
+                  <p role="alert" className="ml-[131px] text-xs text-breach">
                     {error}
                   </p>
                 )}
@@ -571,7 +571,7 @@ export function AccountSecurityPanel({
                     disabled={
                       busy || !currentPassword || !newPassword || !confirmation
                     }
-                    className="inline-flex h-9 min-w-28 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-[13px] font-medium text-white transition hover:bg-blue-700 disabled:opacity-45"
+                    className="inline-flex h-9 min-w-28 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground transition hover:bg-primary disabled:opacity-45"
                   >
                     {busy && <Loader2Icon className="size-3.5 animate-spin" />}
                     {busy ? "正在更新…" : "更新密码"}
@@ -580,16 +580,16 @@ export function AccountSecurityPanel({
               </form>
             </section>
 
-            <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-              <div className="flex gap-4 border-b border-slate-100 p-5">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+            <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <div className="flex gap-4 border-b border-border p-5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                   <ShieldCheckIcon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-[15px] font-semibold">
                     管理员动态验证码
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {totpStatus?.enabled
                       ? `已启用；还可使用 ${totpStatus.recoveryCodesRemaining} 个一次性恢复码。`
                       : "使用兼容 TOTP 的验证器，为管理员密码增加第二道登录保护。"}
@@ -600,28 +600,28 @@ export function AccountSecurityPanel({
               <div className="space-y-3 p-5">
                 {totpEnrollment ? (
                   <>
-                    <p className="text-xs leading-5 text-slate-600">
+                    <p className="text-xs leading-5 text-muted-foreground">
                       在验证器中扫描/打开下方
                       URI，或手动输入密钥。先离线保存恢复码，再输入 6
                       位验证码完成启用。
                     </p>
-                    <div className="rounded-xl bg-slate-50 p-3 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">
+                    <div className="rounded-xl bg-background p-3 font-mono text-[11px] text-foreground ring-1 ring-border">
                       <p className="break-all">密钥：{totpEnrollment.secret}</p>
-                      <p className="mt-2 break-all text-slate-500">
+                      <p className="mt-2 break-all text-muted-foreground">
                         {totpEnrollment.otpauthUri}
                       </p>
                     </div>
                     <div>
-                      <strong className="text-xs text-slate-700">
+                      <strong className="text-xs text-foreground">
                         一次性恢复码（离开后不再显示）
                       </strong>
-                      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-amber-50 p-3 font-mono text-xs text-amber-950 ring-1 ring-amber-200">
+                      <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-warning/10 p-3 font-mono text-xs text-warning ring-1 ring-warning/30">
                         {totpEnrollment.recoveryCodes.map((code) => (
                           <span key={code}>{code}</span>
                         ))}
                       </div>
                     </div>
-                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                       <span>6 位验证码</span>
                       <input
                         type="text"
@@ -634,7 +634,7 @@ export function AccountSecurityPanel({
                         onChange={(event) =>
                           setTotpFactor(event.currentTarget.value)
                         }
-                        className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                        className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 font-mono text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                       />
                     </label>
                     <div className="flex justify-end">
@@ -642,7 +642,7 @@ export function AccountSecurityPanel({
                         type="button"
                         disabled={totpBusy || !/^\d{6}$/.test(totpFactor)}
                         onClick={() => void confirmTotp()}
-                        className="h-9 rounded-lg bg-emerald-600 px-4 text-[13px] font-medium text-white transition hover:bg-emerald-700 disabled:opacity-45"
+                        className="h-9 rounded-lg bg-core px-4 text-[13px] font-medium text-primary-foreground transition hover:bg-core disabled:opacity-45"
                       >
                         启用并退出旧会话
                       </button>
@@ -650,7 +650,7 @@ export function AccountSecurityPanel({
                   </>
                 ) : totpStatus?.enabled ? (
                   <>
-                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                       <span>管理员密码</span>
                       <input
                         type="password"
@@ -661,10 +661,10 @@ export function AccountSecurityPanel({
                         onChange={(event) =>
                           setTotpPassword(event.currentTarget.value)
                         }
-                        className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                        className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                       />
                     </label>
-                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                       <span>验证码/恢复码</span>
                       <input
                         type="text"
@@ -675,7 +675,7 @@ export function AccountSecurityPanel({
                         onChange={(event) =>
                           setTotpFactor(event.currentTarget.value)
                         }
-                        className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                        className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 font-mono text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                       />
                     </label>
                     <div className="flex justify-end">
@@ -685,7 +685,7 @@ export function AccountSecurityPanel({
                           totpBusy || !totpPassword || !totpFactor.trim()
                         }
                         onClick={() => void disableTotp()}
-                        className="h-9 rounded-lg border border-red-200 bg-red-50 px-4 text-[13px] font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-45"
+                        className="h-9 rounded-lg border border-breach/30 bg-breach/10 px-4 text-[13px] font-medium text-breach transition hover:bg-breach/10 disabled:opacity-45"
                       >
                         关闭动态验证码…
                       </button>
@@ -693,7 +693,7 @@ export function AccountSecurityPanel({
                   </>
                 ) : totpStatus ? (
                   <>
-                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-slate-600">
+                    <label className="grid grid-cols-1 sm:grid-cols-[118px_minmax(0,1fr)] items-center gap-3 text-[13px] text-muted-foreground">
                       <span>管理员密码</span>
                       <input
                         type="password"
@@ -704,7 +704,7 @@ export function AccountSecurityPanel({
                         onChange={(event) =>
                           setTotpPassword(event.currentTarget.value)
                         }
-                        className="h-9 min-w-0 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                        className="h-9 min-w-0 w-full rounded-lg border border-border bg-card px-3 text-foreground outline-none transition focus:border-core/30 focus:ring-2 focus:ring-core/30"
                       />
                     </label>
                     <div className="flex justify-end">
@@ -712,46 +712,46 @@ export function AccountSecurityPanel({
                         type="button"
                         disabled={totpBusy || !totpPassword}
                         onClick={() => void beginTotp()}
-                        className="h-9 rounded-lg bg-blue-600 px-4 text-[13px] font-medium text-white transition hover:bg-blue-700 disabled:opacity-45"
+                        className="h-9 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground transition hover:bg-primary disabled:opacity-45"
                       >
                         设置动态验证码…
                       </button>
                     </div>
                   </>
                 ) : !totpError ? (
-                  <p className="flex items-center gap-2 text-xs text-slate-500">
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2Icon className="size-3.5 animate-spin" />
                     正在读取安全状态…
                   </p>
                 ) : null}
                 {totpError && (
-                  <p role="alert" className="text-xs text-red-600">
+                  <p role="alert" className="text-xs text-breach">
                     {totpError}
                   </p>
                 )}
               </div>
             </section>
 
-            <section className="mt-4 flex items-center gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-600">
+            <section className="mt-4 flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-breach/10 text-breach">
                 <LogOutIcon className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold">退出所有登录</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   让浏览器、Agent 工作台和实时连接中的现有登录全部失效。
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setRevokeOpen(true)}
-                className="h-9 shrink-0 rounded-lg border border-red-200 bg-red-50 px-3.5 text-[13px] font-medium text-red-700 transition hover:bg-red-100"
+                className="h-9 shrink-0 rounded-lg border border-breach/30 bg-breach/10 px-3.5 text-[13px] font-medium text-breach transition hover:bg-breach/10"
               >
                 全部退出…
               </button>
             </section>
 
-            <p className="mt-4 flex items-center gap-1.5 text-[11px] text-slate-400">
+            <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <LockKeyholeIcon className="size-3.5" />
               密码只发送到当前 Echo OS 设备，不会保存在浏览器中。
             </p>

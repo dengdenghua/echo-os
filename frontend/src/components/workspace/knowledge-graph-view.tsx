@@ -614,7 +614,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2 border-t border-white/10 pt-3 first:border-t-0 first:pt-0">
+    <section className="space-y-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps text-muted-foreground">
         <Icon className="size-3.5" />
         {title}
@@ -1229,7 +1229,7 @@ function KnowledgeGraph3DContent() {
 
       {!loading && !webglError && renderedGraph.nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6 text-center">
-          <div className="max-w-xs rounded-lg border border-white/10 bg-black/25 px-5 py-4 backdrop-blur-sm">
+          <div className="max-w-xs rounded-lg border border-border bg-black/25 px-5 py-4 backdrop-blur-sm">
             <NetworkIcon className="mx-auto size-6 text-white/45" />
             <div className="mt-2 text-sm font-medium text-white/80">
               暂无图谱数据
@@ -1307,7 +1307,7 @@ function KnowledgeGraph3DContent() {
         <aside className="absolute bottom-3 left-3 right-3 z-10 max-h-[42vh] space-y-3 overflow-y-auto rounded-lg border border-border-default bg-background/80 p-3 text-foreground shadow-2xl backdrop-blur-md sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:max-h-[calc(100%-2rem)] sm:w-[250px]">
           {focusNode && (
             <Section icon={InfoIcon} title={controls.focus}>
-              <div className="space-y-2 rounded-md border border-white/10 bg-background/40 p-2">
+              <div className="space-y-2 rounded-md border border-border bg-background/40 p-2">
                 <div className="min-w-0">
                   <div className="truncate text-xs font-semibold text-foreground">
                     {focusNode.label}
@@ -1319,7 +1319,7 @@ function KnowledgeGraph3DContent() {
                   )}
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 text-center">
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
+                  <div className="rounded border border-border bg-white/[0.03] px-1.5 py-1">
                     <div className="text-xs text-muted-foreground/70">
                       {controls.degree}
                     </div>
@@ -1327,7 +1327,7 @@ function KnowledgeGraph3DContent() {
                       {focusNode.backendDegree || focusEdges.length}
                     </div>
                   </div>
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
+                  <div className="rounded border border-border bg-white/[0.03] px-1.5 py-1">
                     <div className="text-xs text-muted-foreground/70">
                       {controls.confidence}
                     </div>
@@ -1335,7 +1335,7 @@ function KnowledgeGraph3DContent() {
                       {formatConfidence(focusNode.confidenceAvg)}
                     </div>
                   </div>
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
+                  <div className="rounded border border-border bg-white/[0.03] px-1.5 py-1">
                     <div className="text-xs text-muted-foreground/70">
                       {controls.updated}
                     </div>
@@ -1357,7 +1357,7 @@ function KnowledgeGraph3DContent() {
                   </div>
                 )}
                 {focusEdges.length > 0 && (
-                  <div className="space-y-1 border-t border-white/10 pt-2">
+                  <div className="space-y-1 border-t border-border pt-2">
                     <div className="text-xs font-semibold uppercase tracking-caps text-muted-foreground/70">
                       {controls.evidence}
                     </div>
@@ -1367,7 +1367,7 @@ function KnowledgeGraph3DContent() {
                       return (
                         <div
                           key={edge.id}
-                          className="rounded border border-white/10 bg-white/[0.025] px-2 py-1.5"
+                          className="rounded border border-border bg-white/[0.025] px-2 py-1.5"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-xs text-foreground/80">

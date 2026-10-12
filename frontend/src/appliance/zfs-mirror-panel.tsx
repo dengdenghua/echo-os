@@ -180,10 +180,10 @@ export function ZfsMirrorPanel() {
     <div className="mx-auto w-full max-w-[980px] px-7 py-7">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[25px] font-semibold tracking-tight text-slate-900">
+          <h1 className="text-[25px] font-semibold tracking-tight text-foreground">
             存储池
           </h1>
-          <p className="mt-1 text-[12px] text-slate-500">
+          <p className="mt-1 text-[12px] text-muted-foreground">
             创建镜像池，并安全导出或重新导入现有数据池
           </p>
         </div>
@@ -191,7 +191,7 @@ export function ZfsMirrorPanel() {
           type="button"
           onClick={() => void refresh()}
           disabled={loading || busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/78 px-3.5 text-[11px] font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200 disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -203,7 +203,7 @@ export function ZfsMirrorPanel() {
       {error && (
         <div
           role="alert"
-          className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-xs text-red-700 ring-1 ring-red-100"
+          className="mt-5 rounded-2xl bg-breach/10 px-4 py-3 text-xs text-breach ring-1 ring-breach/30"
         >
           {error}
         </div>
@@ -211,20 +211,20 @@ export function ZfsMirrorPanel() {
       {success && (
         <div
           role="status"
-          className="mt-5 flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-xs text-emerald-800 ring-1 ring-emerald-100"
+          className="mt-5 flex items-center gap-2 rounded-2xl bg-core/10 px-4 py-3 text-xs text-core ring-1 ring-core/30"
         >
           <CheckCircle2Icon className="size-4" /> {success}
         </div>
       )}
 
       {loading && !status ? (
-        <div className="grid min-h-72 place-items-center text-sm text-slate-400">
+        <div className="grid min-h-72 place-items-center text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
             <Loader2Icon className="size-5 animate-spin" /> 正在核验建池能力…
           </span>
         </div>
       ) : !anyAvailable ? (
-        <section className="mt-5 rounded-[22px] bg-white/78 p-5 text-sm text-slate-600 ring-1 ring-white/90">
+        <section className="mt-5 rounded-[22px] bg-card/78 p-5 text-sm text-muted-foreground ring-1 ring-border">
           当前主机未提供受控 ZFS 存储池能力。创建镜像需要 zpool、zfs、lsblk 和
           wipefs；数据保留导出/导入需要 zpool 与 zfs。
         </section>
@@ -232,14 +232,14 @@ export function ZfsMirrorPanel() {
         <>
           {available && (
             <>
-              <section className="mt-5 rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
+              <section className="mt-5 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
                 <div className="flex items-center gap-2">
-                  <DatabaseIcon className="size-5 text-blue-600" />
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <DatabaseIcon className="size-5 text-core" />
+                  <h2 className="text-sm font-semibold text-foreground">
                     1. 选择两块空盘
                   </h2>
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
                   这里只显示整盘、无分区/签名、未挂载、不可移动且带稳定序列号或
                   WWN 的磁盘。系统盘不会出现在候选列表。
                 </p>
@@ -255,37 +255,37 @@ export function ZfsMirrorPanel() {
                         className={cn(
                           "rounded-2xl p-4 text-left ring-1 transition",
                           active
-                            ? "bg-blue-50 ring-blue-300"
-                            : "bg-slate-50/80 ring-slate-200 hover:bg-white",
+                            ? "bg-core/10 ring-core/30"
+                            : "bg-background/80 ring-border hover:bg-card",
                         )}
                       >
-                        <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                           <HardDriveIcon className="size-4" />{" "}
                           {device.devicefile}
                         </span>
-                        <span className="mt-2 block text-xs text-slate-600">
+                        <span className="mt-2 block text-xs text-muted-foreground">
                           {device.model || "未知型号"} ·{" "}
                           {formatBytes(device.sizeBytes)}
                         </span>
-                        <span className="mt-1 block break-all font-mono text-[10px] text-slate-400">
+                        <span className="mt-1 block break-all font-mono text-[10px] text-muted-foreground">
                           {identity(device)}
                         </span>
                       </button>
                     );
                   })}
                   {candidates.length === 0 && (
-                    <p className="col-span-full rounded-2xl bg-amber-50 p-4 text-xs leading-5 text-amber-800">
+                    <p className="col-span-full rounded-2xl bg-warning/10 p-4 text-xs leading-5 text-warning">
                       没有通过服务端安全检查的空盘。不会提供强制清盘或绕过入口。
                     </p>
                   )}
                 </div>
               </section>
 
-              <section className="mt-4 rounded-[22px] bg-white/78 p-5 shadow-sm ring-1 ring-white/90">
-                <h2 className="text-sm font-semibold text-slate-900">
+              <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+                <h2 className="text-sm font-semibold text-foreground">
                   2. 命名并确认数据清除
                 </h2>
-                <label className="mt-4 block text-xs font-medium text-slate-700">
+                <label className="mt-4 block text-xs font-medium text-foreground">
                   存储池名称
                   <input
                     value={name}
@@ -295,13 +295,13 @@ export function ZfsMirrorPanel() {
                     }}
                     placeholder="例如 family"
                     pattern="[a-z][a-z0-9_-]{0,31}"
-                    className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-400"
+                    className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
                   />
-                  <span className="mt-1 block text-[10px] font-normal text-slate-400">
+                  <span className="mt-1 block text-[10px] font-normal text-muted-foreground">
                     小写字母开头，可含数字、下划线和短横线，最多 32 字符
                   </span>
                 </label>
-                <label className="mt-4 flex items-start gap-2 rounded-2xl bg-red-50 p-4 text-xs leading-5 text-red-800 ring-1 ring-red-100">
+                <label className="mt-4 flex items-start gap-2 rounded-2xl bg-breach/10 p-4 text-xs leading-5 text-breach ring-1 ring-breach/30">
                   <input
                     type="checkbox"
                     checked={confirmed}
@@ -318,7 +318,7 @@ export function ZfsMirrorPanel() {
                   type="button"
                   onClick={() => void preview()}
                   disabled={!desired || busy}
-                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white disabled:opacity-40"
+                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
                   生成建池预览
@@ -326,17 +326,17 @@ export function ZfsMirrorPanel() {
               </section>
 
               {plan && (
-                <section className="mt-4 rounded-[22px] bg-red-950 p-5 text-white shadow-lg">
+                <section className="mt-4 rounded-[22px] bg-breach p-5 text-primary-foreground shadow-lg">
                   <div className="flex items-center gap-2">
-                    <ShieldAlertIcon className="size-5 text-red-300" />
+                    <ShieldAlertIcon className="size-5 text-breach" />
                     <h2 className="text-sm font-semibold">最终破坏性复核</h2>
                   </div>
-                  <p className="mt-3 text-xs leading-5 text-red-100/80">
+                  <p className="mt-3 text-xs leading-5 text-breach">
                     将创建 {plan.desired.name}（mirror），挂载到{" "}
                     {plan.mountpoint}
                     。不会使用强制参数；审批后服务端仍会重新核验磁盘身份和空盘状态。
                   </p>
-                  <ul className="mt-3 space-y-1 font-mono text-[11px] text-red-100/70">
+                  <ul className="mt-3 space-y-1 font-mono text-[11px] text-breach">
                     {plan.devices.map((device) => (
                       <li key={device.devicefile}>
                         {device.devicefile} · {formatBytes(device.sizeBytes)} ·{" "}
@@ -344,21 +344,21 @@ export function ZfsMirrorPanel() {
                       </li>
                     ))}
                   </ul>
-                  <label className="mt-4 block text-xs font-medium text-red-50">
+                  <label className="mt-4 block text-xs font-medium text-breach">
                     设备管理员密码
                     <input
                       type="password"
                       autoComplete="current-password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      className="mt-2 h-10 w-full rounded-xl border border-red-700/60 bg-white/10 px-3 text-sm text-white outline-none focus:border-red-300"
+                      className="mt-2 h-10 w-full rounded-xl border border-breach/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-breach/30"
                     />
                   </label>
                   <button
                     type="button"
                     onClick={() => void apply()}
                     disabled={!password || busy}
-                    className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-red-500 px-4 text-xs font-semibold text-white disabled:opacity-40"
+                    className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-breach px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
                   >
                     {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
                     确认清空并创建镜像

@@ -47,13 +47,15 @@ type StorageCenterSection = "overview" | "health" | "pools" | "sharing";
 type StorageHealthSection = "status" | "backup" | "maintenance";
 type StoragePoolTechnology = "btrfs" | "mdraid-ext4" | "zfs";
 
+// Capacity series: the core tone leads, the rest step down in lightness (not hue),
+// so the bar stays on-brand and the categories remain distinguishable without colour.
 const CATEGORY_META = {
-  photos: { label: "照片", icon: ImageIcon, color: "bg-breach" },
-  videos: { label: "视频", icon: FilmIcon, color: "bg-primary" },
-  audio: { label: "音频", icon: AudioLinesIcon, color: "bg-core" },
-  documents: { label: "文档", icon: FileTextIcon, color: "bg-primary" },
-  archives: { label: "归档", icon: ArchiveIcon, color: "bg-warning" },
-  other: { label: "其他", icon: PackageIcon, color: "bg-slate-500" },
+  photos: { label: "照片", icon: ImageIcon, color: "bg-core" },
+  videos: { label: "视频", icon: FilmIcon, color: "bg-foreground/85" },
+  audio: { label: "音频", icon: AudioLinesIcon, color: "bg-foreground/65" },
+  documents: { label: "文档", icon: FileTextIcon, color: "bg-foreground/45" },
+  archives: { label: "归档", icon: ArchiveIcon, color: "bg-foreground/30" },
+  other: { label: "其他", icon: PackageIcon, color: "bg-foreground/15" },
 } as const;
 
 function percent(value: number, total: number) {
@@ -616,7 +618,7 @@ export function StorageCenterPanel({
           )}
         </div>
         <div className="mt-7 px-2">
-          <span className="grid size-12 place-items-center rounded-[15px] bg-gradient-to-br from-core to-primary text-primary-foreground shadow-lg shadow-blue-500/20">
+          <span className="grid size-12 place-items-center rounded-[15px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] text-[#eef1f4] shadow-lg shadow-black/25">
             <HardDriveIcon className="size-6" />
           </span>
           <h1 className="mt-3 text-[18px] font-semibold tracking-tight">

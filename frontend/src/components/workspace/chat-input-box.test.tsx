@@ -638,7 +638,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-sky-600",
+      "text-core",
     );
     expect(onModeChange).not.toHaveBeenCalled();
 
@@ -658,7 +658,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-violet-600",
+      "text-core",
     );
     expect(screen.getByTestId("composer-long-task-indicator")).toHaveAttribute(
       "aria-label",
@@ -725,7 +725,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-rose-600",
+      "text-core",
     );
     expect(textarea()).toHaveClass("pl-[7.5rem]");
     expect(screen.getByTitle("Send")).toBeDisabled();
@@ -752,7 +752,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     expect(screen.queryByTestId("composer-command-prefix")).toBeNull();
   });
 
-  it("lazily exposes plugins and skills as removable colored references", async () => {
+  it("lazily exposes plugins and skills as removable references", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     renderWithProviders(
@@ -774,7 +774,7 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     expect(
       screen.getByTestId("composer-capability-plugin-seedance"),
-    ).toHaveClass("text-violet-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(screen.getByTitle("Send")).toBeDisabled();
 
     fireEvent.change(textarea(), { target: { value: "Create launch clip" } });
@@ -806,10 +806,10 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     expect(
       screen.getByTestId("composer-capability-skill-video-generate"),
-    ).toHaveClass("text-blue-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(
       screen.getByTestId("composer-capability-surface-browser"),
-    ).toHaveClass("text-cyan-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
       "Goal",
     );

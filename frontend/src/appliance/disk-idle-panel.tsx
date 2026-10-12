@@ -120,25 +120,25 @@ export function DiskIdlePanel() {
 
   return (
     <>
-      <section className="mt-5 rounded-[22px] bg-white/80 p-5 shadow-sm ring-1 ring-white/90">
+      <section className="mt-5 rounded-[22px] bg-card/80 p-5 shadow-sm ring-1 ring-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <HardDriveDownloadIcon className="size-5 text-indigo-600" /> 内置
-              HDD 自动休眠
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <HardDriveDownloadIcon className="size-5 text-core" /> 内置 HDD
+              自动休眠
             </h2>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500">
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               仅作用于具备稳定身份的内置 ATA/SATA
               机械整盘；系统盘、NVMe、USB、可移动盘和身份不明磁盘不会被修改。持续
               I/O 会阻止休眠，部分硬盘固件也可能忽略计时器。
             </p>
-            <p className="mt-2 text-[11px] font-medium text-slate-700">
+            <p className="mt-2 text-[11px] font-medium text-foreground">
               当前：{status ? label(status.idleMinutes) : "读取中"} · 可用磁盘{" "}
               {status?.eligibleDeviceCount ?? 0} 块
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-[11px] font-medium text-slate-600">
+            <label className="text-[11px] font-medium text-muted-foreground">
               空闲时长
               <select
                 aria-label="磁盘空闲时长"
@@ -151,7 +151,7 @@ export function DiskIdlePanel() {
                     ) as DiskIdleDesired["idleMinutes"],
                   )
                 }
-                className="ml-2 h-8 rounded-lg border border-slate-300 bg-white px-2 text-[11px]"
+                className="ml-2 h-8 rounded-lg border border-border bg-card px-2 text-[11px]"
               >
                 {CHOICES.map((minutes) => (
                   <option key={minutes} value={minutes}>
@@ -170,29 +170,27 @@ export function DiskIdlePanel() {
                 selected === status.idleMinutes
               }
               onClick={() => void preview()}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-indigo-700 px-3 text-[11px] font-semibold text-white disabled:opacity-40"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
             >
               {busy && <Loader2Icon className="size-3 animate-spin" />} 预览更新
             </button>
           </div>
         </div>
         {!loading && !capable && (
-          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2 text-[11px] text-warning">
             本机缺少 hdparm、lsblk 或受信任的开机应用服务，磁盘休眠不可用。
           </p>
         )}
-        <p className="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-[11px] leading-5 text-slate-600">
+        <p className="mt-3 rounded-xl bg-muted px-3 py-2 text-[11px] leading-5 text-muted-foreground">
           回读只能确认系统接受命令和策略已持久化，不能保证每款硬盘固件最终进入
           standby；过短休眠会增加启停次数，因此最低为 30 分钟。
         </p>
         {error && (
-          <p role="alert" className="mt-3 text-[11px] text-red-700">
+          <p role="alert" className="mt-3 text-[11px] text-breach">
             {error}
           </p>
         )}
-        {success && (
-          <p className="mt-3 text-[11px] text-emerald-700">{success}</p>
-        )}
+        {success && <p className="mt-3 text-[11px] text-core">{success}</p>}
       </section>
       <HighRiskApprovalDialog
         open={Boolean(pendingPlan)}

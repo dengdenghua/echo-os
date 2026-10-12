@@ -163,11 +163,11 @@ function ZoomTrafficLight({
       {showTileMenu && (
         <div
           data-testid="window-quick-tile-menu"
-          className="mac-quick-tile-menu absolute left-0 top-5 z-50 flex min-w-[130px] flex-col gap-1 rounded-xl border border-white/20 bg-slate-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
+          className="mac-quick-tile-menu absolute left-0 top-5 z-50 flex min-w-[130px] flex-col gap-1 rounded-xl border border-border bg-slate-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-2 py-0.5 text-[10px] font-semibold text-slate-400 select-none">
+          <div className="px-2 py-0.5 text-[10px] font-semibold text-muted-foreground select-none">
             分屏排列
           </div>
           <button
@@ -177,9 +177,9 @@ function ZoomTrafficLight({
               onTileLeft();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-blue-600/30 hover:text-white transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-core/30 hover:text-primary-foreground transition-colors"
           >
-            <PanelLeftIcon className="size-3.5 text-blue-400" />
+            <PanelLeftIcon className="size-3.5 text-core" />
             <span>靠左半屏</span>
           </button>
           <button
@@ -189,28 +189,28 @@ function ZoomTrafficLight({
               onTileRight();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-blue-600/30 hover:text-white transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-core/30 hover:text-primary-foreground transition-colors"
           >
-            <PanelRightIcon className="size-3.5 text-blue-400" />
+            <PanelRightIcon className="size-3.5 text-core" />
             <span>靠右半屏</span>
           </button>
-          <div className="my-0.5 border-t border-white/10" />
+          <div className="my-0.5 border-t border-border" />
           <button
             type="button"
             onClick={() => {
               onToggleMaximize();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-card/10 hover:text-white transition-colors"
           >
             {maximized ? (
               <>
-                <Minimize2Icon className="size-3.5 text-emerald-400" />
+                <Minimize2Icon className="size-3.5 text-core" />
                 <span>还原窗口</span>
               </>
             ) : (
               <>
-                <Maximize2Icon className="size-3.5 text-emerald-400" />
+                <Maximize2Icon className="size-3.5 text-core" />
                 <span>最大化 (全屏)</span>
               </>
             )}
@@ -600,8 +600,7 @@ export function AppWindow({
     if (maximized && mode === "move") {
       const workArea = getDesktopWorkAreaSync();
       const restore = fitRectToWorkArea(
-        restoreRect.current ||
-          initialRect(index, false, win.preferredSize),
+        restoreRect.current || initialRect(index, false, win.preferredSize),
         workArea,
       );
       const ratio = Math.min(
@@ -796,7 +795,12 @@ export function AppWindow({
     if (!phonePip) {
       beforePhonePip.current = { ...rect, maximized };
       const area = getDesktopWorkAreaSync();
-      const next = { x: Math.max(area.x, area.x + area.width - 380), y: Math.max(area.y + 35, area.y + area.height - 565), w: 360, h: 480 };
+      const next = {
+        x: Math.max(area.x, area.x + area.width - 380),
+        y: Math.max(area.y + 35, area.y + area.height - 565),
+        w: 360,
+        h: 480,
+      };
       setRect(next);
       setMaximized(false);
       onGeometryChange?.({ ...next, maximized: false });
@@ -823,7 +827,7 @@ export function AppWindow({
             height: `${snapPreviewRect.h}px`,
           }}
         >
-          <div className="size-full rounded-2xl border-2 border-blue-400/60 bg-blue-500/15 backdrop-blur-md shadow-[0_8px_32px_rgba(59,130,246,0.25)]" />
+          <div className="size-full rounded-2xl border-2 border-core/30 bg-core/15 backdrop-blur-md shadow-[0_8px_32px_rgba(59,130,246,0.25)]" />
         </div>
       )}
       <div
@@ -872,12 +876,39 @@ export function AppWindow({
           /* 全尺寸内容窗口没有第二条标题栏，但系统按钮必须始终存在。 */
           <div
             className="mac-window-integrated-controls select-none"
-            style={win.url === "/phone-mirror" ? { position: "relative", inset: "auto", width: "100%", height: 32, minHeight: 32, padding: "4px 12px", display: "flex", gap: 12, alignItems: "center", background: "rgba(248,250,252,.95)" } : win.chromeHeight ? { height: win.chromeHeight } : undefined}
+            style={
+              win.url === "/phone-mirror"
+                ? {
+                    position: "relative",
+                    inset: "auto",
+                    width: "100%",
+                    height: 32,
+                    minHeight: 32,
+                    padding: "4px 12px",
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    background: "rgba(248,250,252,.95)",
+                  }
+                : win.chromeHeight
+                  ? { height: win.chromeHeight }
+                  : undefined
+            }
             onPointerDown={startDrag("move")}
             onDoubleClick={toggleMaximize}
             aria-label={`${win.title}窗口控制`}
           >
-            {win.url === "/phone-mirror" && <button type="button" className="shrink-0 whitespace-nowrap rounded bg-white/90 px-2 py-1 text-[10px] text-slate-700" onPointerDown={(event) => event.stopPropagation()} onClick={togglePhonePip} aria-label={phonePip ? "恢复手机窗口" : "切换为悬浮小窗"}>{phonePip ? "恢复窗口" : "悬浮小窗"}</button>}
+            {win.url === "/phone-mirror" && (
+              <button
+                type="button"
+                className="shrink-0 whitespace-nowrap rounded bg-card/90 px-2 py-1 text-[10px] text-foreground"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={togglePhonePip}
+                aria-label={phonePip ? "恢复手机窗口" : "切换为悬浮小窗"}
+              >
+                {phonePip ? "恢复窗口" : "悬浮小窗"}
+              </button>
+            )}
             <div className="mac-traffic-lights">
               <button
                 type="button"
@@ -950,8 +981,8 @@ export function AppWindow({
                   className={cn(
                     "mac-window-action flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
                     isSleeping
-                      ? "bg-amber-500/20 text-amber-300 font-semibold"
-                      : "text-slate-400 hover:text-white",
+                      ? "bg-warning/20 text-warning font-semibold"
+                      : "text-muted-foreground hover:text-white",
                   )}
                 >
                   <MoonIcon className="size-3" />
@@ -995,19 +1026,19 @@ export function AppWindow({
                   onClick={handleWakeAndFocus}
                   className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-xl text-center p-6 select-none cursor-pointer"
                 >
-                  <div className="flex size-12 items-center justify-center rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-400 shadow-inner">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-core/15 border border-core/30 text-core shadow-inner">
                     <MoonIcon className="size-6 animate-pulse" />
                   </div>
                   <h4 className="mt-3 font-semibold text-xs text-slate-100">
                     {win.title} · 已进入节能休眠
                   </h4>
-                  <p className="mt-1 max-w-xs text-[11px] text-slate-400">
+                  <p className="mt-1 max-w-xs text-[11px] text-muted-foreground">
                     后台渲染与 iframe 运算已暂时挂起，大幅降低系统能耗。
                   </p>
                   <button
                     type="button"
                     onClick={handleWakeAndFocus}
-                    className="mt-3.5 rounded-lg bg-blue-600 px-3.5 py-1 text-xs font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all"
+                    className="mt-3.5 rounded-lg bg-primary px-3.5 py-1 text-xs font-semibold text-primary-foreground shadow-md shadow-black/20 hover:bg-primary transition-all"
                   >
                     点击即时唤醒 →
                   </button>

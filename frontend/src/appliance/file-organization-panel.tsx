@@ -24,9 +24,9 @@ import {
 const storageKey = (path: string) =>
   `echo:files:organization:last:${encodeURIComponent(path)}`;
 const buttonClass =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium disabled:opacity-50";
+  "rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium disabled:opacity-50";
 const primaryClass =
-  "rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50";
+  "rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50";
 
 const reasons: Record<string, string> = {
   extraction_timed_out: "文字解析超过时间限制，请检查文件或拆分后重试",
@@ -92,7 +92,7 @@ function Evidence({ entry }: { entry: OrganizationEntry }) {
           <details key={group.label} className="mt-1">
             <summary className="cursor-pointer">{group.label}</summary>
             {group.rows.map((candidate, index) => (
-              <p key={index} className="mt-1 break-words text-slate-500">
+              <p key={index} className="mt-1 break-words text-muted-foreground">
                 {typeof candidate.label === "string" &&
                   candidate.label.slice(0, 40)}
                 ：
@@ -670,7 +670,7 @@ export function FileOrganizationPanel({
         role="dialog"
         aria-modal="true"
         aria-label="按年月整理文档"
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-white bg-white text-slate-900 shadow-2xl"
+        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-border bg-card text-foreground shadow-2xl"
       >
         <header className="flex items-start justify-between border-b p-5">
           <div>
@@ -679,17 +679,17 @@ export function FileOrganizationPanel({
                 ? "预览撤销文件整理"
                 : "按年月整理文档"}
             </h2>
-            <p className="mt-1 break-all text-sm text-slate-500">
+            <p className="mt-1 break-all text-sm text-muted-foreground">
               目录：{path || "NAS 根目录"}
             </p>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
               根据明确的开票日期整理文件。不确定的文件保留原位；同名文件不会被覆盖。
             </p>
           </div>
           <button
             type="button"
             aria-label="关闭整理面板"
-            className="rounded-lg p-2 hover:bg-slate-100"
+            className="rounded-lg p-2 hover:bg-muted"
             onClick={onClose}
           >
             <XIcon className="size-4" />
@@ -699,7 +699,7 @@ export function FileOrganizationPanel({
           {busy && (
             <p
               role="status"
-              className="flex items-center gap-2 text-sm text-blue-700"
+              className="flex items-center gap-2 text-sm text-core"
             >
               <Loader2Icon className="size-4 animate-spin" />
               {busy === "planning"
@@ -714,14 +714,14 @@ export function FileOrganizationPanel({
           {error && (
             <p
               role="alert"
-              className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+              className="rounded-lg bg-warning/10 p-3 text-sm text-warning"
             >
               {error}
             </p>
           )}
           <section
             aria-label="最近整理计划"
-            className="space-y-2 rounded-xl border border-slate-200 p-3 text-xs"
+            className="space-y-2 rounded-xl border border-border p-3 text-xs"
           >
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold">此目录的最近计划</h3>
@@ -734,28 +734,28 @@ export function FileOrganizationPanel({
                 刷新计划列表
               </button>
             </div>
-            <p className="text-slate-500">
+            <p className="text-muted-foreground">
               可查看 Agent
               或此前生成的计划。选择计划只读取清单，执行仍需单独确认。
             </p>
             {discoveryBusy && <p role="status">正在读取最近计划…</p>}
             {discoveryError && (
-              <p role="alert" className="text-amber-800">
+              <p role="alert" className="text-warning">
                 {discoveryError}
               </p>
             )}
             {discovery && !discovery.complete && (
-              <p className="text-amber-800">
+              <p className="text-warning">
                 仅显示本次可检索范围内的最近记录；未列出的计划可通过完整编号查找。
               </p>
             )}
             {discovery?.plans.length === 0 && (
-              <p className="text-slate-500">本次未找到可显示的计划。</p>
+              <p className="text-muted-foreground">本次未找到可显示的计划。</p>
             )}
             {discovery?.plans.map((item) => (
               <div
                 key={item.planId}
-                className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2"
               >
                 <div className="min-w-0">
                   <p>
@@ -771,8 +771,10 @@ export function FileOrganizationPanel({
                           uncertain: "结果待核实",
                         }[item.state]}
                   </p>
-                  <p className="break-all text-slate-500">{item.planId}</p>
-                  <p className="text-slate-500">
+                  <p className="break-all text-muted-foreground">
+                    {item.planId}
+                  </p>
+                  <p className="text-muted-foreground">
                     可处理 {item.summary.ready} · 待确认{" "}
                     {item.summary.needsReview} · 冲突 {item.summary.conflicts}
                   </p>
@@ -798,7 +800,7 @@ export function FileOrganizationPanel({
               <label className="min-w-0 flex-1">
                 完整计划编号
                 <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2"
+                  className="mt-1 w-full rounded-lg border border-border px-2 py-2"
                   value={lookupId}
                   onChange={(event) => setLookupId(event.target.value)}
                   maxLength={64}
@@ -818,32 +820,32 @@ export function FileOrganizationPanel({
             </form>
           </section>
           {reconciling && !busy && result?.state !== "running" && (
-            <p role="status" className="text-sm text-amber-800">
+            <p role="status" className="text-sm text-warning">
               尚未取得完整执行回执，正在核实结果。请勿重复提交。
             </p>
           )}
           {!plan && !busy && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               先查看变更清单。生成预览不会移动文件。
             </p>
           )}
           {plan && (
             <>
               {plan.direction === "undo" && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   撤销仅恢复文件原位置，整理时创建的空年月目录会保留。
                 </p>
               )}
               <section
                 aria-label="本计划文件查找"
-                className="space-y-2 rounded-xl border border-slate-200 p-3 text-xs"
+                className="space-y-2 rounded-xl border border-border p-3 text-xs"
               >
                 <div className="flex items-end gap-2">
                   <label className="min-w-0 flex-1">
                     在本计划中查找
                     <input
                       type="search"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                       placeholder="文件名、开票日期或金额"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
@@ -860,11 +862,11 @@ export function FileOrganizationPanel({
                     清空查找
                   </button>
                 </div>
-                <p className="text-slate-500">
+                <p className="text-muted-foreground">
                   只查本计划已加载的文件名、开票日期和金额，不搜索其他计划或全盘文件。
                   日期与金额依据来自生成此计划时的识别记录。
                 </p>
-                <p className="text-slate-600">
+                <p className="text-muted-foreground">
                   审批针对整份计划中的 {plan.summary.ready}{" "}
                   个可执行文件，查找和筛选不改变执行范围。
                 </p>
@@ -875,7 +877,7 @@ export function FileOrganizationPanel({
                 <button
                   type="button"
                   onClick={() => setFilter(filter === "all" ? "review" : "all")}
-                  className="font-medium text-amber-700 underline"
+                  className="font-medium text-warning underline"
                 >
                   待确认 {plan.summary.needsReview} 个
                 </button>
@@ -889,7 +891,7 @@ export function FileOrganizationPanel({
                       setFilter("all");
                       setPreviewExpanded(true);
                     }}
-                    className="text-blue-700 underline"
+                    className="text-core underline"
                   >
                     显示全部文件
                   </button>
@@ -897,7 +899,7 @@ export function FileOrganizationPanel({
                 {result && filter === "all" && (
                   <button
                     type="button"
-                    className="text-blue-700 underline"
+                    className="text-core underline"
                     onClick={() => setPreviewExpanded(!previewExpanded)}
                   >
                     {previewExpanded ? "收起预览清单" : "查看全部预览清单"}
@@ -907,7 +909,7 @@ export function FileOrganizationPanel({
               {(!plan.scanComplete || plan.blockers.length > 0) && (
                 <p
                   role="alert"
-                  className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+                  className="rounded-lg bg-warning/10 p-3 text-sm text-warning"
                 >
                   目录检查未通过，不能执行。请检查目录权限、文件状态后重新预览。
                   {plan.blockers
@@ -918,11 +920,14 @@ export function FileOrganizationPanel({
               )}
               {(!result || filter === "review" || previewExpanded) && (
                 <section aria-label="文件整理预览" className="space-y-2">
-                  <p className="text-xs text-slate-500" aria-live="polite">
+                  <p
+                    className="text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
                     预览清单：显示 {entries.length} / {plan.entries.length} 项
                     {filter === "review" && "（仅待确认）"}
                   </p>
-                  <div className="divide-y rounded-xl border border-slate-200">
+                  <div className="divide-y rounded-xl border border-border">
                     {entries.map((entry) => (
                       <article
                         key={entry.entryId}
@@ -947,7 +952,7 @@ export function FileOrganizationPanel({
                       </article>
                     ))}
                     {entries.length === 0 && (
-                      <p className="p-3 text-xs text-slate-500">
+                      <p className="p-3 text-xs text-muted-foreground">
                         {searching
                           ? filter === "review"
                             ? "本计划的待确认文件中没有匹配项"
@@ -968,7 +973,7 @@ export function FileOrganizationPanel({
               {result.finalizationPending &&
                 !result.counts.uncertain &&
                 !result.results.some((row) => row.status === "uncertain") && (
-                  <p className="text-sm text-amber-800">
+                  <p className="text-sm text-warning">
                     文件结果已核实，任务或审计记录尚未完成；重新审批补齐记录，已提交文件不会重复移动。
                   </p>
                 )}
@@ -979,19 +984,19 @@ export function FileOrganizationPanel({
                 {result.counts.uncertain} · 跳过 {result.counts.skipped}
               </p>
               {result.reviewCount > 0 && (
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-warning">
                   仍有 {result.reviewCount} 个文件需要确认，未按猜测移动。
                 </p>
               )}
               {result.state === "cancelled" && (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   已完成的移动保留；如需恢复原位置，请另行预览撤销。
                 </p>
               )}
-              <p className="text-xs text-slate-500" aria-live="polite">
+              <p className="text-xs text-muted-foreground" aria-live="polite">
                 执行结果：显示 {outcomes.length} / {result.results.length} 项
               </p>
-              <div className="divide-y rounded-xl border border-slate-200">
+              <div className="divide-y rounded-xl border border-border">
                 {outcomes.map(({ row, entry }) => (
                   <article key={row.entryId} className="space-y-1 p-3 text-xs">
                     <p className="break-all font-medium">{row.source}</p>
@@ -1012,14 +1017,14 @@ export function FileOrganizationPanel({
                       )}
                     </p>
                     {row.target && (
-                      <p className="break-all text-slate-500">
+                      <p className="break-all text-muted-foreground">
                         计划位置：{row.target}
                       </p>
                     )}
                     {entry && <Evidence entry={entry} />}
                     {row.actualPath && revealFileRequest(row.actualPath) && (
                       <a
-                        className="mr-3 inline-flex text-blue-700 underline"
+                        className="mr-3 inline-flex text-core underline"
                         href={desktopActionHref({
                           type: "files.reveal",
                           path: row.actualPath,
@@ -1044,7 +1049,7 @@ export function FileOrganizationPanel({
                       <button
                         type="button"
                         disabled={downloadBusy !== null}
-                        className="inline-flex items-center gap-1 text-blue-700 underline"
+                        className="inline-flex items-center gap-1 text-core underline"
                         onClick={() =>
                           void download(
                             row.actualPath!,
@@ -1057,17 +1062,17 @@ export function FileOrganizationPanel({
                         下载原件
                       </button>
                     ) : (
-                      <p className="text-amber-700">尚未核实可读取的位置</p>
+                      <p className="text-warning">尚未核实可读取的位置</p>
                     )}
                     {row.recoveryPaths.map((recovery) => (
-                      <p key={recovery} className="break-all text-amber-800">
+                      <p key={recovery} className="break-all text-warning">
                         保留的恢复副本：{recovery}
                       </p>
                     ))}
                   </article>
                 ))}
                 {outcomes.length === 0 && (
-                  <p className="p-3 text-xs text-slate-500">
+                  <p className="p-3 text-xs text-muted-foreground">
                     {searching
                       ? "本计划的执行结果中没有匹配文件，可查看预览清单中的待确认项目"
                       : "尚无逐项执行结果"}
@@ -1075,14 +1080,14 @@ export function FileOrganizationPanel({
                 )}
               </div>
               {result.taskId && (
-                <details className="text-xs text-slate-500">
+                <details className="text-xs text-muted-foreground">
                   <summary>任务记录</summary>
                   <p className="break-all">{result.taskId}</p>
                   {onOpenTask && (
                     <button
                       type="button"
                       onClick={() => onOpenTask(result.taskId!)}
-                      className="text-blue-700 underline"
+                      className="text-core underline"
                     >
                       在任务空间查看
                     </button>

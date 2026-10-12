@@ -83,7 +83,7 @@ describe("<ModelPicker />", () => {
     );
   });
 
-  it("renders OpenCode Zen free model names in green without a duplicate badge", async () => {
+  it("renders OpenCode Zen free model names in the core tone without a duplicate badge", async () => {
     const user = userEvent.setup();
     render(
       withRouter(
@@ -112,16 +112,16 @@ describe("<ModelPicker />", () => {
 
     const trigger = screen.getByTestId("model-picker-trigger");
     expect(within(trigger).getByText("big-pickle")).toHaveClass(
-      "text-emerald-600",
+      "text-core",
     );
 
     await user.click(trigger);
     const menu = await screen.findByTestId("model-picker-menu");
     expect(within(menu).getByText("big-pickle")).toHaveClass(
-      "text-emerald-600",
+      "text-core",
     );
     expect(within(menu).getByText("mimo-v2.5-free")).toHaveClass(
-      "text-emerald-600",
+      "text-core",
     );
     expect(within(menu).queryByText("FREE")).not.toBeInTheDocument();
   });
