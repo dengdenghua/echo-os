@@ -41,7 +41,8 @@ export type DesktopAppearance = {
 const APPEARANCE_STORAGE_KEY = "echo:desktop-appearance";
 
 const DEFAULT_APPEARANCE: DesktopAppearance = {
-  theme: "theme-white",
+  // ECHO family default: graphite desktop over the Echo wallpaper.
+  theme: "theme-dark",
   liquidGlassStyle: "crystal",
   liquidGlassIntensity: "balanced",
   liquidGlassTuning: DEFAULT_LIQUID_GLASS_TUNING,
@@ -49,9 +50,9 @@ const DEFAULT_APPEARANCE: DesktopAppearance = {
 };
 
 const THEME_NAMES: Record<DesktopTheme, string> = {
-  "theme-white": "象牙白",
-  "theme-glass": "液态玻璃",
-  "theme-dark": "深空",
+  "theme-white": "雪白",
+  "theme-glass": "神经玻璃",
+  "theme-dark": "石墨",
 };
 
 /** 主题与玻璃参数的联动预设：切主题时把玻璃调到视觉协调的组合，并联动壁纸。 */
@@ -70,12 +71,12 @@ const THEME_GLASS_PRESETS: Record<
   "theme-glass": {
     liquidGlassStyle: "crystal",
     liquidGlassIntensity: "balanced",
-    wallpaper: "aurora",
+    wallpaper: "orbit",
   },
   "theme-dark": {
     liquidGlassStyle: "crystal",
     liquidGlassIntensity: "strong",
-    wallpaper: "midnight",
+    wallpaper: "orbit",
   },
 };
 
@@ -97,7 +98,7 @@ function normalizeTheme(value: string | null): DesktopTheme {
     value === "theme-glass" ||
     value === "theme-dark"
     ? value
-    : "theme-white";
+    : "theme-dark";
 }
 
 function normalizeStyle(value: string | null): MacLiquidGlassStyle {
@@ -115,11 +116,8 @@ function loadAppearance(): DesktopAppearance {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<DesktopAppearance>;
       const theme = normalizeTheme(parsed.theme ?? null);
-      let wallpaper = normalizeWallpaper(parsed.wallpaper ?? null);
-      // 暗黑风格下如果仍残留或默认了白天苹果壁纸 (orbit)，自动修正为深邃暗夜 (midnight)
-      if (theme === "theme-dark" && wallpaper === "orbit") {
-        wallpaper = "midnight";
-      }
+      // orbit 是 ECHO 石墨回响壁纸，深浅主题都直接使用，不再改写为 midnight。
+      const wallpaper = normalizeWallpaper(parsed.wallpaper ?? null);
       return {
         theme,
         liquidGlassStyle: normalizeStyle(parsed.liquidGlassStyle ?? null),
@@ -134,12 +132,9 @@ function loadAppearance(): DesktopAppearance {
     }
     // 旧四键迁移
     const theme = normalizeTheme(localStorage.getItem("echo-desktop-theme"));
-    let wallpaper = normalizeWallpaper(
+    const wallpaper = normalizeWallpaper(
       localStorage.getItem("echo:desktop-wallpaper"),
     );
-    if (theme === "theme-dark" && wallpaper === "orbit") {
-      wallpaper = "midnight";
-    }
     const migrated: DesktopAppearance = {
       theme,
       liquidGlassStyle: normalizeStyle(

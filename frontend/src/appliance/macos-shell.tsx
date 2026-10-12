@@ -86,43 +86,37 @@ function echoSolidPalette(
   };
 }
 
-const ECHO_SIGNAL_GLASS = {
-  carbon: echoSolidPalette("#111318", "#4a96ff", "rgba(36, 107, 253, .52)"),
-  cobalt: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  marine: echoSolidPalette("#22c55e", "#f5fff8", "rgba(34, 197, 94, .46)"),
-  oxide: echoSolidPalette("#ff6b6b", "#fff8f8", "rgba(255, 107, 107, .46)"),
-  sonar: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  orbital: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  amber: echoSolidPalette("#f59e0b", "#fffdf5", "rgba(245, 158, 11, .46)"),
-  command: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  signal: echoSolidPalette("#22c55e", "#f5fff8", "rgba(34, 197, 94, .46)"),
-  gunmetal: echoSolidPalette("#8b95a5", "#ffffff", "rgba(139, 149, 165, .4)"),
-  azure: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  titanium: echoSolidPalette("#f7f8fa", "#8b95a5", "rgba(139, 149, 165, .28)"),
-  slate: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  glacier: echoSolidPalette("#f7f8fa", "#8b95a5", "rgba(139, 149, 165, .28)"),
-} as const;
+/**
+ * ECHO family icons: every app sits on the same graphite tile with a snow glyph.
+ * Apps are told apart by their glyph, never by colour; colour is reserved for
+ * the Echo Core state light (see BRAND.md, "Echo Core 灯语").
+ */
+const ECHO_GRAPHITE = echoSolidPalette(
+  "#16191e",
+  "#eef1f4",
+  "rgba(111, 227, 240, .2)",
+);
 
 const ECHO_APP_ICON_PALETTES: Record<string, EchoAppIconPalette> = {
-  "echo:/workspace/realtime/new": ECHO_SIGNAL_GLASS.carbon,
-  "echo:/browser": ECHO_SIGNAL_GLASS.cobalt,
-  "echo:/workspace/storage": ECHO_SIGNAL_GLASS.marine,
-  "echo:/photos": ECHO_SIGNAL_GLASS.oxide,
-  "echo:/storage-center": ECHO_SIGNAL_GLASS.sonar,
-  "echo:/device-link": ECHO_SIGNAL_GLASS.orbital,
-  "echo:/workspace/knowledge": ECHO_SIGNAL_GLASS.amber,
-  "echo:/workspace/store": ECHO_SIGNAL_GLASS.command,
-  "echo:/hub": ECHO_SIGNAL_GLASS.command,
-  "echo:/workspace/observability": ECHO_SIGNAL_GLASS.signal,
-  "echo:/workspace": ECHO_SIGNAL_GLASS.gunmetal,
-  "system:finder": ECHO_SIGNAL_GLASS.azure,
-  "system:files": ECHO_SIGNAL_GLASS.azure,
-  "system:launchpad": ECHO_SIGNAL_GLASS.titanium,
-  "system:app-store": ECHO_SIGNAL_GLASS.command,
-  "system:tasks": ECHO_SIGNAL_GLASS.slate,
-  "system:activity-monitor": ECHO_SIGNAL_GLASS.signal,
-  "system:settings": ECHO_SIGNAL_GLASS.gunmetal,
-  "system:trash": ECHO_SIGNAL_GLASS.gunmetal,
+  "echo:/workspace/realtime/new": ECHO_GRAPHITE,
+  "echo:/browser": ECHO_GRAPHITE,
+  "echo:/workspace/storage": ECHO_GRAPHITE,
+  "echo:/photos": ECHO_GRAPHITE,
+  "echo:/storage-center": ECHO_GRAPHITE,
+  "echo:/device-link": ECHO_GRAPHITE,
+  "echo:/workspace/knowledge": ECHO_GRAPHITE,
+  "echo:/workspace/store": ECHO_GRAPHITE,
+  "echo:/hub": ECHO_GRAPHITE,
+  "echo:/workspace/observability": ECHO_GRAPHITE,
+  "echo:/workspace": ECHO_GRAPHITE,
+  "system:finder": ECHO_GRAPHITE,
+  "system:files": ECHO_GRAPHITE,
+  "system:launchpad": ECHO_GRAPHITE,
+  "system:app-store": ECHO_GRAPHITE,
+  "system:tasks": ECHO_GRAPHITE,
+  "system:activity-monitor": ECHO_GRAPHITE,
+  "system:settings": ECHO_GRAPHITE,
+  "system:trash": ECHO_GRAPHITE,
 };
 
 /** 浅色底座上的单色图形改用强调色，否则白色图形会和底座融在一起。 */
@@ -193,7 +187,10 @@ export function MacAppIcon({
   // Dock、启动台、桌面和 Spotlight 共用同一套原创图形；没有专属图形的应用
   // 回退到线性图标。
   const appArtwork = iconUrl ? null : (artwork ?? getEchoAppArtwork(appId));
-  const echoPalette = appId ? ECHO_APP_ICON_PALETTES[appId] : undefined;
+  // Apps that ship their own picture keep it; every glyph app joins the family tile.
+  const echoPalette = iconUrl
+    ? undefined
+    : ((appId ? ECHO_APP_ICON_PALETTES[appId] : undefined) ?? ECHO_GRAPHITE);
   const showTechField = appId ? ECHO_TECH_FIELD_APP_IDS.has(appId) : false;
 
   return (
@@ -655,7 +652,7 @@ export function MacMenuBar({
             }
             aria-label="Echo 菜单"
           >
-            <img src="/favicon.svg" alt="" className="size-[17px]" />
+            <EchoMark className="size-[17px]" />
           </button>
           {activeMenu === "system" && (
             <MacMenuDropdown
@@ -762,7 +759,7 @@ export function MacMenuBar({
             className="mac-status-icon"
             onClick={onToggleTheme}
             aria-label="快速切换桌面主题"
-            title={`当前主题：${desktopTheme === "theme-white" ? "象牙白" : desktopTheme === "theme-glass" ? "液态玻璃" : "深空"} · 点击快速切换`}
+            title={`当前主题：${desktopTheme === "theme-white" ? "雪白" : desktopTheme === "theme-glass" ? "神经玻璃" : "石墨"} · 点击快速切换`}
           >
             {desktopTheme === "theme-white" ? (
               <SunIcon className="size-[15px] text-amber-500" />
@@ -979,7 +976,7 @@ export function MacLiquidGlassPanel({
           <small>{style === "crystal" ? "Crystal Flow" : "Soft Aurora"}</small>
         </div>
 
-        {/* 桌面环境主题预设 (象牙白 / 液态玻璃 / 深空) */}
+        {/* 桌面环境主题预设 (雪白 / 神经玻璃 / 石墨) */}
         <fieldset className="mac-glass-fieldset">
           <legend>桌面环境主题</legend>
           <div className="grid grid-cols-3 gap-2">
@@ -995,7 +992,7 @@ export function MacLiquidGlassPanel({
               aria-pressed={desktopTheme === "theme-white"}
             >
               <SunIcon className="size-4 text-amber-500" />
-              <span>象牙白</span>
+              <span>雪白</span>
               <small className="text-[10px] font-normal text-slate-400">
                 轻柔晨光
               </small>
@@ -1013,7 +1010,7 @@ export function MacLiquidGlassPanel({
               aria-pressed={desktopTheme === "theme-glass"}
             >
               <DropletsIcon className="size-4 text-blue-500" />
-              <span>液态玻璃</span>
+              <span>神经玻璃</span>
               <small className="text-[10px] font-normal text-slate-400">
                 澄澈流光
               </small>
@@ -1031,7 +1028,7 @@ export function MacLiquidGlassPanel({
               aria-pressed={desktopTheme === "theme-dark"}
             >
               <MoonIcon className="size-4 text-purple-400" />
-              <span>深空</span>
+              <span>石墨</span>
               <small className="text-[10px] font-normal text-slate-400">
                 冷光玻璃
               </small>

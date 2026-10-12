@@ -91,7 +91,10 @@ export function ApplianceLogin({
   };
 
   return (
-    <main className="macos-desktop-root mac-login-screen relative h-screen overflow-hidden bg-transparent text-white">
+    <main
+      data-echo-theme="graphite"
+      className="macos-desktop-root mac-login-screen relative h-screen overflow-hidden bg-transparent text-white"
+    >
       <div aria-hidden className="desktop-wallpaper absolute inset-0 z-0">
         <MacDesktopWallpaperArtwork />
         <span className="desktop-wallpaper-fold desktop-wallpaper-fold-a" />
@@ -268,6 +271,7 @@ export function ApplianceSessionGate({
 
   return (
     <main
+      data-echo-theme="graphite"
       className="macos-desktop-root mac-login-screen relative h-screen overflow-hidden bg-transparent text-white"
       aria-busy={!unavailable}
     >

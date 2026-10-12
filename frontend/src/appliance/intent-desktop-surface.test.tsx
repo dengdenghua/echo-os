@@ -419,12 +419,10 @@ describe("IntentDesktopSurface", () => {
 
   it("switches themes when clicking theme buttons", () => {
     renderSurface();
-    fireEvent.click(screen.getByRole("button", { name: /液态玻璃/i }));
-    expect(toast.success).toHaveBeenCalledWith(
-      "桌面主题已切换为：静谧液态玻璃",
-    );
-    fireEvent.click(screen.getByRole("button", { name: /深空/i }));
-    expect(toast.success).toHaveBeenCalledWith("桌面主题已切换为：深空");
+    fireEvent.click(screen.getByRole("button", { name: /神经玻璃/i }));
+    expect(toast.success).toHaveBeenCalledWith("桌面主题已切换为：神经玻璃");
+    fireEvent.click(screen.getByRole("button", { name: /石墨/i }));
+    expect(toast.success).toHaveBeenCalledWith("桌面主题已切换为：石墨");
   });
 
   it("supports keyboard shortcuts Space and Alt+D to toggle mode", () => {

@@ -92,10 +92,10 @@ describe("Echo desktop shell", () => {
     ).toBeInTheDocument();
     expect(
       (icon as HTMLElement).style.getPropertyValue("--echo-app-surface"),
-    ).toBe("#246bfd");
+    ).toBe("#16191e");
   });
 
-  it("marks light icon surfaces so monochrome artwork switches to the accent colour", () => {
+  it("puts every first-party glyph app on the same graphite family tile", () => {
     const { container } = render(
       <>
         <MacAppIcon
@@ -108,14 +108,34 @@ describe("Echo desktop shell", () => {
           gradient="linear-gradient(#6bc9ff, #1d78d4)"
           appId="system:finder"
         />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(145deg, #54d59d, #0c8e66)"
+          appId="echo:/workbench/unlisted"
+        />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#fff, #000)"
+          iconUrl="data:image/png;base64,iVBORw0KGgo="
+          appId="native:example"
+        />
       </>,
     );
+    for (const appId of [
+      "system:launchpad",
+      "system:finder",
+      "echo:/workbench/unlisted",
+    ]) {
+      const icon = container.querySelector(`[data-app-id="${appId}"]`);
+      expect(icon).toHaveAttribute("data-echo-family", "true");
+      expect(icon).not.toHaveAttribute("data-echo-surface");
+      expect(
+        (icon as HTMLElement).style.getPropertyValue("--echo-app-surface"),
+      ).toBe("#16191e");
+    }
     expect(
-      container.querySelector('[data-app-id="system:launchpad"]'),
-    ).toHaveAttribute("data-echo-surface", "light");
-    expect(
-      container.querySelector('[data-app-id="system:finder"]'),
-    ).not.toHaveAttribute("data-echo-surface");
+      container.querySelector('[data-app-id="native:example"]'),
+    ).not.toHaveAttribute("data-echo-family");
   });
 
   it("keeps desktop shortcut artwork independent from glass presets", () => {
@@ -892,9 +912,9 @@ describe("Echo desktop shell", () => {
     );
 
     expect(screen.getByRole("group", { name: "桌面环境主题" })).toBeVisible();
-    const whiteBtn = screen.getByRole("button", { name: /象牙白/ });
-    const glassBtn = screen.getByRole("button", { name: /液态玻璃/ });
-    const darkBtn = screen.getByRole("button", { name: /深空/ });
+    const whiteBtn = screen.getByRole("button", { name: /雪白/ });
+    const glassBtn = screen.getByRole("button", { name: /神经玻璃/ });
+    const darkBtn = screen.getByRole("button", { name: /石墨/ });
 
     expect(whiteBtn).toHaveAttribute("aria-pressed", "true");
     expect(glassBtn).toHaveAttribute("aria-pressed", "false");

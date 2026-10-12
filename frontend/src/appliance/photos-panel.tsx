@@ -159,7 +159,7 @@ function ModelReadinessNotice({
 }) {
   if (feature?.state === "loading")
     return (
-      <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+      <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">
         <Loader2Icon className="mr-1 inline size-3.5 animate-spin" />
         {label}正在本机加载，请稍候。照片仍可浏览。
       </p>
@@ -174,7 +174,7 @@ function ModelReadinessNotice({
     ),
   ];
   return (
-    <div role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+    <div role="alert" className="mt-3 text-xs leading-5 text-warning">
       <p>{label}加载失败。</p>
       {(hints.length ? hints : [modelFailureHint()]).map((hint) => (
         <p key={hint}>{hint}</p>
@@ -197,11 +197,11 @@ function PhotoTile({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative aspect-square overflow-hidden rounded-[16px] bg-white/52 text-left shadow-[0_8px_24px_rgba(51,65,85,.07)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(51,65,85,.14)]"
+      className="group relative aspect-square overflow-hidden rounded-[16px] bg-card/52 text-left shadow-[0_8px_24px_rgba(51,65,85,.07)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(51,65,85,.14)]"
       aria-label={`查看 ${photo.name}`}
     >
       {failed || !previewAvailable ? (
-        <span className="grid size-full place-items-center bg-gradient-to-br from-rose-100 to-orange-100 text-rose-300">
+        <span className="grid size-full place-items-center bg-gradient-to-br from-breach to-warning text-breach">
           <ImageIcon className="size-9" strokeWidth={1.5} />
         </span>
       ) : (
@@ -213,7 +213,7 @@ function PhotoTile({
           className="size-full object-cover transition duration-300 group-hover:scale-[1.025]"
         />
       )}
-      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/66 via-slate-950/16 to-transparent px-3 pb-2.5 pt-9 opacity-0 transition group-hover:opacity-100">
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-muted via-muted to-transparent px-3 pb-2.5 pt-9 opacity-0 transition group-hover:opacity-100">
         <span className="block truncate text-[11px] font-medium text-white">
           {photo.name}
         </span>
@@ -229,11 +229,11 @@ function PhotoTile({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-[104px] rounded-[16px] bg-white/58 px-3.5 py-3 shadow-[0_8px_22px_rgba(51,65,85,.05)]">
-      <div className="text-lg font-semibold tracking-tight text-slate-900">
+    <div className="min-w-[104px] rounded-[16px] bg-card/58 px-3.5 py-3 shadow-[0_8px_22px_rgba(51,65,85,.05)]">
+      <div className="text-lg font-semibold tracking-tight text-foreground">
         {value}
       </div>
-      <div className="mt-0.5 text-[10px] font-medium text-slate-400">
+      <div className="mt-0.5 text-[10px] font-medium text-muted-foreground">
         {label}
       </div>
     </div>
@@ -833,10 +833,10 @@ export function PhotosPanel({
         label="照片"
         onClose={onClose}
         overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-        className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-white/72 bg-slate-50/91 text-slate-900 shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
-        windowClassName="relative flex size-full flex-col overflow-hidden bg-slate-50 text-slate-900"
+        className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/91 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        windowClassName="relative flex size-full flex-col overflow-hidden bg-background text-foreground"
       >
-        <header className="relative flex h-14 shrink-0 items-center bg-white/52 px-5 shadow-[0_1px_0_rgba(148,163,184,.18)]">
+        <header className="relative flex h-14 shrink-0 items-center bg-card/52 px-5 shadow-[0_1px_0_rgba(148,163,184,.18)]">
           <div className="flex gap-2">
             {inWindow ? (
               <SystemAppLightsSpacer />
@@ -846,7 +846,7 @@ export function PhotosPanel({
                   type="button"
                   aria-label="关闭照片"
                   onClick={onClose}
-                  className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
+                  className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-breach"
                 >
                   <XIcon className="size-2.5" />
                 </button>
@@ -855,8 +855,8 @@ export function PhotosPanel({
               </>
             )}
           </div>
-          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-slate-700">
-            <ImagesIcon className="size-4 text-rose-500" />
+          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-foreground">
+            <ImagesIcon className="size-4 text-breach" />
             照片
           </div>
           <button
@@ -864,7 +864,7 @@ export function PhotosPanel({
             onClick={() => void refresh()}
             disabled={loading}
             aria-label="刷新照片库"
-            className="ml-auto grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-200/70 disabled:opacity-50"
+            className="ml-auto grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted/70 disabled:opacity-50"
           >
             <RefreshCwIcon
               className={cn("size-4", loading && "animate-spin")}
@@ -875,33 +875,33 @@ export function PhotosPanel({
         <div className="shrink-0 px-6 pb-5 pt-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-rose-500">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-breach">
                 <SparklesIcon className="size-3.5" />
                 本地智能相册
               </div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                 你的照片，只在这台设备理解
               </h1>
-              <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-slate-500">
+              <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-muted-foreground">
                 浏览 NAS
                 原图，缩略图与语义索引都在本地生成。智能索引只读取照片，不移动、不删除原文件。
               </p>
             </div>
             <form
               onSubmit={submitSearch}
-              className="flex h-11 w-full items-center gap-2 rounded-full bg-white/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.24),0_5px_18px_rgba(51,65,85,.06)] xl:w-[360px]"
+              className="flex h-11 w-full items-center gap-2 rounded-full bg-card/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.24),0_5px_18px_rgba(51,65,85,.06)] xl:w-[360px]"
             >
               {searching ? (
-                <Loader2Icon className="size-4 animate-spin text-rose-400" />
+                <Loader2Icon className="size-4 animate-spin text-breach" />
               ) : (
-                <SearchIcon className="size-4 text-slate-400" />
+                <SearchIcon className="size-4 text-muted-foreground" />
               )}
               <input
                 value={query}
                 onChange={(event) => setQuery(event.currentTarget.value)}
                 placeholder="试试“海边的家人”或文件名"
                 aria-label="搜索照片"
-                className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
               {query && (
                 <button
@@ -911,7 +911,7 @@ export function PhotosPanel({
                     setQuery("");
                     void refresh();
                   }}
-                  className="grid size-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100"
+                  className="grid size-6 place-items-center rounded-full text-muted-foreground hover:bg-muted"
                 >
                   <XIcon className="size-3.5" />
                 </button>
@@ -944,8 +944,8 @@ export function PhotosPanel({
                 value={`${status?.index.duplicateGroups ?? 0} / ${status?.index.blurry ?? 0}`}
               />
             </div>
-            <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/58 p-1.5 pl-3">
-              <label className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-slate-500">
+            <div className="flex shrink-0 items-center gap-2 rounded-full bg-card/58 p-1.5 pl-3">
+              <label className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-muted-foreground">
                 <ScanFaceIcon className="size-3.5" />
                 人物聚类
                 <input
@@ -974,7 +974,7 @@ export function PhotosPanel({
                   !canManage ||
                   (!semanticAvailable && !canCleanup)
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-slate-900 px-4 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {planning || jobActive || cancelPending ? (
                   <Loader2Icon className="size-3.5 animate-spin" />
@@ -1011,7 +1011,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void pauseIndex()}
                     disabled={pausePending || cancelPending || resumePending}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {pausePending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1029,7 +1029,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void resumeIndex()}
                     disabled={resumePending || cancelPending || pausePending}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {resumePending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1049,7 +1049,7 @@ export function PhotosPanel({
                     resumePending ||
                     job.state === "cancelling"
                   }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-slate-600 transition hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {cancelPending || job.state === "cancelling" ? (
                     <Loader2Icon className="size-3.5 animate-spin" />
@@ -1071,22 +1071,31 @@ export function PhotosPanel({
           </div>
 
           {!canManage && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               当前账户可浏览和搜索照片，建立索引需设备管理员操作。
             </p>
           )}
           {canCleanup && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               当前图库为空，但仍有旧索引或关联记录。可以先预览影响范围，再确认清理；不会删除原图，无需加载模型。
             </p>
           )}
           {(status?.library.scanErrors ?? 0) > 0 && (
-            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+            <p role="alert" className="mt-3 text-xs leading-5 text-warning">
               部分照片目录未能读取，当前照片数量可能不完整。请检查目录权限和设备连接后刷新，再更新或清理索引。
             </p>
           )}
           {status && !semanticAvailable && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               {secureReaderUnavailable
                 ? "当前系统尚不支持相册所需的安全文件读取，可浏览照片目录和按文件名搜索。完整相册功能需在支持的设备系统上使用。"
                 : readiness?.semantic.state === "disabled"
@@ -1095,7 +1104,7 @@ export function PhotosPanel({
             </p>
           )}
           {semanticAvailable && !facesAvailable && (
-            <p className="mt-3 text-xs leading-5 text-slate-500">
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
               人脸识别组件尚未就绪；可以先建立语义索引，按画面内容搜索。
             </p>
           )}
@@ -1105,7 +1114,7 @@ export function PhotosPanel({
           />
           <ModelReadinessNotice feature={readiness?.faces} label="人物模型" />
           {modelLoadFailed && (
-            <p className="mt-2 text-xs leading-5 text-slate-500">
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
               {canManage
                 ? "修复后可重新建立智能索引，也可重新尝试搜索。"
                 : "请设备管理员修复后重新建立智能索引。"}
@@ -1117,40 +1126,52 @@ export function PhotosPanel({
             readiness?.modelDownloadMayBeRequired &&
             !modelLoadFailed &&
             !modelLoading && (
-              <p className="mt-2 text-xs leading-5 text-slate-500">
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
                 首次建立索引可能需要联网下载模型，照片在本机处理。
                 {!readiness.semantic.modelsLoaded &&
                   "语义模型加载成功后才能进行智能检索。"}
               </p>
             )}
           {canManage && cancelError && (
-            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+            <p role="alert" className="mt-3 text-xs leading-5 text-warning">
               {cancelError}
             </p>
           )}
           {job?.state === "cancelling" && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               {job.cleanupOnly
                 ? "正在停止索引清理，请稍候。原图不会被删除。"
                 : "正在停止索引，请稍候。照片仍可浏览。"}
             </p>
           )}
           {job?.state === "pausing" && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               {job.cleanupOnly
                 ? "正在暂停索引清理，系统会在安全检查点释放资源。"
                 : "正在暂停索引，系统会在安全检查点保留旧索引并释放资源。"}
             </p>
           )}
           {job?.state === "paused" && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               {job.cleanupOnly
                 ? "索引清理已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"
                 : "智能索引已暂停，旧索引仍可用；继续后会从安全检查点重新开始。"}
             </p>
           )}
           {job?.state === "cancelled" && (
-            <p role="status" className="mt-3 text-xs leading-5 text-slate-500">
+            <p
+              role="status"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
+            >
               {job.cleanupOnly
                 ? "本次索引清理已取消，可以重新预览后清理。原图未被删除。"
                 : "本次索引已取消，可以重新更新。"}
@@ -1159,7 +1180,7 @@ export function PhotosPanel({
           {job?.state === "succeeded" && (
             <div
               role="status"
-              className="mt-3 text-xs leading-5 text-slate-500"
+              className="mt-3 text-xs leading-5 text-muted-foreground"
             >
               <p>
                 {job.cleanupOnly
@@ -1179,7 +1200,7 @@ export function PhotosPanel({
             </div>
           )}
           {job?.state === "failed" && (
-            <p role="alert" className="mt-3 text-xs leading-5 text-amber-700">
+            <p role="alert" className="mt-3 text-xs leading-5 text-warning">
               {indexFailureMessage(
                 job.error,
                 job.result?.partial,
@@ -1188,9 +1209,9 @@ export function PhotosPanel({
             </p>
           )}
           {searchMode && (
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
               {searchMode === "semantic" ? (
-                <SparklesIcon className="size-3.5 text-rose-500" />
+                <SparklesIcon className="size-3.5 text-breach" />
               ) : (
                 <SearchIcon className="size-3.5" />
               )}
@@ -1200,7 +1221,7 @@ export function PhotosPanel({
             </div>
           )}
           {(status?.library.unsafeLinksSkipped ?? 0) > 0 && (
-            <p className="mt-2 text-[10px] text-slate-400">
+            <p className="mt-2 text-[10px] text-muted-foreground">
               已安全跳过 {status?.library.unsafeLinksSkipped}{" "}
               个图片链接，不会读取链接目标。
             </p>
@@ -1209,7 +1230,7 @@ export function PhotosPanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
           {loading && !library ? (
-            <div className="grid h-64 place-items-center text-sm text-slate-400">
+            <div className="grid h-64 place-items-center text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <Loader2Icon className="size-4 animate-spin" />
                 正在整理照片时间线…
@@ -1218,14 +1239,14 @@ export function PhotosPanel({
           ) : error ? (
             <div className="grid h-64 place-items-center text-center">
               <div>
-                <UnplugIcon className="mx-auto size-8 text-slate-300" />
-                <p className="mt-3 text-sm font-medium text-slate-700">
+                <UnplugIcon className="mx-auto size-8 text-muted-foreground" />
+                <p className="mt-3 text-sm font-medium text-foreground">
                   {error}
                 </p>
                 <button
                   type="button"
                   onClick={() => void refresh()}
-                  className="mt-3 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white"
+                  className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-medium text-primary-foreground"
                 >
                   重新读取
                 </button>
@@ -1235,13 +1256,13 @@ export function PhotosPanel({
             <div className="grid h-64 place-items-center text-center">
               <div>
                 <ImagesIcon
-                  className="mx-auto size-10 text-slate-300"
+                  className="mx-auto size-10 text-muted-foreground"
                   strokeWidth={1.4}
                 />
-                <p className="mt-3 text-sm font-medium text-slate-700">
+                <p className="mt-3 text-sm font-medium text-foreground">
                   {query ? "没有找到匹配的照片" : "NAS 中还没有照片"}
                 </p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {query
                     ? "换一种描述试试"
                     : "通过文件管家上传后会自动出现在这里"}
@@ -1266,7 +1287,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void loadMore()}
                     disabled={loadingMore || searching}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-4 text-[11px] font-semibold text-slate-600 shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-white disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-card/72 px-4 text-[11px] font-semibold text-muted-foreground shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-card disabled:opacity-50"
                   >
                     {loadingMore && (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1294,7 +1315,7 @@ export function PhotosPanel({
             type="button"
             aria-label="关闭照片预览"
             onClick={() => setSelected(null)}
-            className="absolute right-6 top-6 grid size-10 place-items-center rounded-full bg-white/12 text-white backdrop-blur-md hover:bg-white/20"
+            className="absolute right-6 top-6 grid size-10 place-items-center rounded-full bg-card/12 text-white backdrop-blur-md hover:bg-card/20"
           >
             <XIcon className="size-5" />
           </button>
@@ -1325,7 +1346,7 @@ export function PhotosPanel({
             {onAskAgent && (
               <button
                 type="button"
-                className="mt-3 rounded-full bg-white/15 px-4 py-2 text-sm text-white hover:bg-white/25"
+                className="mt-3 rounded-full bg-card/15 px-4 py-2 text-sm text-white hover:bg-card/25"
                 onClick={() => {
                   onAskAgent({
                     app: "photos",

@@ -21,7 +21,7 @@ beforeEach(() => {
 
 it("falls back to the default appearance when storage is empty", () => {
   const { result } = renderHook(useDesktopAppearance);
-  expect(result.current.theme).toBe("theme-white");
+  expect(result.current.theme).toBe("theme-dark");
   expect(result.current.liquidGlassStyle).toBe("crystal");
   expect(result.current.liquidGlassIntensity).toBe("balanced");
   expect(result.current.wallpaper).toBe("orbit");
@@ -129,16 +129,15 @@ it("restores the stock glass look on reset", () => {
 it("survives a corrupt unified payload without throwing", () => {
   localStorage.setItem(APPEARANCE_KEY, "{not json");
   const { result } = renderHook(useDesktopAppearance);
-  expect(result.current.theme).toBe("theme-white");
+  expect(result.current.theme).toBe("theme-dark");
   expect(result.current.wallpaper).toBe("orbit");
 });
 
-it("normalizes legacy orbit daytime wallpaper to midnight when dark theme is active", () => {
+it("keeps the graphite Echo wallpaper under the dark theme", () => {
   localStorage.setItem("echo-desktop-theme", "theme-dark");
   localStorage.setItem("echo:desktop-wallpaper", "orbit");
 
   const { result } = renderHook(useDesktopAppearance);
   expect(result.current.theme).toBe("theme-dark");
-  expect(result.current.wallpaper).toBe("midnight");
+  expect(result.current.wallpaper).toBe("orbit");
 });
-

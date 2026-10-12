@@ -30,10 +30,10 @@ function UsageBar({ label, percent }: { label: string; percent: number }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={bounded}
-      className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"
+      className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
     >
       <div
-        className={`h-full rounded-full transition-all ${bounded > 80 ? "bg-red-500" : bounded > 50 ? "bg-amber-500" : "bg-emerald-500"}`}
+        className={`h-full rounded-full transition-all ${bounded > 80 ? "bg-breach" : bounded > 50 ? "bg-warning" : "bg-core"}`}
         style={{ width: `${bounded}%` }}
       />
     </div>
@@ -107,10 +107,10 @@ export function ActivityMonitorPanel({
       label="活动监视器"
       onClose={onClose}
       overlayClassName="fixed inset-0 z-[100] flex items-center justify-center bg-black/25"
-      className="w-[640px] max-w-[90vw] rounded-2xl border border-white/40 bg-white/90 shadow-2xl backdrop-blur-2xl"
-      windowClassName="flex h-full min-h-0 flex-col bg-white/85 text-slate-800"
+      className="w-[640px] max-w-[90vw] rounded-2xl border border-border bg-card/90 shadow-2xl backdrop-blur-2xl"
+      windowClassName="flex h-full min-h-0 flex-col bg-card/85 text-foreground"
     >
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-slate-200/80 px-4">
+      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
         {inWindow ? (
           <SystemAppLightsSpacer />
         ) : (
@@ -118,7 +118,7 @@ export function ActivityMonitorPanel({
             type="button"
             onClick={onClose}
             aria-label="关闭活动监视器"
-            className="rounded-full p-1 hover:bg-slate-200"
+            className="rounded-full p-1 hover:bg-muted"
           >
             <XIcon className="size-4" />
           </button>
@@ -126,12 +126,14 @@ export function ActivityMonitorPanel({
         <h2 className="text-sm font-semibold">活动监视器</h2>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-5">
-        <p className="mb-4 text-xs text-slate-500">本机 CPU、内存与运行时间</p>
+        <p className="mb-4 text-xs text-muted-foreground">
+          本机 CPU、内存与运行时间
+        </p>
         {info ? (
           <div className="space-y-5">
             <section
               aria-label="CPU 状态"
-              className="rounded-xl border border-slate-200 bg-white/60 p-4"
+              className="rounded-xl border border-border bg-card/60 p-4"
             >
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
@@ -141,13 +143,13 @@ export function ActivityMonitorPanel({
                 <span>{info.cpu.usage}%</span>
               </div>
               <UsageBar label="CPU 使用率" percent={info.cpu.usage} />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 {info.cpu.model} · {info.cpu.cores} 核心
               </p>
             </section>
             <section
               aria-label="内存状态"
-              className="rounded-xl border border-slate-200 bg-white/60 p-4"
+              className="rounded-xl border border-border bg-card/60 p-4"
             >
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
@@ -157,16 +159,16 @@ export function ActivityMonitorPanel({
                 <span>{info.memory.percent}%</span>
               </div>
               <UsageBar label="内存使用率" percent={info.memory.percent} />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 {info.memory.used} / {info.memory.total} GB
               </p>
             </section>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               运行时间：{Math.floor(info.uptime / 60)} 小时{" "}
               {Math.floor(info.uptime % 60)} 分钟
             </p>
             {status !== "ready" && (
-              <p role="status" className="text-xs text-amber-700">
+              <p role="status" className="text-xs text-warning">
                 {status === "loading"
                   ? "正在更新系统状态…"
                   : "暂时无法更新，显示上次读取的状态。"}
@@ -176,12 +178,12 @@ export function ActivityMonitorPanel({
         ) : (
           <div
             role="status"
-            className="rounded-xl border border-slate-200 bg-white/60 p-6 text-center"
+            className="rounded-xl border border-border bg-card/60 p-6 text-center"
           >
             {status === "loading" ? (
               <Loader2Icon className="mx-auto size-5 animate-spin" />
             ) : (
-              <MonitorIcon className="mx-auto size-5 text-slate-400" />
+              <MonitorIcon className="mx-auto size-5 text-muted-foreground" />
             )}
             <p className="mt-3 text-sm">
               {status === "loading"
@@ -191,7 +193,7 @@ export function ActivityMonitorPanel({
                   : "浏览器模式未连接系统监控"}
             </p>
             {status !== "loading" && (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 在 Echo OS 桌面客户端中可查看实时 CPU、内存与运行时间。
               </p>
             )}

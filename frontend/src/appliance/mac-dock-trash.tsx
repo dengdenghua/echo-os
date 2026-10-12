@@ -43,12 +43,12 @@ export const MacDockTrash = memo(function MacDockTrash({
         <defs>
           <linearGradient id={body} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#ffffff" stopOpacity="0.42" />
-            <stop offset="0.55" stopColor="#e9e4ff" stopOpacity="0.16" />
-            <stop offset="1" stopColor="#c7d2fe" stopOpacity="0.26" />
+            <stop offset="0.55" stopColor="#eef1f4" stopOpacity="0.16" />
+            <stop offset="1" stopColor="#c3c9d1" stopOpacity="0.26" />
           </linearGradient>
           <linearGradient id={rim} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#ffffff" stopOpacity="0.98" />
-            <stop offset="1" stopColor="#dfe3f0" stopOpacity="0.9" />
+            <stop offset="1" stopColor="#dde1e6" stopOpacity="0.9" />
           </linearGradient>
         </defs>
 

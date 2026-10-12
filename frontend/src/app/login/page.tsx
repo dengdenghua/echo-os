@@ -683,6 +683,7 @@ export default function LoginPage() {
 
   return (
     <div
+      data-echo-theme="graphite"
       className={`echo-login-shell relative min-h-screen overflow-hidden${embeddedWindow ? " echo-login-shell-embedded" : ""}`}
     >
       <div className="echo-login-cosmos" aria-hidden="true">

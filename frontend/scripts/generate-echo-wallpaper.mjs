@@ -1,9 +1,10 @@
 /**
  * Generates Echo OS's original default wallpaper ("Echo").
  *
- * A call and its echo: a set of ripples rises from the lower left, a fainter
- * answering set from the upper right, over indigo, violet and cobalt colour
- * fields that match the Echo Signal Glass icon palette. Everything is drawn
+ * A call and its echo, in the ECHO family's graphite: hairline ripples rise
+ * from an Echo Core in the lower left, a fainter answering set from the upper
+ * right, over a graphite ground with one cool, desaturated light field. The
+ * core is the only colour (the family's stable-sync cyan). Everything is drawn
  * here, so the wallpaper carries no third-party licence.
  *
  * Outputs (public/echo/):
@@ -46,33 +47,62 @@ function field(id, { cx, cy, rx, ry, color, opacity }) {
 }
 
 export function echoWallpaperSvg(width = W, height = H) {
-  const call = { cx: W * 0.27, cy: H * 0.78 };
-  const answer = { cx: W * 0.84, cy: H * 0.16 };
+  const call = { cx: W * 0.27, cy: H * 0.74 };
+  const answer = { cx: W * 0.82, cy: H * 0.2 };
   const fields = [
-    field("violet", { cx: W * 0.24, cy: H * 0.8, rx: W * 0.52, ry: H * 0.72, color: "#7b61ff", opacity: 0.95 }),
-    field("cobalt", { cx: W * 0.04, cy: H * 0.08, rx: W * 0.42, ry: H * 0.62, color: "#246bfd", opacity: 0.8 }),
-    field("cyan", { cx: W * 0.86, cy: H * 0.14, rx: W * 0.4, ry: H * 0.55, color: "#2dd4bf", opacity: 0.5 }),
-    field("magenta", { cx: W * 0.52, cy: H * 0.98, rx: W * 0.3, ry: H * 0.34, color: "#c55df6", opacity: 0.5 }),
-    field("peach", { cx: W * 0.76, cy: H * 1.04, rx: W * 0.34, ry: H * 0.42, color: "#ff8f6b", opacity: 0.72 }),
-    field("callGlow", { cx: call.cx, cy: call.cy, rx: 420, ry: 420, color: "#ddd6fe", opacity: 0.55 }),
-    field("answerGlow", { cx: answer.cx, cy: answer.cy, rx: 260, ry: 260, color: "#cffafe", opacity: 0.4 }),
+    field("steel", {
+      cx: W * 0.3,
+      cy: H * 0.7,
+      rx: W * 0.62,
+      ry: H * 0.8,
+      color: "#2a3340",
+      opacity: 0.85,
+    }),
+    field("haze", {
+      cx: W * 0.86,
+      cy: H * 0.12,
+      rx: W * 0.42,
+      ry: H * 0.5,
+      color: "#1f2a33",
+      opacity: 0.7,
+    }),
+    field("coreGlow", {
+      cx: call.cx,
+      cy: call.cy,
+      rx: 520,
+      ry: 520,
+      color: "#6fe3f0",
+      opacity: 0.16,
+    }),
+    field("answerGlow", {
+      cx: answer.cx,
+      cy: answer.cy,
+      rx: 300,
+      ry: 300,
+      color: "#eef1f4",
+      opacity: 0.05,
+    }),
   ];
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${W} ${H}">
   <defs>
     <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#151a4d"/>
-      <stop offset="0.55" stop-color="#1c1d5e"/>
-      <stop offset="1" stop-color="#0f2f5f"/>
+      <stop offset="0" stop-color="#0d0f13"/>
+      <stop offset="0.55" stop-color="#0a0b0e"/>
+      <stop offset="1" stop-color="#07080a"/>
     </linearGradient>
     ${fields.map((item) => item.def).join("\n    ")}
-    <radialGradient id="callFade" cx="${call.cx}" cy="${call.cy}" r="${W * 0.9}" gradientUnits="userSpaceOnUse">
+    <radialGradient id="callFade" cx="${call.cx}" cy="${call.cy}" r="${W * 0.85}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="0.6" stop-color="#fff" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#fff" stop-opacity="0.45"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="answerFade" cx="${answer.cx}" cy="${answer.cy}" r="${W * 0.5}" gradientUnits="userSpaceOnUse">
+    <radialGradient id="answerFade" cx="${answer.cx}" cy="${answer.cy}" r="${W * 0.45}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#fff" stop-opacity="1"/>
       <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="${W / 2}" cy="${H / 2}" r="${W * 0.62}" gradientUnits="userSpaceOnUse">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.55"/>
     </radialGradient>
     <mask id="callMask"><rect width="${W}" height="${H}" fill="url(#callFade)"/></mask>
     <mask id="answerMask"><rect width="${W}" height="${H}" fill="url(#answerFade)"/></mask>
@@ -82,11 +112,14 @@ export function echoWallpaperSvg(width = W, height = H) {
   ${fields.map((item) => item.shape).join("\n  ")}
 
   <g mask="url(#callMask)">
-    ${rings({ ...call, count: 12, start: 210, growth: 1.3, opacity: 0.3, decay: 0.86, width: 2.2, color: "#efeaff" })}
+    ${rings({ ...call, count: 13, start: 150, growth: 1.28, opacity: 0.16, decay: 0.88, width: 1.6, color: "#eef1f4" })}
   </g>
   <g mask="url(#answerMask)">
-    ${rings({ ...answer, count: 8, start: 140, growth: 1.32, opacity: 0.2, decay: 0.84, width: 1.8, color: "#e0fbff" })}
+    ${rings({ ...answer, count: 8, start: 110, growth: 1.3, opacity: 0.09, decay: 0.86, width: 1.4, color: "#eef1f4" })}
   </g>
+  <circle cx="${call.cx}" cy="${call.cy}" r="10" fill="#6fe3f0"/>
+  <circle cx="${call.cx}" cy="${call.cy}" r="26" fill="none" stroke="#6fe3f0" stroke-opacity="0.35" stroke-width="1.6"/>
+  <rect width="${W}" height="${H}" fill="url(#vignette)"/>
 </svg>`;
 }
 
@@ -118,6 +151,9 @@ async function main() {
   console.log(`wallpaper -> ${outDir}`);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   await main();
 }

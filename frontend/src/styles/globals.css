@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./echo-tokens.css";
+@import "./echo-fonts.css";
 
 /* Chat font-size uses the official `prose-sm|base|lg` class names
    (set in markdown-content.tsx), but the @tailwindcss/typography
@@ -63,12 +65,21 @@
 @source inline("border-{border,input}");
 
 @custom-variant dark (&:is(.dark *));
+
+@utility duration-base {
+  transition-duration: var(--echo-duration-base);
+}
 @custom-variant apple (&:is(.apple *));
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif,
-    "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    "Inter", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei",
+    "Noto Sans SC", ui-sans-serif, system-ui, sans-serif, "Noto Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono:
+    "JetBrains Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  --font-display:
+    "Michroma", "Eurostile Extended", "Microsoft YaHei", sans-serif;
 
   --animate-fade-in: fade-in 0.15s ease-out;
   @keyframes fade-in {
@@ -339,6 +350,15 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Hairline aliases used across the workspace (border-border-default/subtle). */
+  --color-border-default: var(--echo-line-strong);
+  --color-border-subtle: var(--echo-line);
+  --color-core: var(--echo-core);
+  --color-signal: var(--echo-signal);
+  --color-resonance: var(--echo-resonance);
+  --color-warning: var(--echo-warning);
+  --color-nano: var(--echo-nano);
+  --color-breach: var(--echo-breach);
   --animate-aurora: aurora 8s ease-in-out infinite alternate;
   @keyframes aurora {
     0% {
@@ -443,37 +463,11 @@
   --density-card-min-height: 184px;
 
   --radius: 0.5rem;
-  --background: oklch(0.985 0.003 264);
-  --foreground: oklch(0.15 0.006 264);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.006 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.006 264);
-  --primary: oklch(0.45 0.2 264);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.955 0.006 264);
-  --secondary-foreground: oklch(0.205 0.005 264);
-  --muted: oklch(0.952 0.004 264);
-  --muted-foreground: oklch(0.42 0.018 264);
-  --accent: oklch(0.94 0.018 264);
-  --accent-foreground: oklch(0.25 0.05 264);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.885 0.006 264);
-  --input: oklch(0.875 0.006 264);
-  --ring: oklch(0.45 0.2 264);
-  --chart-1: oklch(0.55 0.2 264);
-  --chart-2: oklch(0.6 0.15 180);
-  --chart-3: oklch(0.55 0.2 330);
-  --chart-4: oklch(0.65 0.18 80);
-  --chart-5: oklch(0.6 0.22 20);
-  --sidebar: oklch(0.965 0.004 264);
-  --sidebar-foreground: oklch(0.15 0.006 264);
-  --sidebar-primary: oklch(0.45 0.2 264);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0.02 264);
-  --sidebar-accent-foreground: oklch(0.25 0.05 264);
-  --sidebar-border: oklch(0.88 0.006 264);
-  --sidebar-ring: oklch(0.45 0.2 264);
+
+  /* Tokens components reference but no layer used to define. */
+  --shadow-xs: 0 1px 2px rgba(17, 19, 23, 0.06);
+  --motion-duration-fast: var(--echo-duration-fast);
+  --motion-ease-out: var(--echo-ease);
 
   --container-width-xs: calc(var(--spacing) * 72);
   --container-width-sm: calc(var(--spacing) * 144);
@@ -481,132 +475,68 @@
   --container-width-lg: calc(var(--spacing) * 256);
 }
 
+/*
+ * Theme vars → ECHO tokens. Declared on every theme scope (not only :root) so a
+ * nested .dark / [data-echo-theme] subtree re-resolves them against its own
+ * --echo-* values; a var() declared once on :root would freeze the light value.
+ */
+:root,
+.dark,
+[data-echo-theme] {
+  --background: var(--echo-surface);
+  --foreground: var(--echo-ink);
+  --card: var(--echo-surface-raised);
+  --card-foreground: var(--echo-ink);
+  --popover: var(--echo-surface-raised);
+  --popover-foreground: var(--echo-ink);
+  --primary: var(--echo-action);
+  --primary-foreground: var(--echo-on-action);
+  --secondary: var(--echo-surface-sunken);
+  --secondary-foreground: var(--echo-ink);
+  --muted: var(--echo-surface-sunken);
+  --muted-foreground: var(--echo-ink-muted);
+  --accent: var(--echo-line);
+  --accent-foreground: var(--echo-ink);
+  --destructive: var(--echo-breach);
+  --destructive-foreground: var(--echo-on-action);
+  --border: var(--echo-line);
+  --input: var(--echo-line-strong);
+  --ring: var(--echo-focus);
+  --chart-1: var(--echo-core);
+  --chart-2: var(--echo-signal);
+  --chart-3: var(--echo-resonance);
+  --chart-4: var(--echo-warning);
+  --chart-5: var(--echo-nano);
+  --sidebar: var(--echo-ground);
+  --sidebar-foreground: var(--echo-ink);
+  --sidebar-primary: var(--echo-action);
+  --sidebar-primary-foreground: var(--echo-on-action);
+  --sidebar-accent: var(--echo-line);
+  --sidebar-accent-foreground: var(--echo-ink);
+  --sidebar-border: var(--echo-line);
+  --sidebar-ring: var(--echo-focus);
+}
+
 .dark {
-  --background: oklch(0.135 0.007 264);
-  --foreground: oklch(0.955 0.005 264);
-  --card: oklch(0.19 0.008 264);
-  --card-foreground: oklch(0.955 0.005 264);
-  --popover: oklch(0.18 0.008 264);
-  --popover-foreground: oklch(0.955 0.005 264);
-  --primary: oklch(0.72 0.18 264);
-  --primary-foreground: oklch(0.145 0.006 264);
-  --secondary: oklch(0.245 0.011 264);
-  --secondary-foreground: oklch(0.9 0.005 264);
-  --muted: oklch(0.225 0.009 264);
-  --muted-foreground: oklch(0.76 0.014 264);
-  --accent: oklch(0.27 0.018 264);
-  --accent-foreground: oklch(0.9 0.01 264);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.285 0.012 264);
-  --input: oklch(0.265 0.011 264);
-  --ring: oklch(0.72 0.18 264);
-  --chart-1: oklch(0.65 0.22 264);
-  --chart-2: oklch(0.6 0.17 180);
-  --chart-3: oklch(0.65 0.2 330);
-  --chart-4: oklch(0.7 0.18 80);
-  --chart-5: oklch(0.65 0.22 20);
-  --sidebar: oklch(0.125 0.007 264);
-  --sidebar-foreground: oklch(0.955 0.005 264);
-  --sidebar-primary: oklch(0.68 0.22 264);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.21 0.015 264);
-  --sidebar-accent-foreground: oklch(0.9 0.01 264);
-  --sidebar-border: oklch(0.275 0.012 264);
-  --sidebar-ring: oklch(0.55 0.15 264);
+  --shadow-xs: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .apple {
   color-scheme: light;
-  --radius: 0.75rem;
   --corner-radius-scale: 1;
-  --background: oklch(0.972 0.004 255);
-  --foreground: oklch(0.16 0.006 255);
-  --card: oklch(0.998 0.001 255);
-  --card-foreground: oklch(0.16 0.006 255);
-  --popover: oklch(0.998 0.001 255);
-  --popover-foreground: oklch(0.16 0.006 255);
-  --primary: oklch(0.62 0.205 253);
-  --primary-foreground: oklch(0.995 0 0);
-  --secondary: oklch(0.94 0.008 255);
-  --secondary-foreground: oklch(0.22 0.01 255);
-  --muted: oklch(0.93 0.006 255);
-  --muted-foreground: oklch(0.47 0.014 255);
-  --accent: oklch(0.92 0.035 253);
-  --accent-foreground: oklch(0.27 0.06 253);
-  --destructive: oklch(0.64 0.22 25);
-  --destructive-foreground: oklch(0.995 0 0);
-  --border: oklch(0.875 0.006 255);
-  --input: oklch(0.89 0.006 255);
-  --ring: oklch(0.62 0.205 253);
-  --chart-1: oklch(0.62 0.205 253);
-  --chart-2: oklch(0.72 0.17 155);
-  --chart-3: oklch(0.66 0.19 335);
-  --chart-4: oklch(0.78 0.16 85);
-  --chart-5: oklch(0.68 0.2 25);
-  --sidebar: oklch(0.95 0.008 255);
-  --sidebar-foreground: oklch(0.17 0.006 255);
-  --sidebar-primary: oklch(0.62 0.205 253);
-  --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.905 0.03 253);
-  --sidebar-accent-foreground: oklch(0.25 0.055 253);
-  --sidebar-border: oklch(0.86 0.006 255);
-  --sidebar-ring: oklch(0.62 0.205 253);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--echo-font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   letter-spacing: 0;
-  --shadow-card:
-    0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-elevated:
-    0 2px 6px rgba(15, 23, 42, 0.06), 0 18px 44px rgba(15, 23, 42, 0.12);
-  --shadow-floating:
-    0 6px 18px rgba(15, 23, 42, 0.1), 0 28px 70px rgba(15, 23, 42, 0.18);
-  --shadow-modal: 0 18px 60px rgba(15, 23, 42, 0.22);
+  --shadow-card: var(--echo-shadow-raised);
+  --shadow-elevated: var(--echo-shadow-raised);
+  --shadow-floating: var(--echo-shadow-window);
+  --shadow-modal: var(--echo-shadow-window);
 }
 
 .dark.apple {
   color-scheme: dark;
-  --background: oklch(0.1 0.006 255);
-  --foreground: oklch(0.94 0.004 255);
-  --card: oklch(0.18 0.007 255);
-  --card-foreground: oklch(0.94 0.004 255);
-  --popover: oklch(0.16 0.007 255);
-  --popover-foreground: oklch(0.94 0.004 255);
-  --primary: oklch(0.7 0.19 253);
-  --primary-foreground: oklch(0.1 0.006 255);
-  --secondary: oklch(0.24 0.009 255);
-  --secondary-foreground: oklch(0.88 0.005 255);
-  --muted: oklch(0.235 0.008 255);
-  --muted-foreground: oklch(0.67 0.014 255);
-  --accent: oklch(0.3 0.035 253);
-  --accent-foreground: oklch(0.9 0.01 253);
-  --destructive: oklch(0.7 0.2 25);
-  --destructive-foreground: oklch(0.1 0.006 255);
-  --border: oklch(0.28 0.01 255);
-  --input: oklch(0.255 0.01 255);
-  --ring: oklch(0.7 0.19 253);
-  --chart-1: oklch(0.7 0.19 253);
-  --chart-2: oklch(0.76 0.17 155);
-  --chart-3: oklch(0.68 0.19 335);
-  --chart-4: oklch(0.8 0.16 85);
-  --chart-5: oklch(0.7 0.2 25);
-  --sidebar: oklch(0.13 0.006 255);
-  --sidebar-foreground: oklch(0.94 0.004 255);
-  --sidebar-primary: oklch(0.7 0.19 253);
-  --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.29 0.032 253);
-  --sidebar-accent-foreground: oklch(0.9 0.01 253);
-  --sidebar-border: oklch(0.27 0.01 255);
-  --sidebar-ring: oklch(0.7 0.19 253);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.26), 0 12px 34px rgba(0, 0, 0, 0.36);
-  --shadow-elevated:
-    0 2px 8px rgba(0, 0, 0, 0.34), 0 22px 54px rgba(0, 0, 0, 0.42);
-  --shadow-floating:
-    0 8px 22px rgba(0, 0, 0, 0.42), 0 34px 78px rgba(0, 0, 0, 0.52);
-  --shadow-modal: 0 18px 64px rgba(0, 0, 0, 0.62);
 }
 
 @layer base {

@@ -161,9 +161,8 @@
   display: none !important;
 }
 
-.mac-wallpaper-midnight .desktop-wallpaper-art,
-.macos-desktop-root.theme-dark .desktop-wallpaper-art,
-.theme-dark .desktop-wallpaper-art {
+/* The graphite theme keeps the Echo wallpaper; only the midnight choice swaps it. */
+.mac-wallpaper-midnight .desktop-wallpaper-art {
   opacity: 0 !important;
   display: none !important;
 }
@@ -234,8 +233,7 @@
   display: none;
 }
 
-.mac-wallpaper-midnight .desktop-wallpaper,
-.macos-desktop-root.theme-dark .desktop-wallpaper {
+.mac-wallpaper-midnight .desktop-wallpaper {
   overflow: hidden;
   background-color: #030611 !important;
   background-image:
@@ -272,8 +270,7 @@
   animation: none !important;
 }
 
-.mac-wallpaper-midnight .desktop-wallpaper::before,
-.macos-desktop-root.theme-dark .desktop-wallpaper::before {
+.mac-wallpaper-midnight .desktop-wallpaper::before {
   opacity: 0.24 !important;
   filter: blur(72px) saturate(85%) !important;
 }
@@ -1831,7 +1828,7 @@
   background: radial-gradient(
     circle at 32% 26%,
     rgba(255, 255, 255, 0.3),
-    rgba(15, 23, 42, 0.82) 72%
+    rgba(16, 18, 22, 0.86) 72%
   );
   border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 50%;
@@ -1855,12 +1852,12 @@
   stroke: rgba(255, 255, 255, 0.18);
 }
 .mac-dock-task-ring-value {
-  stroke: #60a5fa;
+  stroke: #6fe3f0;
   stroke-linecap: round;
   transition: stroke-dashoffset 600ms ease;
 }
 .mac-dock-task.is-attention .mac-dock-task-ring-value {
-  stroke: #f59e0b;
+  stroke: #f2b84b;
 }
 .mac-dock-task.is-muted .mac-dock-task-ring-value {
   stroke: rgba(255, 255, 255, 0.55);
@@ -1887,7 +1884,7 @@
   color: white;
   font-size: 11px;
   font-weight: 700;
-  background: #f59e0b;
+  background: #f2b84b;
   border: 1.5px solid rgba(255, 255, 255, 0.92);
   border-radius: 999px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
@@ -1909,12 +1906,12 @@
   100% {
     box-shadow:
       0 6px 16px rgba(0, 0, 0, 0.32),
-      0 0 0 0 rgba(245, 158, 11, 0.45);
+      0 0 0 0 rgba(242, 184, 75, 0.45);
   }
   50% {
     box-shadow:
       0 6px 16px rgba(0, 0, 0, 0.32),
-      0 0 0 6px rgba(245, 158, 11, 0);
+      0 0 0 6px rgba(242, 184, 75, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2286,18 +2283,18 @@
   width: 92px;
   height: 92px;
   place-items: center;
-  color: white;
-  background: radial-gradient(circle at 35% 25%, #b99cff, #7151e8 48%, #2948b8);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 50%;
+  color: var(--echo-ink);
+  /* The ECHO app tile: graphite, one hairline, the Echo Core inside. */
+  background: linear-gradient(180deg, #1b1f25, #0c0e11);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.42),
-    0 13px 34px rgba(4, 7, 28, 0.32);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 44px rgba(0, 0, 0, 0.5);
 }
 .mac-login-avatar svg {
-  width: 48px;
-  height: 48px;
-  stroke-width: 1.5;
+  width: 54px;
+  height: 54px;
 }
 .mac-login-form h1 {
   margin-top: 14px;
@@ -2319,19 +2316,19 @@
   align-items: center;
   margin-top: 14px;
   overflow: hidden;
-  color: white;
-  background: rgba(255, 255, 255, 0.17);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: var(--echo-ink);
+  background: rgba(16, 18, 22, 0.56);
+  border: 1px solid var(--echo-line-strong);
   border-radius: 16px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
 }
 .mac-login-username:focus-within,
 .mac-login-password:focus-within {
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: var(--echo-core);
   box-shadow:
-    0 0 0 3px rgba(10, 132, 255, 0.5),
-    inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    0 0 0 3px var(--echo-core-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .mac-login-username input,
 .mac-login-password input {
@@ -8370,8 +8367,8 @@
 .mac-menu-bar.theme-dark,
 .theme-dark .mac-menu-bar,
 .macos-desktop-root.theme-dark .mac-menu-bar {
-  background: rgba(6, 10, 18, 0.72) !important;
-  background-color: rgba(6, 10, 18, 0.72) !important;
+  background: rgba(9, 10, 12, 0.72) !important;
+  background-color: rgba(9, 10, 12, 0.72) !important;
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%) !important;
   backdrop-filter: blur(32px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
