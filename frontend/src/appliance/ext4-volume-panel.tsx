@@ -258,7 +258,7 @@ export function Ext4VolumePanel() {
               type="button"
               onClick={() => void preview()}
               disabled={!desired || busy}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-core px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
             >
               {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
               生成格式化预览
@@ -266,7 +266,10 @@ export function Ext4VolumePanel() {
           </section>
 
           {plan && (
-            <section className="mt-4 rounded-[22px] bg-breach p-5 text-primary-foreground shadow-lg">
+            <section
+              data-echo-theme="graphite"
+              className="mt-4 rounded-[22px] border border-breach/40 bg-[#101216] p-5 text-foreground shadow-lg"
+            >
               <div className="flex items-center gap-2">
                 <ShieldAlertIcon className="size-5 text-breach" />
                 <h2 className="text-sm font-semibold">最终破坏性复核</h2>

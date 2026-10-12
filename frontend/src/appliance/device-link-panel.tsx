@@ -489,7 +489,10 @@ export function DeviceLinkPanel({
           </div>
         ) : section === "devices" ? (
           <>
-            <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-gradient-to-br from-muted via-muted to-primary p-5 text-primary-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]">
+            <section
+              data-echo-theme="graphite"
+              className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]"
+            >
               <div className="flex items-center gap-3">
                 <span
                   className={cn(
@@ -690,7 +693,10 @@ export function DeviceLinkPanel({
           </div>
         ) : section === "sync" ? (
           <div className="mt-5 space-y-4">
-            <section className="rounded-[22px] bg-gradient-to-br from-primary via-primary to-primary p-5 text-primary-foreground shadow-[0_18px_50px_rgba(67,56,202,.22)]">
+            <section
+              data-echo-theme="graphite"
+              className="rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[0_18px_50px_rgba(0,0,0,.28)]"
+            >
               <div className="flex items-start gap-4">
                 <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-card/14">
                   <UploadCloudIcon className="size-6" />
@@ -845,7 +851,10 @@ export function DeviceLinkPanel({
           </div>
         ) : (
           <div className="mt-5 space-y-4">
-            <section className="rounded-[22px] bg-gradient-to-br from-muted via-muted to-primary p-6 text-primary-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]">
+            <section
+              data-echo-theme="graphite"
+              className="rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-6 text-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]"
+            >
               <div className="flex items-start gap-4">
                 <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-card/10">
                   <Globe2Icon className="size-6 text-core" />

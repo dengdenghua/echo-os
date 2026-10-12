@@ -1477,7 +1477,7 @@ function OverviewTab({
             {blockers.map((blocker, index) => (
               <div
                 key={`blocker:${index}`}
-                className="flex items-start gap-2 rounded-lg border border-breach/30 bg-rose-500/[0.06] px-2.5 py-2 text-[11px] text-breach"
+                className="flex items-start gap-2 rounded-lg border border-breach/30 bg-breach/5 px-2.5 py-2 text-[11px] text-breach"
               >
                 <XCircleIcon className="mt-px size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1">{blocker}</span>

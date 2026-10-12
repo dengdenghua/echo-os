@@ -326,7 +326,10 @@ export function ZfsMirrorPanel() {
               </section>
 
               {plan && (
-                <section className="mt-4 rounded-[22px] bg-breach p-5 text-primary-foreground shadow-lg">
+                <section
+                  data-echo-theme="graphite"
+                  className="mt-4 rounded-[22px] border border-breach/40 bg-[#101216] p-5 text-foreground shadow-lg"
+                >
                   <div className="flex items-center gap-2">
                     <ShieldAlertIcon className="size-5 text-breach" />
                     <h2 className="text-sm font-semibold">最终破坏性复核</h2>

@@ -442,7 +442,7 @@ function OfficialPricingSection() {
                 className={cn(
                   "mt-4 h-9 w-full rounded-lg text-xs font-medium",
                   isRecommended
-                    ? "bg-chart-1 text-white hover:bg-chart-1/90"
+                    ? "bg-chart-1 text-primary-foreground hover:bg-chart-1/90"
                     : "bg-foreground text-background hover:bg-foreground/85",
                 )}
                 disabled={pendingId !== null}

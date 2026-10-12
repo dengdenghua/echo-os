@@ -64,7 +64,7 @@ export function CoreAppCard({
         )}
         {workbench && (
           <button
-            className="rounded-full bg-slate-900 px-3 py-2 text-white"
+            className="rounded-full bg-primary px-3 py-2 text-primary-foreground"
             onClick={openWorkbench}
           >
             在工作台中打开

@@ -98,7 +98,10 @@ export function CreditsCenterDialog({
         className="sm:max-w-md overflow-hidden p-0 gap-0 border-0"
       >
         {/* Header */}
-        <div className="flex items-center justify-between bg-gradient-to-br from-resonance to-breach px-5 py-4">
+        <div
+          data-echo-theme="graphite"
+          className="flex items-center justify-between bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] px-5 py-4 text-foreground"
+        >
           <DialogTitle className="text-base font-bold text-white">
             {t.creditsCenter.title}
           </DialogTitle>

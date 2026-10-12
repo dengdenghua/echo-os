@@ -225,7 +225,7 @@ export function MdRaidMaintenancePanel() {
               type="button"
               onClick={() => void previewSchedule()}
               disabled={busy || loading}
-              className="h-8 rounded-lg bg-slate-900 px-3 text-[11px] font-semibold text-white disabled:opacity-40"
+              className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
             >
               预览{schedule.enabled ? "关闭" : "启用"}月度校验
             </button>

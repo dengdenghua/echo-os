@@ -642,7 +642,7 @@ export function AccountSecurityPanel({
                         type="button"
                         disabled={totpBusy || !/^\d{6}$/.test(totpFactor)}
                         onClick={() => void confirmTotp()}
-                        className="h-9 rounded-lg bg-core px-4 text-[13px] font-medium text-primary-foreground transition hover:bg-core disabled:opacity-45"
+                        className="h-9 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-45"
                       >
                         启用并退出旧会话
                       </button>

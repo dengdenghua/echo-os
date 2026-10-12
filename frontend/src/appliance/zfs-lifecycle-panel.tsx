@@ -386,7 +386,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                   type="button"
                   onClick={() => void previewScrub(item)}
                   disabled={busy || !item.canStartScrub}
-                  className="rounded-lg bg-core px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {item.canStartScrub
                     ? `预览校验 ${item.pool.name}`
@@ -483,7 +483,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                       type="button"
                       onClick={() => void previewExport(pool)}
                       disabled={busy}
-                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-[10px] font-semibold text-white disabled:opacity-40"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
                     >
                       预览导出 {pool.name}
                     </button>
@@ -542,7 +542,10 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
       </div>
 
       {pending && (
-        <div className="mt-4 rounded-2xl bg-core p-4 text-primary-foreground">
+        <div
+          data-echo-theme="graphite"
+          className="mt-4 rounded-2xl border border-core/40 bg-[#101216] p-4 text-foreground"
+        >
           <h3 className="flex items-center gap-2 text-xs font-semibold">
             <ShieldCheckIcon className="size-4 text-core" />
             {pendingTitle}

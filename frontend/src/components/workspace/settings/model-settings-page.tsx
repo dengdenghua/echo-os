@@ -3298,7 +3298,7 @@ function EditModelForm({
         </Button>
         <Button
           size="sm"
-          className="bg-chart-7 hover:bg-chart-7/90 text-white"
+          className="bg-chart-7 hover:bg-chart-7/90 text-primary-foreground"
           onClick={handleSave}
           disabled={saving || loading}
         >
@@ -3914,7 +3914,7 @@ function AddModelForm({
         </Button>
         <Button
           type="submit"
-          className="bg-chart-7 hover:bg-chart-7/90 text-white"
+          className="bg-chart-7 hover:bg-chart-7/90 text-primary-foreground"
           disabled={saving}
         >
           {saving ? t.common.loading : t.common.save}

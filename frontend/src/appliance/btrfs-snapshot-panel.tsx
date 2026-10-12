@@ -530,7 +530,7 @@ export function BtrfsSnapshotPanel({
               type="button"
               onClick={() => void previewRestore()}
               disabled={planning || !restoreName.trim()}
-              className="h-8 rounded-lg bg-core px-3 font-medium text-primary-foreground hover:bg-core disabled:opacity-50"
+              className="h-8 rounded-lg bg-primary px-3 font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               预览恢复
             </button>

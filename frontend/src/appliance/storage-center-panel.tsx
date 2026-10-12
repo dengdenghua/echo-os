@@ -316,7 +316,10 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
         </div>
       ) : usage ? (
         <>
-          <section className="mt-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-muted via-muted to-primary p-5 text-primary-foreground shadow-[0_20px_50px_rgba(15,23,42,.22)]">
+          <section
+            data-echo-theme="graphite"
+            className="mt-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[0_20px_50px_rgba(15,23,42,.22)]"
+          >
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
                 <span className="text-[11px] font-medium text-white/55">
@@ -463,7 +466,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                       </div>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-core"
+                          className="h-full rounded-full bg-core"
                           style={{
                             width: `${percent(folder.bytes, largestFolderBytes)}%`,
                           }}

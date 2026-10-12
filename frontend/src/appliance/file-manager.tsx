@@ -1177,7 +1177,7 @@ function TrashView({
             className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-900/5"
           >
             {entry.kind === "dir" ? (
-              <FolderIcon className="size-5 shrink-0 text-warning" />
+              <FolderIcon className="size-5 shrink-0 text-muted-foreground" />
             ) : (
               <FileIcon className="size-5 shrink-0 text-muted-foreground" />
             )}

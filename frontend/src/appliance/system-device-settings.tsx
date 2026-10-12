@@ -470,7 +470,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
             type="button"
             disabled={!props.lockAvailable}
             onClick={props.onLock}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-slate-700 disabled:opacity-40"
           >
             立即锁屏
           </button>

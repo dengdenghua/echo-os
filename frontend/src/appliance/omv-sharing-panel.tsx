@@ -1981,7 +1981,7 @@ export function OmvSharingPanel() {
                     <button
                       type="button"
                       onClick={beginWebDavControl}
-                      className="rounded-lg bg-core px-2 py-1 text-[10px] font-medium text-primary-foreground hover:bg-core"
+                      className="rounded-lg bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90"
                     >
                       配置
                     </button>
@@ -2055,7 +2055,7 @@ export function OmvSharingPanel() {
                   type="button"
                   onClick={() => void previewWebDavChange()}
                   disabled={webdavPlanning}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-core px-4 text-xs font-medium text-primary-foreground transition hover:bg-core disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                 >
                   {webdavPlanning && (
                     <Loader2Icon className="size-3.5 animate-spin" />
@@ -2584,7 +2584,7 @@ export function OmvSharingPanel() {
                   type="button"
                   onClick={() => void previewNfsChange()}
                   disabled={nfsPlanning || !nfsDesired.clientCidr.trim()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-core px-4 text-xs font-medium text-primary-foreground transition hover:bg-core disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                 >
                   {nfsPlanning && (
                     <Loader2Icon className="size-3.5 animate-spin" />
@@ -3022,7 +3022,7 @@ export function OmvSharingPanel() {
                         setFolderCreateOpen((open) => !open);
                         clearFolderPreview();
                       }}
-                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-core px-3 text-[11px] font-medium text-primary-foreground transition hover:bg-core"
+                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[11px] font-medium text-primary-foreground transition hover:bg-primary/90"
                     >
                       <FolderPlusIcon className="size-3.5" />
                       新建共享文件夹
@@ -3123,7 +3123,7 @@ export function OmvSharingPanel() {
                     disabled={
                       folderPlanning || !folderMountRef || !folderName.trim()
                     }
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-core px-4 text-xs font-medium text-primary-foreground transition hover:bg-core disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                   >
                     {folderPlanning && (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -3320,7 +3320,7 @@ export function OmvSharingPanel() {
                               ? "请先停用这个文件夹的 Time Machine 目的地"
                               : undefined
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-core px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-core"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-primary/90"
                         >
                           <SlidersHorizontalIcon className="size-3" />
                           {nfsRule ? "管理 NFS" : "启用 NFS"}
@@ -3437,7 +3437,7 @@ export function OmvSharingPanel() {
                             disabled={
                               folderRenamePlanning || !folderRenameName.trim()
                             }
-                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-core px-3 text-[10px] font-medium text-primary-foreground hover:bg-core disabled:opacity-50"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
                             {folderRenamePlanning && (
                               <Loader2Icon className="size-3 animate-spin" />

@@ -241,7 +241,10 @@ export function MdRaid1RepairPanel() {
       </section>
 
       {plan && (
-        <section className="mt-4 rounded-[22px] bg-slate-950 p-5 text-white shadow-lg">
+        <section
+          data-echo-theme="graphite"
+          className="mt-4 rounded-[22px] border border-border bg-[#101216] p-5 text-foreground shadow-lg"
+        >
           <h2 className="text-sm font-semibold">最终换盘复核</h2>
           <p className="mt-3 text-xs leading-5 text-muted-foreground">
             将从 {plan.array.devicefile} 移除已确认故障的成员（若仍存在），加入{" "}

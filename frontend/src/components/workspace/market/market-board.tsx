@@ -209,7 +209,7 @@ export function MarketBoard() {
             onClick={() => setListOpen(true)}
             className="flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-breach/30 hover:bg-breach/5 hover:text-breach"
           >
-            <PlusIcon className="size-4 text-breach" />
+            <PlusIcon className="size-4 text-muted-foreground" />
             上架
           </button>
         </div>
@@ -365,7 +365,7 @@ export function ListModal({
             className={cn(
               "rounded-md px-4 py-1.5 text-sm font-semibold transition-colors",
               canSubmit
-                ? "bg-breach text-primary-foreground hover:bg-breach"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "cursor-not-allowed bg-muted text-muted-foreground/50",
             )}
           >
