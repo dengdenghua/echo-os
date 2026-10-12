@@ -1,20 +1,20 @@
 # Echo OS
 
-Echo OS 是个人设备上的 Agent 操作系统（桌面 / 启动器 / 文件 / 系统能力）。Echo
-Agent 运行时已经直接内建在本仓库和同一个 `echo-os` 安装包中；用户可见工作台也由
-OS 唯一前端提供，不依赖同级项目、不加载第二套 Agent WebUI。
+Echo OS 是 Echo 家族的**私人云常驻执行环境**，部署在用户自己的服务器、NAS 或私有虚拟机上。Agent 运行时、浏览器桌面、启动器、文件与系统能力作为统一发行单元交付；OS 工作台用于私人云的管理与执行。
 
 English readers: [README.en.md](README.en.md)
 
-## 家族结构
+## Echo 三端定位
 
-| 项目                 | 定位                                                  |
-| -------------------- | ----------------------------------------------------- |
-| `echo-agent`      | Echo OS 内建的 Agent 能力与兼容命令                    |
-| `echo-os`         | 唯一发行单元：Agent + 桌面 + 文件 + 系统能力           |
-| `echo-mobile`     | Android 自动化客户端                                  |
-| `echo-enterprise` | 企业版 AI 项目管理                                    |
-| `echo-storage`    | 本地安全数据小脑（File Agent）                        |
+| 产品 | 定位 | 使用与运行场景 |
+| --- | --- | --- |
+| [Echo AI](https://github.com/dengdenghua/echo-ai) | 桌面 AI 工作端 | 面向本机文件、代码、应用和工具的深入工作；交互体验参考 Codex 桌面端。 |
+| [Echo Mobile](https://github.com/dengdenghua/echo-mobile) | 手机 AI 入口 | 面向随身对话、语音沟通、任务发起和结果查看；交互体验参考手机上的 GPT 对话。 |
+| [Echo OS](https://github.com/dengdenghua/echo-os) | 私人云常驻执行环境 | 部署在用户自己的服务器、NAS 或私有虚拟机上，承载后台任务、浏览器与计算环境；运行形态参考 Dot 的云端电脑。 |
+
+这是三端的产品定位与协作方向，不代表所有跨端功能已经实现。桌面端可以本机执行；手机端和桌面端也可以连接私人云执行任务。助手和白幽灵小队属于执行成员，执行节点属于运行环境，两者不绑定为一对一关系。三端协作围绕统一身份、项目、任务与执行节点展开，具体实现状态以各仓库文档为准。
+
+`echo-agent` 保留为 OS 内建 Agent 能力与兼容命令；`echo-enterprise`、`echo-storage` 分别是相关的企业与数据服务。
 
 ## 当前结构
 
