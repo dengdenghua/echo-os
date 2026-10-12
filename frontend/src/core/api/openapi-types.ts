@@ -3679,6 +3679,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collab/{thread_id}/coordination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coordination Snapshot */
+        get: operations["coordination_snapshot_api_collab__thread_id__coordination_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collab/{thread_id}/coordination/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Coordination Receipt */
+        post: operations["coordination_receipt_api_collab__thread_id__coordination_receipt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collab/{thread_id}/coordination/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Coordination Task */
+        post: operations["create_coordination_task_api_collab__thread_id__coordination_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collab/{thread_id}/link-room": {
         parameters: {
             query?: never;
@@ -5337,6 +5388,64 @@ export interface paths {
          *     what reaches the agent's prompt — the enforcement half of the privacy seam.
          */
         get: operations["member_view_api_cowork__thread_id__view__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crashes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Crashes */
+        get: operations["api_crashes_api_crashes_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Api Crashes Clear
+         * @description Acknowledge every recorded crash (used after triage).
+         */
+        delete: operations["api_crashes_clear_api_crashes_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crashes/{fingerprint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Api Crash Detail */
+        get: operations["api_crash_detail_api_crashes__fingerprint__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crashes/{fingerprint}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Api Crash Report
+         * @description Plain-text report, ready to paste into a bug report.
+         */
+        get: operations["api_crash_report_api_crashes__fingerprint__report_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13026,6 +13135,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/task-runs/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Api Task Run Start
+         * @description Start an agent task on a new thread with nobody watching it.
+         *
+         *     This is the same server-resident ``turn/start`` a workbench sends,
+         *     reusing the recovery bridge above, with one difference: the turn opts
+         *     into ``approval_delivery: server_hold``. Its ask/confirm approvals then
+         *     park the task as ``waiting_approval`` for the Task Space instead of
+         *     timing out on a socket nobody watches. Auth, ownership, the risk matrix
+         *     and auto-approve/bypass rules are exactly those of a workbench turn.
+         */
+        post: operations["api_task_run_start_api_task_runs_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/task-runs/{task_id}": {
         parameters: {
             query?: never;
@@ -13862,6 +13998,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tentacle/devices/{device_id}/mirror/{operation}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invoke */
+        post: operations["invoke_api_tentacle_devices__device_id__mirror__operation__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tentacle/devices/{tentacle_id}": {
         parameters: {
             query?: never;
@@ -13927,6 +14080,23 @@ export interface paths {
          *     返回设备最近推送的 JPEG 帧，若无截图返回 404.
          */
         get: operations["device_screenshot_api_tentacle_devices__tentacle_id__screenshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tentacle/discovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discovery Status */
+        get: operations["discovery_status_api_tentacle_discovery_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14147,6 +14317,23 @@ export interface paths {
         put?: never;
         /** Submit Task */
         post: operations["submit_task_api_tentacle_task_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tentacle/task-workspace/{command}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invoke */
+        post: operations["invoke_api_tentacle_task_workspace__command__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16217,6 +16404,32 @@ export interface components {
              */
             reason: string;
         };
+        /** CoordinationReceiptBody */
+        CoordinationReceiptBody: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "ack" | "cancel";
+            /**
+             * Message Id
+             * @default
+             */
+            message_id: string;
+            /** Task Id */
+            task_id: string;
+        };
+        /** CoordinationTaskBody */
+        CoordinationTaskBody: {
+            /** Assignee */
+            assignee: string;
+            /** Dependencies */
+            dependencies?: string[];
+            /** Prompt */
+            prompt: string;
+            /** Request Id */
+            request_id: string;
+        };
         /** CreateAgentRequest */
         CreateAgentRequest: {
             /**
@@ -18222,6 +18435,8 @@ export interface components {
         TaskApprovalDecisionRequest: {
             /** Approved */
             approved: boolean;
+            /** Expected Approval Version */
+            expected_approval_version?: string | null;
             /** Reason */
             reason?: string | null;
         };
@@ -18281,6 +18496,16 @@ export interface components {
             reason?: string | null;
             /** Requestid */
             requestId?: string | null;
+        };
+        /**
+         * TaskStartRequest
+         * @description Start one agent task from a one-line intent (the desktop intent box).
+         */
+        TaskStartRequest: {
+            /** Agentid */
+            agentId?: string | null;
+            /** Prompt */
+            prompt: string;
         };
         /** TaskTakeoverRequest */
         TaskTakeoverRequest: {
@@ -26153,6 +26378,113 @@ export interface operations {
             };
         };
     };
+    coordination_snapshot_api_collab__thread_id__coordination_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    coordination_receipt_api_collab__thread_id__coordination_receipt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinationReceiptBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_coordination_task_api_collab__thread_id__coordination_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinationTaskBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     link_session_room_api_collab__thread_id__link_room_post: {
         parameters: {
             query?: never;
@@ -29218,6 +29550,146 @@ export interface operations {
             path: {
                 thread_id: string;
                 member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_crashes_api_crashes_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                explain?: boolean;
+                cross_tenant?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_crashes_clear_api_crashes_delete: {
+        parameters: {
+            query?: {
+                cross_tenant?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_crash_detail_api_crashes__fingerprint__get: {
+        parameters: {
+            query?: {
+                explain?: boolean;
+                cross_tenant?: boolean;
+            };
+            header?: never;
+            path: {
+                fingerprint: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    api_crash_report_api_crashes__fingerprint__report_get: {
+        parameters: {
+            query?: {
+                explain?: boolean;
+                cross_tenant?: boolean;
+            };
+            header?: never;
+            path: {
+                fingerprint: string;
             };
             cookie?: never;
         };
@@ -43931,6 +44403,41 @@ export interface operations {
             };
         };
     };
+    api_task_run_start_api_task_runs_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     api_task_run_api_task_runs__task_id__get: {
         parameters: {
             query?: never;
@@ -45975,6 +46482,40 @@ export interface operations {
             };
         };
     };
+    invoke_api_tentacle_devices__device_id__mirror__operation__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+                operation: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     device_detail_api_tentacle_devices__tentacle_id__get: {
         parameters: {
             query?: never;
@@ -46074,6 +46615,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discovery_status_api_tentacle_discovery_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -46333,6 +46896,39 @@ export interface operations {
                 };
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invoke_api_tentacle_task_workspace__command__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                command: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

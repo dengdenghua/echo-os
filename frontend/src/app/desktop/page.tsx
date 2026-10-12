@@ -55,6 +55,7 @@ import {
   ImageIcon,
   Loader2Icon,
   ListChecksIcon,
+  ShieldCheckIcon,
   MonitorIcon,
   RotateCcwIcon,
   SearchIcon,
@@ -67,6 +68,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { OrganizerResult, useDesktopOrganizer } from "./organizer-result";
+import { DecisionInbox } from "@/appliance/decision-inbox";
+import { pendingApprovalCount } from "@/appliance/task-approval-consent";
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
@@ -356,6 +359,16 @@ function groupDesktopItems(items: NativeDesktopItem[]) {
     .filter((group) => group.items.length > 0);
 }
 
+/** Dock 图标右上角的待审批数。 */
+function ApprovalCountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border border-white/80 bg-amber-500 px-1 text-[9px] font-semibold leading-4 text-white shadow-sm">
+      {Math.min(count, 99)}
+    </span>
+  );
+}
+
 export default function DesktopShellPage() {
   const navigate = useNavigate();
   const {
@@ -527,6 +540,12 @@ export default function DesktopShellPage() {
   );
   const [taskSpaceOpen, setTaskSpaceOpen] = useSystemAppWindow(
     "task-space",
+    windows,
+    openWindow,
+    closeWindow,
+  );
+  const [decisionInboxOpen, setDecisionInboxOpen] = useSystemAppWindow(
+    "decision-inbox",
     windows,
     openWindow,
     closeWindow,
@@ -1682,6 +1701,7 @@ export default function DesktopShellPage() {
     else if (app === "storage-center") setStorageCenterOpen(false);
     else if (app === "device-link") setDeviceLinkOpen(false);
     else if (app === "activity-monitor") setShowWidget(false);
+    else if (app === "decision-inbox") setDecisionInboxOpen(false);
     else if (app === "settings") {
       if (settingsBusy) return;
       setAccountSecurityOpen(false);
@@ -1905,6 +1925,18 @@ export default function DesktopShellPage() {
               }
               openApp(DESKTOP_WORKBENCH_APP);
             }}
+          />
+        );
+      case "decision-inbox":
+        return (
+          <DecisionInbox
+            projection={taskProjection}
+            loading={taskProjectionLoading}
+            error={taskProjectionError}
+            onClose={() => setDecisionInboxOpen(false)}
+            onRefresh={refreshTaskProjection}
+            onDecision={decideTaskApproval}
+            onOpenTask={(task) => openTaskSpace(task.id)}
           />
         );
     }
@@ -2693,11 +2725,25 @@ export default function DesktopShellPage() {
                 gradient="linear-gradient(150deg, #a5b4fc 0%, #6366f1 60%, #4338ca 100%)"
                 appId="system:tasks"
               />
-              {(taskProjection?.counts.waitingApproval ?? 0) > 0 && (
-                <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full border border-white/80 bg-amber-500 px-1 text-[9px] font-semibold leading-4 text-white shadow-sm">
-                  {Math.min(taskProjection!.counts.waitingApproval, 99)}
-                </span>
-              )}
+              <ApprovalCountBadge
+                count={taskProjection?.counts.waitingApproval ?? 0}
+              />
+            </div>
+          </DockItem>
+          <DockItem
+            onClick={() => setDecisionInboxOpen(true)}
+            title="审批收件箱"
+            running={decisionInboxOpen}
+          >
+            <div className="relative">
+              <MacAppIcon
+                icon={ShieldCheckIcon}
+                gradient="linear-gradient(150deg, #fcd34d, #d97706)"
+                appId="system:decision-inbox"
+              />
+              <ApprovalCountBadge
+                count={pendingApprovalCount(taskProjection)}
+              />
             </div>
           </DockItem>
           <DockItem

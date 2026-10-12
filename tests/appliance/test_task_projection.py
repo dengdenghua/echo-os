@@ -57,6 +57,25 @@ def private_task_app(tmp_path):
     return app, supervisor
 
 
+def test_blocked_approval_wait_is_not_projected_as_decidable(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(task_id="task-blocked", kind="system", owner_id="local:admin")
+    supervisor.transition(
+        "task-blocked",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="能力已停用",
+        metadata_patch={"approval_action": "capability_denied", "capability_denied": True},
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["status"] == "waiting_approval"
+    assert task["approval"]["required"] is False
+    assert task["approval"]["reason"] == "能力已停用"
+
+
 def test_private_file_tasks_filter_before_projection_and_counts(private_task_app):
     app, _ = private_task_app
     response = _client(app, "local:alice").get("/api/appliance/tasks")

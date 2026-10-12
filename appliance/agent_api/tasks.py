@@ -18,6 +18,28 @@ def task_lease_health(task: Any) -> dict[str, Any]:
     return dict(health) if isinstance(health, dict) else {}
 
 
+def approval_request_version(task: Any) -> str | None:
+    """Older Agent kernels expose no consent version; keep their projection readable."""
+    try:
+        from runtime.platform.process._task_approval_identity import (
+            approval_request_version as version,
+        )
+    except ImportError:
+        return None
+    return version(task)
+
+
+def approval_block_reason(task: Any) -> str | None:
+    """Why no operator decision can release this wait; older kernels report none."""
+    try:
+        from runtime.platform.process._task_approval_identity import (
+            approval_block_reason as block_reason,
+        )
+    except ImportError:
+        return None
+    return block_reason(task)
+
+
 def current_execution_request() -> Any | None:
     """Return the host-owned request bound to the current Agent worker.
 
@@ -50,6 +72,8 @@ def resume_checkpoint_metadata(runtime: Any, task_id: str) -> dict[str, Any] | N
 
 
 __all__ = [
+    "approval_block_reason",
+    "approval_request_version",
     "TaskLeaseConflict",
     "current_execution_request",
     "resume_checkpoint_metadata",

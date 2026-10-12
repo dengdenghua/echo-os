@@ -42,6 +42,7 @@ def register_app(app: Any, _context: Any) -> None:
             realtime_gateway=getattr(app.state, "realtime_gateway", None),
             audit=None,
             jwt_secret=None,
+            organization_service=lambda: getattr(app.state, "echo_file_organization", None),
         )
     )
 

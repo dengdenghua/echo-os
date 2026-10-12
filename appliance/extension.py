@@ -563,6 +563,7 @@ def register_app(app: Any, context: Any) -> None:
             realtime_gateway=getattr(app.state, "realtime_gateway", None),
             audit=audit,
             authenticator=authenticator,
+            organization_service=lambda: getattr(app.state, "echo_file_organization", None),
         )
     )
 

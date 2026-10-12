@@ -8,6 +8,7 @@ stable contract ``capability intentId == Agent task_id``.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import UTC, datetime
 from math import isfinite
 from typing import Any
@@ -19,11 +20,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from appliance.agent_api.tasks import (
     TaskLeaseConflict,
+    approval_block_reason,
+    approval_request_version,
     resume_checkpoint_metadata,
     task_lease_health,
 )
 from appliance.audit import ApplianceAudit, AuditIntegrityError
 from appliance.security import ApplianceAuthenticator, resolve_authenticator
+from appliance.task_changes import register_task_changes_routes
 from echo_runtime.resource_identity import workspace_file_resource_id
 
 TASK_PROJECTION_SCHEMA = "echo.task_projection.v1"
@@ -318,7 +322,10 @@ def _project_task(
     approval = None
     if status == "waiting_approval":
         approval = {
-            "required": True,
+            # False when a policy or disabled capability holds the task: no
+            # operator decision can release it, so clients must not offer one.
+            "required": approval_block_reason(task) is None,
+            "version": approval_request_version(task),
             "tool": _optional_text(metadata.get("approval_tool_name"), limit=128),
             "action": _optional_text(metadata.get("approval_action"), limit=128),
             "reason": _optional_text(
@@ -374,6 +381,12 @@ def _project_task(
         "latestCheckpointId": getattr(task, "latest_checkpoint_id", None),
         "executionRecovery": _execution_recovery(task, realtime_gateway),
         "resultArtifacts": _result_artifacts(task, realtime_gateway),
+        "changeProvider": (
+            "echo-os.files"
+            if getattr(task, "kind", None) == "file_organization"
+            and metadata.get("provider") == "echo-os.files"
+            else None
+        ),
     }
 
 
@@ -474,6 +487,7 @@ def create_task_projection_router(
     audit: ApplianceAudit | None = None,
     jwt_secret: str | None = None,
     authenticator: ApplianceAuthenticator | None = None,
+    organization_service: Callable[[], Any] | None = None,
 ) -> APIRouter:
     require_auth = resolve_authenticator(
         jwt_secret=jwt_secret, authenticator=authenticator
@@ -482,6 +496,13 @@ def create_task_projection_router(
         prefix="/api/appliance/tasks",
         tags=["appliance", "tasks"],
         dependencies=[Depends(require_auth)],
+    )
+    register_task_changes_routes(
+        router,
+        require_auth=require_auth,
+        get_task=lambda task_id, actor: _require_task(supervisor, task_id, actor=actor),
+        organization_service=organization_service,
+        verify_audit=lambda: _audit_activity(audit),
     )
 
     @router.get("")

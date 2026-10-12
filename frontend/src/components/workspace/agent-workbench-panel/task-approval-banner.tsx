@@ -2,6 +2,16 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  APPROVAL_SESSION_CHANGED,
+  APPROVAL_SESSION_CHANGED_AFTER_SUBMIT,
+  APPROVAL_UNVERIFIABLE,
+  type ApprovalConsent,
+  assertApprovalConsent,
+  approvalConsentSessionCurrent,
+  captureApprovalConsent,
+  isDecidableApproval,
+} from "@/appliance/task-approval-consent";
+import {
   useEchoTaskProjection,
   type EchoTaskProjection,
 } from "@/appliance/task-space";
@@ -9,16 +19,14 @@ import {
 export function TaskApprovalBanner({ threadId }: { threadId: string }) {
   const { projection, decideApproval, takeover, resumeExecution, refresh } =
     useEchoTaskProjection(Boolean(threadId));
-  const [candidate, setCandidate] = useState<{
-    id: string;
-    approved: boolean;
-  } | null>(null);
+  // 用户点“批准/拒绝”时就固定下所审阅的请求；确认时只提交这份快照的版本。
+  const [candidate, setCandidate] = useState<ApprovalConsent | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const task = projection?.tasks.find(
     (item) =>
       item.threadId === threadId &&
-      (item.status === "waiting_approval" ||
+      (isDecidableApproval(item) ||
         (item.status === "paused" && item.executionRecovery?.canStart)),
   );
   if (!task) return null;
@@ -29,22 +37,33 @@ export function TaskApprovalBanner({ threadId }: { threadId: string }) {
     task.executionRecovery?.checkpointAvailable &&
     (task.leaseHealth?.canTakeover || task.executionRecovery?.canStart),
   );
+  const verifiable = Boolean(task.approval?.version);
 
-  async function submit(current: EchoTaskProjection, approved: boolean) {
+  async function submit(consent: ApprovalConsent) {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
+      const version = assertApprovalConsent(consent, projection?.tasks ?? []);
       await decideApproval(
-        current.id,
-        approved,
-        approved ? "工作台批准" : "工作台拒绝",
+        consent.task.id,
+        consent.approved,
+        consent.approved ? "工作台批准" : "工作台拒绝",
+        version,
       );
-      setCandidate(null);
+      if (!approvalConsentSessionCurrent(consent))
+        setError(APPROVAL_SESSION_CHANGED_AFTER_SUBMIT);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "无法提交审批决定");
+      setError(
+        !approvalConsentSessionCurrent(consent)
+          ? APPROVAL_SESSION_CHANGED
+          : reason instanceof Error
+            ? reason.message
+            : "无法提交审批决定",
+      );
       refresh();
     } finally {
+      setCandidate(null);
       setBusy(false);
     }
   }
@@ -90,12 +109,12 @@ export function TaskApprovalBanner({ threadId }: { threadId: string }) {
           >
             恢复任务
           </Button>
-        ) : candidate?.id === task.id ? (
+        ) : candidate?.task.id === task.id ? (
           <>
             <Button
               size="sm"
               disabled={busy}
-              onClick={() => void submit(task, candidate.approved)}
+              onClick={() => void submit(candidate)}
             >
               {candidate.approved ? "确认批准本次操作" : "确认拒绝本次操作"}
             </Button>
@@ -112,22 +131,31 @@ export function TaskApprovalBanner({ threadId }: { threadId: string }) {
           <>
             <Button
               size="sm"
-              disabled={busy}
-              onClick={() => setCandidate({ id: task.id, approved: true })}
+              disabled={busy || !verifiable}
+              onClick={() => {
+                setError(null);
+                setCandidate(captureApprovalConsent(task, true));
+              }}
             >
               批准
             </Button>
             <Button
               size="sm"
               variant="outline"
-              disabled={busy}
-              onClick={() => setCandidate({ id: task.id, approved: false })}
+              disabled={busy || !verifiable}
+              onClick={() => {
+                setError(null);
+                setCandidate(captureApprovalConsent(task, false));
+              }}
             >
               拒绝
             </Button>
           </>
         )}
       </div>
+      {!recover && !verifiable && (
+        <p className="mt-2 text-muted-foreground">{APPROVAL_UNVERIFIABLE}</p>
+      )}
       {recover && !canRecover && (
         <p className="mt-2">没有可恢复的执行快照，请重新发起任务。</p>
       )}

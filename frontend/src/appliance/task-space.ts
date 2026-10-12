@@ -68,7 +68,9 @@ export type EchoTaskProjection = {
   runtimeCapabilityGroups: string[];
   capabilityDecisions: EchoTaskActivity[];
   approval: {
-    required: true;
+    /** false：被策略或停用的能力拦截，管理员的决定无法放行。 */
+    required: boolean;
+    version?: string | null;
     tool: string | null;
     action: string | null;
     reason: string | null;
@@ -87,6 +89,8 @@ export type EchoTaskProjection = {
     size: number;
     modified: number;
   }>;
+  /** Concrete host provider; absence is not evidence of no side effects. */
+  changeProvider?: "echo-os.files" | null;
   executionRecovery?: {
     checkpointAvailable: boolean;
     canStart: boolean;
@@ -259,6 +263,7 @@ export async function decideEchoTaskApproval(
   taskId: string,
   approved: boolean,
   reason: string,
+  expectedApprovalVersion?: string,
 ): Promise<EchoTaskApprovalDecisionResponse> {
   const response = await fetch(
     `/api/task-runs/${encodeURIComponent(taskId)}/approval-decision`,
@@ -268,7 +273,11 @@ export async function decideEchoTaskApproval(
         ...authHeader(),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ approved, reason }),
+      body: JSON.stringify({
+        approved,
+        reason,
+        expected_approval_version: expectedApprovalVersion,
+      }),
     },
   );
   if (!response.ok) {
@@ -451,8 +460,18 @@ export function useEchoTaskProjection(enabled = true) {
     [],
   );
   const decideApproval = useCallback(
-    async (taskId: string, approved: boolean, reason: string) => {
-      const result = await decideEchoTaskApproval(taskId, approved, reason);
+    async (
+      taskId: string,
+      approved: boolean,
+      reason: string,
+      expectedApprovalVersion?: string,
+    ) => {
+      const result = await decideEchoTaskApproval(
+        taskId,
+        approved,
+        reason,
+        expectedApprovalVersion,
+      );
       setRevision((value) => value + 1);
       return result;
     },

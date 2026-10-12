@@ -398,6 +398,45 @@ class FileOrganizationService:
             raise OrganizationError(404, "result_not_found", "此计划尚未开始执行。")
         return self._readback(actor, self._reconcile(actor, record))
 
+    def task_change_evidence(self, actor: str, task: Any) -> dict[str, Any]:
+        """Read provider facts only for the task that owns this operation."""
+        metadata = getattr(task, "metadata", None)
+        if not isinstance(metadata, dict) or metadata.get("provider") != "echo-os.files":
+            raise OrganizationError(409, "task_binding_changed", "任务的文件操作绑定已变化。")
+        plan_id = metadata.get("plan_id")
+        if not isinstance(plan_id, str) or re.fullmatch(r"[0-9a-f]{64}", plan_id) is None:
+            raise OrganizationError(409, "task_binding_changed", "任务的文件操作绑定无法核验。")
+        record = self._load(actor, plan_id)
+        if (
+            getattr(task, "kind", None) != "file_organization"
+            or getattr(task, "owner_id", None) != record["owner"]
+            or str(getattr(task, "task_id", "")) != record["taskId"]
+            or getattr(task, "workspace_path", None) != record["workspacePath"]
+        ):
+            raise OrganizationError(409, "task_binding_changed", "任务与文件操作记录不一致。")
+        return self._change_evidence(actor, record)
+
+    def task_undo_preview(self, actor: str, task: Any) -> dict[str, Any]:
+        evidence = self.task_change_evidence(actor, task)
+        preview = self.create_undo_plan(actor, evidence["plan"]["planId"])
+        return self._change_evidence(actor, self._load(actor, preview["planId"]))
+
+    def _change_evidence(self, actor: str, record: dict[str, Any]) -> dict[str, Any]:
+        if "result" in record:
+            record = self._reconcile(actor, record)
+            result = self._readback(actor, record)
+        else:
+            result = None
+        # Never export inode details, absolute host paths or private receipt paths.
+        return {
+            "plan": copy.deepcopy(record["plan"]),
+            "result": result,
+            "hashes": {
+                entry_id: snapshot["sha256"] for entry_id, snapshot in record["snapshots"].items()
+            },
+            "undone": list(record.get("undoneBy", {})),
+        }
+
     def read_original(self, actor: str, plan_id: str, entry_id: str) -> OrganizationOriginal:
         """Return verified bytes, never a path to be reopened by the HTTP server."""
         record = self._load(actor, plan_id)

@@ -59,6 +59,7 @@ const projection: EchoTaskProjectionResponse = {
       ],
       approval: {
         required: true,
+        version: "a".repeat(64),
         tool: "apps.start",
         action: "app.start",
         reason: "需要设备管理员确认",
@@ -116,6 +117,53 @@ const projection: EchoTaskProjectionResponse = {
 };
 
 describe("Echo task space", () => {
+  it("loads the advertised file provider in the requested task detail", async () => {
+    const task = {
+      ...projection.tasks[1]!,
+      kind: "file_organization",
+      changeProvider: "echo-os.files" as const,
+    };
+    const fetcher = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        schema: "echo.task_changes.v1",
+        taskId: task.id,
+        available: false,
+        reason: "provider_unavailable",
+        changes: [],
+        canPreviewUndo: false,
+        generatedAt: "2026-10-13T00:00:00Z",
+        phase: "unavailable",
+      }),
+    } as Response);
+    try {
+      render(
+        <TaskSpacePanel
+          open
+          projection={{ ...projection, tasks: [task] }}
+          focusTaskRequest={{ taskId: task.id }}
+          loading={false}
+          error={null}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+          onOpenWorkspace={vi.fn()}
+          onTakeover={vi.fn()}
+          onResumeExecution={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(fetcher).toHaveBeenCalled());
+      expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+        "/api/appliance/tasks/task-photo-sort/changes",
+      );
+      expect(
+        await screen.findByText("当前服务无法读取此任务的操作证据。"),
+      ).toBeInTheDocument();
+    } finally {
+      fetcher.mockRestore();
+    }
+  });
+
   it("opens the requested task's details when the desktop asks for it", () => {
     const props = {
       open: true,
@@ -395,11 +443,55 @@ describe("Echo task space", () => {
       "task-app-start",
       true,
       "设备管理员批准任务操作",
+      "a".repeat(64),
     );
     expect(
       screen.getByText("操作已批准，任务将继续执行。"),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    ["unversioned", { version: null }, true],
+    ["blocked", { required: false }, false],
+  ] as const)(
+    "does not offer a doomed decision for a %s approval",
+    async (_label, approvalPatch, buttonsShown) => {
+      const user = userEvent.setup();
+      const waiting = projection.tasks[0];
+      render(
+        <TaskSpacePanel
+          open
+          projection={{
+            ...projection,
+            tasks: [
+              {
+                ...waiting,
+                approval: { ...waiting.approval!, ...approvalPatch },
+              },
+            ],
+          }}
+          loading={false}
+          error={null}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+          onOpenWorkspace={vi.fn()}
+          onTakeover={vi.fn()}
+          onResumeExecution={vi.fn()}
+          onApprovalDecision={vi.fn()}
+        />,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "查看任务：启动媒体服务" }),
+      );
+      const approve = screen.queryByRole("button", { name: "批准操作" });
+      if (buttonsShown) {
+        expect(approve).toBeDisabled();
+        expect(screen.getByText(/无法核验审批版本/)).toBeInTheDocument();
+      } else {
+        expect(approve).toBeNull();
+      }
+    },
+  );
 
   it("keeps running and failed states discoverable through their filters", async () => {
     const user = userEvent.setup();

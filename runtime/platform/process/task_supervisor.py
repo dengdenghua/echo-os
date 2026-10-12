@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import socket
 import threading
 import time
@@ -8,6 +9,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from runtime.platform.process._task_approval_identity import (
+    APPROVAL_REQUEST_ID_KEY,
+    approval_block_reason,
+    approval_request_version,
+)
 from runtime.platform.process._task_supervisor_analysis import (
     build_task_recovery_queue,
     build_task_runs_overview,
@@ -316,6 +322,11 @@ class TaskSupervisor:
             metadata = dict(current.metadata)
             if isinstance(metadata_patch, dict):
                 metadata.update(metadata_patch)
+            if (
+                next_status == TaskRunStatus.WAITING_APPROVAL
+                and current.status != TaskRunStatus.WAITING_APPROVAL
+            ):
+                metadata[APPROVAL_REQUEST_ID_KEY] = uuid4().hex
             completed_at = current.completed_at
             lease = current.lease
             if current.status not in TERMINAL_TASK_STATUSES and lease is not None:
@@ -433,6 +444,7 @@ class TaskSupervisor:
         approved: bool,
         decided_by: str | None = None,
         reason: str = "",
+        expected_approval_version: str | None = None,
         resume_status: TaskRunStatus = TaskRunStatus.RUNNING,
     ) -> TaskRunRecord:
         now = _now_iso()
@@ -445,14 +457,16 @@ class TaskSupervisor:
         def _mutate(current: TaskRunRecord) -> TaskRunRecord:
             if current.status != TaskRunStatus.WAITING_APPROVAL:
                 raise ValueError("task is not waiting for approval")
-            self._assert_current_holder(current)
-            metadata = dict(current.metadata)
-            if bool(metadata.get("capability_denied")):
-                raise ValueError("task is blocked by disabled capability")
-            if bool(metadata.get("approval_denied")) and not bool(
-                metadata.get("approval_required")
+            if expected_approval_version is not None and not hmac.compare_digest(
+                str(expected_approval_version).encode("utf-8"),
+                approval_request_version(current).encode("utf-8"),
             ):
-                raise ValueError("task is blocked by approval policy")
+                raise ValueError("approval request changed; refresh and review it again")
+            self._assert_current_holder(current)
+            blocked = approval_block_reason(current)
+            if blocked is not None:
+                raise ValueError(blocked)
+            metadata = dict(current.metadata)
             decisions = list(metadata.get("approval_decisions") or [])
             decision = {
                 "approved": bool(approved),

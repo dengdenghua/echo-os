@@ -120,6 +120,7 @@ export type SystemAppId =
   | "activity-monitor"
   | "settings"
   | "browser"
+  | "decision-inbox"
   | "task-space";
 
 /**
@@ -146,6 +147,11 @@ export const SYSTEM_APP_WINDOWS: Record<
   "task-space": {
     title: "任务空间",
     size: { w: 920, h: 700 },
+    chromeHeight: 48,
+  },
+  "decision-inbox": {
+    title: "审批收件箱",
+    size: { w: 760, h: 620 },
     chromeHeight: 48,
   },
   "activity-monitor": {

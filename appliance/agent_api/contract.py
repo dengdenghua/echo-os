@@ -85,6 +85,11 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "runtime.platform.process._task_approval_identity",
             "approval_request_version",
         ),
+        _Symbol(
+            "approval_block_reason",
+            "runtime.platform.process._task_approval_identity",
+            "approval_block_reason",
+        ),
     ),
     "catalog": (
         _Symbol(

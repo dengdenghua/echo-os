@@ -16,6 +16,17 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { TaskApprovalDialog } from "./task-approval-dialog";
+import { TaskChangesPanel } from "./task-changes-panel";
+import {
+  APPROVAL_SESSION_CHANGED,
+  APPROVAL_SESSION_CHANGED_AFTER_SUBMIT,
+  APPROVAL_UNVERIFIABLE,
+  type ApprovalConsent,
+  assertApprovalConsent,
+  approvalConsentSessionCurrent,
+  captureApprovalConsent,
+} from "./task-approval-consent";
 import {
   SystemAppFrame,
   SystemAppLightsSpacer,
@@ -42,33 +53,41 @@ const STATUS: Record<
   string,
   { label: string; color: string; icon: typeof Clock3Icon }
 > = {
-  pending: { label: "准备中", color: "text-slate-500", icon: Clock3Icon },
-  running: { label: "进行中", color: "text-blue-600", icon: Loader2Icon },
+  pending: {
+    label: "准备中",
+    color: "text-muted-foreground",
+    icon: Clock3Icon,
+  },
+  running: { label: "进行中", color: "text-core", icon: Loader2Icon },
   waiting_approval: {
     label: "等待确认",
-    color: "text-amber-600",
+    color: "text-warning",
     icon: ShieldCheckIcon,
   },
-  paused: { label: "已暂停", color: "text-slate-500", icon: CirclePauseIcon },
-  verifying: { label: "验证中", color: "text-violet-600", icon: Loader2Icon },
-  repairing: { label: "修复中", color: "text-orange-600", icon: Loader2Icon },
+  paused: {
+    label: "已暂停",
+    color: "text-muted-foreground",
+    icon: CirclePauseIcon,
+  },
+  verifying: { label: "验证中", color: "text-core", icon: Loader2Icon },
+  repairing: { label: "修复中", color: "text-warning", icon: Loader2Icon },
   completed: {
     label: "已完成",
-    color: "text-emerald-600",
+    color: "text-core",
     icon: CheckCircle2Icon,
   },
-  failed: { label: "失败", color: "text-red-600", icon: AlertCircleIcon },
+  failed: { label: "失败", color: "text-breach", icon: AlertCircleIcon },
   disconnected: {
     label: "已断开",
-    color: "text-red-600",
+    color: "text-breach",
     icon: AlertCircleIcon,
   },
-  cancelled: { label: "已取消", color: "text-slate-500", icon: XIcon },
+  cancelled: { label: "已取消", color: "text-muted-foreground", icon: XIcon },
 };
 
 const UNKNOWN_STATUS = {
   label: "状态未知",
-  color: "text-slate-500",
+  color: "text-muted-foreground",
   icon: AlertCircleIcon,
 } satisfies (typeof STATUS)[string];
 
@@ -136,19 +155,17 @@ function TaskCard({
       aria-label={`查看任务：${task.title}`}
       onClick={onSelect}
       className={cn(
-        "w-full rounded-2xl border bg-white/86 p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md",
-        selected
-          ? "border-blue-400 ring-2 ring-blue-500/15"
-          : "border-slate-200/80",
+        "w-full rounded-2xl border bg-card/86 p-4 text-left shadow-sm transition hover:border-border hover:shadow-md",
+        selected ? "border-core/30 ring-2 ring-core/30" : "border-border",
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
           <BotIcon className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="truncate text-sm font-semibold text-slate-900">
+            <h3 className="truncate text-sm font-semibold text-foreground">
               {task.title}
             </h3>
             <span
@@ -169,11 +186,11 @@ function TaskCard({
             </span>
           </div>
           {task.summary && (
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
               {task.summary}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
             {task.agentId && <span>{task.agentId}</span>}
             {task.executionEngine && (
               <span>· {executionEngineLabel(task.executionEngine)}</span>
@@ -187,13 +204,13 @@ function TaskCard({
 
       {task.progressPercent !== null && task.status !== "completed" && (
         <div className="mt-3">
-          <div className="mb-1 flex justify-between text-[10px] text-slate-400">
+          <div className="mb-1 flex justify-between text-[10px] text-muted-foreground">
             <span>任务进度</span>
             <span>{Math.round(task.progressPercent)}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all"
+              className="h-full rounded-full bg-core transition-all"
               style={{ width: `${task.progressPercent}%` }}
             />
           </div>
@@ -201,12 +218,12 @@ function TaskCard({
       )}
 
       {task.approval && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
           <div className="flex items-center gap-1.5 font-medium">
             <ShieldCheckIcon className="size-3.5" />
             需要管理员确认
           </div>
-          <p className="mt-1 text-[11px] text-amber-700">
+          <p className="mt-1 text-[11px] text-warning">
             {task.approval.reason ||
               task.approval.tool ||
               "高风险系统操作正在等待确认"}
@@ -215,12 +232,12 @@ function TaskCard({
       )}
 
       {task.leaseHealth?.recoveryNeeded && (
-        <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+        <div className="mt-3 rounded-xl border border-breach/30 bg-breach/10 px-3 py-2 text-xs text-breach">
           <div className="flex items-center gap-1.5 font-medium">
             <AlertCircleIcon className="size-3.5" />
             上次执行已中断
           </div>
-          <p className="mt-1 text-[11px] text-red-700">
+          <p className="mt-1 text-[11px] text-breach">
             {task.leaseHealth.canResume
               ? "存在检查点，可在工作台接管并继续。"
               : "任务租约已失效，请在工作台检查后重新接管。"}
@@ -229,12 +246,12 @@ function TaskCard({
       )}
 
       {task.executionRecovery?.canStart && (
-        <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+        <div className="mt-3 rounded-xl border border-core/30 bg-core/10 px-3 py-2 text-xs text-core">
           <div className="flex items-center gap-1.5 font-medium">
             <PlayIcon className="size-3.5" />
             检查点已验证
           </div>
-          <p className="mt-1 text-[11px] text-blue-700">
+          <p className="mt-1 text-[11px] text-core">
             可在原线程继续第 {task.executionRecovery.iteration ?? "?"}{" "}
             轮之后的执行。
           </p>
@@ -242,16 +259,16 @@ function TaskCard({
       )}
 
       {latestCapability && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 text-[10px] text-slate-500">
-          <ShieldCheckIcon className="size-3.5 text-slate-400" />
-          <span className="font-medium text-slate-600">
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground">
+          <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
+          <span className="font-medium text-muted-foreground">
             {latestCapability.capabilityId || latestCapability.target}
           </span>
           <span>· {latestCapability.outcome.toUpperCase()}</span>
           {latestCapability.risk && <span>· {latestCapability.risk}</span>}
         </div>
       )}
-      <div className="mt-3 flex items-center justify-end gap-1 text-[10px] font-medium text-blue-600">
+      <div className="mt-3 flex items-center justify-end gap-1 text-[10px] font-medium text-core">
         查看详情
         <ArrowRightIcon className="size-3" />
       </div>
@@ -294,14 +311,14 @@ function TaskDetailDrawer({
       />
       <aside
         aria-label="任务详情"
-        className="absolute bottom-0 right-0 top-12 z-20 flex w-[min(410px,100%)] flex-col border-l border-slate-200 bg-white/96 shadow-2xl backdrop-blur-2xl"
+        className="absolute bottom-0 right-0 top-12 z-20 flex w-[min(410px,100%)] flex-col border-l border-border bg-card/96 shadow-2xl backdrop-blur-2xl"
       >
-        <header className="flex shrink-0 items-start gap-3 border-b border-slate-200 px-5 py-4">
-          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+        <header className="flex shrink-0 items-start gap-3 border-b border-border px-5 py-4">
+          <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
             <BotIcon className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-2 text-sm font-semibold text-slate-900">
+            <h2 className="line-clamp-2 text-sm font-semibold text-foreground">
               {task.title}
             </h2>
             <div
@@ -309,8 +326,8 @@ function TaskDetailDrawer({
             >
               <StatusIcon className="size-3.5" />
               {meta.label}
-              <span className="text-slate-300">·</span>
-              <span className="font-mono text-[10px] text-slate-400">
+              <span className="text-muted-foreground">·</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
                 {task.id.slice(0, 8)}
               </span>
             </div>
@@ -319,7 +336,7 @@ function TaskDetailDrawer({
             type="button"
             aria-label="收起任务详情"
             onClick={onClose}
-            className="grid size-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <XIcon className="size-4" />
           </button>
@@ -328,10 +345,10 @@ function TaskDetailDrawer({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {task.summary && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 任务目标
               </div>
-              <p className="mt-1.5 text-xs leading-5 text-slate-600">
+              <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
                 {task.summary}
               </p>
             </section>
@@ -339,12 +356,12 @@ function TaskDetailDrawer({
 
           {task.terminalReason &&
             ["failed", "disconnected", "cancelled"].includes(task.status) && (
-              <section className="rounded-xl border border-red-200 bg-red-50 px-3 py-3">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-red-800">
+              <section className="rounded-xl border border-breach/30 bg-breach/10 px-3 py-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-breach">
                   <AlertCircleIcon className="size-3.5" />
                   结束原因
                 </div>
-                <p className="mt-1.5 text-[11px] leading-5 text-red-700">
+                <p className="mt-1.5 text-[11px] leading-5 text-breach">
                   {task.terminalReason}
                 </p>
               </section>
@@ -359,9 +376,9 @@ function TaskDetailDrawer({
               ["类型", task.kind || "task"],
               ["线程", task.threadId ? task.threadId.slice(0, 8) : "未关联"],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-slate-50 px-3 py-2">
-                <div className="text-[9px] text-slate-400">{label}</div>
-                <div className="mt-0.5 truncate text-[11px] font-medium text-slate-700">
+              <div key={label} className="rounded-xl bg-background px-3 py-2">
+                <div className="text-[9px] text-muted-foreground">{label}</div>
+                <div className="mt-0.5 truncate text-[11px] font-medium text-foreground">
                   {value}
                 </div>
               </div>
@@ -369,22 +386,22 @@ function TaskDetailDrawer({
           </section>
 
           {task.leaseHealth?.recoveryNeeded && (
-            <section className="rounded-xl border border-red-200 bg-red-50 px-3 py-3">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-red-800">
+            <section className="rounded-xl border border-breach/30 bg-breach/10 px-3 py-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-breach">
                 <GitBranchIcon className="size-3.5" />
                 Agent 租约需要恢复
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-red-700">
+              <p className="mt-1.5 text-[11px] leading-5 text-breach">
                 {task.leaseHealth.canResume
                   ? "Agent 找到了检查点。先接管任务租约，再回到原任务触发继续。"
                   : "当前没有可直接恢复的检查点。接管只会重新取得任务控制权，不会假装任务已经继续执行。"}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
-                <span className="rounded-md bg-white/70 px-2 py-1 text-red-700">
+                <span className="rounded-md bg-card/70 px-2 py-1 text-breach">
                   租约 {task.leaseHealth.state}
                 </span>
                 {task.leaseHealth.recommendedAction && (
-                  <span className="rounded-md bg-white/70 px-2 py-1 font-mono text-red-700">
+                  <span className="rounded-md bg-card/70 px-2 py-1 font-mono text-breach">
                     {task.leaseHealth.recommendedAction}
                   </span>
                 )}
@@ -393,20 +410,20 @@ function TaskDetailDrawer({
           )}
 
           {task.executionRecovery?.checkpointAvailable && (
-            <section className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-3">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-800">
+            <section className="rounded-xl border border-core/30 bg-core/10 px-3 py-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-core">
                 <PlayIcon className="size-3.5" />
                 Agent 执行检查点
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-blue-700">
+              <p className="mt-1.5 text-[11px] leading-5 text-core">
                 {task.executionRecovery.reason}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
-                <span className="rounded-md bg-white/70 px-2 py-1 text-blue-700">
+                <span className="rounded-md bg-card/70 px-2 py-1 text-core">
                   第 {task.executionRecovery.iteration ?? "?"} 轮
                 </span>
                 {task.executionRecovery.phase && (
-                  <span className="rounded-md bg-white/70 px-2 py-1 font-mono text-blue-700">
+                  <span className="rounded-md bg-card/70 px-2 py-1 font-mono text-core">
                     {task.executionRecovery.phase}
                   </span>
                 )}
@@ -416,7 +433,7 @@ function TaskDetailDrawer({
 
           {task.resultArtifacts && task.resultArtifacts.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 任务产物
               </div>
               <div className="mt-2 space-y-1.5">
@@ -425,13 +442,13 @@ function TaskDetailDrawer({
                     key={artifact.resourceId}
                     type="button"
                     onClick={() => onOpenWorkspace(artifact.resourceId)}
-                    className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left text-[11px] text-slate-700 transition hover:border-blue-300 hover:bg-blue-50"
+                    className="flex w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-left text-[11px] text-foreground transition hover:border-core/30 hover:bg-core/10"
                   >
-                    <ArrowRightIcon className="size-3 shrink-0 text-blue-500" />
+                    <ArrowRightIcon className="size-3 shrink-0 text-core" />
                     <span className="min-w-0 flex-1 truncate">
                       {artifact.name}
                     </span>
-                    <span className="shrink-0 text-[10px] text-slate-400">
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
                       {artifact.area}
                     </span>
                   </button>
@@ -441,28 +458,36 @@ function TaskDetailDrawer({
           )}
 
           {task.approval && (
-            <section className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+            <section className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">
                 <ShieldCheckIcon className="size-3.5" />
                 等待人工确认
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-amber-700">
+              <p className="mt-1.5 text-[11px] leading-5 text-warning">
                 {task.approval.reason ||
                   "该任务需要在原任务中完成确认。涉及系统能力时仍必须经过设备密码与能力策略，任务空间不会旁路批准。"}
               </p>
             </section>
           )}
 
+          {task.changeProvider === "echo-os.files" ? (
+            <TaskChangesPanel key={task.id} taskId={task.id} />
+          ) : (
+            <p className="text-[11px] text-slate-500">
+              本任务尚无可核验的文件变更记录。
+            </p>
+          )}
+
           {task.runtimeCapabilityGroups.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Agent 运行能力
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {task.runtimeCapabilityGroups.map((group) => (
                   <span
                     key={group}
-                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] text-slate-600"
+                    className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[10px] text-muted-foreground"
                   >
                     {group}
                   </span>
@@ -473,24 +498,24 @@ function TaskDetailDrawer({
 
           {latestActivity.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 最近系统活动
               </div>
               <div className="mt-2 space-y-2">
                 {latestActivity.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2 text-[10px]"
+                    className="rounded-lg border border-border bg-background px-2.5 py-2 text-[10px]"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-slate-700">
+                      <span className="truncate font-medium text-foreground">
                         {item.capabilityId || item.action}
                       </span>
-                      <span className="shrink-0 uppercase text-slate-400">
+                      <span className="shrink-0 uppercase text-muted-foreground">
                         {item.outcome}
                       </span>
                     </div>
-                    <div className="mt-0.5 truncate text-slate-400">
+                    <div className="mt-0.5 truncate text-muted-foreground">
                       {item.target}
                     </div>
                   </div>
@@ -500,33 +525,36 @@ function TaskDetailDrawer({
           )}
 
           {actionError && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            <div className="rounded-xl border border-breach/30 bg-breach/10 px-3 py-2 text-xs text-breach">
               {actionError}
             </div>
           )}
           {actionMessage && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            <div className="rounded-xl border border-core/30 bg-core/10 px-3 py-2 text-xs text-core">
               {actionMessage}
             </div>
           )}
         </div>
 
-        <footer className="shrink-0 space-y-2 border-t border-slate-200 bg-slate-50/90 px-5 py-4">
-          {task.approval && (
+        <footer className="shrink-0 space-y-2 border-t border-border bg-background/90 px-5 py-4">
+          {task.approval?.required && !task.approval.version && (
+            <p className="text-[11px] text-warning">{APPROVAL_UNVERIFIABLE}</p>
+          )}
+          {task.approval?.required && (
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => onRequestApproval(false)}
-                disabled={busy}
-                className="rounded-xl border border-red-200 bg-white px-3 py-2.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                disabled={busy || !task.approval.version}
+                className="rounded-xl border border-breach/30 bg-card px-3 py-2.5 text-xs font-semibold text-breach transition hover:bg-breach/10 disabled:cursor-wait disabled:opacity-60"
               >
                 拒绝操作
               </button>
               <button
                 type="button"
                 onClick={() => onRequestApproval(true)}
-                disabled={busy}
-                className="rounded-xl bg-amber-500 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-400 disabled:cursor-wait disabled:opacity-60"
+                disabled={busy || !task.approval.version}
+                className="rounded-xl bg-warning px-3 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-warning disabled:cursor-wait disabled:opacity-60"
               >
                 批准操作
               </button>
@@ -537,7 +565,7 @@ function TaskDetailDrawer({
               type="button"
               onClick={onRequestResume}
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-wait disabled:opacity-60"
             >
               {busy ? (
                 <Loader2Icon className="size-4 animate-spin" />
@@ -552,7 +580,7 @@ function TaskDetailDrawer({
               type="button"
               onClick={onRequestTakeover}
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-breach/30 bg-card px-3 py-2.5 text-xs font-semibold text-breach transition hover:bg-breach/10 disabled:cursor-wait disabled:opacity-60"
             >
               {busy ? (
                 <Loader2Icon className="size-4 animate-spin" />
@@ -565,7 +593,7 @@ function TaskDetailDrawer({
           <button
             type="button"
             onClick={() => onOpenWorkspace()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-slate-700"
           >
             <MessageSquareTextIcon className="size-4" />
             {task.threadId ? "打开原任务" : "打开工作台"}
@@ -602,6 +630,7 @@ export function TaskSpacePanel({
     taskId: string,
     approved: boolean,
     reason: string,
+    expectedApprovalVersion?: string,
   ) => Promise<unknown>;
   /** 从桌面任务卡片跳转过来时要展开的任务；每次请求是一个新对象。 */
   focusTaskRequest?: { taskId: string } | null;
@@ -613,10 +642,8 @@ export function TaskSpacePanel({
     useState<EchoTaskProjection | null>(null);
   const [resumeCandidate, setResumeCandidate] =
     useState<EchoTaskProjection | null>(null);
-  const [approvalCandidate, setApprovalCandidate] = useState<{
-    task: EchoTaskProjection;
-    approved: boolean;
-  } | null>(null);
+  const [approvalCandidate, setApprovalCandidate] =
+    useState<ApprovalConsent | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -712,23 +739,33 @@ export function TaskSpacePanel({
     setActionError(null);
     setActionMessage(null);
     try {
+      const version = assertApprovalConsent(
+        approvalCandidate,
+        projection?.tasks ?? [],
+      );
       await onApprovalDecision(
         task.id,
         approved,
         `设备管理员${approved ? "批准" : "拒绝"}任务操作`,
+        version,
       );
-      setActionMessage(
-        approved
-          ? "操作已批准，任务将继续执行。"
-          : "操作已拒绝，任务已停止等待。",
-      );
-      setApprovalCandidate(null);
+      if (approvalConsentSessionCurrent(approvalCandidate))
+        setActionMessage(
+          approved
+            ? "操作已批准，任务将继续执行。"
+            : "操作已拒绝，任务已停止等待。",
+        );
+      else setActionError(APPROVAL_SESSION_CHANGED_AFTER_SUBMIT);
     } catch (reason) {
       setActionError(
-        reason instanceof Error ? reason.message : "无法提交审批决定",
+        !approvalConsentSessionCurrent(approvalCandidate)
+          ? APPROVAL_SESSION_CHANGED
+          : reason instanceof Error
+            ? reason.message
+            : "无法提交审批决定",
       );
-      setApprovalCandidate(null);
     } finally {
+      setApprovalCandidate(null);
       setActionBusy(false);
     }
   };
@@ -739,10 +776,10 @@ export function TaskSpacePanel({
       label="Echo 任务空间"
       onClose={onClose}
       overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-      className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-white/75 bg-slate-50/94 text-slate-900 shadow-2xl shadow-slate-950/35 backdrop-blur-3xl"
-      windowClassName="relative flex size-full flex-col overflow-hidden bg-slate-50 text-slate-900"
+      className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-border bg-background/94 text-foreground shadow-2xl shadow-slate-950/35 backdrop-blur-3xl"
+      windowClassName="relative flex size-full flex-col overflow-hidden bg-background text-foreground"
     >
-      <header className="flex h-12 shrink-0 items-center border-b border-slate-200/80 bg-white/70 px-4">
+      <header className="flex h-12 shrink-0 items-center border-b border-border bg-card/70 px-4">
         <div className="flex gap-2">
           {inWindow ? (
             <SystemAppLightsSpacer />
@@ -753,7 +790,7 @@ export function TaskSpacePanel({
                 ref={closeButtonRef}
                 aria-label="关闭任务空间"
                 onClick={onClose}
-                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-red-900/70"
+                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-breach"
               >
                 <XIcon className="size-2.5" />
               </button>
@@ -764,7 +801,7 @@ export function TaskSpacePanel({
         </div>
         <div
           id="echo-task-space-title"
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium text-slate-600"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm font-medium text-muted-foreground"
         >
           任务空间
         </div>
@@ -773,7 +810,7 @@ export function TaskSpacePanel({
             type="button"
             onClick={onRefresh}
             aria-label="刷新任务"
-            className="grid size-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-200/70"
+            className="grid size-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted/70"
           >
             <RefreshCwIcon
               className={cn("size-4", loading && "animate-spin")}
@@ -782,38 +819,38 @@ export function TaskSpacePanel({
           <button
             type="button"
             onClick={() => onOpenWorkspace()}
-            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-slate-700"
           >
             打开工作台
           </button>
         </div>
       </header>
 
-      <div className="grid shrink-0 grid-cols-3 gap-3 border-b border-slate-200/70 px-5 py-4 sm:grid-cols-7">
+      <div className="grid shrink-0 grid-cols-3 gap-3 border-b border-border px-5 py-4 sm:grid-cols-7">
         {(
           [
-            ["全部", counts?.total ?? 0, "text-slate-800"],
-            ["进行中", counts?.active ?? 0, "text-blue-600"],
-            ["待确认", counts?.waitingApproval ?? 0, "text-amber-600"],
-            ["已暂停", counts?.paused ?? 0, "text-slate-500"],
-            ["待恢复", counts?.recoveryNeeded ?? 0, "text-orange-600"],
-            ["异常", counts?.failed ?? 0, "text-red-600"],
-            ["完成", counts?.completed ?? 0, "text-emerald-600"],
+            ["全部", counts?.total ?? 0, "text-foreground"],
+            ["进行中", counts?.active ?? 0, "text-core"],
+            ["待确认", counts?.waitingApproval ?? 0, "text-warning"],
+            ["已暂停", counts?.paused ?? 0, "text-muted-foreground"],
+            ["待恢复", counts?.recoveryNeeded ?? 0, "text-warning"],
+            ["异常", counts?.failed ?? 0, "text-breach"],
+            ["完成", counts?.completed ?? 0, "text-core"],
           ] satisfies Array<[string, number, string]>
         ).map(([label, value, color]) => (
           <div
             key={label}
-            className="rounded-xl bg-white/75 px-3 py-2 text-center shadow-sm"
+            className="rounded-xl bg-card/75 px-3 py-2 text-center shadow-sm"
           >
             <div className={cn("text-lg font-semibold", color)}>
               {counts ? value : "—"}
             </div>
-            <div className="text-[10px] text-slate-400">{label}</div>
+            <div className="text-[10px] text-muted-foreground">{label}</div>
           </div>
         ))}
       </div>
 
-      <nav className="flex shrink-0 gap-1 border-b border-slate-200/70 px-5 py-2.5">
+      <nav className="flex shrink-0 gap-1 border-b border-border px-5 py-2.5">
         {FILTERS.map((item) => (
           <button
             key={item.id}
@@ -823,21 +860,21 @@ export function TaskSpacePanel({
             className={cn(
               "rounded-lg px-3 py-1.5 text-xs transition",
               filter === item.id
-                ? "bg-slate-900 text-white"
-                : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-800",
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
             )}
           >
             {item.label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-1.5 text-[10px] text-slate-400">
+        <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <span
             className={cn(
               "size-2 rounded-full",
               projection?.auditIntegrity.ok === false
-                ? "bg-red-500"
+                ? "bg-breach"
                 : projection?.auditIntegrity.ok === true
-                  ? "bg-emerald-500"
+                  ? "bg-core"
                   : "bg-slate-300",
             )}
           />
@@ -849,14 +886,14 @@ export function TaskSpacePanel({
         {error && (
           <div
             role="alert"
-            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700"
+            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-breach/30 bg-breach/10 px-4 py-3 text-xs text-breach"
           >
             <span className="min-w-0">{error}</span>
             <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
-              className="shrink-0 rounded-lg border border-red-200 bg-white/80 px-2.5 py-1.5 font-medium text-red-700 transition hover:bg-white disabled:cursor-wait disabled:opacity-60"
+              className="shrink-0 rounded-lg border border-breach/30 bg-card/80 px-2.5 py-1.5 font-medium text-breach transition hover:bg-card disabled:cursor-wait disabled:opacity-60"
             >
               {loading ? "读取中…" : "重试读取"}
             </button>
@@ -865,11 +902,11 @@ export function TaskSpacePanel({
         {!projection?.available && !loading ? (
           <div className="grid h-full place-items-center text-center">
             <div>
-              <BotIcon className="mx-auto size-9 text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-600">
+              <BotIcon className="mx-auto size-9 text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium text-muted-foreground">
                 {error ? "任务服务暂时不可用" : "任务服务正在初始化"}
               </p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {error
                   ? "请检查 Agent 服务状态，或点击上方“重试读取”。"
                   : "Echo 会直接读取 Echo Agent 的真实 TaskSupervisor，不创建副本。"}
@@ -877,17 +914,17 @@ export function TaskSpacePanel({
             </div>
           </div>
         ) : loading && !projection ? (
-          <div className="grid h-full place-items-center text-slate-400">
+          <div className="grid h-full place-items-center text-muted-foreground">
             <Loader2Icon className="size-7 animate-spin" />
           </div>
         ) : tasks.length === 0 ? (
           <div className="grid h-full place-items-center text-center">
             <div>
-              <CheckCircle2Icon className="mx-auto size-9 text-emerald-400" />
-              <p className="mt-3 text-sm font-medium text-slate-600">
+              <CheckCircle2Icon className="mx-auto size-9 text-core" />
+              <p className="mt-3 text-sm font-medium text-muted-foreground">
                 当前没有这类任务
               </p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 新的 Agent 任务会自动出现在这里。
               </p>
             </div>
@@ -925,61 +962,18 @@ export function TaskSpacePanel({
           onRequestTakeover={() => setTakeoverCandidate(selectedTask)}
           onRequestResume={() => setResumeCandidate(selectedTask)}
           onRequestApproval={(approved) =>
-            setApprovalCandidate({ task: selectedTask, approved })
+            setApprovalCandidate(captureApprovalConsent(selectedTask, approved))
           }
         />
       )}
 
       {approvalCandidate && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
-          <section
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="确认审批决定"
-            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
-          >
-            <div className="flex items-start gap-3">
-              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
-                <ShieldCheckIcon className="size-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {approvalCandidate.approved
-                    ? "批准这个操作？"
-                    : "拒绝这个操作？"}
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  {approvalCandidate.task.approval?.action ||
-                    approvalCandidate.task.approval?.tool ||
-                    "任务正在等待管理员确认"}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setApprovalCandidate(null)}
-                disabled={actionBusy}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmApprovalDecision()}
-                disabled={actionBusy}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-60",
-                  approvalCandidate.approved
-                    ? "bg-amber-500 hover:bg-amber-400"
-                    : "bg-red-600 hover:bg-red-500",
-                )}
-              >
-                {actionBusy ? "提交中…" : "确认"}
-              </button>
-            </div>
-          </section>
-        </div>
+        <TaskApprovalDialog
+          consent={approvalCandidate}
+          busy={actionBusy}
+          onCancel={() => setApprovalCandidate(null)}
+          onConfirm={() => void confirmApprovalDecision()}
+        />
       )}
 
       {takeoverCandidate && (
@@ -988,17 +982,17 @@ export function TaskSpacePanel({
             role="alertdialog"
             aria-modal="true"
             aria-label="确认接管任务"
-            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl"
           >
             <div className="flex items-start gap-3">
-              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-600">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-breach/10 text-breach">
                 <GitBranchIcon className="size-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-foreground">
                   接管这个中断任务？
                 </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   Echo 将让当前 Agent worker 重新取得“
                   {takeoverCandidate.title}
                   ”的租约。这个动作不会自动执行任务；接管后仍需回到原任务确认并继续。
@@ -1010,7 +1004,7 @@ export function TaskSpacePanel({
                 type="button"
                 onClick={() => setTakeoverCandidate(null)}
                 disabled={actionBusy}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-background"
               >
                 取消
               </button>
@@ -1018,7 +1012,7 @@ export function TaskSpacePanel({
                 type="button"
                 onClick={() => void confirmTakeover()}
                 disabled={actionBusy}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-breach px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-breach disabled:cursor-wait disabled:opacity-60"
               >
                 {actionBusy && (
                   <Loader2Icon className="size-3.5 animate-spin" />
@@ -1036,17 +1030,17 @@ export function TaskSpacePanel({
             role="alertdialog"
             aria-modal="true"
             aria-label="确认恢复任务执行"
-            className="w-full max-w-sm rounded-2xl border border-white/80 bg-white p-5 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl"
           >
             <div className="flex items-start gap-3">
-              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+              <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                 <PlayIcon className="size-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">
+                <h2 className="text-sm font-semibold text-foreground">
                   从 Agent 检查点继续？
                 </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   Echo 将在原线程恢复“{resumeCandidate.title}
                   ”，随后打开原任务查看实时进度。新的系统操作仍会按原规则等待人工确认，不会自动批准。
                 </p>
@@ -1057,7 +1051,7 @@ export function TaskSpacePanel({
                 type="button"
                 onClick={() => setResumeCandidate(null)}
                 disabled={actionBusy}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-background"
               >
                 取消
               </button>
@@ -1065,7 +1059,7 @@ export function TaskSpacePanel({
                 type="button"
                 onClick={() => void confirmResumeExecution()}
                 disabled={actionBusy}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-wait disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary disabled:cursor-wait disabled:opacity-60"
               >
                 {actionBusy && (
                   <Loader2Icon className="size-3.5 animate-spin" />
