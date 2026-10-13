@@ -2,13 +2,20 @@
 import { swallow } from "@/core/utils/log";
 import { getBackendBaseURL } from "@/core/config";
 import {
+  BellIcon,
   CheckIcon,
   ChevronRightIcon,
+  GlobeIcon,
+  HouseIcon,
+  MailIcon,
   MessageCircleIcon,
+  MessageSquareTextIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  WebhookIcon,
   XIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -95,32 +102,15 @@ const PLATFORM_COLORS: Record<string, string> = {
 };
 
 // Implementation note.
-const PLATFORM_ICONS: Record<string, string> = {
-  wechat: "💬",
-  dingtalk: "📌",
-  feishu: "🐦",
-  telegram: "✈️",
-  slack: "#",
-  discord: "🎮",
-  signal: "🔒",
-  whatsapp: "📱",
-  email: "✉️",
-  sms: "📩",
-  mattermost: "📡",
-  matrix: "🟢",
-  wecom: "💼",
-  qqbot: "🐧",
-  teams: "👥",
-  line: "💬",
-  homeassistant: "🏠",
-  bluebubbles: "🔵",
-  ntfy: "🔔",
-  webhooks: "🪝",
-  google_chat: "💬",
-  simplex: "🔐",
-  open_webui: "🌐",
-  yuanbao: "💎",
-  other: "•",
+// Channels are told apart by name; the glyph only says what kind of
+// transport it is (ECHO: lucide line icons, no emoji).
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
+  email: MailIcon,
+  sms: MessageSquareTextIcon,
+  homeassistant: HouseIcon,
+  ntfy: BellIcon,
+  webhooks: WebhookIcon,
+  open_webui: GlobeIcon,
 };
 
 const PLATFORM_CATEGORIES: Record<string, string> = {
@@ -637,7 +627,7 @@ function ChannelCard({
   const colorCls = row.connected
     ? (PLATFORM_COLORS[row.platform] ?? PLATFORM_COLORS.other)
     : "bg-muted/70 text-muted-foreground";
-  const icon = PLATFORM_ICONS[row.platform] ?? "•";
+  const PlatformIcon = PLATFORM_ICONS[row.platform] ?? MessageCircleIcon;
   const assignedAgent = agents.find((a) => a.id === row.assigned_agent_id);
 
   return (
@@ -663,7 +653,7 @@ function ChannelCard({
               colorCls,
             )}
           >
-            <span>{icon}</span>
+            <PlatformIcon aria-hidden="true" className="size-5" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold leading-5">
