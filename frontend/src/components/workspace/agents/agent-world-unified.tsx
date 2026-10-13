@@ -1919,7 +1919,7 @@ export function AgentWorldUnified() {
                               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                                 {app.description}
                               </span>
-                              <span className="mt-0.5 block text-micro text-resonance">
+                              <span className="mt-0.5 block text-micro text-muted-foreground">
                                 {APP_PRESENTATION_LABELS[app.presentation]}
                               </span>
                               {isBroken || isIncompatible ? (
