@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient } from "@tanstack/react-query";
 
 import { renderWithProviders } from "@/test/harness";
 import {
@@ -164,6 +165,41 @@ describe("custom model selection identity", () => {
 });
 
 describe("ModelSettingsPage · custom-model list rendering", () => {
+  it("refreshes the composer's cached model catalog once connections load", async () => {
+    // Golden path 2026-10: a model added in 系统设置 stayed missing from the
+    // workbench picker for up to five minutes (stale ["models"] query).
+    mockModelSettingsFetch({
+      models: [
+        {
+          id: "echo-offline-demo",
+          name: "echo-offline-demo",
+          display_name: "离线演示模型",
+          models: ["echo-offline-demo"],
+          provider: "openai",
+          base_url: "http://127.0.0.1:18650/v1",
+          has_api_key: true,
+          supports_thinking: false,
+          supports_vision: false,
+        },
+      ],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    });
+    queryClient.setQueryData(["models", "actor-a"], []);
+
+    renderWithProviders(<ModelSettingsPage />, {
+      locale: "zh-CN",
+      queryClient,
+    });
+
+    await waitFor(() => {
+      expect(
+        queryClient.getQueryState(["models", "actor-a"])?.isInvalidated,
+      ).toBe(true);
+    });
+  });
+
   it("renders the full models list for an entry with multiple slots", async () => {
     mockModelSettingsFetch({
       models: [

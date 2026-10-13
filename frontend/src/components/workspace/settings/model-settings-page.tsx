@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
@@ -1060,6 +1061,7 @@ function ModelSettingsOverview({
 // ── Main page ──────────────────────────────────────────────────
 export default function ModelSettingsPage() {
   const { t, locale } = useI18n();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { search } = useLocation();
   const pageCopy = modelSettingsPageCopy(locale);
@@ -1177,6 +1179,9 @@ export default function ModelSettingsPage() {
       const data = await res.json();
       const list = data.models || [];
       setModels(list);
+      // The composer's model picker caches the catalog for minutes; a
+      // connection added, removed or edited here must show up there now.
+      void queryClient.invalidateQueries({ queryKey: ["models"] });
       setModelsLoadError(false);
       setGatewayStatus("connected");
       void fetchCompatDiagnostics();
@@ -1192,6 +1197,7 @@ export default function ModelSettingsPage() {
   }, [
     fetchCompatDiagnostics,
     fetchCompatProfileCatalog,
+    queryClient,
     t.settings.model.loadFailed,
   ]);
 

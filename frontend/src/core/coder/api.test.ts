@@ -94,6 +94,31 @@ describe("Coder Codex API", () => {
     );
   });
 
+  it("keeps Codex control-plane writes on the page origin that holds the session cookie", async () => {
+    // Golden path 2026-10: in dev the model-profile PUT was sent to the
+    // "other" loopback host (localhost <-> 127.0.0.1). The HttpOnly session
+    // cookie belongs to the page host only, so picking a model answered 401.
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        mode: "follow_system",
+        effective_model: "echo-offline-demo",
+        compatible: true,
+      }),
+    );
+
+    await updateCoderModelProfile({
+      source: "follow_system",
+      model: "echo-offline-demo",
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ state: "idle" }));
+    await checkCoderUpstreamUpdate();
+    await approveCoderUpstreamUpdate("1.2.3");
+
+    for (const [url] of fetchMock.mock.calls as [string][]) {
+      expect(url).toMatch(/^\/api\/coder\/codex\//);
+    }
+  });
+
   it("submits an API key only in the request body and never browser storage or URL", async () => {
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
     fetchMock.mockResolvedValue(jsonResponse({ type: "apiKey" }));
