@@ -20,7 +20,7 @@ function assistantNameStorageKey(actor = currentActorId()): string {
 }
 
 /** Default assistant name — mirrors `agents/echo/profile.jsonc`. */
-export const DEFAULT_ASSISTANT_NAME = "EchoAI";
+export const DEFAULT_ASSISTANT_NAME = "Echo";
 
 export function getAssistantDisplayName(): string {
   try {

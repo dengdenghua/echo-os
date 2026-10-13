@@ -100,9 +100,13 @@ function collectStringLeaves(
 const TRANSLATION_EXEMPT_RE =
   /^(https?:\/\/|mailto:|[\s\p{P}\p{S}\d]*$|[A-Z][\w+./#-]*$|[a-z][\w-]*$)/u;
 
+// Product names stay identical in every locale (docs/brand naming rule).
+const BRAND_NAMES = new Set(["ECHO OS", "ECHO AI"]);
+
 function isTranslationExempt(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length <= 1) return true;
+  if (BRAND_NAMES.has(trimmed)) return true;
   if (TRANSLATION_EXEMPT_RE.test(trimmed)) return true;
   // Email addresses
   if (/^[\w.+-]+@[\w.-]+\.\w+$/.test(trimmed)) return true;

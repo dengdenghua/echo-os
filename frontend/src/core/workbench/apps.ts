@@ -55,7 +55,7 @@ export function supportsPresentation(
   );
 }
 
-/** Native EchoAI pages that can also live in the browser desktop and Dock. */
+/** Native ECHO OS pages that can also live in the browser desktop and Dock. */
 export const WORKBENCH_BUILTIN_APPS: readonly WorkbenchBuiltinApp[] = [
   {
     id: LOCAL_DATABASE_APP_ID,

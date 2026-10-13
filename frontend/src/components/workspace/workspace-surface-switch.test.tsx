@@ -41,7 +41,7 @@ describe("WorkspaceSurfaceSwitch", () => {
     );
   });
 
-  it("remembers the active EchoAI route without importing the workspace shell", async () => {
+  it("remembers the active agent route without importing the workspace shell", async () => {
     renderWithProviders(<WorkspaceSurfaceSwitch active="agent" />, {
       initialRoute: "/workspace/realtime/thread-42?mode=team",
     });
@@ -53,7 +53,7 @@ describe("WorkspaceSurfaceSwitch", () => {
     );
   });
 
-  it("returns from the browser to the remembered EchoAI route", () => {
+  it("returns from the browser to the remembered agent route", () => {
     sessionStorage.setItem(
       lastAgentWorkspaceRouteStorageKey(),
       "/workspace/realtime/thread-42?mode=team",
@@ -62,7 +62,7 @@ describe("WorkspaceSurfaceSwitch", () => {
       initialRoute: "/browser",
     });
 
-    expect(screen.getByRole("tab", { name: "EchoAI" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Workbench" })).toHaveAttribute(
       "href",
       "/workspace/realtime/thread-42?mode=team",
     );

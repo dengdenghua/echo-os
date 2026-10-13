@@ -4268,7 +4268,7 @@ function RealtimePageContent({
                 thread?.values?.title ||
                 boundProjectState?.project.name ||
                 initialPrompt ||
-                (isNewThread ? t.sidebar.actionNewTask : "EchoAI")
+                (isNewThread ? t.sidebar.actionNewTask : "Echo")
               }
               header={
                 <>

@@ -36,7 +36,7 @@ function pickGreetingName(
     return foundDisplay || resolvedId;
   }
 
-  return "EchoAI";
+  return "Echo";
 }
 
 export function Welcome({

@@ -1995,7 +1995,7 @@ describe("MessageList stalled-run warning", () => {
     renderMessageList({ thread });
 
     expect(
-      screen.getByText(/Code changes need verification before EchoAI/i),
+      screen.getByText(/Code changes need verification before Echo/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/This reply was interrupted/i),

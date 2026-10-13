@@ -168,7 +168,7 @@ describe("AgentFooter roster states", () => {
       screen.getByRole("button", { name: "正在加载智能体…" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("?")).not.toBeInTheDocument();
-    expect(screen.queryByText("EchoAI")).not.toBeInTheDocument();
+    expect(screen.queryByText("Echo")).not.toBeInTheDocument();
   });
 
   it("exposes a retry action when the roster request fails", async () => {
@@ -208,6 +208,6 @@ describe("AgentFooter roster states", () => {
     });
 
     expect(screen.getByRole("button", { name: "Eve" })).toBeInTheDocument();
-    expect(screen.queryByText("EchoAI")).not.toBeInTheDocument();
+    expect(screen.queryByText("Echo")).not.toBeInTheDocument();
   });
 });

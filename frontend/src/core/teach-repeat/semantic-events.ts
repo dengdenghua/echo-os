@@ -65,7 +65,7 @@ export function buildSemanticRecordingEvent(
     ts: new Date().toISOString(),
     source: "human",
     kind: event.type,
-    app: "EchoAI",
+    app: "ECHO OS",
     window: `${window.location.pathname}${window.location.hash}`,
     target: elementTarget(actionable),
   };
