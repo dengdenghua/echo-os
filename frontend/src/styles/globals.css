@@ -61,6 +61,9 @@
 
 @source inline("text-{foreground,muted-foreground,primary,secondary,accent}");
 @source inline("text-{2xs,3xs}");
+/* Streamdown code blocks toggle light/dark Shiki output with these classes
+   from node_modules, which Tailwind does not scan. */
+@source inline("dark:{hidden,block}");
 @source inline("bg-{background,muted,primary,secondary,accent}");
 @source inline("border-{border,input}");
 
@@ -307,10 +310,20 @@
 }
 
 @theme inline {
-  --font-size-2xs: 0.5625rem;
-  --font-size-3xs: 0.5rem;
-  --line-height-2xs: 0.75rem;
-  --line-height-3xs: 0.625rem;
+  /* Small type tiers. Tailwind v4 reads font sizes from --text-*; the old
+     --font-size-* keys generated nothing, so every text-micro/mini/caption/
+     2xs/3xs class was a no-op. All five sit on the 12px brand floor for
+     Chinese (0.8rem at the 15px root). Register new names in lib/utils.ts
+     too, or tailwind-merge drops them as colours. */
+  --text-micro: 0.8rem;
+  --text-mini: 0.8rem;
+  --text-caption: 0.8rem;
+  --text-2xs: 0.8rem;
+  --text-3xs: 0.8rem;
+
+  /* Letter-spacing tiers for Latin uppercase eyebrows (never on Chinese). */
+  --tracking-caps: 0.12em;
+  --tracking-eyebrow: 0.16em;
 
   --radius-sm: calc((var(--radius) - 4px) * var(--corner-radius-scale, 1));
   --radius-md: calc((var(--radius) - 2px) * var(--corner-radius-scale, 1));
@@ -359,6 +372,9 @@
   --color-warning: var(--echo-warning);
   --color-nano: var(--echo-nano);
   --color-breach: var(--echo-breach);
+  /* success is the Echo Core cyan (ECHO has no green); info is signal blue. */
+  --color-success: var(--echo-core);
+  --color-info: var(--echo-signal);
   --animate-aurora: aurora 8s ease-in-out infinite alternate;
   @keyframes aurora {
     0% {
@@ -397,6 +413,24 @@
 }
 
 :root {
+  /* Shared size tokens consumed as var(--dialog-*) etc. in arbitrary values;
+     the same scale as echo-ai. */
+  --dialog-sm: 360px;
+  --dialog-md: 425px;
+  --dialog-lg: 480px;
+  --dialog-xl: 520px;
+  --dialog-2xl: 768px;
+  --panel-height-sm: 220px;
+  --panel-height-md: 320px;
+  --panel-height-lg: 400px;
+  --panel-height-xl: 560px;
+  --panel-height-2xl: 720px;
+  --text-truncate-sm: 112px;
+  --text-truncate-md: 140px;
+  --text-truncate-lg: 180px;
+  --text-truncate-xl: 220px;
+  --text-truncate-2xl: 320px;
+
   /* Global corner-radius scale. Values:
        1     = default rounded
        0.5   = crisp
