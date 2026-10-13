@@ -25,12 +25,11 @@ export function canAccessGlobalControlPlane(
 ): boolean {
   if (authStatus?.enabled === false) return true;
   if (!authStatus?.enabled || !user?.roles?.includes("admin")) return false;
-  const permissions = user.permissions ?? [];
-  // Older auth payloads omitted scopes for an otherwise valid admin. Let the
-  // backend make the final decision in that compatibility case; explicit
-  // permission lists are authoritative when present.
-  return (
-    permissions.length === 0 ||
-    permissions.some((permission) => GLOBAL_SCOPES.has(permission))
-  );
+  // Older auth payloads omitted the list for an otherwise valid admin. Let the
+  // backend make the final decision in that compatibility case. A list that is
+  // present is authoritative, including an empty one: /api/auth/me always
+  // sends it, and probing anyway answers 403 on every workbench open (the
+  // appliance owner is an admin without a cross-tenant scope).
+  if (user.permissions === undefined) return true;
+  return user.permissions.some((permission) => GLOBAL_SCOPES.has(permission));
 }
