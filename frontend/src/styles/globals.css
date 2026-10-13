@@ -315,6 +315,9 @@
      2xs/3xs class was a no-op. All five sit on the 12px brand floor for
      Chinese (0.8rem at the 15px root). Register new names in lib/utils.ts
      too, or tailwind-merge drops them as colours. */
+  /* text-xs is 0.75rem in Tailwind, 11.25px at this 15px root; lift it to
+     the same 12px floor. Line height keeps the default 1/0.75 ratio. */
+  --text-xs: 0.8rem;
   --text-micro: 0.8rem;
   --text-mini: 0.8rem;
   --text-caption: 0.8rem;

@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 function backendStartingError(retryAfterMs = 3_000) {
-  return Object.assign(new Error("Echo OS is starting"), {
+  return Object.assign(new Error("ECHO OS is starting"), {
     code: "appliance_starting",
     retryAfterMs,
   });

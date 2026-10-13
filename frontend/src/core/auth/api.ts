@@ -28,7 +28,7 @@ export class BackendStartingError extends Error {
 
   constructor(
     public readonly retryAfterMs: number,
-    message = "Echo OS is starting",
+    message = "ECHO OS is starting",
   ) {
     super(message);
     this.name = "BackendStartingError";
