@@ -577,7 +577,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
           {diagnosticsMessage ? (
             <p
               role={diagnosticsError ? "alert" : "status"}
-              className={`mt-1.5 text-[11px] ${diagnosticsError ? "text-breach" : "text-core"}`}
+              className={`mt-1.5 text-[12px] ${diagnosticsError ? "text-breach" : "text-core"}`}
             >
               {diagnosticsMessage}
             </p>

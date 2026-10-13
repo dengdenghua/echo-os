@@ -369,7 +369,7 @@ export function MacWorkspaceDropdown({
             desktopMode === "pure" ? "bg-core animate-pulse" : "bg-primary",
           )}
         />
-        <span className="flex items-center gap-1 text-[11px] font-medium tracking-tight">
+        <span className="flex items-center gap-1 text-[12px] font-medium tracking-tight">
           {desktopMode === "pure" ? (
             "意图纯净态"
           ) : (
@@ -392,7 +392,7 @@ export function MacWorkspaceDropdown({
           className="mac-menu-dropdown w-52 left-1/2 -translate-x-1/2 top-[25px]"
           data-liquid-surface="thick"
         >
-          <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground tracking-wider">
+          <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
             桌面模式
           </div>
           <button
@@ -436,7 +436,7 @@ export function MacWorkspaceDropdown({
 
           <div className="mac-menu-separator" />
 
-          <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground tracking-wider">
+          <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
             协作空间
           </div>
           {OPEN_ROOMS.map((room) => {
@@ -810,7 +810,7 @@ export function MacMenuBar({
                 className={cn(
                   "mac-menu-button",
                   index === 0
-                    ? "font-bold text-inherit tracking-wide"
+                    ? "font-bold text-inherit"
                     : "text-inherit opacity-90 font-normal",
                   activeMenu === menu.key && "is-active",
                 )}
@@ -1091,7 +1091,7 @@ export function MacLiquidGlassPanel({
             >
               <SunIcon className="size-4 text-warning" />
               <span>雪白</span>
-              <small className="text-[10px] font-normal text-muted-foreground">
+              <small className="text-[12px] font-normal text-muted-foreground">
                 轻柔晨光
               </small>
             </button>
@@ -1109,7 +1109,7 @@ export function MacLiquidGlassPanel({
             >
               <DropletsIcon className="size-4 text-core" />
               <span>神经玻璃</span>
-              <small className="text-[10px] font-normal text-muted-foreground">
+              <small className="text-[12px] font-normal text-muted-foreground">
                 澄澈流光
               </small>
             </button>
@@ -1127,7 +1127,7 @@ export function MacLiquidGlassPanel({
             >
               <MoonIcon className="size-4 text-core" />
               <span>石墨</span>
-              <small className="text-[10px] font-normal text-muted-foreground">
+              <small className="text-[12px] font-normal text-muted-foreground">
                 冷光玻璃
               </small>
             </button>

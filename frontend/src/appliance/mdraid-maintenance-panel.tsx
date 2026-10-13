@@ -178,7 +178,7 @@ export function MdRaidMaintenancePanel() {
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ActivityIcon className="size-5 text-core" /> RAID1 一致性校验
             </h2>
-            <p className="mt-2 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">
               仅检查健康的 Echo 自管双盘 RAID1，不启动显式
               repair、不改变成员关系。 校验会产生较高
               I/O；底层遇到读错误时仍可能由镜像冗余自动恢复读取。
@@ -217,7 +217,7 @@ export function MdRaidMaintenancePanel() {
               <p className="text-xs font-semibold text-foreground">
                 月度自动校验：{schedule.enabled ? "已启用" : "已关闭"}
               </p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
+              <p className="mt-1 text-[12px] text-muted-foreground">
                 每月首个周日 00:45 后随机延迟最多 24 小时；降级或忙碌阵列会跳过
               </p>
             </div>
@@ -225,7 +225,7 @@ export function MdRaidMaintenancePanel() {
               type="button"
               onClick={() => void previewSchedule()}
               disabled={busy || loading}
-              className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+              className="h-8 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
             >
               预览{schedule.enabled ? "关闭" : "启用"}月度校验
             </button>
@@ -256,7 +256,7 @@ export function MdRaidMaintenancePanel() {
                   <p className="text-xs font-semibold text-foreground">
                     {item.array.devicefile}
                   </p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     状态：{actionLabel(item)} · mismatch {item.mismatchCount}
                   </p>
                 </div>
@@ -264,7 +264,7 @@ export function MdRaidMaintenancePanel() {
                   type="button"
                   onClick={() => void previewCheck(item)}
                   disabled={!item.canStartCheck || busy}
-                  className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                  className="h-8 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   预览一致性校验
                 </button>

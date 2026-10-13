@@ -106,7 +106,7 @@ export function HighRiskApprovalDialog({
               {description}
             </p>
             {targetLabel && (
-              <p className="mt-2 truncate rounded-lg bg-muted px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground">
+              <p className="mt-2 truncate rounded-lg bg-muted px-2.5 py-1.5 font-mono text-[12px] text-muted-foreground">
                 {targetLabel}
               </p>
             )}
@@ -153,7 +153,7 @@ export function HighRiskApprovalDialog({
               placeholder="输入密码以证明是你本人"
             />
           </div>
-          <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+          <p className="mt-2 text-[12px] leading-4 text-muted-foreground">
             本次授权只用于上方操作，短时有效且使用一次后立即作废。
           </p>
           {error && (

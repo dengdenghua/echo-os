@@ -388,17 +388,17 @@ function AppCard({
             </h3>
             <span
               className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                "shrink-0 rounded-full px-2 py-0.5 text-[12px] font-medium",
                 status.className,
               )}
             >
               {status.label}
             </span>
-            <span className="shrink-0 rounded-full bg-core/10 px-2 py-0.5 text-[10px] font-medium text-core">
+            <span className="shrink-0 rounded-full bg-core/10 px-2 py-0.5 text-[12px] font-medium text-core">
               {APP_PRESENTATION_LABELS.standalone}
             </span>
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
             {app.name}
           </p>
         </div>
@@ -408,21 +408,21 @@ function AppCard({
       </p>
       <div className="mt-auto flex items-end justify-between gap-3 pt-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-medium text-muted-foreground">
+          <div className="text-[12px] font-medium text-muted-foreground">
             {versionLabel} ·{" "}
             {usesHostLan(app)
               ? "局域网发现 · 无硬件直通"
               : (CATEGORY_LABELS[app.category] ?? app.category)}
           </div>
           {primaryBlocker && !app.installation.installed && (
-            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
               {pendingIntegration && app.bundle
                 ? "多容器合同已锁定"
                 : BLOCKER_LABELS[primaryBlocker]}
             </p>
           )}
           {app.installation.installed && (
-            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
               {app.installation.status || "已就绪"}
             </p>
           )}
@@ -451,7 +451,7 @@ function AppCard({
               type="button"
               disabled={planning}
               onClick={() => onUpdate(app)}
-              className="inline-flex h-8 min-w-[58px] items-center justify-center gap-1.5 rounded-full bg-warning px-3 text-[11px] font-semibold text-primary-foreground shadow-sm transition hover:bg-warning disabled:opacity-60"
+              className="inline-flex h-8 min-w-[58px] items-center justify-center gap-1.5 rounded-full bg-warning px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition hover:bg-warning disabled:opacity-60"
             >
               {planning && <Loader2Icon className="size-3 animate-spin" />}
               {planning ? "检查中" : "更新"}
@@ -468,7 +468,7 @@ function AppCard({
                   ? onOpen?.(app)
                   : onStart(app)
               }
-              className="inline-flex h-8 min-w-[52px] items-center justify-center rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary disabled:opacity-50"
+              className="inline-flex h-8 min-w-[52px] items-center justify-center rounded-full bg-primary px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary disabled:opacity-50"
             >
               {app.installation.state === "running" ? "打开" : "启动"}
             </button>
@@ -514,7 +514,7 @@ function AppCard({
             }
             title={app.installation.installed ? "卸载并保留数据" : undefined}
             className={cn(
-              "inline-flex h-8 items-center justify-center gap-1.5 rounded-full text-[11px] font-semibold transition",
+              "inline-flex h-8 items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold transition",
               app.installation.installed
                 ? "w-8 text-muted-foreground hover:bg-breach/10 hover:text-breach disabled:opacity-50"
                 : app.installable
@@ -764,7 +764,7 @@ function DetailSection({
 }) {
   return (
     <section className="grid gap-3 border-t border-border py-5 sm:grid-cols-[132px_minmax(0,1fr)]">
-      <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+      <h3 className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
         <Icon className="size-3.5" />
         {title}
       </h3>
@@ -874,14 +874,14 @@ function AppDetailSheet({
                 </h2>
                 <span
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                    "rounded-full px-2.5 py-1 text-[12px] font-semibold",
                     status.className,
                   )}
                 >
                   {status.label}
                 </span>
               </div>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {app.name} · v{app.version}
               </p>
               <p className="mt-3 text-[13px] leading-5 text-muted-foreground">
@@ -925,7 +925,7 @@ function AppDetailSheet({
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
-                              "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                              "rounded-full px-2.5 py-1 text-[12px] font-semibold",
                               health.className,
                             )}
                           >
@@ -944,7 +944,7 @@ function AppDetailSheet({
                           <>
                             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                               <div className="rounded-xl bg-background px-3 py-2">
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[12px] text-muted-foreground">
                                   服务
                                 </p>
                                 <p className="mt-0.5 font-semibold text-foreground">
@@ -953,7 +953,7 @@ function AppDetailSheet({
                                 </p>
                               </div>
                               <div className="rounded-xl bg-background px-3 py-2">
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[12px] text-muted-foreground">
                                   CPU
                                 </p>
                                 <p className="mt-0.5 font-semibold text-foreground">
@@ -963,7 +963,7 @@ function AppDetailSheet({
                                 </p>
                               </div>
                               <div className="rounded-xl bg-background px-3 py-2">
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[12px] text-muted-foreground">
                                   内存
                                 </p>
                                 <p className="mt-0.5 font-semibold text-foreground">
@@ -975,7 +975,7 @@ function AppDetailSheet({
                                 </p>
                               </div>
                               <div className="rounded-xl bg-background px-3 py-2">
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[12px] text-muted-foreground">
                                   进程
                                 </p>
                                 <p className="mt-0.5 font-semibold text-foreground">
@@ -996,7 +996,7 @@ function AppDetailSheet({
                                     </span>
                                     <span
                                       className={cn(
-                                        "shrink-0 text-[10px] font-semibold",
+                                        "shrink-0 text-[12px] font-semibold",
                                         runtimeServiceState(service) === "异常"
                                           ? "text-breach"
                                           : service.state === "running"
@@ -1027,7 +1027,7 @@ function AppDetailSheet({
                                         <p className="font-semibold">
                                           {INCIDENT_LABELS[incident.code]}
                                         </p>
-                                        <p className="mt-0.5 text-[10px] opacity-75">
+                                        <p className="mt-0.5 text-[12px] opacity-75">
                                           {incident.serviceId} ·
                                           {incident.recovery === "restart"
                                             ? " 可执行安全重启"
@@ -1039,11 +1039,11 @@ function AppDetailSheet({
                                 </ul>
                               )}
                             {summary.restartCount > 0 && (
-                              <p className="mt-2 text-[10px] text-warning">
+                              <p className="mt-2 text-[12px] text-warning">
                                 {`受管服务累计重启 ${summary.restartCount} 次；若持续增加，建议检查应用状态。`}
                               </p>
                             )}
-                            <p className="mt-2 text-[10px] text-muted-foreground">
+                            <p className="mt-2 text-[12px] text-muted-foreground">
                               仅显示容器健康与聚合资源；不读取应用内容和原始日志。
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -1052,7 +1052,7 @@ function AppDetailSheet({
                                   type="button"
                                   disabled={planning}
                                   onClick={() => onStart(app)}
-                                  className="rounded-full bg-primary px-3.5 py-2 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
+                                  className="rounded-full bg-primary px-3.5 py-2 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                                 >
                                   启动全部服务
                                 </button>
@@ -1062,7 +1062,7 @@ function AppDetailSheet({
                                     type="button"
                                     disabled={planning}
                                     onClick={() => onRestart(app)}
-                                    className="rounded-full bg-primary px-3.5 py-2 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
+                                    className="rounded-full bg-primary px-3.5 py-2 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                                   >
                                     安全重启
                                   </button>
@@ -1070,7 +1070,7 @@ function AppDetailSheet({
                                     type="button"
                                     disabled={planning}
                                     onClick={() => onStop(app)}
-                                    className="rounded-full bg-muted px-3.5 py-2 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-50"
+                                    className="rounded-full bg-muted px-3.5 py-2 text-[12px] font-semibold text-muted-foreground transition hover:bg-muted disabled:opacity-50"
                                   >
                                     停止全部服务
                                   </button>
@@ -1104,7 +1104,7 @@ function AppDetailSheet({
                     <p className="mt-2 font-medium text-foreground">
                       {`运行上限：${formatMemoryLimit(preflight.runtime.memoryLimitMiB)} 内存 · ${preflight.runtime.pidsLimit} 个进程`}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    <p className="mt-0.5 text-[12px] text-muted-foreground">
                       这是系统强制的合计上限，不代表应用会持续占满。
                     </p>
                   </>
@@ -1133,7 +1133,7 @@ function AppDetailSheet({
                           : " · 设备访问端口"}
                         <span
                           className={cn(
-                            "ml-1.5 text-[10px] font-semibold",
+                            "ml-1.5 text-[12px] font-semibold",
                             port.status === "conflict"
                               ? "text-breach"
                               : "text-core",
@@ -1175,7 +1175,7 @@ function AppDetailSheet({
                           </span>
                           <span
                             className={cn(
-                              "text-[10px] font-semibold",
+                              "text-[12px] font-semibold",
                               volume.access === "只读"
                                 ? "text-core"
                                 : "text-core",
@@ -1188,7 +1188,7 @@ function AppDetailSheet({
                           {volume.name} · {volume.target}
                         </p>
                         {volume.snapshotOnUpdate && (
-                          <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          <p className="mt-0.5 text-[12px] text-muted-foreground">
                             更新前创建回退快照
                           </p>
                         )}
@@ -1242,7 +1242,7 @@ function AppDetailSheet({
                       </p>
                     )}
                     {preflight.storage.imageStorage.downloadBytes !== null && (
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-[12px] text-muted-foreground">
                         {`受信 OCI 清单下载量 ${formatStorageBytes(
                           preflight.storage.imageStorage.downloadBytes,
                         )} · ${preflight.storage.imageStorage.blobCount} 个去重分层。解压与元数据空间按“下载量 3 倍或额外 512 MB，取较大值”预留；Docker 拉取仍执行最终校验。`}
@@ -1381,7 +1381,7 @@ function AgentAssetCard({
             {stateBadge && (
               <span
                 className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  "shrink-0 rounded-full px-2 py-0.5 text-[12px] font-medium",
                   stateBadge.tone,
                 )}
               >
@@ -1389,12 +1389,12 @@ function AgentAssetCard({
               </span>
             )}
             {presentation && (
-              <span className="shrink-0 rounded-full bg-resonance/10 px-2 py-0.5 text-[10px] font-medium text-resonance">
+              <span className="shrink-0 rounded-full bg-resonance/10 px-2 py-0.5 text-[12px] font-medium text-resonance">
                 {APP_PRESENTATION_LABELS[presentation]}
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
             {AGENT_ASSET_LABELS[asset.kind]} · {asset.author || asset.source}
           </p>
         </div>
@@ -1402,7 +1402,7 @@ function AgentAssetCard({
       <p className="mt-3 line-clamp-2 text-[12px] leading-5 text-muted-foreground">
         {asset.description}
       </p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-medium">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] font-medium">
         <span
           title={
             asset.publisherVerified && asset.verifiedPublisher
@@ -1464,7 +1464,7 @@ function AgentAssetCard({
       {asset.releaseSummary && (
         <p
           title={asset.releaseSummary}
-          className="mt-2 line-clamp-1 text-[10px] leading-4 text-muted-foreground"
+          className="mt-2 line-clamp-1 text-[12px] leading-4 text-muted-foreground"
         >
           <span className="font-medium text-muted-foreground">
             {asset.publisherVerified ? "版本说明（已验证）" : "目录版本说明"}
@@ -1473,7 +1473,7 @@ function AgentAssetCard({
         </p>
       )}
       <div className="mt-auto flex items-center justify-between gap-3 pt-3">
-        <div className="flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
           <span className="truncate">
             {asset.version
               ? asset.lifecycleState === "update_available" &&
@@ -1498,7 +1498,7 @@ function AgentAssetCard({
             type="button"
             onClick={() => onDetails(asset)}
             aria-label={`查看“${asset.name}”详情`}
-            className="h-8 rounded-full bg-card/80 px-3 text-[11px] font-semibold text-muted-foreground ring-1 ring-inset ring-border transition hover:bg-card"
+            className="h-8 rounded-full bg-card/80 px-3 text-[12px] font-semibold text-muted-foreground ring-1 ring-inset ring-border transition hover:bg-card"
           >
             详情
           </button>
@@ -1518,7 +1518,7 @@ function AgentAssetCard({
                         ? "打开"
                         : "启用"
               }“${asset.name}”`}
-              className="h-8 rounded-full bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-wait disabled:opacity-50"
+              className="h-8 rounded-full bg-primary px-3 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:cursor-wait disabled:opacity-50"
             >
               {primaryBusy
                 ? "处理中…"
@@ -1538,7 +1538,7 @@ function AgentAssetCard({
               onClick={() => onManage?.(asset)}
               disabled={!onManage}
               aria-label={`在 Agent 中管理“${asset.name}”`}
-              className="h-8 rounded-full bg-muted px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted disabled:cursor-default disabled:opacity-50"
+              className="h-8 rounded-full bg-muted px-3 text-[12px] font-semibold text-muted-foreground transition hover:bg-muted disabled:cursor-default disabled:opacity-50"
             >
               Agent 中管理
             </button>
@@ -1621,7 +1621,7 @@ function AgentAssetDetailSheet({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-muted-foreground">
+            <p className="text-[12px] font-medium text-muted-foreground">
               {AGENT_ASSET_LABELS[target.kind]} ·{" "}
               {target.author || target.source}
             </p>
@@ -1684,7 +1684,7 @@ function AgentAssetDetailSheet({
                       <span className="flex-1">
                         {AGENT_PERMISSION_LABELS[permission] || permission}
                       </span>
-                      <span className="text-[10px] opacity-70">
+                      <span className="text-[12px] opacity-70">
                         {granted ? "已授权" : "待确认"}
                       </span>
                     </li>
@@ -1750,7 +1750,7 @@ function AgentAssetDetailSheet({
         </div>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/80 px-6 py-4">
-          <p className="max-w-[220px] text-[10px] leading-4 text-muted-foreground">
+          <p className="max-w-[220px] text-[12px] leading-4 text-muted-foreground">
             {target.kind === "plugin" || target.kind === "connector"
               ? "设备安装由管理员确认；权限和账户仍按当前用户隔离。"
               : "这类能力暂时仍由 Agent 自有管理面负责。"}
@@ -1764,7 +1764,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onInstall(target)}
                     disabled={busy || target.compatibility === "incompatible"}
-                    className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
+                    className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
                   >
                     {target.lifecycleState === "update_available"
                       ? "安全更新"
@@ -1775,7 +1775,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onAuthorize(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
+                    className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
                   >
                     确认权限并启用
                   </button>
@@ -1784,7 +1784,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onDisable(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-muted px-4 text-[11px] font-semibold text-foreground transition hover:bg-slate-300 disabled:opacity-40"
+                    className="h-9 rounded-full bg-muted px-4 text-[12px] font-semibold text-foreground transition hover:bg-slate-300 disabled:opacity-40"
                   >
                     停用当前用户
                   </button>
@@ -1794,7 +1794,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onRollback(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-warning/10 px-3 text-[11px] font-semibold text-warning transition hover:bg-warning/10 disabled:opacity-40"
+                    className="h-9 rounded-full bg-warning/10 px-3 text-[12px] font-semibold text-warning transition hover:bg-warning/10 disabled:opacity-40"
                   >
                     回滚
                   </button>
@@ -1804,7 +1804,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onUninstall(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-breach/10 px-3 text-[11px] font-semibold text-breach transition hover:bg-breach/10 disabled:opacity-40"
+                    className="h-9 rounded-full bg-breach/10 px-3 text-[12px] font-semibold text-breach transition hover:bg-breach/10 disabled:opacity-40"
                   >
                     卸载
                   </button>
@@ -1814,7 +1814,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onConnect(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
+                    className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
                   >
                     连接账户
                   </button>
@@ -1825,7 +1825,7 @@ function AgentAssetDetailSheet({
                 type="button"
                 onClick={() => onManage?.(target)}
                 disabled={!onManage || busy}
-                className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
+                className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary disabled:opacity-40"
               >
                 前往 Agent 管理
               </button>
@@ -1961,7 +1961,7 @@ function AgentConnectionDialog({
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-[17px] font-semibold">连接 {target.name}</h2>
-            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+            <p className="mt-1 text-[12px] leading-4 text-muted-foreground">
               凭据由 Agent 加密保存，并绑定当前 Echo 用户；Hub 不读取其数据库。
             </p>
           </div>
@@ -1994,7 +1994,7 @@ function AgentConnectionDialog({
             <div className="space-y-3">
               {profile.fields.map((field) => (
                 <label key={field.key} className="block">
-                  <span className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+                  <span className="mb-1.5 block text-[12px] font-medium text-muted-foreground">
                     {field.labelZh}
                     {field.required ? " · 必填" : ""}
                   </span>
@@ -2015,7 +2015,7 @@ function AgentConnectionDialog({
               ))}
               {profile.minimumCredentials > 0 &&
                 !profile.fields.some((field) => field.required) && (
-                  <p className="text-[10px] leading-4 text-muted-foreground">
+                  <p className="text-[12px] leading-4 text-muted-foreground">
                     按服务商提供的凭据类型填写其中一项即可。
                   </p>
                 )}
@@ -2039,7 +2039,7 @@ function AgentConnectionDialog({
           {error && (
             <p
               role="alert"
-              className="rounded-xl bg-breach/10 px-3 py-2 text-[11px] text-breach"
+              className="rounded-xl bg-breach/10 px-3 py-2 text-[12px] text-breach"
             >
               {error}
             </p>
@@ -2052,7 +2052,7 @@ function AgentConnectionDialog({
               type="button"
               onClick={() => onManage?.(target)}
               disabled={!onManage}
-              className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+              className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
             >
               前往 Agent 安全登录
             </button>
@@ -2061,7 +2061,7 @@ function AgentConnectionDialog({
               type="button"
               onClick={() => void disconnect()}
               disabled={busy}
-              className="h-9 rounded-full bg-breach/10 px-4 text-[11px] font-semibold text-breach disabled:opacity-40"
+              className="h-9 rounded-full bg-breach/10 px-4 text-[12px] font-semibold text-breach disabled:opacity-40"
             >
               {busy ? "正在断开…" : "断开当前用户"}
             </button>
@@ -2070,7 +2070,7 @@ function AgentConnectionDialog({
               type="button"
               onClick={() => void submit()}
               disabled={busy}
-              className="h-9 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+              className="h-9 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
             >
               {busy ? "正在验证…" : "保存并连接"}
             </button>
@@ -2823,7 +2823,7 @@ export function HubPanel({
         <div className="shrink-0 px-6 pb-5 pt-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-core">
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-core">
                 {view === "device" ? (
                   <ShoppingBagIcon className="size-3.5" />
                 ) : (
@@ -2867,7 +2867,7 @@ export function HubPanel({
                   setSearch("");
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition",
                   view === "device"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -2883,7 +2883,7 @@ export function HubPanel({
                   setSearch("");
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition",
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition",
                   view === "agent"
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -2904,7 +2904,7 @@ export function HubPanel({
                       else setAgentKind(key as AgentAssetFilter);
                     }}
                     className={cn(
-                      "shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-medium transition",
+                      "shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-medium transition",
                       (view === "device" ? category === key : agentKind === key)
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "bg-card/65 text-muted-foreground hover:bg-card hover:text-foreground",
@@ -2964,10 +2964,10 @@ export function HubPanel({
         {view === "device" && operations.length > 0 && (
           <div className="mx-6 mb-4 shrink-0 rounded-2xl bg-card/66 px-4 py-3 shadow-[inset_0_0_0_1px_rgba(148,163,184,.16)]">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-[12px] font-semibold text-muted-foreground">
                 后台任务
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[12px] text-muted-foreground">
                 关窗或刷新后仍会保留
               </span>
             </div>
@@ -2992,13 +2992,13 @@ export function HubPanel({
                     ) : (
                       <CheckCircle2Icon className="size-3.5 shrink-0 text-core" />
                     )}
-                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-foreground">
+                    <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground">
                       {app?.nameZh ?? operation.appId} ·{" "}
                       {OPERATION_LABELS[operation.operation]}
                     </span>
                     <span
                       className={cn(
-                        "max-w-[54%] truncate text-[10px]",
+                        "max-w-[54%] truncate text-[12px]",
                         active
                           ? "text-core"
                           : failed
@@ -3139,7 +3139,7 @@ export function HubPanel({
           )}
         </div>
 
-        <footer className="flex h-10 shrink-0 items-center justify-between border-t border-border bg-card/48 px-6 text-[10px] text-muted-foreground">
+        <footer className="flex h-10 shrink-0 items-center justify-between border-t border-border bg-card/48 px-6 text-[12px] text-muted-foreground">
           <span>
             {view === "agent"
               ? agentCatalog
@@ -3298,7 +3298,7 @@ export function HubPanel({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="text-[11px] font-medium text-muted-foreground">
+                            <div className="text-[12px] font-medium text-muted-foreground">
                               {label}
                             </div>
                             <code className="mt-1 block select-all break-all text-[12px] text-foreground">

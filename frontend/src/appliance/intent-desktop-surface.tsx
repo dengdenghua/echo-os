@@ -749,7 +749,7 @@ export function IntentDesktopSurface({
             <div
               role="tablist"
               aria-label="OpenRoom 协作空间切换"
-              className="flex items-center gap-1 rounded-full border border-black/5 bg-black/[0.03] p-0.5 text-[11px] backdrop-blur-md  dark:bg-white/[0.04]"
+              className="flex items-center gap-1 rounded-full border border-black/5 bg-black/[0.03] p-0.5 text-[12px] backdrop-blur-md  dark:bg-white/[0.04]"
               onClick={(e) => e.stopPropagation()}
             >
               {OPEN_ROOMS.map((room) => (
@@ -760,7 +760,7 @@ export function IntentDesktopSurface({
                   aria-selected={activeRoom === room.id}
                   onClick={() => setActiveRoom(room.id)}
                   className={cn(
-                    "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all",
+                    "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-all",
                     activeRoom === room.id
                       ? "bg-card text-foreground shadow-sm font-semibold"
                       : "text-muted-foreground hover:text-foreground",
@@ -777,7 +777,7 @@ export function IntentDesktopSurface({
           {/* 主题选择微组件 */}
           <div
             className={cn(
-              "flex items-center rounded-lg border p-0.5 text-[11px] font-medium backdrop-blur-md",
+              "flex items-center rounded-lg border p-0.5 text-[12px] font-medium backdrop-blur-md",
               theme === "theme-white"
                 ? "border-black/10 bg-black/5 text-muted-foreground"
                 : "border-border bg-card/5 text-muted-foreground",
@@ -930,7 +930,7 @@ export function IntentDesktopSurface({
                 className="relative flex shrink-0 items-center gap-1.5"
                 ref={agentMenuRef}
               >
-                <span className="select-none text-[11px] font-semibold text-muted-foreground">
+                <span className="select-none text-[12px] font-semibold text-muted-foreground">
                   交给：
                 </span>
                 <button
@@ -1008,7 +1008,7 @@ export function IntentDesktopSurface({
                                 {agent.name}
                               </span>
                               {agent.description && (
-                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4 text-muted-foreground">
+                                <span className="mt-0.5 line-clamp-2 block text-[12px] leading-4 text-muted-foreground">
                                   {agent.description}
                                 </span>
                               )}
@@ -1034,7 +1034,7 @@ export function IntentDesktopSurface({
                     type="button"
                     onClick={() => handleApplyExample(example)}
                     title={example.prompt}
-                    className="shrink-0 truncate rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-black/[0.06] hover:text-foreground dark:bg-white/[0.05]"
+                    className="shrink-0 truncate rounded-full border border-black/5 bg-black/[0.03] px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-black/[0.06] hover:text-foreground dark:bg-white/[0.05]"
                   >
                     {example.label}
                   </button>

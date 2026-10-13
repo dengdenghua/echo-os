@@ -283,7 +283,7 @@ export function AgentPipMonitor({
             )}
           />
         </span>
-        <span className="text-[11px] font-semibold text-foreground">
+        <span className="text-[12px] font-semibold text-foreground">
           {agentFirstName} 画中画 · {pillLabel}
           {demo ? " · 演示" : ""}
         </span>
@@ -330,7 +330,7 @@ export function AgentPipMonitor({
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-core opacity-60" />
             <span className="relative inline-flex size-1.5 rounded-full bg-core" />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <span className="text-[12px] font-bold uppercase text-muted-foreground">
             任务画中画 · {agentFirstName}
           </span>
         </div>
@@ -405,7 +405,7 @@ export function AgentPipMonitor({
           <span className="truncate pr-2">{task.title}</span>
           <span
             className={cn(
-              "shrink-0 text-[10px] font-mono",
+              "shrink-0 text-[12px] font-mono",
               ended ? "text-muted-foreground" : "text-core",
             )}
           >
@@ -432,19 +432,19 @@ export function AgentPipMonitor({
         </div>
 
         {/* 控制台微预览 */}
-        <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-black/[0.04] p-2 font-mono text-[10px] leading-relaxed text-muted-foreground dark:bg-white/[0.04]">
+        <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-black/[0.04] p-2 font-mono text-[12px] leading-relaxed text-muted-foreground dark:bg-white/[0.04]">
           <TerminalIcon className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
           <span className="line-clamp-2">{task.stepText}</span>
         </div>
 
         {/* 关键安全决策卡片 (Human-in-the-loop 快速批准) */}
         {task.needsApproval && !approvalHandled && (
-          <div className="mt-2.5 rounded-lg border border-warning/30 bg-warning/10 p-2 text-[11px]">
+          <div className="mt-2.5 rounded-lg border border-warning/30 bg-warning/10 p-2 text-[12px]">
             <div className="flex items-center gap-1.5 font-semibold text-warning">
               <AlertCircleIcon className="size-3.5 shrink-0" />
               <span>需要操作授权</span>
             </div>
-            <p className="mt-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 text-[12px] text-muted-foreground">
               {task.approvalRiskMessage}
             </p>
             {onReviewApproval ? (
@@ -452,7 +452,7 @@ export function AgentPipMonitor({
                 <button
                   type="button"
                   onClick={() => onReviewApproval(task)}
-                  className="rounded-md bg-warning px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm hover:bg-warning"
+                  className="rounded-md bg-warning px-2 py-0.5 text-[12px] font-semibold text-primary-foreground shadow-sm hover:bg-warning"
                 >
                   去处理
                 </button>
@@ -463,7 +463,7 @@ export function AgentPipMonitor({
                   type="button"
                   onClick={() => void handleDecision(false)}
                   disabled={demo || !onReject || approvalPending}
-                  className="rounded-md border border-black/10 bg-card px-2 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-background disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-md border border-black/10 bg-card px-2 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-background disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   拦截
                 </button>
@@ -471,7 +471,7 @@ export function AgentPipMonitor({
                   type="button"
                   onClick={() => void handleDecision(true)}
                   disabled={demo || !onApprove || approvalPending}
-                  className="rounded-md bg-warning px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm hover:bg-warning disabled:cursor-not-allowed disabled:opacity-45"
+                  className="rounded-md bg-warning px-2 py-0.5 text-[12px] font-semibold text-primary-foreground shadow-sm hover:bg-warning disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   批准放行
                 </button>

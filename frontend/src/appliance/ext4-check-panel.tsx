@@ -111,7 +111,7 @@ export function Ext4CheckPanel() {
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <FileSearchIcon className="size-5 text-core" /> EXT4 离线只读检查
             </h2>
-            <p className="mt-2 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">
               只接受 Echo 登记且位于健康 RAID1 上的
               EXT4。卷必须事先卸载；系统不会自动停止共享、
               卸载、挂载或修复。检查期间仅执行 e2fsck
@@ -179,7 +179,7 @@ export function Ext4CheckPanel() {
                   <p className="text-xs font-semibold text-foreground">
                     {filesystem.name}
                   </p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     {filesystem.mountpoint} ·{" "}
                     {filesystem.mounted ? "已挂载，不能检查" : "已卸载，可检查"}
                   </p>
@@ -188,7 +188,7 @@ export function Ext4CheckPanel() {
                   type="button"
                   disabled={!filesystem.canCheck || busy}
                   onClick={() => void preview(filesystem)}
-                  className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                  className="h-8 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {filesystem.canCheck ? "预览离线检查" : "需先安全卸载"}
                 </button>

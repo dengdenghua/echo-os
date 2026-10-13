@@ -146,7 +146,7 @@ export function MdRaid1RepairPanel() {
                 降级 RAID1 换盘修复
               </h2>
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
               仅处理 Echo 自管双盘 RAID1：一块内核确认正常、一块已故障或缺失。
               不会主动标坏正常盘，也不提供强制模式。
             </p>
@@ -204,14 +204,14 @@ export function MdRaid1RepairPanel() {
                   <ShieldAlertIcon className="size-4 text-warning" />
                   {candidate.array.devicefile}
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground">
+                <p className="mt-2 text-[12px] text-muted-foreground">
                   存活盘 {candidate.survivingMember.devicefile} · 缺失角色{" "}
                   {candidate.missingSlot}
                   {candidate.failedMember
                     ? ` · 故障盘 ${candidate.failedMember.devicefile}`
                     : " · 原盘已离线"}
                 </p>
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   新盘至少 {formatBytes(candidate.minimumReplacementBytes)}
                   ；只显示通过空盘与稳定身份检查的磁盘
                 </p>

@@ -172,7 +172,7 @@ export function NasBackupRemotePanel({
           <h4 className="text-xs font-semibold text-foreground">
             S3 兼容异地备份挂载
           </h4>
-          <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+          <p className="mt-1 text-[12px] leading-4 text-muted-foreground">
             支持 MinIO、Cloudflare R2、Backblaze B2 S3 等 HTTPS
             端点。连接信息仅以 systemd
             加密凭据保存，成功挂载后会出现在上方安全候选中。
@@ -182,7 +182,7 @@ export function NasBackupRemotePanel({
           type="button"
           disabled={loading || busy}
           onClick={() => void refresh()}
-          className="shrink-0 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground disabled:opacity-40"
+          className="shrink-0 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground disabled:opacity-40"
         >
           刷新
         </button>
@@ -196,10 +196,10 @@ export function NasBackupRemotePanel({
               className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"
             >
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold text-foreground">
+                <p className="truncate text-[12px] font-semibold text-foreground">
                   {remote.label}
                 </p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[12px] text-muted-foreground">
                   {remote.id} · {remote.mounted ? "已安全挂载" : "挂载异常"}
                 </p>
               </div>
@@ -207,7 +207,7 @@ export function NasBackupRemotePanel({
                 type="button"
                 disabled={disabled || busy}
                 onClick={() => void previewRemove(remote)}
-                className="rounded-lg border border-breach/30 bg-breach/10 px-2.5 py-1.5 text-[10px] font-semibold text-breach disabled:opacity-40"
+                className="rounded-lg border border-breach/30 bg-breach/10 px-2.5 py-1.5 text-[12px] font-semibold text-breach disabled:opacity-40"
               >
                 移除
               </button>
@@ -227,7 +227,7 @@ export function NasBackupRemotePanel({
         ].map(([fieldLabel, value, setter, placeholder]) => (
           <label
             key={fieldLabel as string}
-            className="text-[10px] font-medium text-muted-foreground"
+            className="text-[12px] font-medium text-muted-foreground"
           >
             {fieldLabel as string}
             <input
@@ -238,11 +238,11 @@ export function NasBackupRemotePanel({
                 (setter as Dispatch<SetStateAction<string>>)(event.target.value)
               }
               placeholder={placeholder as string}
-              className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[11px] outline-none focus:border-core/30 disabled:bg-muted"
+              className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[12px] outline-none focus:border-core/30 disabled:bg-muted"
             />
           </label>
         ))}
-        <label className="text-[10px] font-medium text-muted-foreground">
+        <label className="text-[12px] font-medium text-muted-foreground">
           Access Key
           <input
             type="password"
@@ -251,10 +251,10 @@ export function NasBackupRemotePanel({
             value={accessKeyId}
             disabled={disabled || busy}
             onChange={(event) => setAccessKeyId(event.target.value)}
-            className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[11px] outline-none focus:border-core/30 disabled:bg-muted"
+            className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[12px] outline-none focus:border-core/30 disabled:bg-muted"
           />
         </label>
-        <label className="text-[10px] font-medium text-muted-foreground">
+        <label className="text-[12px] font-medium text-muted-foreground">
           Secret Key
           <input
             type="password"
@@ -263,7 +263,7 @@ export function NasBackupRemotePanel({
             value={secretAccessKey}
             disabled={disabled || busy}
             onChange={(event) => setSecretAccessKey(event.target.value)}
-            className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[11px] outline-none focus:border-core/30 disabled:bg-muted"
+            className="mt-1 h-8 w-full rounded-lg border border-border bg-card px-2.5 text-[12px] outline-none focus:border-core/30 disabled:bg-muted"
           />
         </label>
       </div>
@@ -272,13 +272,13 @@ export function NasBackupRemotePanel({
           type="button"
           disabled={disabled || loading || busy}
           onClick={() => void previewCreate()}
-          className="rounded-lg bg-primary px-3 py-2 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+          className="rounded-lg bg-primary px-3 py-2 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
         >
           预览并建立加密挂载
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-[10px] text-breach">
+        <p role="alert" className="mt-2 text-[12px] text-breach">
           {error}
         </p>
       )}

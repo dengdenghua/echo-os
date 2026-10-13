@@ -230,7 +230,7 @@ export function SystemModelStatus({
         className="mac-model-status-popover z-[200] w-[320px] max-w-[calc(100vw-24px)] rounded-xl p-3 text-xs"
       >
         <h2 className="text-sm font-semibold leading-5">模型与用量</h2>
-        <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+        <p className="mt-0.5 text-[12px] leading-4 text-muted-foreground">
           系统默认模型 · 后续发送使用，进行中的轮次不变
         </p>
         <div className="mt-2 flex items-start gap-2 rounded-md bg-muted/60 px-2 py-1.5">
@@ -239,17 +239,17 @@ export function SystemModelStatus({
             className={`mt-1 size-1.5 shrink-0 rounded-full ${modelConnection.className}`}
           />
           <div className="min-w-0">
-            <p className="text-[11px] font-medium leading-4">
+            <p className="text-[12px] font-medium leading-4">
               执行连接：{modelConnection.label}
             </p>
-            <p className="text-[10px] leading-4 text-muted-foreground">
+            <p className="text-[12px] leading-4 text-muted-foreground">
               {modelConnection.detail}
             </p>
           </div>
         </div>
         <label
           htmlFor={modelChoiceId}
-          className="mt-3 block text-[11px] font-medium"
+          className="mt-3 block text-[12px] font-medium"
         >
           切换模型
         </label>
@@ -299,12 +299,12 @@ export function SystemModelStatus({
         {hasAccount &&
           accountModels.isFetching &&
           subscriptionOptions.length === 0 && (
-            <p role="status" className="mt-1.5 text-[11px] leading-4">
+            <p role="status" className="mt-1.5 text-[12px] leading-4">
               正在加载账户模型…
             </p>
           )}
         {hasAccount && accountModels.isError && (
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-destructive">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-[12px] leading-4 text-destructive">
             <p role="alert">账户模型目录暂不可用，额度信息不受影响。</p>
             <button
               type="button"
@@ -323,18 +323,18 @@ export function SystemModelStatus({
           subscriptionOptions.length === 0 && (
             <p
               role="status"
-              className="mt-1.5 text-[11px] leading-4 text-muted-foreground"
+              className="mt-1.5 text-[12px] leading-4 text-muted-foreground"
             >
               账户已连接，但尚未返回可用模型。请在模型设置中检查账户。
             </p>
           )}
         {isLoading && (
-          <p role="status" className="mt-1.5 text-[11px] leading-4">
+          <p role="status" className="mt-1.5 text-[12px] leading-4">
             正在加载模型…
           </p>
         )}
         {error && (
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-destructive">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-[12px] leading-4 text-destructive">
             <p role="alert">模型目录暂不可用，请检查连接后重试。</p>
             <button
               type="button"
@@ -349,7 +349,7 @@ export function SystemModelStatus({
         {syncCoderModel.isError && (
           <p
             role="alert"
-            className="mt-1.5 text-[11px] leading-4 text-destructive"
+            className="mt-1.5 text-[12px] leading-4 text-destructive"
           >
             模型同步失败，请重试。
           </p>
@@ -381,13 +381,13 @@ export function SystemModelStatus({
               <RefreshCwIcon className="size-3" />
             </button>
           </div>
-          <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+          <p className="mt-0.5 text-[12px] leading-4 text-muted-foreground">
             账户共享额度
           </p>
           {!hasUsage ? (
             <p
               role="status"
-              className="mt-2 text-[11px] leading-4 text-muted-foreground"
+              className="mt-2 text-[12px] leading-4 text-muted-foreground"
             >
               {authLoading || account.isLoading
                 ? "正在检查账户…"
@@ -414,20 +414,20 @@ export function SystemModelStatus({
               {limits.isError ? (
                 <p
                   role="status"
-                  className="mt-1.5 text-[11px] leading-4 text-muted-foreground"
+                  className="mt-1.5 text-[12px] leading-4 text-muted-foreground"
                 >
                   额度暂不可用，请检查账户连接后刷新。
                 </p>
               ) : limits.isLoading ? (
-                <p className="mt-1.5 text-[11px] leading-4">正在加载额度…</p>
+                <p className="mt-1.5 text-[12px] leading-4">正在加载额度…</p>
               ) : !limits.data?.buckets.length ? (
-                <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
+                <p className="mt-1.5 text-[12px] leading-4 text-muted-foreground">
                   服务未提供额度；其他模型的余额请到服务商查看。
                 </p>
               ) : (
                 limits.data.buckets.map((bucket, index) => (
                   <div key={index} className="mt-2 space-y-2">
-                    <p className="text-[11px] font-medium leading-4">
+                    <p className="text-[12px] font-medium leading-4">
                       {bucket.limit_name || "账户额度"}
                     </p>
                     {[bucket.primary, bucket.secondary].map((window, index) => {
@@ -436,7 +436,7 @@ export function SystemModelStatus({
                         return (
                           <p
                             key={index}
-                            className="text-[11px] text-muted-foreground"
+                            className="text-[12px] text-muted-foreground"
                           >
                             服务未提供该窗口的有效额度。
                           </p>
@@ -450,7 +450,7 @@ export function SystemModelStatus({
                       return (
                         <div
                           key={index}
-                          className="space-y-1 text-[11px] leading-4"
+                          className="space-y-1 text-[12px] leading-4"
                         >
                           <div className="flex justify-between">
                             <span>{durationLabel}额度</span>
@@ -469,7 +469,7 @@ export function SystemModelStatus({
                             !Number.isNaN(
                               new Date(window.resets_at * 1000).getTime(),
                             ) && (
-                              <p className="text-[10px] leading-4 text-muted-foreground">
+                              <p className="text-[12px] leading-4 text-muted-foreground">
                                 重置于{" "}
                                 {new Date(
                                   window.resets_at * 1000,

@@ -130,7 +130,7 @@ export function NasAlertDeliveryPanel() {
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm font-semibold">无人值守 NAS 告警</strong>
             {status?.enabled ? (
-              <span className="rounded-full bg-core/10 px-2 py-0.5 text-[10px] font-semibold text-core">
+              <span className="rounded-full bg-core/10 px-2 py-0.5 text-[12px] font-semibold text-core">
                 后台运行
               </span>
             ) : null}
@@ -139,7 +139,7 @@ export function NasAlertDeliveryPanel() {
             {statusText}
           </p>
           {status?.enabled ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
               <span className="text-muted-foreground">
                 上次成功：
                 {status.lastSuccessAt
@@ -206,7 +206,7 @@ export function NasAlertDeliveryPanel() {
               </button>
             </div>
           )}
-          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+          <p className="mt-2 text-[12px] leading-4 text-muted-foreground">
             仅允许公网 HTTPS 443，禁止重定向；完整 URL 与 Token
             只加密保存在设备私密状态中。
           </p>

@@ -384,7 +384,7 @@ export function OmvStorageHealth() {
                   : ""}
               </p>
             </div>
-            <span className="shrink-0 text-[10px] opacity-70">
+            <span className="shrink-0 text-[12px] opacity-70">
               {healthSnapshot?.monitoring && healthSnapshot.intervalSeconds > 0
                 ? `每 ${Math.max(1, Math.round(healthSnapshot.intervalSeconds / 60))} 分钟`
                 : "按需检查"}
@@ -415,7 +415,7 @@ export function OmvStorageHealth() {
                       {alert.resource}
                     </span>
                   </div>
-                  <p className="mt-1 text-[10px] opacity-65">
+                  <p className="mt-1 text-[12px] opacity-65">
                     首次 {formatTimestamp(alert.firstSeenAt)} · 最近{" "}
                     {formatTimestamp(alert.lastSeenAt)}
                     {alert.occurrences > 1
@@ -429,10 +429,10 @@ export function OmvStorageHealth() {
 
           {healthSnapshot && healthSnapshot.events.length > 0 && (
             <details className="mt-3 border-t border-current/10 pt-3">
-              <summary className="cursor-pointer text-[11px] font-medium">
+              <summary className="cursor-pointer text-[12px] font-medium">
                 最近告警变化
               </summary>
-              <div className="mt-2 space-y-1 text-[10px] opacity-75">
+              <div className="mt-2 space-y-1 text-[12px] opacity-75">
                 {healthSnapshot.events
                   .slice(-5)
                   .reverse()
@@ -492,11 +492,11 @@ export function OmvStorageHealth() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[15px] font-semibold">物理磁盘</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 原生 SMART 枚举 · 已隐藏序列号和 by-id 路径
               </p>
             </div>
-            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-1 text-[12px] font-medium text-muted-foreground">
               {devices.length} 块
             </span>
           </div>
@@ -546,13 +546,13 @@ export function OmvStorageHealth() {
                       <strong className="block truncate text-xs text-foreground">
                         {device.model || "未知磁盘"}
                       </strong>
-                      <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                      <span className="mt-0.5 block text-[12px] text-muted-foreground">
                         {device.devicefile}
                         {device.sizeBytes == null
                           ? ""
                           : ` · ${formatBytes(device.sizeBytes)}`}
                       </span>
-                      <div className="mt-2 flex items-center gap-3 text-[11px]">
+                      <div className="mt-2 flex items-center gap-3 text-[12px]">
                         <span
                           className={
                             isHealthy
@@ -577,13 +577,13 @@ export function OmvStorageHealth() {
                         </span>
                       </div>
                       {isUnknown && (
-                        <p className="mt-2 text-[10px] text-muted-foreground">
+                        <p className="mt-2 text-[12px] text-muted-foreground">
                           未取得完整健康结论，请检查 SMART
                           组件、磁盘支持与读取权限。
                         </p>
                       )}
                       {detail ? (
-                        <p className="mt-2 text-[10px] text-muted-foreground">
+                        <p className="mt-2 text-[12px] text-muted-foreground">
                           通电 {detail.powerOnHours ?? "未知"} 小时 · 启停{" "}
                           {detail.powerCycles ?? "未知"} 次
                         </p>
@@ -592,7 +592,7 @@ export function OmvStorageHealth() {
                           type="button"
                           disabled={smartLoading === device.devicefile}
                           onClick={() => void readSmart(device.devicefile)}
-                          className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-core hover:text-core disabled:opacity-50"
+                          className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-core hover:text-core disabled:opacity-50"
                         >
                           {smartLoading === device.devicefile && (
                             <Loader2Icon className="size-3 animate-spin" />
@@ -624,13 +624,13 @@ export function OmvStorageHealth() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-[15px] font-semibold">存储拓扑</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 物理盘、软件 RAID 与 LVM 的只读关系
               </p>
             </div>
             <Layers3Icon className="size-5 text-core" />
           </div>
-          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-medium">
+          <div className="mt-3 flex flex-wrap gap-2 text-[12px] font-medium">
             <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               物理盘 {physicalCount}
             </span>
@@ -658,7 +658,7 @@ export function OmvStorageHealth() {
                 return (
                   <article
                     key={node.devicefile}
-                    className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-[11px]"
+                    className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-[12px]"
                   >
                     <span className="min-w-0 text-muted-foreground">
                       {node.parentDevicefiles.length > 0
@@ -721,13 +721,13 @@ export function OmvStorageHealth() {
                       <h2 className="truncate text-[15px] font-semibold">
                         {filesystem.label || filesystem.devicefile}
                       </h2>
-                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                         {filesystem.type.toUpperCase()} ·{" "}
                         {filesystem.mountpoint}
                       </p>
                     </div>
                     {filesystem.readOnly && (
-                      <span className="rounded-full bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning">
+                      <span className="rounded-full bg-warning/10 px-2 py-1 text-[12px] font-medium text-warning">
                         只读挂载
                       </span>
                     )}
@@ -749,7 +749,7 @@ export function OmvStorageHealth() {
                       }}
                     />
                   </div>
-                  <div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground">
+                  <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
                     <span>
                       {used == null ? "容量使用率未知" : `已使用 ${used}%`}
                     </span>
@@ -763,7 +763,7 @@ export function OmvStorageHealth() {
                   {report ? (
                     <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-background p-3 text-xs">
                       <div>
-                        <span className="block text-[10px] text-muted-foreground">
+                        <span className="block text-[12px] text-muted-foreground">
                           SMART
                         </span>
                         <strong
@@ -779,7 +779,7 @@ export function OmvStorageHealth() {
                         </strong>
                       </div>
                       <div>
-                        <span className="block text-[10px] text-muted-foreground">
+                        <span className="block text-[12px] text-muted-foreground">
                           温度
                         </span>
                         <strong className="inline-flex items-center gap-1 text-foreground">
@@ -790,7 +790,7 @@ export function OmvStorageHealth() {
                         </strong>
                       </div>
                       <div>
-                        <span className="block text-[10px] text-muted-foreground">
+                        <span className="block text-[12px] text-muted-foreground">
                           通电时间
                         </span>
                         <strong className="text-foreground">
@@ -800,7 +800,7 @@ export function OmvStorageHealth() {
                         </strong>
                       </div>
                       {report.model && (
-                        <p className="col-span-3 truncate border-t border-border pt-2 text-[10px] text-muted-foreground">
+                        <p className="col-span-3 truncate border-t border-border pt-2 text-[12px] text-muted-foreground">
                           {report.model}
                         </p>
                       )}
@@ -810,7 +810,7 @@ export function OmvStorageHealth() {
                       type="button"
                       disabled={smartLoading === device}
                       onClick={() => void readSmart(device)}
-                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[11px] font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
+                      className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-[12px] font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
                     >
                       {smartLoading === device ? (
                         <Loader2Icon className="size-3.5 animate-spin" />
@@ -820,7 +820,7 @@ export function OmvStorageHealth() {
                       {smartLoading === device ? "正在读取…" : "查看 SMART"}
                     </button>
                   ) : (
-                    <p className="mt-3 text-[10px] text-muted-foreground">
+                    <p className="mt-3 text-[12px] text-muted-foreground">
                       尚未关联到可读取 SMART 的物理磁盘；请检查设备拓扑、SMART
                       组件与读取权限。
                     </p>
@@ -832,7 +832,7 @@ export function OmvStorageHealth() {
         })}
       </div>
 
-      <p className="mt-4 text-[11px] leading-5 text-muted-foreground">
+      <p className="mt-4 text-[12px] leading-5 text-muted-foreground">
         {healthSnapshot?.monitoring
           ? "后台监测已启用，最近告警变化显示在上方。"
           : "当前为按需检查；点击“刷新”重新读取，尚未启用后台持续监测。"}

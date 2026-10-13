@@ -222,7 +222,7 @@ export function NasBackupRestorePanel({
               <DatabaseBackupIcon className="size-4 text-core" />
               从加密备份恢复数据
             </h3>
-            <p className="mt-1 max-w-2xl text-[10px] leading-5 text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-[12px] leading-5 text-muted-foreground">
               每个备份来源都要明确映射到当前机器的受管 Btrfs
               共享卷，可选择新硬盘。
               新恢复要求目标为空；续跑会识别持久化收据。恢复前必须停用备份、自动
@@ -233,7 +233,7 @@ export function NasBackupRestorePanel({
             type="button"
             disabled={!available || busy || parentBusy}
             onClick={() => void loadSets()}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-core/30 bg-core/10 px-3 text-[11px] font-semibold text-core disabled:opacity-40"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-core/30 bg-core/10 px-3 text-[12px] font-semibold text-core disabled:opacity-40"
           >
             {busy && <Loader2Icon className="size-3 animate-spin" />}
             读取可恢复版本
@@ -241,7 +241,7 @@ export function NasBackupRestorePanel({
         </div>
 
         {!available && status && (
-          <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[10px] leading-5 text-warning">
+          <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[12px] leading-5 text-warning">
             <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
             {!status.credentialConfigured
               ? "请先连接加密 Restic 仓库。"
@@ -256,7 +256,7 @@ export function NasBackupRestorePanel({
         {listing && (
           <div className="mt-3 rounded-xl bg-background p-3">
             <div className="flex flex-wrap items-end gap-3">
-              <label className="min-w-0 flex-1 text-[10px] font-medium text-foreground">
+              <label className="min-w-0 flex-1 text-[12px] font-medium text-foreground">
                 已认证的备份集
                 <select
                   aria-label="已认证的 NAS 备份集"
@@ -278,7 +278,7 @@ export function NasBackupRestorePanel({
                     setConfirmation("");
                     setResult(null);
                   }}
-                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                 >
                   {listing.sets.map((item) => (
                     <option key={item.setId} value={item.setId}>
@@ -294,7 +294,7 @@ export function NasBackupRestorePanel({
                 type="button"
                 disabled={!mappingsReady || busy || parentBusy}
                 onClick={() => void preview()}
-                className="h-9 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                className="h-9 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
               >
                 检查恢复条件
               </button>
@@ -304,7 +304,7 @@ export function NasBackupRestorePanel({
                 {selected.members.map((member) => (
                   <label
                     key={member.sharedFolderRef}
-                    className="grid gap-1 text-[10px] font-medium text-foreground sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
+                    className="grid gap-1 text-[12px] font-medium text-foreground sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
                   >
                     <span>来源 {shortId(member.sharedFolderRef)}</span>
                     <select
@@ -320,7 +320,7 @@ export function NasBackupRestorePanel({
                         setConfirmation("");
                         setResult(null);
                       }}
-                      className="h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     >
                       <option value="">选择目标共享卷</option>
                       {targetListing?.targets.map((target) => {
@@ -345,7 +345,7 @@ export function NasBackupRestorePanel({
                   </label>
                 ))}
                 {targetListing?.targets.length === 0 && (
-                  <p className="text-[10px] text-warning">
+                  <p className="text-[12px] text-warning">
                     没有可用的未发布受管 Btrfs
                     共享卷，请先创建目标并停用相关服务。
                   </p>
@@ -353,12 +353,12 @@ export function NasBackupRestorePanel({
               </div>
             )}
             {listing.sets.length === 0 && (
-              <p className="mt-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 text-[12px] text-muted-foreground">
                 仓库中没有可认证的多卷 NAS 备份集。
               </p>
             )}
             {listing.truncated && (
-              <p className="mt-2 text-[10px] text-warning">
+              <p className="mt-2 text-[12px] text-warning">
                 当前仅显示最近 50 个备份集。
               </p>
             )}
@@ -367,24 +367,24 @@ export function NasBackupRestorePanel({
 
         {plan && (
           <div className="mt-3 rounded-xl border border-core/30 bg-core/10 p-3">
-            <p className="text-[10px] leading-5 text-core">
+            <p className="text-[12px] leading-5 text-core">
               {plan.operation === "resumeRestore"
                 ? "检测到未完成的持久化恢复事务，将从安全收据继续。"
                 : plan.operation === "verifyRestore"
                   ? "该备份集已经恢复；本次只会重新验证现有内容。"
                   : `恢复 ${plan.memberCount} 个空共享卷；完整读取仓库后逐卷原子晋级。`}
             </p>
-            <code className="mt-2 block break-all rounded-lg bg-card px-2.5 py-2 text-[10px] text-foreground ring-1 ring-core/30">
+            <code className="mt-2 block break-all rounded-lg bg-card px-2.5 py-2 text-[12px] text-foreground ring-1 ring-core/30">
               {plan.confirmation}
             </code>
-            <label className="mt-3 block text-[10px] font-medium text-foreground">
+            <label className="mt-3 block text-[12px] font-medium text-foreground">
               输入上面的完整确认句
               <input
                 aria-label="NAS 恢复确认句"
                 autoComplete="off"
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
-                className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[10px] outline-none focus:border-core/30"
+                className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[12px] outline-none focus:border-core/30"
               />
             </label>
             <div className="mt-3 flex justify-end">
@@ -394,7 +394,7 @@ export function NasBackupRestorePanel({
                   busy || parentBusy || confirmation !== plan.confirmation
                 }
                 onClick={() => setApprovalOpen(true)}
-                className="h-8 rounded-lg bg-breach px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                className="h-8 rounded-lg bg-breach px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
               >
                 管理员审批并恢复
               </button>
@@ -403,7 +403,7 @@ export function NasBackupRestorePanel({
         )}
 
         {result && (
-          <p className="mt-3 flex items-start gap-2 rounded-xl bg-core/10 px-3 py-2 text-[10px] leading-5 text-core">
+          <p className="mt-3 flex items-start gap-2 rounded-xl bg-core/10 px-3 py-2 text-[12px] leading-5 text-core">
             <CheckCircle2Icon className="mt-0.5 size-3.5 shrink-0" />
             已完成 {result.memberCount}{" "}
             个卷的恢复并逐卷校验内容，仓库完整读取校验通过。
@@ -411,7 +411,7 @@ export function NasBackupRestorePanel({
         )}
 
         {error && (
-          <p role="alert" className="mt-3 text-[10px] text-breach">
+          <p role="alert" className="mt-3 text-[12px] text-breach">
             {error}
           </p>
         )}

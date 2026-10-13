@@ -141,7 +141,7 @@ export function NasEmailAlertDeliveryPanel() {
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm font-semibold">NAS 邮件告警</strong>
             {status?.enabled ? (
-              <span className="rounded-full bg-core/10 px-2 py-0.5 text-[10px] font-semibold text-core">
+              <span className="rounded-full bg-core/10 px-2 py-0.5 text-[12px] font-semibold text-core">
                 后台运行
               </span>
             ) : null}
@@ -150,7 +150,7 @@ export function NasEmailAlertDeliveryPanel() {
             {statusText}
           </p>
           {status?.enabled ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
               <span className="text-muted-foreground">
                 上次成功：
                 {status.lastSuccessAt
@@ -270,7 +270,7 @@ export function NasEmailAlertDeliveryPanel() {
               </button>
             </div>
           )}
-          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+          <p className="mt-2 text-[12px] leading-4 text-muted-foreground">
             仅连接全部解析为公网地址的 SMTP 域名；支持 465 TLS 或 587
             STARTTLS。账号、应用密码和地址只加密保存在设备私密状态中。
           </p>

@@ -171,7 +171,7 @@ function TaskCard({
             </h3>
             <span
               className={cn(
-                "inline-flex items-center gap-1 text-[11px] font-medium",
+                "inline-flex items-center gap-1 text-[12px] font-medium",
                 meta.color,
               )}
             >
@@ -191,7 +191,7 @@ function TaskCard({
               {task.summary}
             </p>
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
             {task.agentId && <span>{task.agentId}</span>}
             {task.executionEngine && (
               <span>· {executionEngineLabel(task.executionEngine)}</span>
@@ -205,7 +205,7 @@ function TaskCard({
 
       {task.progressPercent !== null && task.status !== "completed" && (
         <div className="mt-3">
-          <div className="mb-1 flex justify-between text-[10px] text-muted-foreground">
+          <div className="mb-1 flex justify-between text-[12px] text-muted-foreground">
             <span>任务进度</span>
             <span>{Math.round(task.progressPercent)}%</span>
           </div>
@@ -224,7 +224,7 @@ function TaskCard({
             <ShieldCheckIcon className="size-3.5" />
             需要管理员确认
           </div>
-          <p className="mt-1 text-[11px] text-warning">
+          <p className="mt-1 text-[12px] text-warning">
             {task.approval.reason ||
               task.approval.tool ||
               "高风险系统操作正在等待确认"}
@@ -238,7 +238,7 @@ function TaskCard({
             <AlertCircleIcon className="size-3.5" />
             上次执行已中断
           </div>
-          <p className="mt-1 text-[11px] text-breach">
+          <p className="mt-1 text-[12px] text-breach">
             {task.leaseHealth.canResume
               ? "存在检查点，可在工作台接管并继续。"
               : "任务租约已失效，请在工作台检查后重新接管。"}
@@ -252,7 +252,7 @@ function TaskCard({
             <PlayIcon className="size-3.5" />
             检查点已验证
           </div>
-          <p className="mt-1 text-[11px] text-core">
+          <p className="mt-1 text-[12px] text-core">
             可在原线程继续第 {task.executionRecovery.iteration ?? "?"}{" "}
             轮之后的执行。
           </p>
@@ -260,7 +260,7 @@ function TaskCard({
       )}
 
       {latestCapability && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground">
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground">
           <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
           <span className="font-medium text-muted-foreground">
             {latestCapability.capabilityId || latestCapability.target}
@@ -269,7 +269,7 @@ function TaskCard({
           {latestCapability.risk && <span>· {latestCapability.risk}</span>}
         </div>
       )}
-      <div className="mt-3 flex items-center justify-end gap-1 text-[10px] font-medium text-core">
+      <div className="mt-3 flex items-center justify-end gap-1 text-[12px] font-medium text-core">
         查看详情
         <ArrowRightIcon className="size-3" />
       </div>
@@ -346,7 +346,7 @@ function TaskDetailDrawer({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {task.summary && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-[12px] font-semibold uppercase text-muted-foreground">
                 任务目标
               </div>
               <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
@@ -362,7 +362,7 @@ function TaskDetailDrawer({
                   <AlertCircleIcon className="size-3.5" />
                   结束原因
                 </div>
-                <p className="mt-1.5 text-[11px] leading-5 text-breach">
+                <p className="mt-1.5 text-[12px] leading-5 text-breach">
                   {task.terminalReason}
                 </p>
               </section>
@@ -378,8 +378,8 @@ function TaskDetailDrawer({
               ["线程", task.threadId ? task.threadId.slice(0, 8) : "未关联"],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-background px-3 py-2">
-                <div className="text-[9px] text-muted-foreground">{label}</div>
-                <div className="mt-0.5 truncate text-[11px] font-medium text-foreground">
+                <div className="text-[12px] text-muted-foreground">{label}</div>
+                <div className="mt-0.5 truncate text-[12px] font-medium text-foreground">
                   {value}
                 </div>
               </div>
@@ -392,12 +392,12 @@ function TaskDetailDrawer({
                 <GitBranchIcon className="size-3.5" />
                 Agent 租约需要恢复
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-breach">
+              <p className="mt-1.5 text-[12px] leading-5 text-breach">
                 {task.leaseHealth.canResume
                   ? "Agent 找到了检查点。先接管任务租约，再回到原任务触发继续。"
                   : "当前没有可直接恢复的检查点。接管只会重新取得任务控制权，不会假装任务已经继续执行。"}
               </p>
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[12px]">
                 <span className="rounded-md bg-card/70 px-2 py-1 text-breach">
                   租约 {task.leaseHealth.state}
                 </span>
@@ -416,10 +416,10 @@ function TaskDetailDrawer({
                 <PlayIcon className="size-3.5" />
                 Agent 执行检查点
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-core">
+              <p className="mt-1.5 text-[12px] leading-5 text-core">
                 {task.executionRecovery.reason}
               </p>
-              <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[12px]">
                 <span className="rounded-md bg-card/70 px-2 py-1 text-core">
                   第 {task.executionRecovery.iteration ?? "?"} 轮
                 </span>
@@ -434,7 +434,7 @@ function TaskDetailDrawer({
 
           {task.resultArtifacts && task.resultArtifacts.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-[12px] font-semibold uppercase text-muted-foreground">
                 任务产物
               </div>
               <div className="mt-2 space-y-1.5">
@@ -443,13 +443,13 @@ function TaskDetailDrawer({
                     key={artifact.resourceId}
                     type="button"
                     onClick={() => onOpenWorkspace(artifact.resourceId)}
-                    className="flex w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-left text-[11px] text-foreground transition hover:border-core/30 hover:bg-core/10"
+                    className="flex w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-left text-[12px] text-foreground transition hover:border-core/30 hover:bg-core/10"
                   >
                     <ArrowRightIcon className="size-3 shrink-0 text-core" />
                     <span className="min-w-0 flex-1 truncate">
                       {artifact.name}
                     </span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-[12px] text-muted-foreground">
                       {artifact.area}
                     </span>
                   </button>
@@ -464,7 +464,7 @@ function TaskDetailDrawer({
                 <ShieldCheckIcon className="size-3.5" />
                 等待人工确认
               </div>
-              <p className="mt-1.5 text-[11px] leading-5 text-warning">
+              <p className="mt-1.5 text-[12px] leading-5 text-warning">
                 {task.approval.reason ||
                   "该任务需要在原任务中完成确认。涉及系统能力时仍必须经过设备密码与能力策略，任务空间不会旁路批准。"}
               </p>
@@ -474,21 +474,21 @@ function TaskDetailDrawer({
           {task.changeProvider === "echo-os.files" ? (
             <TaskChangesPanel key={task.id} taskId={task.id} />
           ) : (
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[12px] text-slate-500">
               本任务尚无可核验的文件变更记录。
             </p>
           )}
 
           {task.runtimeCapabilityGroups.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-[12px] font-semibold uppercase text-muted-foreground">
                 Agent 运行能力
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {task.runtimeCapabilityGroups.map((group) => (
                   <span
                     key={group}
-                    className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[10px] text-muted-foreground"
+                    className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[12px] text-muted-foreground"
                   >
                     {group}
                   </span>
@@ -499,14 +499,14 @@ function TaskDetailDrawer({
 
           {latestActivity.length > 0 && (
             <section>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-[12px] font-semibold uppercase text-muted-foreground">
                 最近系统活动
               </div>
               <div className="mt-2 space-y-2">
                 {latestActivity.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-border bg-background px-2.5 py-2 text-[10px]"
+                    className="rounded-lg border border-border bg-background px-2.5 py-2 text-[12px]"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-medium text-foreground">
@@ -539,7 +539,7 @@ function TaskDetailDrawer({
 
         <footer className="shrink-0 space-y-2 border-t border-border bg-background/90 px-5 py-4">
           {task.approval?.required && !task.approval.version && (
-            <p className="text-[11px] text-warning">{APPROVAL_UNVERIFIABLE}</p>
+            <p className="text-[12px] text-warning">{APPROVAL_UNVERIFIABLE}</p>
           )}
           {task.approval?.required && (
             <div className="grid grid-cols-2 gap-2">
@@ -838,7 +838,7 @@ export function TaskSpacePanel({
             <div className={cn("text-lg font-semibold", color)}>
               {counts ? value : "—"}
             </div>
-            <div className="text-[10px] text-muted-foreground">{label}</div>
+            <div className="text-[12px] text-muted-foreground">{label}</div>
           </div>
         ))}
       </div>
@@ -860,7 +860,7 @@ export function TaskSpacePanel({
             {item.label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="ml-auto flex items-center gap-1.5 text-[12px] text-muted-foreground">
           <span
             className={cn(
               "size-2 rounded-full",

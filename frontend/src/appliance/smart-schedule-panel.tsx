@@ -117,7 +117,7 @@ export function SmartSchedulePanel() {
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <CalendarClockIcon className="size-5 text-core" /> 定时 SMART 短检
             </h2>
-            <p className="mt-1 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-[12px] leading-5 text-muted-foreground">
               {status?.enabled
                 ? "已启用：每周日 03:30（本机时间）检查所有整盘，并随机延后最多 30 分钟。已有自检会跳过。"
                 : "默认关闭。启用后只运行非 captive 的短时自检；任务使用低 I/O 优先级，不会自动启动长检或中止现有自检。"}
@@ -127,7 +127,7 @@ export function SmartSchedulePanel() {
             type="button"
             disabled={loading || busy || !status || !capable}
             onClick={() => status && void preview(!status.enabled)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold text-foreground disabled:opacity-40"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[12px] font-semibold text-foreground disabled:opacity-40"
           >
             {(loading || busy) && (
               <Loader2Icon className="size-3 animate-spin" />
@@ -136,12 +136,12 @@ export function SmartSchedulePanel() {
           </button>
         </div>
         {!loading && !capable && (
-          <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2 text-[11px] text-warning">
+          <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2 text-[12px] text-warning">
             本机缺少 smartctl，定时自检不可用。
           </p>
         )}
         {error && (
-          <p role="alert" className="mt-3 text-[11px] text-breach">
+          <p role="alert" className="mt-3 text-[12px] text-breach">
             {error}
           </p>
         )}

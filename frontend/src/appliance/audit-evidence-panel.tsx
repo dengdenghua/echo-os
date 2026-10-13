@@ -143,7 +143,7 @@ export function AuditEvidencePanel() {
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold">设备验证身份</h2>
-                <p className="mt-1 break-all font-mono text-[10px] leading-4 text-muted-foreground">
+                <p className="mt-1 break-all font-mono text-[12px] leading-4 text-muted-foreground">
                   {anchor?.signing.keyId || "尚未生成"}
                 </p>
                 <button
@@ -180,7 +180,7 @@ export function AuditEvidencePanel() {
             </button>
           </section>
 
-          <p className="mt-4 text-[11px] leading-5 text-muted-foreground">
+          <p className="mt-4 text-[12px] leading-5 text-muted-foreground">
             下载锚点不含审计正文。完整加密证据包由宿主定时任务写入外置盘或远端挂载；本机实时审计不会被保留策略删除。
           </p>
         </>

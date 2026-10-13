@@ -169,7 +169,7 @@ export function MdRaid1Panel() {
           type="button"
           onClick={() => void refresh()}
           disabled={loading || busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[12px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -215,7 +215,7 @@ export function MdRaid1Panel() {
                 1. 选择两块空盘
               </h2>
             </div>
-            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
               只显示整盘、无分区/签名、未挂载、不可移动且带稳定序列号或 WWN
               的磁盘。两条设备路径必须对应不同物理盘。
             </p>
@@ -272,7 +272,7 @@ export function MdRaid1Panel() {
                 pattern="[a-z][a-z0-9_-]{0,26}"
                 className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
               />
-              <span className="mt-1 block text-[10px] font-normal text-muted-foreground">
+              <span className="mt-1 block text-[12px] font-normal text-muted-foreground">
                 小写字母开头，可含数字、下划线和短横线，最多 27 字符
               </span>
             </label>
@@ -314,7 +314,7 @@ export function MdRaid1Panel() {
                 {formatBytes(plan.usableBytes)}。 不使用
                 force/assume-clean，也不降级启动；服务端会重新核验磁盘身份和空盘状态。
               </p>
-              <p className="mt-2 rounded-xl bg-card/8 px-3 py-2 text-[11px] leading-5 text-warning">
+              <p className="mt-2 rounded-xl bg-card/8 px-3 py-2 text-[12px] leading-5 text-warning">
                 阵列创建后仍不能存文件：需要后续创建文件系统并挂载。
               </p>
               <ul className="mt-3 space-y-1 font-mono text-[11px] text-breach">

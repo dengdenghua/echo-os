@@ -310,7 +310,7 @@ export function AccountSecurityPanel({
           </span>
           <span className="min-w-0">
             <strong className="block truncate text-sm">admin</strong>
-            <small className="block text-[11px] text-muted-foreground">
+            <small className="block text-[12px] text-muted-foreground">
               设备管理员
             </small>
           </span>
@@ -600,7 +600,7 @@ export function AccountSecurityPanel({
                       URI，或手动输入密钥。先离线保存恢复码，再输入 6
                       位验证码完成启用。
                     </p>
-                    <div className="rounded-xl bg-background p-3 font-mono text-[11px] text-foreground ring-1 ring-border">
+                    <div className="rounded-xl bg-background p-3 font-mono text-[12px] text-foreground ring-1 ring-border">
                       <p className="break-all">密钥：{totpEnrollment.secret}</p>
                       <p className="mt-2 break-all text-muted-foreground">
                         {totpEnrollment.otpauthUri}
@@ -746,7 +746,7 @@ export function AccountSecurityPanel({
               </button>
             </section>
 
-            <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <p className="mt-4 flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <LockKeyholeIcon className="size-3.5" />
               密码只发送到当前 ECHO OS 设备，不会保存在浏览器中。
             </p>

@@ -20,7 +20,7 @@ function ChangesList({ view }: { view: TaskChanges }) {
   const rows = all ? view.changes : view.changes.slice(0, 8);
   return (
     <div className="mt-2 space-y-2">
-      <p className="text-[11px] text-slate-500">
+      <p className="text-[12px] text-slate-500">
         {planned ? "原位置 → 计划位置" : "执行前 → 目前可核验的位置"}
       </p>
       {rows.map((change: TaskFileChange) => {
@@ -28,7 +28,7 @@ function ChangesList({ view }: { view: TaskChanges }) {
         return (
           <div
             key={change.id}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px]"
+            className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-[12px]"
           >
             <p className="break-all text-slate-600">{change.before.path}</p>
             <p className="mt-1 break-all font-medium text-slate-800">
@@ -60,7 +60,7 @@ function ChangesList({ view }: { view: TaskChanges }) {
       {!all && view.changes.length > rows.length && (
         <button
           type="button"
-          className="text-[11px] text-blue-600"
+          className="text-[12px] text-blue-600"
           onClick={() => setAll(true)}
         >
           查看全部 {view.changes.length} 条
@@ -162,7 +162,7 @@ export function TaskChangesPanel({ taskId }: { taskId: string }) {
         <h3 className="text-xs font-semibold text-slate-800">执行变化</h3>
         <button
           type="button"
-          className="text-[11px] text-blue-600"
+          className="text-[12px] text-blue-600"
           disabled={loading || busy}
           onClick={() => setRevision((value) => value + 1)}
         >
@@ -170,15 +170,15 @@ export function TaskChangesPanel({ taskId }: { taskId: string }) {
         </button>
       </div>
       {loading && (
-        <p className="mt-2 text-[11px] text-slate-500">正在核验操作记录…</p>
+        <p className="mt-2 text-[12px] text-slate-500">正在核验操作记录…</p>
       )}
       {error && current && (
-        <p role="alert" className="mt-2 text-[11px] text-red-700">
+        <p role="alert" className="mt-2 text-[12px] text-red-700">
           {error}
         </p>
       )}
       {visible && !visible.available && (
-        <p className="mt-2 text-[11px] leading-5 text-slate-500">
+        <p className="mt-2 text-[12px] leading-5 text-slate-500">
           {visible.reason === "provider_unavailable"
             ? "当前服务无法读取此任务的操作证据。"
             : "此任务尚无可核验的文件变化记录。"}
@@ -186,7 +186,7 @@ export function TaskChangesPanel({ taskId }: { taskId: string }) {
       )}
       {visible?.available && (
         <>
-          <p className="mt-2 text-[11px] leading-5 text-slate-500">
+          <p className="mt-2 text-[12px] leading-5 text-slate-500">
             {visible.phase === "planned"
               ? "这是已保存的预演计划，尚未执行。执行前仍会重新核验文件与权限。"
               : "记录来自文件服务的执行回执，并重新核验目前的文件位置和内容。"}
@@ -200,7 +200,7 @@ export function TaskChangesPanel({ taskId }: { taskId: string }) {
               type="button"
               onClick={makeUndo}
               disabled={busy || Boolean(visibleUndo)}
-              className="mt-3 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-[11px] disabled:opacity-50"
+              className="mt-3 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-[12px] disabled:opacity-50"
             >
               {busy
                 ? "正在生成预览…"
@@ -217,14 +217,14 @@ export function TaskChangesPanel({ taskId }: { taskId: string }) {
           className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-2"
         >
           <h4 className="text-xs font-semibold text-blue-800">撤销预演</h4>
-          <p className="mt-1 text-[11px] leading-5 text-blue-700">
+          <p className="mt-1 text-[12px] leading-5 text-blue-700">
             仅生成了新计划，尚未移动文件。确认执行仍需在文件管理器审批；冲突项不会直接恢复。
           </p>
           <ChangesList key={visibleUndo.planId} view={visibleUndo} />
           {files && (
             <a
               href={desktopActionHref(files)}
-              className="mt-2 inline-block text-[11px] text-blue-700"
+              className="mt-2 inline-block text-[12px] text-blue-700"
             >
               在文件管理器查看并确认
             </a>

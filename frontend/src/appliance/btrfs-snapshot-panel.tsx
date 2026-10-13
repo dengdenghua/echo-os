@@ -344,10 +344,10 @@ export function BtrfsSnapshotPanel({
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-core/30 bg-core/10 p-3 text-[10px] text-core">
+    <div className="mt-3 rounded-lg border border-core/30 bg-core/10 p-3 text-[12px] text-core">
       <div className="flex flex-wrap items-center gap-2">
         <CameraIcon className="size-3.5 text-core" />
-        <strong className="text-[11px]">只读文件快照</strong>
+        <strong className="text-[12px]">只读文件快照</strong>
         <span className="text-core">
           {loading ? "正在读取…" : `${snapshots.length}/256`}
         </span>
@@ -476,7 +476,7 @@ export function BtrfsSnapshotPanel({
               setName(event.currentTarget.value);
               setPlan(null);
             }}
-            className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[11px] outline-none focus:border-core/30"
+            className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[12px] outline-none focus:border-core/30"
           />
           <button
             type="button"
@@ -524,7 +524,7 @@ export function BtrfsSnapshotPanel({
                 setRestoreName(event.currentTarget.value);
                 setRestorePlan(null);
               }}
-              className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[11px] outline-none focus:border-core/30"
+              className="h-8 min-w-[190px] flex-1 rounded-lg border border-core/30 bg-card px-2.5 text-[12px] outline-none focus:border-core/30"
             />
             <button
               type="button"

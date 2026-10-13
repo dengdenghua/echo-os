@@ -150,7 +150,7 @@ function Guide(props: Parameters<typeof DesktopStartGuide>[0]) {
         >
           <CompassIcon className="size-3.5 text-core" />
           <span>新手引导</span>
-          <span className="rounded-full bg-core/10 px-1.5 py-0.2 text-[10px] text-core">
+          <span className="rounded-full bg-core/10 px-1.5 py-0.2 text-[12px] text-core">
             {finished ? "已完成" : "4步"}
           </span>
           <ChevronRightIcon className="size-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" />

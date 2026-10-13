@@ -120,7 +120,7 @@ function DeviceCard({
           </strong>
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-[9px] font-semibold",
+              "rounded-full px-2 py-0.5 text-[12px] font-semibold",
               device.online
                 ? "bg-core/10 text-core"
                 : "bg-muted text-muted-foreground",
@@ -129,13 +129,13 @@ function DeviceCard({
             {device.online ? (device.busy ? "使用中" : "在线") : "离线"}
           </span>
         </div>
-        <p className="mt-1 truncate text-[10px] text-muted-foreground">
+        <p className="mt-1 truncate text-[12px] text-muted-foreground">
           {device.platform} · {device.id} · 最近连接{" "}
           {timeLabel(device.lastSeenAt)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {device.battery !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[9px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[12px] text-muted-foreground">
               {device.charging ? (
                 <BatteryChargingIcon className="size-3" />
               ) : (
@@ -145,12 +145,12 @@ function DeviceCard({
             </span>
           )}
           {device.totalCapabilities > 0 && (
-            <span className="rounded-full bg-core/10 px-2 py-1 text-[9px] text-core">
+            <span className="rounded-full bg-core/10 px-2 py-1 text-[12px] text-core">
               {device.totalCapabilities} 项设备能力
             </span>
           )}
           {device.currentApp && (
-            <span className="max-w-40 truncate rounded-full bg-core/10 px-2 py-1 text-[9px] text-core">
+            <span className="max-w-40 truncate rounded-full bg-core/10 px-2 py-1 text-[12px] text-core">
               {device.currentApp}
             </span>
           )}
@@ -429,7 +429,7 @@ export function DeviceLinkPanel({
           </span>
           <span className="min-w-0">
             <strong className="block text-[13px]">设备连接</strong>
-            <small className="mt-0.5 block text-[10px] text-muted-foreground">
+            <small className="mt-0.5 block text-[12px] text-muted-foreground">
               {active
                 ? `${status?.onlineDeviceCount ?? 0} 台在线`
                 : "当前未开启"}
@@ -459,7 +459,7 @@ export function DeviceLinkPanel({
             {label}
           </button>
         ))}
-        <div className="absolute bottom-4 left-3 right-3 rounded-xl bg-card/45 px-3 py-2.5 text-[9px] leading-4 text-muted-foreground ring-1 ring-border">
+        <div className="absolute bottom-4 left-3 right-3 rounded-xl bg-card/45 px-3 py-2.5 text-[12px] leading-4 text-muted-foreground ring-1 ring-border">
           <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
             <ShieldCheckIcon className="size-3.5 text-core" />
             配对凭据受保护
@@ -480,7 +480,7 @@ export function DeviceLinkPanel({
                     ? "自动备份"
                     : "远程访问"}
             </h1>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-[12px] text-muted-foreground">
               {section === "remote"
                 ? "查看公网连接能力与当前安全边界"
                 : section === "sync"
@@ -539,7 +539,7 @@ export function DeviceLinkPanel({
                   <strong className="block text-[15px]">
                     {active ? "局域网设备入口已开启" : "设备连接尚未开启"}
                   </strong>
-                  <span className="mt-0.5 block text-[10px] text-white/50">
+                  <span className="mt-0.5 block text-[12px] text-white/50">
                     {active
                       ? `${status?.pairedDeviceCount ?? 0} 台已配对 · ${status?.onlineDeviceCount ?? 0} 台在线`
                       : "默认不开放网络监听，开启后才能配对设备"}
@@ -550,7 +550,7 @@ export function DeviceLinkPanel({
                 <button
                   type="button"
                   onClick={() => setPendingAction({ kind: "enable" })}
-                  className="h-9 rounded-full bg-card px-4 text-[11px] font-semibold text-core transition hover:bg-core/10"
+                  className="h-9 rounded-full bg-card px-4 text-[12px] font-semibold text-core transition hover:bg-core/10"
                 >
                   开启连接…
                 </button>
@@ -559,7 +559,7 @@ export function DeviceLinkPanel({
                   <button
                     type="button"
                     onClick={() => setPendingAction({ kind: "pair" })}
-                    className="h-9 rounded-full bg-card px-4 text-[11px] font-semibold text-core transition hover:bg-core/10"
+                    className="h-9 rounded-full bg-card px-4 text-[12px] font-semibold text-core transition hover:bg-core/10"
                   >
                     添加设备…
                   </button>
@@ -567,7 +567,7 @@ export function DeviceLinkPanel({
                     <button
                       type="button"
                       onClick={() => setPendingAction({ kind: "disable" })}
-                      className="h-9 rounded-full bg-card/10 px-3.5 text-[11px] font-semibold text-white/72 transition hover:bg-card/15"
+                      className="h-9 rounded-full bg-card/10 px-3.5 text-[12px] font-semibold text-white/72 transition hover:bg-card/15"
                     >
                       关闭
                     </button>
@@ -577,12 +577,12 @@ export function DeviceLinkPanel({
             </section>
 
             {status?.startupError && (
-              <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2.5 text-[11px] text-warning ring-1 ring-warning/30">
+              <p className="mt-3 rounded-xl bg-warning/10 px-3 py-2.5 text-[12px] text-warning ring-1 ring-warning/30">
                 设备入口启动失败：{status.startupError}
               </p>
             )}
             {status?.mode === "agent-shared" && (
-              <p className="mt-3 rounded-xl bg-core/10 px-3 py-2.5 text-[10px] leading-4 text-core ring-1 ring-core/30">
+              <p className="mt-3 rounded-xl bg-core/10 px-3 py-2.5 text-[12px] leading-4 text-core ring-1 ring-core/30">
                 当前是开发模式连接：所有设备共用一份配对凭据，暂不能单独撤销某一台。
                 正式安装的 ECHO OS 会为每台设备单独签发凭据。
               </p>
@@ -611,7 +611,7 @@ export function DeviceLinkPanel({
                     <strong className="mt-3 block text-[13px] text-muted-foreground">
                       还没有已配对设备
                     </strong>
-                    <p className="mt-1 text-[10px] text-muted-foreground">
+                    <p className="mt-1 text-[12px] text-muted-foreground">
                       开启连接后，从“添加设备”创建配对邀请。
                     </p>
                   </div>
@@ -627,7 +627,7 @@ export function DeviceLinkPanel({
                 <h2 className="mt-3 text-[15px] font-semibold">
                   先开启局域网设备连接
                 </h2>
-                <p className="mx-auto mt-1 max-w-sm text-[11px] leading-5 text-muted-foreground">
+                <p className="mx-auto mt-1 max-w-sm text-[12px] leading-5 text-muted-foreground">
                   Echo 默认不开放额外端口。开启后，手机才能在同一 Wi-Fi
                   中找到这台设备。
                 </p>
@@ -635,7 +635,7 @@ export function DeviceLinkPanel({
                   <button
                     type="button"
                     onClick={() => setPendingAction({ kind: "enable" })}
-                    className="mt-4 h-9 rounded-full bg-primary px-5 text-[11px] font-semibold text-primary-foreground hover:bg-primary"
+                    className="mt-4 h-9 rounded-full bg-primary px-5 text-[12px] font-semibold text-primary-foreground hover:bg-primary"
                   >
                     开启连接…
                   </button>
@@ -651,7 +651,7 @@ export function DeviceLinkPanel({
                     <h2 className="text-[15px] font-semibold">
                       配对邀请已创建
                     </h2>
-                    <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-4 text-muted-foreground">
                       在 Echo Mobile 的“连接设备”中粘贴以下链接。
                       {invitation.expiresAt
                         ? " 邀请将在 5 分钟后失效；首次连接后只绑定该设备。"
@@ -660,11 +660,11 @@ export function DeviceLinkPanel({
                   </div>
                 </div>
                 <div className="mt-5 rounded-[16px] bg-primary p-4 text-primary-foreground shadow-inner">
-                  <code className="block break-all text-[10px] leading-5 text-white/72">
+                  <code className="block break-all text-[12px] leading-5 text-white/72">
                     {invitation.connectString}
                   </code>
                   <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
-                    <span className="text-[9px] text-white/35">
+                    <span className="text-[12px] text-white/35">
                       {invitation.credentialMode === "per-device"
                         ? `有效至 ${timeLabel(invitation.expiresAt)}`
                         : "共享凭据 · 仅开发兼容模式"}
@@ -679,7 +679,7 @@ export function DeviceLinkPanel({
                             window.setTimeout(() => setCopied(false), 1_500);
                           });
                       }}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-full bg-card/12 px-3 text-[10px] font-semibold text-white transition hover:bg-card/18"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-full bg-card/12 px-3 text-[12px] font-semibold text-white transition hover:bg-card/18"
                     >
                       {copied ? (
                         <CheckIcon className="size-3.5" />
@@ -690,7 +690,7 @@ export function DeviceLinkPanel({
                     </button>
                   </div>
                 </div>
-                <p className="mt-3 flex items-start gap-1.5 text-[9px] leading-4 text-muted-foreground">
+                <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-4 text-muted-foreground">
                   <LockKeyholeIcon className="mt-0.5 size-3.5 shrink-0" />
                   <span>
                     配对链接包含设备凭据，请勿发送到群聊或公开网络。状态页与日志不会记录该链接。
@@ -710,14 +710,14 @@ export function DeviceLinkPanel({
                 <h2 className="mt-3 text-[15px] font-semibold">
                   连接一台新设备
                 </h2>
-                <p className="mx-auto mt-1 max-w-md text-[11px] leading-5 text-muted-foreground">
+                <p className="mx-auto mt-1 max-w-md text-[12px] leading-5 text-muted-foreground">
                   创建短时配对邀请。原生 Echo
                   模式下，邀请只会绑定首次使用它的设备，之后可单独撤销。
                 </p>
                 <button
                   type="button"
                   onClick={() => setPendingAction({ kind: "pair" })}
-                  className="mt-4 h-9 rounded-full bg-primary px-5 text-[11px] font-semibold text-primary-foreground hover:bg-primary"
+                  className="mt-4 h-9 rounded-full bg-primary px-5 text-[12px] font-semibold text-primary-foreground hover:bg-primary"
                 >
                   创建配对邀请…
                 </button>
@@ -735,13 +735,13 @@ export function DeviceLinkPanel({
                   <UploadCloudIcon className="size-6" />
                 </span>
                 <div>
-                  <span className="rounded-full bg-core/20 px-2.5 py-1 text-[9px] font-semibold text-core">
+                  <span className="rounded-full bg-core/20 px-2.5 py-1 text-[12px] font-semibold text-core">
                     服务端同步已就绪
                   </span>
                   <h2 className="mt-3 text-[18px] font-semibold">
                     每台设备、每类内容单独授权
                   </h2>
-                  <p className="mt-1 max-w-lg text-[11px] leading-5 text-white/62">
+                  <p className="mt-1 max-w-lg text-[12px] leading-5 text-white/62">
                     手机凭据只可写入自己的备份目录。传输中断会从已保存位置继续；同名但内容不同的文件保留两份，不静默覆盖。
                   </p>
                 </div>
@@ -754,7 +754,7 @@ export function DeviceLinkPanel({
                 <strong className="mt-3 block text-[13px] text-muted-foreground">
                   自动备份服务暂不可用
                 </strong>
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   请确认文件存储已经挂载，然后刷新状态。
                 </p>
               </section>
@@ -763,7 +763,7 @@ export function DeviceLinkPanel({
                 <strong className="text-[13px] text-warning">
                   开发模式连接下不能开启自动备份
                 </strong>
-                <p className="mt-1 text-[10px] leading-5 text-warning">
+                <p className="mt-1 text-[12px] leading-5 text-warning">
                   共享凭据无法判断是哪台手机，也不能单独撤销。原生 Echo
                   的一机一凭据模式才会开放写入。
                 </p>
@@ -783,14 +783,14 @@ export function DeviceLinkPanel({
                         <strong className="block truncate text-[13px]">
                           {device.name}
                         </strong>
-                        <small className="block truncate text-[9px] text-muted-foreground">
+                        <small className="block truncate text-[12px] text-muted-foreground">
                           {device.id}
                         </small>
                       </span>
                     </div>
                     <span
                       className={cn(
-                        "rounded-full px-2 py-1 text-[9px] font-semibold",
+                        "rounded-full px-2 py-1 text-[12px] font-semibold",
                         device.online
                           ? "bg-core/10 text-core"
                           : "bg-muted text-muted-foreground",
@@ -827,12 +827,12 @@ export function DeviceLinkPanel({
                             <div className="flex items-center gap-2">
                               <strong className="text-[12px]">{label}</strong>
                               {summary.conflicts > 0 && (
-                                <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[8px] font-semibold text-warning">
+                                <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[12px] font-semibold text-warning">
                                   {summary.conflicts} 个冲突已保留
                                 </span>
                               )}
                             </div>
-                            <p className="mt-0.5 text-[9px] text-muted-foreground">
+                            <p className="mt-0.5 text-[12px] text-muted-foreground">
                               {enabled
                                 ? `${summary.committed} 项 · ${bytesLabel(summary.bytes)}${summary.uploading ? ` · ${summary.uploading} 项续传中` : ""}`
                                 : description}
@@ -850,7 +850,7 @@ export function DeviceLinkPanel({
                               })
                             }
                             className={cn(
-                              "h-8 rounded-full px-3 text-[9px] font-semibold transition",
+                              "h-8 rounded-full px-3 text-[12px] font-semibold transition",
                               enabled
                                 ? "bg-core/10 text-core hover:bg-core/10"
                                 : "bg-primary text-primary-foreground hover:bg-primary",
@@ -870,13 +870,13 @@ export function DeviceLinkPanel({
                 <strong className="mt-3 block text-[13px] text-muted-foreground">
                   配对设备后再开启备份
                 </strong>
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   只有原生一机一凭据的设备才会出现在这里。
                 </p>
               </section>
             )}
 
-            <p className="flex items-start gap-1.5 px-1 text-[9px] leading-4 text-muted-foreground">
+            <p className="flex items-start gap-1.5 px-1 text-[12px] leading-4 text-muted-foreground">
               <ShieldCheckIcon className="mt-0.5 size-3.5 shrink-0 text-core" />
               Echo 只保存自己的同步账本，不直接读写 Agent
               私有数据库。照片完成后会自动出现在照片库；移动端需使用本版本同步协议。
@@ -895,7 +895,7 @@ export function DeviceLinkPanel({
                 <div className="min-w-0 flex-1">
                   <span
                     className={cn(
-                      "rounded-full px-2.5 py-1 text-[9px] font-semibold",
+                      "rounded-full px-2.5 py-1 text-[12px] font-semibold",
                       remoteConnected
                         ? "bg-core/20 text-core"
                         : remote?.configured
@@ -916,7 +916,7 @@ export function DeviceLinkPanel({
                         ? "正在等待 Tailscale 完成授权"
                         : "当前只支持同一局域网"}
                   </h2>
-                  <p className="mt-1 max-w-lg text-[11px] leading-5 text-white/55">
+                  <p className="mt-1 max-w-lg text-[12px] leading-5 text-white/55">
                     {remoteConnected
                       ? "Echo 桌面通过 Tailscale 的 WireGuard 私网和 HTTPS 提供访问，不开放公网匿名入口。"
                       : remote?.configured
@@ -928,7 +928,7 @@ export function DeviceLinkPanel({
                       href={remote.endpoint}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-full bg-card px-4 text-[10px] font-semibold text-core transition hover:bg-core/10"
+                      className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-full bg-card px-4 text-[12px] font-semibold text-core transition hover:bg-core/10"
                     >
                       打开远程地址
                       <ExternalLinkIcon className="size-3.5" />
@@ -945,7 +945,7 @@ export function DeviceLinkPanel({
                 <strong className="mt-3 block text-[13px]">
                   {remoteConnected ? "远程网页已经具备" : "现在已经具备"}
                 </strong>
-                <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                   {remoteConnected
                     ? "桌面、文件管理和照片页面可通过个人 Tailnet 加密访问；入口仍受 Echo 登录、Origin 防护和管理员审批保护。"
                     : "管理员复核、短时邀请、一机一凭据、单设备撤销，以及每台设备的在线状态和能力上报。"}
@@ -958,7 +958,7 @@ export function DeviceLinkPanel({
                 <strong className="mt-3 block text-[13px]">
                   {remoteConnected ? "仍然保持边界" : "下一步还要补"}
                 </strong>
-                <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                   {remoteConnected
                     ? remote?.features.fileSync && remote.features.photoSync
                       ? "手机控制端口仍只在局域网开放；已授权设备可通过 Tailnet HTTPS 断点备份文件与照片。"
@@ -967,7 +967,7 @@ export function DeviceLinkPanel({
                 </p>
               </article>
             </section>
-            <p className="flex items-center gap-1.5 px-1 text-[9px] text-muted-foreground">
+            <p className="flex items-center gap-1.5 px-1 text-[12px] text-muted-foreground">
               <WifiIcon className="size-3.5" />
               {remoteConnected
                 ? "远程桌面：WireGuard + HTTPS · 设备配对：局域网凭据认证"

@@ -175,7 +175,7 @@ function ZoomTrafficLight({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-2 py-0.5 text-[10px] font-semibold text-muted-foreground select-none">
+          <div className="px-2 py-0.5 text-[12px] font-semibold text-muted-foreground select-none">
             分屏排列
           </div>
           <button
@@ -909,7 +909,7 @@ export function AppWindow({
             {win.url === "/phone-mirror" && (
               <button
                 type="button"
-                className="shrink-0 whitespace-nowrap rounded bg-card/90 px-2 py-1 text-[10px] text-foreground"
+                className="shrink-0 whitespace-nowrap rounded bg-card/90 px-2 py-1 text-[12px] text-foreground"
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={togglePhonePip}
                 aria-label={phonePip ? "恢复手机窗口" : "切换为悬浮小窗"}
@@ -995,7 +995,7 @@ export function AppWindow({
                   title={isSleeping ? "唤醒此窗口" : "智能挂起休眠以节省资源"}
                   aria-label={isSleeping ? "唤醒窗口" : "休眠窗口"}
                   className={cn(
-                    "mac-window-action flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors",
+                    "mac-window-action flex items-center gap-1 rounded px-1.5 py-0.5 text-[12px] transition-colors",
                     isSleeping
                       ? "bg-warning/20 text-warning font-semibold"
                       : "text-muted-foreground hover:text-white",
@@ -1048,7 +1048,7 @@ export function AppWindow({
                   <h4 className="mt-3 font-semibold text-xs text-slate-100">
                     {win.title} · 已进入节能休眠
                   </h4>
-                  <p className="mt-1 max-w-xs text-[11px] text-muted-foreground">
+                  <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
                     后台渲染与 iframe 运算已暂时挂起，大幅降低系统能耗。
                   </p>
                   <button

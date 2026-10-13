@@ -470,7 +470,7 @@ export function BtrfsRaid1Panel() {
           type="button"
           onClick={() => void refresh()}
           disabled={loading || busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[12px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -520,7 +520,7 @@ export function BtrfsRaid1Panel() {
                     1. 选择两块空盘
                   </h2>
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                   只显示服务端确认的整盘、空白、未挂载、不可移动且带稳定身份的磁盘；不提供强制覆盖入口。
                 </p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -577,7 +577,7 @@ export function BtrfsRaid1Panel() {
                     pattern="[a-z][a-z0-9_-]{0,15}"
                     className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
                   />
-                  <span className="mt-1 block text-[10px] font-normal text-muted-foreground">
+                  <span className="mt-1 block text-[12px] font-normal text-muted-foreground">
                     小写字母开头，可含数字、下划线和短横线，最多 16 字符
                   </span>
                 </label>
@@ -651,7 +651,7 @@ export function BtrfsRaid1Panel() {
                   Btrfs RAID1 缺盘换盘
                 </h2>
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                 只显示服务端确认的 Echo 自管双盘 RAID1：已挂载可写、恰好一个
                 devid 缺失、存活盘无历史错误且没有 scrub、balance
                 或其他换盘任务。新盘必须为空白整盘并达到保守容量下限。
@@ -670,7 +670,7 @@ export function BtrfsRaid1Panel() {
                           <strong className="block text-sm text-foreground">
                             {item.filesystem.mountpoint}
                           </strong>
-                          <span className="mt-1 block text-[11px] text-muted-foreground">
+                          <span className="mt-1 block text-[12px] text-muted-foreground">
                             缺失 devid {item.missingMember.devid} · 存活盘{" "}
                             {item.survivingMember.devicefile} · 最小安全容量{" "}
                             {formatBytes(item.minimumReplacementBytes)}
@@ -680,7 +680,7 @@ export function BtrfsRaid1Panel() {
                           </span>
                         </div>
                         <div className="flex flex-wrap items-end gap-2">
-                          <label className="text-[10px] font-medium text-muted-foreground">
+                          <label className="text-[12px] font-medium text-muted-foreground">
                             空白替换盘
                             <select
                               aria-label={`${item.filesystem.mountpoint} 空白替换盘`}
@@ -713,7 +713,7 @@ export function BtrfsRaid1Panel() {
                             type="button"
                             onClick={() => void previewReplacement(item)}
                             disabled={!selectedReplacement || busy}
-                            className="h-9 rounded-xl bg-warning px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                            className="h-9 rounded-xl bg-warning px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                           >
                             预览缺盘换盘
                           </button>
@@ -747,7 +747,7 @@ export function BtrfsRaid1Panel() {
                 副本重建；不使用 force、-r、-B 或队列等待，也不自动扩容。
                 一旦内核接受任务，此页面不会伪造回滚或提前宣称完成。
               </p>
-              <p className="mt-2 text-[11px] leading-5 text-warning">
+              <p className="mt-2 text-[12px] leading-5 text-warning">
                 换盘期间请勿休眠、冻结文件系统或关机；新内核可能因此取消任务，需要重新预览并启动。
               </p>
               <label className="mt-4 block text-xs font-medium text-warning">
@@ -780,7 +780,7 @@ export function BtrfsRaid1Panel() {
                   Btrfs scrub 校验
                 </h2>
               </div>
-              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                 只允许 Echo 登记、完整、可写且 data/metadata 都为 RAID1
                 的卷。scrub
                 会读取全部数据，并可能从冗余副本修复校验错误；运行后不可由此页面回滚或取消。
@@ -799,7 +799,7 @@ export function BtrfsRaid1Panel() {
                         <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
                           {item.filesystem.uuid}
                         </span>
-                        <span className="mt-1 block text-[11px] text-muted-foreground">
+                        <span className="mt-1 block text-[12px] text-muted-foreground">
                           {scanLabel(item)} · {item.filesystem.activeDevices}/
                           {item.filesystem.totalDevices} 成员 · 错误计数{" "}
                           {item.filesystem.deviceErrorCount}
@@ -812,13 +812,13 @@ export function BtrfsRaid1Panel() {
                         type="button"
                         onClick={() => void previewScrub(item)}
                         disabled={!item.canStartScrub || busy}
-                        className="h-9 rounded-xl bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                        className="h-9 rounded-xl bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                       >
                         预览 scrub
                       </button>
                     </div>
                     {!item.canStartScrub && (
-                      <p className="mt-2 text-[10px] text-warning">
+                      <p className="mt-2 text-[12px] text-warning">
                         当前拓扑、挂载状态或维护任务不满足安全启动条件。
                       </p>
                     )}
@@ -840,7 +840,7 @@ export function BtrfsRaid1Panel() {
                   <h2 className="text-sm font-semibold text-foreground">
                     月度 Btrfs scrub
                   </h2>
-                  <p className="mt-2 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">
                     当前{scrubSchedule.enabled ? "已启用" : "未启用"}
                     。每月首个周日 01:45 后随机延迟最多 24
                     小时，只处理健康、完整、可写、无历史设备错误且空闲的 Echo
@@ -851,7 +851,7 @@ export function BtrfsRaid1Panel() {
                   type="button"
                   onClick={() => void previewScrubSchedule()}
                   disabled={busy}
-                  className="h-9 rounded-xl bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                  className="h-9 rounded-xl bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {scrubSchedule.enabled
                     ? "预览停用月度 scrub"

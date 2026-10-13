@@ -1091,7 +1091,7 @@ function AiDocPanel({
           )}
           {results.answer && (
             <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs leading-relaxed text-foreground">
-              <span className="mb-1 block text-[10px] font-medium text-muted-foreground">
+              <span className="mb-1 block text-[12px] font-medium text-muted-foreground">
                 回答
               </span>
               {results.answer}
@@ -1099,7 +1099,7 @@ function AiDocPanel({
           )}
           {results.hits.length > 0 && (
             <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card p-2">
-              <div className="mb-1 text-[10px] font-medium text-muted-foreground">
+              <div className="mb-1 text-[12px] font-medium text-muted-foreground">
                 {results.answer ? "引用来源" : "检索结果"}
               </div>
               <ul className="space-y-1.5">
@@ -1117,7 +1117,7 @@ function AiDocPanel({
                       </div>
                     )}
                     {hit.path && (
-                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      <div className="mt-0.5 text-[12px] text-muted-foreground">
                         {hit.path}
                       </div>
                     )}

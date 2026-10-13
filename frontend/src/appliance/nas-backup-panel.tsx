@@ -352,7 +352,7 @@ export function NasBackupPanel() {
               <ArchiveRestoreIcon className="size-5 text-core" /> 异机 NAS
               数据备份
             </h2>
-            <p className="mt-1 max-w-2xl text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-[12px] leading-5 text-muted-foreground">
               每天 03:30 后备份同一批 Btrfs
               只读快照到独立挂载盘；仓库加密，并在完成后执行完整读取校验。路径不会出现在状态和审计记录中。
             </p>
@@ -367,7 +367,7 @@ export function NasBackupPanel() {
               (!status.enabled && !ready)
             }
             onClick={() => status && void preview(!status.enabled)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold text-foreground disabled:opacity-40"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[12px] font-semibold text-foreground disabled:opacity-40"
           >
             {(loading || busy) && (
               <Loader2Icon className="size-3 animate-spin" />
@@ -379,7 +379,7 @@ export function NasBackupPanel() {
         {status && !status.enabled && (
           <>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="text-[11px] font-medium text-foreground md:col-span-2">
+              <label className="text-[12px] font-medium text-foreground md:col-span-2">
                 已发现的安全外置挂载
                 <select
                   aria-label="已发现的安全外置挂载"
@@ -390,7 +390,7 @@ export function NasBackupPanel() {
                   onChange={(event) =>
                     selectRepositoryCandidate(event.target.value)
                   }
-                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30 disabled:bg-background"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30 disabled:bg-background"
                 >
                   <option value="">
                     {candidateLoading
@@ -417,29 +417,29 @@ export function NasBackupPanel() {
                     : "只显示可写、独立于系统和 NAS 数据盘的挂载；不会展示远端源地址或凭据。"}
                 </span>
               </label>
-              <label className="text-[11px] font-medium text-foreground">
+              <label className="text-[12px] font-medium text-foreground">
                 外部备份盘挂载点
                 <input
                   aria-label="外部备份盘挂载点"
                   value={repositoryMount}
                   onChange={(event) => setRepositoryMount(event.target.value)}
                   placeholder="/mnt/backup"
-                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] outline-none focus:border-core/30"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[12px] outline-none focus:border-core/30"
                 />
               </label>
-              <label className="text-[11px] font-medium text-foreground">
+              <label className="text-[12px] font-medium text-foreground">
                 Restic 仓库目录
                 <input
                   aria-label="Restic 仓库目录"
                   value={repository}
                   onChange={(event) => setRepository(event.target.value)}
                   placeholder="/mnt/backup/echo-restic"
-                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[11px] outline-none focus:border-core/30"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 font-mono text-[12px] outline-none focus:border-core/30"
                 />
               </label>
               {!status.credentialConfigured && (
                 <>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     仓库类型
                     <select
                       aria-label="仓库类型"
@@ -449,13 +449,13 @@ export function NasBackupPanel() {
                           event.target.value as "initialize" | "connect",
                         )
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     >
                       <option value="initialize">初始化空仓库</option>
                       <option value="connect">连接已有仓库</option>
                     </select>
                   </label>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     仓库加密密码
                     <input
                       type="password"
@@ -465,10 +465,10 @@ export function NasBackupPanel() {
                       onChange={(event) =>
                         setBackupPassword(event.target.value)
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     再次输入仓库密码
                     <input
                       type="password"
@@ -478,7 +478,7 @@ export function NasBackupPanel() {
                       onChange={(event) =>
                         setBackupPasswordConfirmation(event.target.value)
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     />
                   </label>
                   <div className="flex items-end">
@@ -490,7 +490,7 @@ export function NasBackupPanel() {
                         status.credentialRotationRecoveryPending
                       }
                       onClick={() => void previewCredential()}
-                      className="h-9 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                      className="h-9 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                     >
                       {credentialMode === "initialize"
                         ? "初始化并加密保存"
@@ -501,7 +501,7 @@ export function NasBackupPanel() {
               )}
               {status.credentialConfigured && (
                 <>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     当前仓库密码
                     <input
                       type="password"
@@ -511,10 +511,10 @@ export function NasBackupPanel() {
                       onChange={(event) =>
                         setCurrentBackupPassword(event.target.value)
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     新仓库密码
                     <input
                       type="password"
@@ -524,10 +524,10 @@ export function NasBackupPanel() {
                       onChange={(event) =>
                         setNewBackupPassword(event.target.value)
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-foreground">
+                  <label className="text-[12px] font-medium text-foreground">
                     再次输入新仓库密码
                     <input
                       type="password"
@@ -537,7 +537,7 @@ export function NasBackupPanel() {
                       onChange={(event) =>
                         setNewBackupPasswordConfirmation(event.target.value)
                       }
-                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[11px] outline-none focus:border-core/30"
+                      className="mt-1 h-9 w-full rounded-lg border border-border bg-card px-3 text-[12px] outline-none focus:border-core/30"
                     />
                   </label>
                   <div className="flex items-end">
@@ -549,7 +549,7 @@ export function NasBackupPanel() {
                         status.credentialRotationRecoveryPending
                       }
                       onClick={() => void previewRotation()}
-                      className="h-9 rounded-lg border border-core/30 bg-core/10 px-3 text-[11px] font-semibold text-core disabled:opacity-40"
+                      className="h-9 rounded-lg border border-core/30 bg-core/10 px-3 text-[12px] font-semibold text-core disabled:opacity-40"
                     >
                       预览安全轮换
                     </button>
@@ -565,7 +565,7 @@ export function NasBackupPanel() {
         )}
 
         {status && (
-          <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+          <div className="mt-3 flex flex-wrap gap-2 text-[12px]">
             <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               调度器 {status.schedulerInstalled ? "已安装" : "缺失"}
             </span>
@@ -579,7 +579,7 @@ export function NasBackupPanel() {
         )}
 
         {status?.credentialRotationRecoveryPending && (
-          <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[11px] leading-5 text-warning">
+          <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[12px] leading-5 text-warning">
             <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
             上次仓库密码轮换仍在安全恢复中。请连接原外部备份盘并刷新；系统会根据持久化收据自动回滚未切换的新密钥，或完成旧密钥撤销。恢复完成前不会启动新的轮换或备份策略变更。
           </p>
@@ -589,7 +589,7 @@ export function NasBackupPanel() {
           !ready &&
           !status.enabled &&
           !status.credentialRotationRecoveryPending && (
-            <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[11px] leading-5 text-warning">
+            <p className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2 text-[12px] leading-5 text-warning">
               <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
               {!status.schedulerInstalled
                 ? "本机尚未安装备份调度器，启用入口已锁定。"
@@ -599,14 +599,14 @@ export function NasBackupPanel() {
 
         {recent.length > 0 && (
           <div className="mt-4 border-t border-border pt-3">
-            <h3 className="text-[11px] font-semibold text-foreground">
+            <h3 className="text-[12px] font-semibold text-foreground">
               最近运行
             </h3>
             <ul className="mt-2 space-y-1.5">
               {recent.map((attempt, index) => (
                 <li
                   key={`${attempt.completedAt}-${index}`}
-                  className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground"
+                  className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground"
                 >
                   <CheckCircle2Icon
                     className={`size-3.5 ${attempt.outcome === "failed" ? "text-breach" : "text-core"}`}
@@ -637,7 +637,7 @@ export function NasBackupPanel() {
         />
 
         {error && (
-          <p role="alert" className="mt-3 text-[11px] text-breach">
+          <p role="alert" className="mt-3 text-[12px] text-breach">
             {error}
           </p>
         )}

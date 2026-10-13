@@ -1825,7 +1825,7 @@ export function OmvSharingPanel() {
                     {service.name}
                   </span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${
                       service.enabled
                         ? "bg-core/10 text-core"
                         : "bg-muted text-muted-foreground"
@@ -1847,7 +1847,7 @@ export function OmvSharingPanel() {
           <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="mb-3">
               <h2 className="text-[15px] font-semibold">共享协议规则</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 只显示允许的连接范围和访问方式，不返回密码或额外配置字段
               </p>
             </div>
@@ -1861,7 +1861,7 @@ export function OmvSharingPanel() {
                   {overview.smb.shares.map((share) => (
                     <div
                       key={share.uuid}
-                      className="rounded-lg bg-card px-2.5 py-2 text-[10px] text-muted-foreground ring-1 ring-border"
+                      className="rounded-lg bg-card px-2.5 py-2 text-[12px] text-muted-foreground ring-1 ring-border"
                     >
                       <span className="block truncate font-medium text-foreground">
                         {share.sharedFolderName || "未命名共享"}
@@ -1874,7 +1874,7 @@ export function OmvSharingPanel() {
                     </div>
                   ))}
                   {overview.smb.shares.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[12px] text-muted-foreground">
                       没有 SMB 共享规则
                     </span>
                   )}
@@ -1889,7 +1889,7 @@ export function OmvSharingPanel() {
                   {overview.nfs.shares.map((share) => (
                     <div
                       key={share.uuid}
-                      className="rounded-lg bg-card px-2.5 py-2 text-[10px] text-muted-foreground ring-1 ring-border"
+                      className="rounded-lg bg-card px-2.5 py-2 text-[12px] text-muted-foreground ring-1 ring-border"
                     >
                       <span className="block truncate font-medium text-foreground">
                         {share.sharedFolderName || "未命名共享"}
@@ -1901,7 +1901,7 @@ export function OmvSharingPanel() {
                     </div>
                   ))}
                   {overview.nfs.shares.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[12px] text-muted-foreground">
                       没有 NFS 共享规则
                     </span>
                   )}
@@ -1917,7 +1917,7 @@ export function OmvSharingPanel() {
                     {timeMachine.shares.map((share) => (
                       <div
                         key={share.sharedFolderRef}
-                        className="rounded-lg bg-card px-2.5 py-2 text-[10px] text-muted-foreground ring-1 ring-core/30"
+                        className="rounded-lg bg-card px-2.5 py-2 text-[12px] text-muted-foreground ring-1 ring-core/30"
                       >
                         <span className="block truncate font-medium text-foreground">
                           {share.name}
@@ -1929,7 +1929,7 @@ export function OmvSharingPanel() {
                       </div>
                     ))}
                     {timeMachine.shares.length === 0 && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[12px] text-muted-foreground">
                         没有 Time Machine 备份目的地
                       </span>
                     )}
@@ -1946,7 +1946,7 @@ export function OmvSharingPanel() {
                     {dlna.shares.map((share) => (
                       <div
                         key={share.sharedFolderRef}
-                        className="rounded-lg bg-card px-2.5 py-2 text-[10px] text-muted-foreground ring-1 ring-warning/30"
+                        className="rounded-lg bg-card px-2.5 py-2 text-[12px] text-muted-foreground ring-1 ring-warning/30"
                       >
                         <span className="block truncate font-medium text-foreground">
                           {share.name}
@@ -1964,7 +1964,7 @@ export function OmvSharingPanel() {
                       </div>
                     ))}
                     {dlna.shares.length === 0 && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[12px] text-muted-foreground">
                         没有 DLNA 媒体目录
                       </span>
                     )}
@@ -1981,12 +1981,12 @@ export function OmvSharingPanel() {
                     <button
                       type="button"
                       onClick={beginWebDavControl}
-                      className="rounded-lg bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90"
+                      className="rounded-lg bg-primary px-2 py-1 text-[12px] font-medium text-primary-foreground hover:bg-primary/90"
                     >
                       配置
                     </button>
                   </div>
-                  <div className="mt-2 space-y-1.5 text-[10px] text-muted-foreground">
+                  <div className="mt-2 space-y-1.5 text-[12px] text-muted-foreground">
                     <span className="block font-medium text-foreground">
                       {webdav.enabled && webdav.active
                         ? `已发布 ${webdav.publishedShares.length} 个 ACL 可读共享`
@@ -2014,7 +2014,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     WebDAV 网关期望状态
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     默认关闭。启用后只通过 HTTPS 发布已登记、且当前账号 ACL
                     可读的共享；不会复用 NAS 系统密码，也不会开放明文端口。
                   </p>
@@ -2045,7 +2045,7 @@ export function OmvSharingPanel() {
                 />
                 启用经认证的 WebDAV TLS 网关
               </label>
-              <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                 当前已登记 {webdav?.registeredShareCount ?? 0}{" "}
                 个共享。停用会撤销 rclone、SFTP chroot、刷新 watcher 和现有 bind
                 mount，不删除任何文件。
@@ -2062,7 +2062,7 @@ export function OmvSharingPanel() {
                   )}
                   {webdavPlanning ? "正在预览…" : "预览 WebDAV 变更"}
                 </button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会启动或停止服务
                 </span>
               </div>
@@ -2080,7 +2080,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setWebDavApprovalOpen(true)}
-                        className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用
                       </button>
@@ -2089,7 +2089,7 @@ export function OmvSharingPanel() {
                   {webdavPlan.changes.map((change) => (
                     <div
                       key={change.field}
-                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                     >
                       <span className="font-medium text-foreground">启用</span>
                       <span>{planValue(change.before)}</span>
@@ -2111,7 +2111,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     SMB 期望状态 · {editingFolder.name}
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     只管理简单私有规则；访客、ACL、用户和高级 Samba
                     选项不会被开放。
                   </p>
@@ -2154,7 +2154,7 @@ export function OmvSharingPanel() {
                 ))}
               </div>
               {nativeSmb && (
-                <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+                <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                   原生 usershare 固定为可发现；回收站由文件面管理，当前不在 SMB
                   写面内。
                 </p>
@@ -2183,7 +2183,7 @@ export function OmvSharingPanel() {
                   )}
                   {planning ? "正在预览…" : "预览变更"}
                 </button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会修改系统配置
                 </span>
               </div>
@@ -2204,7 +2204,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setApprovalOpen(true)}
-                        className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用
                       </button>
@@ -2215,7 +2215,7 @@ export function OmvSharingPanel() {
                       {plan.changes.map((change) => (
                         <div
                           key={change.field}
-                          className="grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                          className="grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                         >
                           <span className="font-medium text-foreground">
                             {smbFieldLabel[change.field]}
@@ -2243,7 +2243,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     Time Machine 备份目的地 · {editingTimeMachineFolder.name}
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     仅供一位 NAS 成员通过 SMB3
                     访问；首次启用必须是空的专用目录。
                   </p>
@@ -2312,7 +2312,7 @@ export function OmvSharingPanel() {
                   />
                 </label>
               </div>
-              <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                 空间上限由 Samba 按 sparsebundle
                 大小估算；请不要在这个目录中存放其他文件。停用只移除共享，不删除备份。
               </p>
@@ -2336,7 +2336,7 @@ export function OmvSharingPanel() {
                   )}
                   {timeMachinePlanning ? "正在预览…" : "预览 Time Machine 变更"}
                 </button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会修改 Samba
                 </span>
               </div>
@@ -2356,7 +2356,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setTimeMachineApprovalOpen(true)}
-                        className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用
                       </button>
@@ -2365,7 +2365,7 @@ export function OmvSharingPanel() {
                   {timeMachinePlan.changes.map((change) => (
                     <div
                       key={change.field}
-                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                     >
                       <span className="font-medium text-foreground">
                         {change.field === "enabled"
@@ -2395,7 +2395,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     DLNA 媒体目录 · {editingDlnaFolder.name}
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     仅把选中的共享目录以只读方式发布到私有 IPv4
                     局域网；不会开放写入、任意路径或自定义端口。
                   </p>
@@ -2447,7 +2447,7 @@ export function OmvSharingPanel() {
                   </select>
                 </label>
               </div>
-              <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                 ReadyMedia 使用固定 TCP 8200 / UDP
                 1900；停用只撤销服务、只读挂载和防火墙规则，不删除媒体文件。
               </p>
@@ -2463,7 +2463,7 @@ export function OmvSharingPanel() {
                   )}
                   {dlnaPlanning ? "正在预览…" : "预览 DLNA 变更"}
                 </button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会启动服务
                 </span>
               </div>
@@ -2483,7 +2483,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setDlnaApprovalOpen(true)}
-                        className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用
                       </button>
@@ -2492,7 +2492,7 @@ export function OmvSharingPanel() {
                   {dlnaPlan.changes.map((change) => (
                     <div
                       key={change.field}
-                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                     >
                       <span className="font-medium text-foreground">
                         {change.field === "enabled" ? "启用" : "媒体类型"}
@@ -2518,7 +2518,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     NFS 私网规则 · {editingNfsFolder.name}
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     只允许一个 RFC1918 或 IPv6 ULA 网段，强制
                     root_squash、同步写入和
                     no_subtree_check；通配符、公网和高级参数不会被开放。
@@ -2591,7 +2591,7 @@ export function OmvSharingPanel() {
                   )}
                   {nfsPlanning ? "正在预览…" : "预览 NFS 变更"}
                 </button>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会修改系统配置
                 </span>
                 {status?.source === "native" &&
@@ -2626,7 +2626,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setNfsApprovalOpen(true)}
-                        className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用
                       </button>
@@ -2636,7 +2636,7 @@ export function OmvSharingPanel() {
                     {nfsPlan.changes.map((change) => (
                       <div
                         key={change.field}
-                        className="grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                        className="grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                       >
                         <span className="font-medium text-foreground">
                           {nfsFieldLabel[change.field]}
@@ -2662,7 +2662,7 @@ export function OmvSharingPanel() {
                           ? "将移除 NFS 私网规则"
                           : "NFS 私网规则已经不存在"}
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         只移除 Echo 管理的 exports
                         规则；目录、文件和权限均保留。
                       </span>
@@ -2671,7 +2671,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setNfsRemoveApprovalOpen(true)}
-                        className="h-8 shrink-0 rounded-lg bg-breach px-3 text-[11px] font-medium text-primary-foreground hover:bg-breach"
+                        className="h-8 shrink-0 rounded-lg bg-breach px-3 text-[12px] font-medium text-primary-foreground hover:bg-breach"
                       >
                         管理员确认并移除
                       </button>
@@ -2690,24 +2690,24 @@ export function OmvSharingPanel() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-[15px] font-semibold">文件系统硬配额</h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     按这个卷上的文件所有者统计，限制同时作用于本机、SMB 和
                     NFS；这不是某个共享文件夹的独立空间上限。
                   </p>
                 </div>
-                <span className="rounded-full bg-card px-2 py-1 text-[10px] font-medium text-core ring-1 ring-core/30">
+                <span className="rounded-full bg-card px-2 py-1 text-[12px] font-medium text-core ring-1 ring-core/30">
                   原生配额
                 </span>
               </div>
 
               {eligibleQuotaFilesystems.length === 0 ? (
-                <p className="mt-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-[11px] leading-5 text-warning">
+                <p className="mt-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-[12px] leading-5 text-warning">
                   当前没有同时满足“已挂载、可写、支持配额”的文件系统。请先准备文件系统并启用配额能力。
                 </p>
               ) : (
                 <>
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <label className="text-[11px] font-medium text-muted-foreground sm:col-span-2">
+                    <label className="text-[12px] font-medium text-muted-foreground sm:col-span-2">
                       文件系统
                       <select
                         value={quotaFilesystemUuid}
@@ -2724,7 +2724,7 @@ export function OmvSharingPanel() {
                         ))}
                       </select>
                     </label>
-                    <label className="text-[11px] font-medium text-muted-foreground">
+                    <label className="text-[12px] font-medium text-muted-foreground">
                       对象类型
                       <select
                         value={quotaSubjectType}
@@ -2746,7 +2746,7 @@ export function OmvSharingPanel() {
                         <option value="group">用户组</option>
                       </select>
                     </label>
-                    <label className="text-[11px] font-medium text-muted-foreground">
+                    <label className="text-[12px] font-medium text-muted-foreground">
                       {quotaSubjectType === "user" ? "用户" : "用户组"}
                       <select
                         value={quotaSubjectName}
@@ -2766,7 +2766,7 @@ export function OmvSharingPanel() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-end gap-3">
-                    <label className="w-48 text-[11px] font-medium text-muted-foreground">
+                    <label className="w-48 text-[12px] font-medium text-muted-foreground">
                       硬限制（GiB）
                       <input
                         type="number"
@@ -2793,7 +2793,7 @@ export function OmvSharingPanel() {
                       )}
                       {quotaPlanning ? "正在预览…" : "预览配额变更"}
                     </button>
-                    <span className="pb-2 text-[10px] text-muted-foreground">
+                    <span className="pb-2 text-[12px] text-muted-foreground">
                       输入 0 表示取消硬限制；预览不会修改系统配置
                     </span>
                   </div>
@@ -2815,7 +2815,7 @@ export function OmvSharingPanel() {
                                   " 的硬配额",
                                 ].join("")}
                           </strong>
-                          <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                          <span className="mt-0.5 block text-[12px] text-muted-foreground">
                             {quotaPlan.filesystem.label || "未命名卷"} ·
                             当前用量 {quotaPlan.subject.used}
                           </span>
@@ -2824,7 +2824,7 @@ export function OmvSharingPanel() {
                           <button
                             type="button"
                             onClick={() => setQuotaApprovalOpen(true)}
-                            className="h-8 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                            className="h-8 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                           >
                             管理员确认并应用配额
                           </button>
@@ -2833,7 +2833,7 @@ export function OmvSharingPanel() {
                       {quotaPlan.changes.map((change) => (
                         <div
                           key={change.field}
-                          className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                          className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                         >
                           <span className="font-medium text-foreground">
                             文件系统硬限制
@@ -2859,7 +2859,7 @@ export function OmvSharingPanel() {
                   <h2 className="text-[15px] font-semibold">
                     用户/组访问权限 · {editingPrivilegeFolder.name}
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-5 text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] leading-5 text-muted-foreground">
                     不会创建账户、修改已有文件内容、递归权限或删除数据；OMV
                     更新共享配置，原生存储面只更新共享根目录的 POSIX 访问/默认
                     ACL。
@@ -2879,7 +2879,7 @@ export function OmvSharingPanel() {
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="text-[11px] font-medium text-muted-foreground">
+                <label className="text-[12px] font-medium text-muted-foreground">
                   已有用户或组
                   <select
                     value={(() => {
@@ -2910,7 +2910,7 @@ export function OmvSharingPanel() {
                     )}
                   </select>
                 </label>
-                <label className="text-[11px] font-medium text-muted-foreground">
+                <label className="text-[12px] font-medium text-muted-foreground">
                   共享访问
                   <select
                     value={privilegeDesired.permission}
@@ -2949,7 +2949,7 @@ export function OmvSharingPanel() {
                   )}
                   {privilegePlanning ? "正在预览…" : "预览权限变更"}
                 </button>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   预览不会修改系统配置或文件内容
                 </span>
               </div>
@@ -2963,7 +2963,7 @@ export function OmvSharingPanel() {
                           ? "当前已经符合期望状态"
                           : `将更新${privilegePlan.principal.type === "user" ? "用户" : "用户组"} ${privilegePlan.principal.name} 的访问权限`}
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         {privilegePlan.safety.filesystemAcl ===
                         "accessAndDefaultOnly"
                           ? "只更新共享根目录的访问/默认 ACL；不递归修改已有文件权限"
@@ -2974,7 +2974,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setPrivilegeApprovalOpen(true)}
-                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并应用权限
                       </button>
@@ -2983,7 +2983,7 @@ export function OmvSharingPanel() {
                   {privilegePlan.changes.map((change) => (
                     <div
                       key={change.field}
-                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[10px] text-muted-foreground"
+                      className="mt-2 grid grid-cols-[90px_1fr_auto_1fr] items-center gap-2 rounded-lg bg-background px-2.5 py-2 text-[12px] text-muted-foreground"
                     >
                       <span className="font-medium text-foreground">
                         共享访问
@@ -3004,12 +3004,12 @@ export function OmvSharingPanel() {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-[15px] font-semibold">共享文件夹</h2>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
                   名称直接生成相对目录；不展开文件内容或绝对宿主路径
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[12px] text-muted-foreground">
                   {overview.sharedFolders.length} 个
                 </span>
                 {status?.capabilities?.includes(
@@ -3022,7 +3022,7 @@ export function OmvSharingPanel() {
                         setFolderCreateOpen((open) => !open);
                         clearFolderPreview();
                       }}
-                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[11px] font-medium text-primary-foreground transition hover:bg-primary/90"
+                      className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-medium text-primary-foreground transition hover:bg-primary/90"
                     >
                       <FolderPlusIcon className="size-3.5" />
                       新建共享文件夹
@@ -3033,7 +3033,7 @@ export function OmvSharingPanel() {
 
             {status?.capabilities?.includes("shared-folder.create.simple.v1") &&
               overview.sharedFolderTargets.length === 0 && (
-                <p className="mb-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-[11px] leading-5 text-warning">
+                <p className="mb-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-[12px] leading-5 text-warning">
                   当前没有可用于新建共享文件夹的已挂载可写卷。请先准备文件系统并完成挂载。
                 </p>
               )}
@@ -3045,7 +3045,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       在现有可写卷上创建
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       Echo
                       只按名称创建同名相对目录；已有登记目录仅允许更新备注，
                       不改名、不移动、不修改权限或删除数据。新目录固定为 users
@@ -3058,13 +3058,13 @@ export function OmvSharingPanel() {
                       setFolderCreateOpen(false);
                       clearFolderPreview();
                     }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     目标卷
                     <select
                       value={folderMountRef}
@@ -3088,7 +3088,7 @@ export function OmvSharingPanel() {
                       ))}
                     </select>
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     文件夹名称
                     <input
                       value={folderName}
@@ -3103,7 +3103,7 @@ export function OmvSharingPanel() {
                     />
                   </label>
                 </div>
-                <label className="mt-3 block text-[11px] font-medium text-muted-foreground">
+                <label className="mt-3 block text-[12px] font-medium text-muted-foreground">
                   备注
                   <input
                     value={folderComment}
@@ -3130,7 +3130,7 @@ export function OmvSharingPanel() {
                     )}
                     {folderPlanning ? "正在预览…" : "预览创建/更新"}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     预览不会创建目录
                   </span>
                 </div>
@@ -3145,7 +3145,7 @@ export function OmvSharingPanel() {
                               ? `将更新 ${folderPlan.desired.name}/ 的备注`
                               : "同名共享文件夹已经符合要求"}
                         </strong>
-                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                        <span className="mt-1 block text-[12px] text-muted-foreground">
                           {folderPlan.target.label || "未命名卷"} · 目录权限
                           2770 · users 组 · 不管理 ACL
                         </span>
@@ -3154,7 +3154,7 @@ export function OmvSharingPanel() {
                         <button
                           type="button"
                           onClick={() => setFolderApprovalOpen(true)}
-                          className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                          className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                         >
                           {folderPlan.operation === "update"
                             ? "管理员确认并更新"
@@ -3277,13 +3277,13 @@ export function OmvSharingPanel() {
                         <strong className="block truncate text-xs text-foreground">
                           {folder.name}
                         </strong>
-                        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
                           {folder.relativePath || "/"} ·{" "}
                           {folder.device || "设备未知"}
                         </span>
                       </div>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${
                           folder.status === "OK"
                             ? "bg-core/10 text-core"
                             : "bg-warning/10 text-warning"
@@ -3291,7 +3291,7 @@ export function OmvSharingPanel() {
                       >
                         {folder.status}
                       </span>
-                      <span className="rounded-full bg-card px-2 py-0.5 text-[10px] text-muted-foreground ring-1 ring-border">
+                      <span className="rounded-full bg-card px-2 py-0.5 text-[12px] text-muted-foreground ring-1 ring-border">
                         {folder.supportsAcl ? "支持 POSIX ACL" : "基础权限"}
                       </span>
                       {canControlSmb && (
@@ -3304,7 +3304,7 @@ export function OmvSharingPanel() {
                               ? "请先停用这个文件夹的 Time Machine 目的地"
                               : undefined
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-primary"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[12px] font-medium text-primary-foreground transition hover:bg-primary"
                         >
                           <SlidersHorizontalIcon className="size-3" />
                           {smbRule ? "管理 SMB" : "启用 SMB"}
@@ -3320,7 +3320,7 @@ export function OmvSharingPanel() {
                               ? "请先停用这个文件夹的 Time Machine 目的地"
                               : undefined
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-primary/90"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[12px] font-medium text-primary-foreground transition hover:bg-primary/90"
                         >
                           <SlidersHorizontalIcon className="size-3" />
                           {nfsRule ? "管理 NFS" : "启用 NFS"}
@@ -3338,7 +3338,7 @@ export function OmvSharingPanel() {
                               ? "请先停用这个文件夹的普通 SMB/NFS 规则"
                               : "通过 SMB3 vfs_fruit 供 macOS 备份"
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-45"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[12px] font-medium text-primary-foreground transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <SlidersHorizontalIcon className="size-3" />
                           {timeMachineRule
@@ -3351,7 +3351,7 @@ export function OmvSharingPanel() {
                           type="button"
                           onClick={() => beginDlnaControl(folder)}
                           title="以只读方式发布到私有 IPv4 局域网"
-                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-warning px-2.5 text-[10px] font-medium text-primary-foreground transition hover:bg-warning"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg bg-warning px-2.5 text-[12px] font-medium text-primary-foreground transition hover:bg-warning"
                         >
                           <SlidersHorizontalIcon className="size-3" />
                           {dlnaRule ? "管理 DLNA" : "启用 DLNA"}
@@ -3367,7 +3367,7 @@ export function OmvSharingPanel() {
                               ? "请先停用这个文件夹的 SMB/NFS/Time Machine/DLNA 规则"
                               : "保留数据和 UUID，仅修改目录名称"
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-core/30 bg-card px-2.5 text-[10px] font-medium text-core transition hover:bg-core/10 disabled:cursor-not-allowed disabled:opacity-45"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-core/30 bg-card px-2.5 text-[12px] font-medium text-core transition hover:bg-core/10 disabled:cursor-not-allowed disabled:opacity-45"
                         >
                           <PencilIcon className="size-3" />
                           重命名
@@ -3381,7 +3381,7 @@ export function OmvSharingPanel() {
                             folderDetachPlanning &&
                             folderDetachDesired?.sharedFolderRef === folder.uuid
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2.5 text-[10px] font-medium text-breach transition hover:bg-breach/10 disabled:opacity-50"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2.5 text-[12px] font-medium text-breach transition hover:bg-breach/10 disabled:opacity-50"
                         >
                           {folderDetachPlanning &&
                           folderDetachDesired?.sharedFolderRef ===
@@ -3401,7 +3401,7 @@ export function OmvSharingPanel() {
                             folderDeletePlanning &&
                             folderDeleteDesired?.sharedFolderRef === folder.uuid
                           }
-                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2.5 text-[10px] font-medium text-breach transition hover:bg-breach/10 disabled:opacity-50"
+                          className="inline-flex h-7 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2.5 text-[12px] font-medium text-breach transition hover:bg-breach/10 disabled:opacity-50"
                         >
                           {folderDeletePlanning &&
                           folderDeleteDesired?.sharedFolderRef ===
@@ -3415,7 +3415,7 @@ export function OmvSharingPanel() {
                       )}
                     </div>
                     {folderRenameTarget?.uuid === folder.uuid && (
-                      <div className="mt-2 rounded-lg border border-core/30 bg-core/10 px-3 py-2 text-[10px] text-core">
+                      <div className="mt-2 rounded-lg border border-core/30 bg-core/10 px-3 py-2 text-[12px] text-core">
                         <div className="flex flex-wrap items-end gap-2">
                           <label className="min-w-[180px] flex-1 font-medium">
                             新名称
@@ -3428,7 +3428,7 @@ export function OmvSharingPanel() {
                                 setFolderRenameDesired(null);
                                 setFolderRenamePlan(null);
                               }}
-                              className="mt-1 h-8 w-full rounded-lg border border-core/30 bg-card px-2.5 text-[11px] outline-none focus:border-core/30"
+                              className="mt-1 h-8 w-full rounded-lg border border-core/30 bg-card px-2.5 text-[12px] outline-none focus:border-core/30"
                             />
                           </label>
                           <button
@@ -3437,7 +3437,7 @@ export function OmvSharingPanel() {
                             disabled={
                               folderRenamePlanning || !folderRenameName.trim()
                             }
-                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
                             {folderRenamePlanning && (
                               <Loader2Icon className="size-3 animate-spin" />
@@ -3451,7 +3451,7 @@ export function OmvSharingPanel() {
                               setFolderRenameDesired(null);
                               setFolderRenamePlan(null);
                             }}
-                            className="h-8 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                            className="h-8 px-2 text-[12px] text-muted-foreground hover:text-foreground"
                           >
                             取消
                           </button>
@@ -3469,7 +3469,7 @@ export function OmvSharingPanel() {
                                 onClick={() =>
                                   setFolderRenameApprovalOpen(true)
                                 }
-                                className="h-7 shrink-0 rounded-lg bg-warning px-2.5 text-[10px] font-medium text-primary-foreground hover:bg-warning"
+                                className="h-7 shrink-0 rounded-lg bg-warning px-2.5 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                               >
                                 管理员确认
                               </button>
@@ -3479,7 +3479,7 @@ export function OmvSharingPanel() {
                       </div>
                     )}
                     {folderDetachPlan?.sharedFolder.uuid === folder.uuid && (
-                      <div className="mt-2 rounded-lg border border-breach/30 bg-breach/10 px-3 py-2 text-[10px] text-breach">
+                      <div className="mt-2 rounded-lg border border-breach/30 bg-breach/10 px-3 py-2 text-[12px] text-breach">
                         <div className="flex items-center justify-between gap-3">
                           <span>
                             将解除 Echo 登记；目录、文件和现有 POSIX ACL
@@ -3488,7 +3488,7 @@ export function OmvSharingPanel() {
                           <button
                             type="button"
                             onClick={() => setFolderDetachApprovalOpen(true)}
-                            className="h-7 shrink-0 rounded-lg bg-breach px-2.5 text-[10px] font-medium text-primary-foreground hover:bg-breach"
+                            className="h-7 shrink-0 rounded-lg bg-breach px-2.5 text-[12px] font-medium text-primary-foreground hover:bg-breach"
                           >
                             管理员确认
                           </button>
@@ -3496,7 +3496,7 @@ export function OmvSharingPanel() {
                       </div>
                     )}
                     {folderDeletePlan?.sharedFolder.uuid === folder.uuid && (
-                      <div className="mt-2 rounded-lg border border-breach/30 bg-breach/10 px-3 py-2 text-[10px] text-breach">
+                      <div className="mt-2 rounded-lg border border-breach/30 bg-breach/10 px-3 py-2 text-[12px] text-breach">
                         <div className="flex items-center justify-between gap-3">
                           <span>
                             已确认目录为空且没有 SMB/NFS/Time Machine
@@ -3505,7 +3505,7 @@ export function OmvSharingPanel() {
                           <button
                             type="button"
                             onClick={() => setFolderDeleteApprovalOpen(true)}
-                            className="h-7 shrink-0 rounded-lg bg-breach px-2.5 text-[10px] font-medium text-primary-foreground hover:bg-breach"
+                            className="h-7 shrink-0 rounded-lg bg-breach px-2.5 text-[12px] font-medium text-primary-foreground hover:bg-breach"
                           >
                             管理员确认删除
                           </button>
@@ -3534,14 +3534,14 @@ export function OmvSharingPanel() {
                         {entries.map((entry) => (
                           <span
                             key={`${entry.type}:${entry.id}`}
-                            className="rounded-md bg-card px-2 py-1 text-[10px] text-muted-foreground ring-1 ring-border"
+                            className="rounded-md bg-card px-2 py-1 text-[12px] text-muted-foreground ring-1 ring-border"
                           >
                             {entry.type === "user" ? "用户" : "组"} {entry.name}{" "}
                             · {permissionLabel[entry.permission]}
                           </span>
                         ))}
                         {entries.length === 0 && (
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[12px] text-muted-foreground">
                             没有可管理的用户或组
                           </span>
                         )}
@@ -3549,7 +3549,7 @@ export function OmvSharingPanel() {
                           <button
                             type="button"
                             onClick={() => void beginPrivilegeControl(folder)}
-                            className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning hover:bg-warning/20"
+                            className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-[12px] font-medium text-warning hover:bg-warning/20"
                           >
                             <SlidersHorizontalIcon className="size-3" />
                             管理权限
@@ -3557,7 +3557,7 @@ export function OmvSharingPanel() {
                         )}
                       </div>
                     ) : !folderControlsAllowed ? (
-                      <span className="mt-2 block text-[10px] text-muted-foreground">
+                      <span className="mt-2 block text-[12px] text-muted-foreground">
                         原生卷根目录不提供目录权限管理
                       </span>
                     ) : (
@@ -3565,7 +3565,7 @@ export function OmvSharingPanel() {
                         type="button"
                         disabled={privilegeLoading === folder.uuid}
                         onClick={() => void beginPrivilegeControl(folder)}
-                        className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-core disabled:text-muted-foreground"
+                        className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-core disabled:text-muted-foreground"
                       >
                         {privilegeLoading === folder.uuid ? (
                           <Loader2Icon className="size-3 animate-spin" />
@@ -3592,7 +3592,7 @@ export function OmvSharingPanel() {
                   <UsersRoundIcon className="size-4 text-core" />
                   家庭成员与用户组
                 </h2>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
                   {overview.users.length} 位成员 · {overview.groups.length} 个组
                 </p>
               </div>
@@ -3607,7 +3607,7 @@ export function OmvSharingPanel() {
                       clearPasswordResetSecret();
                       clearEchoLinkSecret();
                     }}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-core/30 bg-core/10 px-3 text-[11px] font-medium text-core transition hover:bg-core/10"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-core/30 bg-core/10 px-3 text-[12px] font-medium text-core transition hover:bg-core/10"
                   >
                     <UsersRoundIcon className="size-3.5" />
                     新建用户组
@@ -3623,7 +3623,7 @@ export function OmvSharingPanel() {
                       clearPasswordResetSecret();
                       clearEchoLinkSecret();
                     }}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[11px] font-medium text-primary-foreground transition hover:bg-primary"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-[12px] font-medium text-primary-foreground transition hover:bg-primary"
                   >
                     <UserPlusIcon className="size-3.5" />
                     添加家庭成员
@@ -3639,7 +3639,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       创建空用户组
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       只创建普通
                       用户组，初始成员为空；不允许系统组、修改或删除已有组。
                     </p>
@@ -3650,13 +3650,13 @@ export function OmvSharingPanel() {
                       setAccountMode(null);
                       clearGroupPreview();
                     }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     用户组名称
                     <input
                       value={groupName}
@@ -3672,7 +3672,7 @@ export function OmvSharingPanel() {
                       placeholder="例如 family"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     用户组备注
                     <input
                       value={groupComment}
@@ -3698,7 +3698,7 @@ export function OmvSharingPanel() {
                     )}
                     {groupPlanning ? "正在预览…" : "预览用户组创建"}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     预览不会修改系统配置
                   </span>
                 </div>
@@ -3710,7 +3710,7 @@ export function OmvSharingPanel() {
                           ? `用户组 ${groupPlan.desired.name} 已存在`
                           : `将创建空用户组 ${groupPlan.desired.name}`}
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         {groupPlan.operation === "none"
                           ? "未修改已有组"
                           : "系统组不可选 · 不修改已有组 · 创建后回读验证"}
@@ -3720,7 +3720,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setGroupApprovalOpen(true)}
-                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并创建组
                       </button>
@@ -3737,7 +3737,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       添加家庭成员账号
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       新账号禁用命令行登录和 SSH
                       密钥，不设置邮箱；成员密码只用于本次创建，不写入浏览器存储、计划结果或审计。
                     </p>
@@ -3745,13 +3745,13 @@ export function OmvSharingPanel() {
                   <button
                     type="button"
                     onClick={closeUserEditor}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     成员账号
                     <input
                       value={userName}
@@ -3768,7 +3768,7 @@ export function OmvSharingPanel() {
                       placeholder="例如 mother"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     显示名称
                     <input
                       value={userDisplayName}
@@ -3783,7 +3783,7 @@ export function OmvSharingPanel() {
                       placeholder="例如 妈妈"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     成员密码
                     <input
                       type="password"
@@ -3800,7 +3800,7 @@ export function OmvSharingPanel() {
                       placeholder="至少 12 位强密码"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     确认成员密码
                     <input
                       type="password"
@@ -3819,14 +3819,14 @@ export function OmvSharingPanel() {
                 </div>
                 {selectableUserGroups.length > 0 && (
                   <fieldset className="mt-3 rounded-xl border border-core/30 bg-card p-3">
-                    <legend className="px-1 text-[11px] font-medium text-muted-foreground">
+                    <legend className="px-1 text-[12px] font-medium text-muted-foreground">
                       加入用户组
                     </legend>
                     <div className="flex flex-wrap gap-2">
                       {selectableUserGroups.map((name) => (
                         <label
                           key={name}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[12px] text-muted-foreground"
                         >
                           <input
                             type="checkbox"
@@ -3866,7 +3866,7 @@ export function OmvSharingPanel() {
                     )}
                     {userPlanning ? "正在预览…" : "预览成员创建"}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     系统自动 home 开启时会安全拒绝
                   </span>
                 </div>
@@ -3878,7 +3878,7 @@ export function OmvSharingPanel() {
                           ? `成员 ${userPlan.desired.displayName}（${userPlan.desired.name}）已存在`
                           : `将创建家庭成员 ${userPlan.desired.displayName}（${userPlan.desired.name}）`}
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         {userPlan.operation === "none"
                           ? "未修改已有成员"
                           : "无命令行登录 · 无 SSH 密钥 · 密码已绑定计划且不会回传"}
@@ -3888,7 +3888,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => setUserApprovalOpen(true)}
-                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                        className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                       >
                         管理员确认并创建成员
                       </button>
@@ -3904,7 +3904,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       开通 Echo 登录 · {echoMemberName}
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       仅把这个已存在的 存储成员映射为 Echo 家庭账号。Echo
                       使用独立密码，不读取或复用 NAS 密码，也不会访问 Agent /
                       系统私有数据库。
@@ -3913,13 +3913,13 @@ export function OmvSharingPanel() {
                   <button
                     type="button"
                     onClick={closeEchoLink}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     显示名称
                     <input
                       value={echoDisplayName}
@@ -3932,7 +3932,7 @@ export function OmvSharingPanel() {
                       className="mt-1.5 h-9 w-full rounded-xl border border-core/30 bg-card px-3 text-xs outline-none focus:border-core/30"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     Echo 用户名
                     <input
                       value={echoMemberName}
@@ -3940,7 +3940,7 @@ export function OmvSharingPanel() {
                       className="mt-1.5 h-9 w-full rounded-xl border border-core/30 bg-background px-3 text-xs text-muted-foreground outline-none"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     独立 Echo 密码
                     <input
                       type="password"
@@ -3956,7 +3956,7 @@ export function OmvSharingPanel() {
                       placeholder="不要与 NAS / SMB 密码相同"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     确认 Echo 密码
                     <input
                       type="password"
@@ -3989,7 +3989,7 @@ export function OmvSharingPanel() {
                     )}
                     {echoLinkPlanning ? "正在预览…" : "预览登录开通"}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     开通后可在锁屏页输入成员用户名
                   </span>
                 </div>
@@ -3999,7 +3999,7 @@ export function OmvSharingPanel() {
                       <strong className="block text-xs text-foreground">
                         将为 {echoLinkPlan.account.displayName} 开通 Echo 登录
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         独立登录 · 独立 Agent 身份 · 关联系统用户{" "}
                         {echoMemberName}
                       </span>
@@ -4007,7 +4007,7 @@ export function OmvSharingPanel() {
                     <button
                       type="button"
                       onClick={() => setEchoLinkApprovalOpen(true)}
-                      className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                      className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                     >
                       管理员确认并开通
                     </button>
@@ -4022,7 +4022,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       重置 Echo 登录密码 · {echoLifecycleMember}
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       只修改 Echo 登录密码，不修改 NAS / SMB
                       密码。成功后该成员现有网页和 WebSocket 会话会立即失效。
                     </p>
@@ -4035,13 +4035,13 @@ export function OmvSharingPanel() {
                       setEchoReplacementConfirm("");
                       setEchoLifecyclePlan(null);
                     }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     新 Echo 密码
                     <input
                       aria-label="新 Echo 密码"
@@ -4057,7 +4057,7 @@ export function OmvSharingPanel() {
                       className="mt-1.5 h-9 w-full rounded-xl border border-core/30 bg-card px-3 text-xs outline-none focus:border-core/30"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     确认新 Echo 密码
                     <input
                       aria-label="确认新 Echo 密码"
@@ -4091,7 +4091,7 @@ export function OmvSharingPanel() {
                     <button
                       type="button"
                       onClick={() => setEchoPasswordApprovalOpen(true)}
-                      className="h-9 rounded-xl bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                      className="h-9 rounded-xl bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                     >
                       管理员确认并重置
                     </button>
@@ -4106,7 +4106,7 @@ export function OmvSharingPanel() {
                     <strong className="text-xs text-foreground">
                       重置成员密码 · {passwordUserName}
                     </strong>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                       仅允许仍保持禁用命令行登录、无邮箱和无 SSH
                       密钥的受限家庭成员。新密码会绑定本次计划并经秘密宿主通道发送，不写入浏览器存储、响应或审计。
                     </p>
@@ -4114,13 +4114,13 @@ export function OmvSharingPanel() {
                   <button
                     type="button"
                     onClick={closePasswordReset}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    className="text-[12px] text-muted-foreground hover:text-foreground"
                   >
                     关闭
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     新密码
                     <input
                       type="password"
@@ -4137,7 +4137,7 @@ export function OmvSharingPanel() {
                       placeholder="至少 12 位强密码"
                     />
                   </label>
-                  <label className="text-[11px] font-medium text-muted-foreground">
+                  <label className="text-[12px] font-medium text-muted-foreground">
                     确认新密码
                     <input
                       type="password"
@@ -4172,7 +4172,7 @@ export function OmvSharingPanel() {
                     )}
                     {passwordPlanning ? "正在预览…" : "预览密码重置"}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     密码变更成功后无法由 Echo 自动恢复旧密码
                   </span>
                 </div>
@@ -4182,14 +4182,14 @@ export function OmvSharingPanel() {
                       <strong className="block text-xs text-foreground">
                         将替换 {passwordPlan.desired.name} 的 SMB / NAS 密码
                       </strong>
-                      <span className="mt-1 block text-[10px] text-muted-foreground">
+                      <span className="mt-1 block text-[12px] text-muted-foreground">
                         账号属性保持并回读验证 · 新密码已绑定计划且不会回传
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setPasswordApprovalOpen(true)}
-                      className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[11px] font-medium text-primary-foreground hover:bg-warning"
+                      className="h-8 shrink-0 rounded-lg bg-warning px-3 text-[12px] font-medium text-primary-foreground hover:bg-warning"
                     >
                       管理员确认并重置
                     </button>
@@ -4214,7 +4214,7 @@ export function OmvSharingPanel() {
                       <strong className="block truncate text-xs">
                         {user.name}
                       </strong>
-                      <small className="block truncate text-[10px] text-muted-foreground">
+                      <small className="block truncate text-[12px] text-muted-foreground">
                         {user.comment || `UID ${user.uid}`} ·{" "}
                         {user.groups.join(", ") || "无附加组"}
                       </small>
@@ -4222,7 +4222,7 @@ export function OmvSharingPanel() {
                     {echoAccount ? (
                       <>
                         <span
-                          className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-medium ${
+                          className={`shrink-0 rounded-lg px-2 py-1 text-[12px] font-medium ${
                             echoAccount.active
                               ? "bg-core/10 text-core"
                               : "bg-muted text-muted-foreground"
@@ -4241,7 +4241,7 @@ export function OmvSharingPanel() {
                                   !echoAccount.active,
                                 )
                               }
-                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground hover:bg-background disabled:opacity-50"
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-[12px] font-medium text-foreground hover:bg-background disabled:opacity-50"
                             >
                               {echoAccount.active ? "停用 Echo" : "启用 Echo"}
                             </button>
@@ -4250,7 +4250,7 @@ export function OmvSharingPanel() {
                               onClick={() =>
                                 beginEchoPasswordReset(echoAccount.username)
                               }
-                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[10px] font-medium text-core hover:bg-core/10"
+                              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[12px] font-medium text-core hover:bg-core/10"
                             >
                               <KeyRoundIcon className="size-3" />
                               重置 Echo 密码
@@ -4262,7 +4262,7 @@ export function OmvSharingPanel() {
                                 onClick={() =>
                                   void previewEchoUnlink(echoAccount.username)
                                 }
-                                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2 py-1 text-[10px] font-medium text-breach hover:bg-breach/10 disabled:opacity-50"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2 py-1 text-[12px] font-medium text-breach hover:bg-breach/10 disabled:opacity-50"
                               >
                                 移除 Echo 登录
                               </button>
@@ -4277,7 +4277,7 @@ export function OmvSharingPanel() {
                           onClick={() =>
                             beginEchoLink(user.name, user.comment || user.name)
                           }
-                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[10px] font-medium text-core hover:bg-core/10"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[12px] font-medium text-core hover:bg-core/10"
                         >
                           <ShieldCheckIcon className="size-3" />
                           开通 Echo
@@ -4290,7 +4290,7 @@ export function OmvSharingPanel() {
                       <button
                         type="button"
                         onClick={() => beginPasswordReset(user.name)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-warning/30 bg-card px-2 py-1 text-[10px] font-medium text-warning hover:bg-warning/10"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-warning/30 bg-card px-2 py-1 text-[12px] font-medium text-warning hover:bg-warning/10"
                       >
                         <KeyRoundIcon className="size-3" />
                         重置密码

@@ -2853,11 +2853,8 @@ export default function DesktopShellPage() {
                     <span className="mini-dot" />
                     <span className="mini-dot" />
                   </div>
-                  <div className="mac-dock-mini-body">
-                    <span className="text-[8px] font-medium text-slate-200 truncate max-w-[40px] leading-tight select-none">
-                      {win.title}
-                    </span>
-                  </div>
+                  {/* 缩略窗口只画轮廓；标题在 Dock 提示里，8px 的字读不出来。 */}
+                  <div className="mac-dock-mini-body" />
                   <span className="mac-dock-mini-badge">
                     <EchoMark tone="brand" className="size-2.5" />
                   </span>

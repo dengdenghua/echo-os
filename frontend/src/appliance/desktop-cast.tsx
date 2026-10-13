@@ -116,7 +116,7 @@ export function DesktopCast({
   return (
     <section
       aria-label="电脑投到手机"
-      className="border-t border-border bg-card px-3 py-2 text-[11px] text-muted-foreground"
+      className="border-t border-border bg-card px-3 py-2 text-[12px] text-muted-foreground"
     >
       <div className="flex items-center justify-between gap-2">
         <span>

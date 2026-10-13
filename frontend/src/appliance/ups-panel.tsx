@@ -148,7 +148,7 @@ export function UpsPanel() {
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <PlugZapIcon className="size-5 text-core" /> UPS 电源保护
             </h2>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
               只连接本机 NUT；不会读取 UPS 序列号、凭据或远端设备。
             </p>
           </div>
@@ -205,7 +205,7 @@ export function UpsPanel() {
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-1 text-[10px] font-semibold ${stateStyle(device)}`}
+                    className={`rounded-full px-2 py-1 text-[12px] font-semibold ${stateStyle(device)}`}
                   >
                     {stateLabel(device)}
                   </span>
@@ -217,11 +217,11 @@ export function UpsPanel() {
                       ? "—"
                       : `${device.chargePercent}%`}
                   </strong>
-                  <span className="pb-1 text-[11px] text-muted-foreground">
+                  <span className="pb-1 text-[12px] text-muted-foreground">
                     {runtimeLabel(device.runtimeSeconds)}
                   </span>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-2 text-[10px]">
+                <dl className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
                   <div className="rounded-lg bg-card p-2">
                     <dt className="text-muted-foreground">负载</dt>
                     <dd className="mt-1 font-semibold text-foreground">
@@ -267,14 +267,14 @@ export function UpsPanel() {
                 <h3 className="text-xs font-semibold text-foreground">
                   低电量自动关机
                 </h3>
-                <p className="mt-1 max-w-xl text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-1 max-w-xl text-[12px] leading-5 text-muted-foreground">
                   {policy.enabled
                     ? `已启用：连续 ${policy.requiredConsecutiveSamples} 次检测到电池供电且低电量后关机；NUT FSD 信号会立即保护关机。`
                     : "默认关闭。启用后仅响应本机 NUT 的 OB+LB 或 FSD 状态，没有远程关机入口。"}
                 </p>
               </div>
               <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${
                   policy.enabled
                     ? "bg-core/10 text-core"
                     : "bg-muted text-muted-foreground"
@@ -284,7 +284,7 @@ export function UpsPanel() {
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-2">
-              <label className="text-[11px] text-muted-foreground">
+              <label className="text-[12px] text-muted-foreground">
                 连续确认次数
                 <select
                   aria-label="低电量连续确认次数"
@@ -310,7 +310,7 @@ export function UpsPanel() {
                     type="button"
                     disabled={!policyCapable || policyBusy}
                     onClick={() => void previewPolicy(true)}
-                    className="h-8 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40"
+                    className="h-8 rounded-lg bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                   >
                     保存确认次数
                   </button>
@@ -324,7 +324,7 @@ export function UpsPanel() {
                     (!snapshot?.configured || !snapshot.available))
                 }
                 onClick={() => void previewPolicy(!policy.enabled)}
-                className={`h-8 rounded-lg px-3 text-[11px] font-semibold text-primary-foreground disabled:opacity-40 ${
+                className={`h-8 rounded-lg px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40 ${
                   policy.enabled ? "bg-slate-600" : "bg-primary"
                 }`}
               >
@@ -332,7 +332,7 @@ export function UpsPanel() {
               </button>
             </div>
             {!policyCapable && (
-              <p className="mt-2 text-[10px] text-warning">
+              <p className="mt-2 text-[12px] text-warning">
                 当前系统缺少本机 NUT 或 systemd 能力，策略不可编辑。
               </p>
             )}

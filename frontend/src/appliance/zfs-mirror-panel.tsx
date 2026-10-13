@@ -191,7 +191,7 @@ export function ZfsMirrorPanel() {
           type="button"
           onClick={() => void refresh()}
           disabled={loading || busy}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[12px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -239,7 +239,7 @@ export function ZfsMirrorPanel() {
                     1. 选择两块空盘
                   </h2>
                 </div>
-                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                   这里只显示整盘、无分区/签名、未挂载、不可移动且带稳定序列号或
                   WWN 的磁盘。系统盘不会出现在候选列表。
                 </p>
@@ -297,7 +297,7 @@ export function ZfsMirrorPanel() {
                     pattern="[a-z][a-z0-9_-]{0,31}"
                     className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
                   />
-                  <span className="mt-1 block text-[10px] font-normal text-muted-foreground">
+                  <span className="mt-1 block text-[12px] font-normal text-muted-foreground">
                     小写字母开头，可含数字、下划线和短横线，最多 32 字符
                   </span>
                 </label>

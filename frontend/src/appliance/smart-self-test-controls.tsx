@@ -96,7 +96,7 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
     <>
       <div className="col-span-3 mt-1 border-t border-border pt-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
             <ActivityIcon className="size-3.5" />
             {loading
               ? "正在读取自检状态…"
@@ -126,7 +126,7 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
               type="button"
               disabled={busy}
               onClick={() => void preview("short")}
-              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[10px] font-medium text-foreground disabled:opacity-40"
+              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[12px] font-medium text-foreground disabled:opacity-40"
             >
               短时自检
             </button>
@@ -134,14 +134,14 @@ export function SmartSelfTestControls({ devicefile }: { devicefile: string }) {
               type="button"
               disabled={busy}
               onClick={() => void preview("long")}
-              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[10px] font-medium text-foreground disabled:opacity-40"
+              className="h-7 rounded-lg border border-border bg-card px-2.5 text-[12px] font-medium text-foreground disabled:opacity-40"
             >
               长时自检
             </button>
           </div>
         )}
         {error && (
-          <p role="alert" className="mt-2 text-[10px] text-breach">
+          <p role="alert" className="mt-2 text-[12px] text-breach">
             {error}
           </p>
         )}

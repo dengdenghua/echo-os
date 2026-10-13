@@ -327,7 +327,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
           />
         )}
       </div>
-      <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+      <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
         换盘只接受单一双盘 mirror
         的唯一故障成员与足够大的空白整盘；生命周期操作只接受 Echo
         数据根布局。所有目标按数字 GUID 与磁盘稳定身份绑定，不使用强制参数。
@@ -355,7 +355,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
           <h3 className="flex items-center gap-2 text-xs font-semibold text-core">
             <ShieldCheckIcon className="size-4" /> 校验 / 重建状态
           </h3>
-          <p className="mt-1 text-[10px] leading-5 text-core">
+          <p className="mt-1 text-[12px] leading-5 text-core">
             scrub 会校验全部数据并可能修复有冗余副本的损坏；resilver
             只重建过期数据。两者高占用且同一池不能并行。
           </p>
@@ -369,7 +369,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                   <p className="text-xs font-semibold text-foreground">
                     {item.pool.name} · {item.pool.health}
                   </p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     {item.scan.kind === "none"
                       ? "尚无校验记录"
                       : item.scan.kind}{" "}
@@ -386,7 +386,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                   type="button"
                   onClick={() => void previewScrub(item)}
                   disabled={busy || !item.canStartScrub}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                 >
                   {item.canStartScrub
                     ? `预览校验 ${item.pool.name}`
@@ -395,7 +395,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
               </div>
             ))}
             {!loading && maintenance.length === 0 && (
-              <p className="text-[11px] leading-5 text-core">
+              <p className="text-[12px] leading-5 text-core">
                 当前没有符合 Echo 数据根策略的已导入池。
               </p>
             )}
@@ -408,7 +408,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
           <h3 className="flex items-center gap-2 text-xs font-semibold text-warning">
             <WrenchIcon className="size-4" /> 故障镜像修复
           </h3>
-          <p className="mt-1 text-[10px] leading-5 text-warning">
+          <p className="mt-1 text-[12px] leading-5 text-warning">
             仅列出恰有一个故障成员、另一个成员 ONLINE，且当前没有
             scrub、resilver 或既有 replacing 树的双盘镜像。
           </p>
@@ -421,7 +421,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                 <p className="text-xs font-semibold text-foreground">
                   {replacement.pool.name} · {replacement.pool.health}
                 </p>
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-[12px] text-muted-foreground">
                   故障槽位 {replacement.replaceableMember.slot}（
                   {replacement.replaceableMember.state}）· 最小盘容量{" "}
                   {formatBytes(replacement.minimumReplacementBytes)}
@@ -435,13 +435,13 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                         void previewReplace(replacement, device.devicefile)
                       }
                       disabled={busy}
-                      className="rounded-lg bg-warning px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+                      className="rounded-lg bg-warning px-3 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                     >
                       预览用 {device.devicefile} 修复 {replacement.pool.name}
                     </button>
                   ))}
                   {replacement.replacementDevices.length === 0 && (
-                    <span className="text-[10px] text-warning">
+                    <span className="text-[12px] text-warning">
                       没有通过空白、稳定身份和容量检查的新盘
                     </span>
                   )}
@@ -449,7 +449,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
               </div>
             ))}
             {!loading && replacements.length === 0 && (
-              <p className="text-[11px] leading-5 text-warning">
+              <p className="text-[12px] leading-5 text-warning">
                 当前没有符合窄修复策略的故障双盘镜像。
               </p>
             )}
@@ -474,7 +474,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                       <p className="text-xs font-semibold text-foreground">
                         {pool.name}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-[12px] text-muted-foreground">
                         {formatBytes(pool.sizeBytes)} · {pool.datasetCount}{" "}
                         个数据集 · GUID {shortGuid(pool.poolGuid)}
                       </p>
@@ -483,7 +483,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                       type="button"
                       onClick={() => void previewExport(pool)}
                       disabled={busy}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                     >
                       预览导出 {pool.name}
                     </button>
@@ -491,7 +491,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                 </div>
               ))}
               {!loading && pools.length === 0 && (
-                <p className="text-[11px] leading-5 text-muted-foreground">
+                <p className="text-[12px] leading-5 text-muted-foreground">
                   当前没有同时满足安全策略的已导入池。
                 </p>
               )}
@@ -515,7 +515,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                       <p className="text-xs font-semibold text-foreground">
                         {candidate.name}
                       </p>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-[12px] text-muted-foreground">
                         {candidate.layout} · GUID{" "}
                         {shortGuid(candidate.poolGuid)}
                       </p>
@@ -524,7 +524,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                       type="button"
                       onClick={() => void previewImport(candidate)}
                       disabled={busy}
-                      className="rounded-lg bg-primary px-3 py-1.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-40"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
                     >
                       预览导入 {candidate.name}
                     </button>
@@ -532,7 +532,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
                 </div>
               ))}
               {!loading && candidates.length === 0 && (
-                <p className="text-[11px] leading-5 text-core">
+                <p className="text-[12px] leading-5 text-core">
                   未发现无需强制参数即可导入的 ONLINE 池。
                 </p>
               )}
@@ -550,7 +550,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
             <ShieldCheckIcon className="size-4 text-core" />
             {pendingTitle}
           </h3>
-          <p className="mt-2 text-[11px] leading-5 text-core">
+          <p className="mt-2 text-[12px] leading-5 text-core">
             {pending.kind === "replace"
               ? `将以空白整盘 ${pending.plan.desired.replacementDevice} 替换故障 vdev GUID ${pending.plan.desired.oldVdevGuid}，启动带校验的 resilver；接受后不会自动拆除新盘。`
               : pending.kind === "export"
@@ -563,7 +563,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
             GUID {pending.plan.desired.poolGuid}
           </p>
           {pending.kind === "replace" && (
-            <p className="mt-1 break-all font-mono text-[10px] text-core">
+            <p className="mt-1 break-all font-mono text-[12px] text-core">
               新盘 {pending.plan.replacement.devicefile} ·{" "}
               {formatBytes(pending.plan.replacement.sizeBytes)} ·{" "}
               {pending.plan.replacement.model || "未知型号"} ·{" "}
@@ -586,7 +586,7 @@ export function ZfsLifecyclePanel({ status }: { status: OmvStatus | null }) {
             type="button"
             onClick={() => void apply()}
             disabled={!password || busy}
-            className="mt-3 inline-flex h-9 items-center gap-2 rounded-xl bg-core px-4 text-[11px] font-semibold text-core disabled:opacity-40"
+            className="mt-3 inline-flex h-9 items-center gap-2 rounded-xl bg-core px-4 text-[12px] font-semibold text-core disabled:opacity-40"
           >
             {busy && <Loader2Icon className="size-4 animate-spin" />}
             确认{pendingButton}

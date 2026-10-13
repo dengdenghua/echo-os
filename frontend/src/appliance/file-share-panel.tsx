@@ -177,7 +177,7 @@ export function FileSharePanel({
           )}
 
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="mb-2 text-xs font-semibold text-muted-foreground">
               我的链接
             </h3>
             {shares.length === 0 ? (

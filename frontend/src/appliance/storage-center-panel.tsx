@@ -143,7 +143,7 @@ function StorageHealthWorkspace() {
               <strong className="block text-xs font-semibold">
                 {item.label}
               </strong>
-              <span className="mt-0.5 block text-[10px] leading-4 opacity-75">
+              <span className="mt-0.5 block text-[12px] leading-4 opacity-75">
                 {item.description}
               </span>
             </button>
@@ -205,13 +205,13 @@ function StoragePoolsWorkspace() {
               <strong className="block text-xs font-semibold">
                 {item.label}
               </strong>
-              <span className="mt-0.5 block text-[10px] leading-4 opacity-75">
+              <span className="mt-0.5 block text-[12px] leading-4 opacity-75">
                 {item.description}
               </span>
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[12px] text-muted-foreground">
           当前查看：{selected.label}。不同方案不会同时执行或混用磁盘。
         </p>
       </div>
@@ -290,7 +290,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
           type="button"
           onClick={() => refresh(true)}
           disabled={loading}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[11px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border transition hover:bg-card disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[12px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border transition hover:bg-card disabled:opacity-50"
         >
           <RefreshCwIcon
             className={cn("size-3.5", loading && "animate-spin")}
@@ -322,7 +322,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
           >
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
-                <span className="text-[11px] font-medium text-white/55">
+                <span className="text-[12px] font-medium text-white/55">
                   当前 NAS 数据卷
                 </span>
                 <div className="mt-1 text-[30px] font-semibold tracking-tight">
@@ -330,7 +330,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                     ? formatSize(usage.disk.totalBytes)
                     : "总容量尚未确认"}
                 </div>
-                <p className="mt-1 text-[11px] text-white/55">
+                <p className="mt-1 text-[12px] text-white/55">
                   {capacityKnown
                     ? `可用 ${formatSize(usage.disk.freeBytes)}`
                     : "请检查卷挂载状态后重新分析"}{" "}
@@ -339,7 +339,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
               </div>
               <div
                 className={cn(
-                  "flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold",
+                  "flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold",
                   capacityState === "critical"
                     ? "bg-breach/18 text-breach"
                     : capacityState === "warning"
@@ -385,7 +385,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                 />
               )}
             </div>
-            <div className="mt-2 flex justify-between text-[10px] text-white/45">
+            <div className="mt-2 flex justify-between text-[12px] text-white/45">
               <span>已用 {formatSize(usage.disk.usedBytes)}</span>
               <span>
                 上传可用 {formatSize(usage.disk.availableForUploadsBytes)}
@@ -413,7 +413,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                   <strong className="mt-3 block text-[16px] text-foreground">
                     {formatSize(category.bytes)}
                   </strong>
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 block text-[12px] text-muted-foreground">
                     {meta.label} · {count(category.files)} 个文件
                   </span>
                 </article>
@@ -433,7 +433,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                   <h2 className="text-[14px] font-semibold text-foreground">
                     占用最多的文件夹
                   </h2>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
                     仅统计 NAS 文件库，不读取文件内容
                   </p>
                 </div>
@@ -441,7 +441,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                   <button
                     type="button"
                     onClick={onOpenFiles}
-                    className="rounded-full bg-core/10 px-3 py-1.5 text-[10px] font-semibold text-core transition hover:bg-core/10"
+                    className="rounded-full bg-core/10 px-3 py-1.5 text-[12px] font-semibold text-core transition hover:bg-core/10"
                   >
                     管理文件
                   </button>
@@ -455,7 +455,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                 ) : (
                   usage.topFolders.slice(0, 7).map((folder) => (
                     <div key={folder.name}>
-                      <div className="flex items-center justify-between gap-3 text-[11px]">
+                      <div className="flex items-center justify-between gap-3 text-[12px]">
                         <span className="flex min-w-0 items-center gap-1.5 font-medium text-foreground">
                           <FolderIcon className="size-3.5 shrink-0 text-core" />
                           <span className="truncate">{folder.name}</span>
@@ -488,7 +488,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                     <strong className="block text-[13px] text-foreground">
                       回收站 {formatSize(usage.trash.bytes)}
                     </strong>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[12px] text-muted-foreground">
                       {count(usage.trash.files)}{" "}
                       个文件，可在文件管理器恢复或清空
                     </span>
@@ -506,7 +506,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                         ? `${usage.uploads.active} 个上传任务保留空间`
                         : "当前没有上传预留"}
                     </strong>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[12px] text-muted-foreground">
                       已预留 {formatSize(usage.uploads.reservedBytes)}
                       ，不会与新上传争抢容量
                     </span>
@@ -518,7 +518,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                   key={quota.path}
                   className="rounded-[18px] bg-card/78 p-4 shadow-[0_10px_28px_rgba(51,65,85,.06)] ring-1 ring-border"
                 >
-                  <div className="flex items-center justify-between gap-3 text-[11px]">
+                  <div className="flex items-center justify-between gap-3 text-[12px]">
                     <strong className="truncate text-foreground">
                       {quota.path === "." ? "文件库" : quota.path} 配额
                     </strong>
@@ -547,7 +547,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
           </div>
 
           {(usage.library.truncated || usage.library.skippedLinks > 0) && (
-            <p className="mt-4 rounded-xl bg-warning/10 px-4 py-3 text-[11px] leading-5 text-warning">
+            <p className="mt-4 rounded-xl bg-warning/10 px-4 py-3 text-[12px] leading-5 text-warning">
               {usage.library.truncated
                 ? `文件超过 ${count(usage.library.maxEntries)} 项，本次展示为安全上限内的估算。`
                 : ""}
@@ -619,7 +619,7 @@ export function StorageCenterPanel({
           <h1 className="mt-3 text-[18px] font-semibold tracking-tight">
             存储中心
           </h1>
-          <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+          <p className="mt-1 text-[12px] leading-4 text-muted-foreground">
             容量、磁盘与家庭共享
           </p>
         </div>

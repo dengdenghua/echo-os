@@ -17,7 +17,7 @@ export const PhoneKeyboard = forwardRef<
     }
   };
   return (
-    <div className="relative flex min-h-7 items-center justify-center text-[11px] text-muted-foreground">
+    <div className="relative flex min-h-7 items-center justify-center text-[12px] text-muted-foreground">
       <span aria-hidden="true">
         {focused
           ? "键盘已连接 · 可直接输入或粘贴 · Esc 返回"

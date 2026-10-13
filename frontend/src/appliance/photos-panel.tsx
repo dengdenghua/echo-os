@@ -215,7 +215,7 @@ function PhotoTile({
         />
       )}
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-muted via-muted to-transparent px-3 pb-2.5 pt-9 opacity-0 transition group-hover:opacity-100">
-        <span className="block truncate text-[11px] font-medium text-white">
+        <span className="block truncate text-[12px] font-medium text-white">
           {photo.name}
         </span>
       </span>
@@ -253,7 +253,7 @@ function Metric({
           </span>
         )}
       </div>
-      <div className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+      <div className="mt-0.5 text-[12px] font-medium text-muted-foreground">
         {label}
       </div>
     </div>
@@ -884,7 +884,7 @@ export function PhotosPanel({
         <div className="shrink-0 px-6 pb-5 pt-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-resonance">
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-resonance">
                 <SparklesIcon className="size-3.5" />
                 本地智能相册
               </div>
@@ -951,7 +951,7 @@ export function PhotosPanel({
               />
             </div>
             <div className="flex shrink-0 items-center gap-2 rounded-full bg-card/58 p-1.5 pl-3">
-              <label className="flex cursor-pointer items-center gap-2 text-[11px] font-medium text-muted-foreground">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-muted-foreground">
                 <ScanFaceIcon className="size-3.5" />
                 人物聚类
                 <input
@@ -980,7 +980,7 @@ export function PhotosPanel({
                   !canManage ||
                   (!semanticAvailable && !canCleanup)
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[11px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[12px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {planning || jobActive || cancelPending ? (
                   <Loader2Icon className="size-3.5 animate-spin" />
@@ -1017,7 +1017,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void pauseIndex()}
                     disabled={pausePending || cancelPending || resumePending}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {pausePending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1035,7 +1035,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void resumeIndex()}
                     disabled={resumePending || cancelPending || pausePending}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {resumePending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1055,7 +1055,7 @@ export function PhotosPanel({
                     resumePending ||
                     job.state === "cancelling"
                   }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-muted-foreground transition hover:bg-card/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {cancelPending || job.state === "cancelling" ? (
                     <Loader2Icon className="size-3.5 animate-spin" />
@@ -1215,7 +1215,7 @@ export function PhotosPanel({
             </p>
           )}
           {searchMode && (
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground">
               {searchMode === "semantic" ? (
                 <SparklesIcon className="size-3.5 text-resonance" />
               ) : (
@@ -1227,7 +1227,7 @@ export function PhotosPanel({
             </div>
           )}
           {(status?.library.unsafeLinksSkipped ?? 0) > 0 && (
-            <p className="mt-2 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-[12px] text-muted-foreground">
               已安全跳过 {status?.library.unsafeLinksSkipped}{" "}
               个图片链接，不会读取链接目标。
             </p>
@@ -1293,7 +1293,7 @@ export function PhotosPanel({
                     type="button"
                     onClick={() => void loadMore()}
                     disabled={loadingMore || searching}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-card/72 px-4 text-[11px] font-semibold text-muted-foreground shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-card disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-card/72 px-4 text-[12px] font-semibold text-muted-foreground shadow-[0_7px_20px_rgba(51,65,85,.07)] transition hover:bg-card disabled:opacity-50"
                   >
                     {loadingMore && (
                       <Loader2Icon className="size-3.5 animate-spin" />
@@ -1343,7 +1343,7 @@ export function PhotosPanel({
             <div className="mt-4 text-sm font-medium text-white">
               {selected.name}
             </div>
-            <div className="mt-1 text-[11px] text-white/55">
+            <div className="mt-1 text-[12px] text-white/55">
               {selected.width && selected.height
                 ? `${selected.width} × ${selected.height} · `
                 : ""}
