@@ -27,8 +27,9 @@ Runs the local stability gate:
   - production readiness scorecard gate for operator, automation, and policy evidence
   - focused frontend production unit tests for runtime-critical UI contracts
   - frontend typecheck, lint, and build
-  - full-stack Playwright smoke for FastAPI + Vite across localhost/127.0.0.1
-  - mobile full-stack Playwright smoke for core workspace responsive paths
+  - full-stack Playwright smoke for the appliance desktop (lock screen,
+    工作台, 任务空间, 审批收件箱, 系统设置) on FastAPI + Vite
+  - mobile full-stack Playwright smoke for the desktop at phone width
 
 Environment:
   PYTHON                         Python executable. Defaults to .venv/bin/python, then python3/python.
@@ -96,6 +97,10 @@ VERIFY_STATE_ROOT_ABS="$(cd "$VERIFY_STATE_ROOT" && pwd)"
 VERIFY_RUN_ID="${ECHO_VERIFY_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 VERIFY_DESKTOP_PLAYWRIGHT_REPORT="$VERIFY_STATE_ROOT_ABS/full-stack-playwright-report.json"
 VERIFY_MOBILE_PLAYWRIGHT_REPORT="$VERIFY_STATE_ROOT_ABS/full-stack-mobile-playwright-report.json"
+# One list drives both the Playwright run and the proof that records it, so
+# the release proof never claims specs that did not run.
+FULL_STACK_DESKTOP_SPECS="full-stack-smoke.spec.ts,workbench.spec.ts,desktop-apps.spec.ts,regression.spec.ts,desktop-layout.spec.ts"
+FULL_STACK_MOBILE_SPECS="mobile-smoke.spec.ts"
 
 backend_tests=(
   tests/test_openapi_snapshot.py
@@ -166,6 +171,7 @@ if [[ "$run_full_stack" != "1" ]]; then
     PYTHON="$PYTHON_BIN" \
     ECHO_E2E_STATE_ROOT="$VERIFY_STATE_ROOT_ABS/full-stack" \
     ECHO_E2E_JSON_REPORT="$VERIFY_DESKTOP_PLAYWRIGHT_REPORT" \
+    ECHO_E2E_TEST_MATCH="$FULL_STACK_DESKTOP_SPECS" \
     pnpm e2e:full
   )
   "$PYTHON_BIN" scripts/e2e_smoke_proof.py \
@@ -178,7 +184,7 @@ if [[ "$run_full_stack" != "1" ]]; then
     --backend-port "${GATEWAY_PORT:-18000}" \
     --playwright-report "$VERIFY_DESKTOP_PLAYWRIGHT_REPORT" \
     --run-id "$VERIFY_RUN_ID" \
-    --test-match "full-stack-smoke.spec.ts,chat.spec.ts,regression.spec.ts,workflow-editor.spec.ts"
+    --test-match "$FULL_STACK_DESKTOP_SPECS"
 
   if [[ "$run_full_stack_mobile" != "1" ]]; then
     section "mobile full-stack smoke"
@@ -199,7 +205,7 @@ if [[ "$run_full_stack" != "1" ]]; then
       --backend-port "${GATEWAY_PORT:-18000}" \
       --playwright-report "$VERIFY_MOBILE_PLAYWRIGHT_REPORT" \
       --run-id "$VERIFY_RUN_ID" \
-      --test-match "mobile-smoke.spec.ts"
+      --test-match "$FULL_STACK_MOBILE_SPECS"
   fi
   echo "full-stack smoke proof: $VERIFY_FULL_STACK_PROOF"
   if [[ -f "$VERIFY_READINESS_REPORT" ]]; then

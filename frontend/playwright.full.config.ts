@@ -3,6 +3,7 @@ import {
   devices,
   type ReporterDescription,
 } from "@playwright/test";
+import { randomBytes } from "node:crypto";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +11,10 @@ const frontendPort = process.env.FRONTEND_PORT || "13000";
 const backendPort = process.env.GATEWAY_PORT || "18000";
 const backendHost = process.env.GATEWAY_HOST || "127.0.0.1";
 const backendBase = `http://${backendHost}:${backendPort}`;
+const frontendOrigins = [
+  `http://localhost:${frontendPort}`,
+  `http://127.0.0.1:${frontendPort}`,
+];
 const configDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(configDir, "..");
 const rawE2eStateRoot =
@@ -24,6 +29,15 @@ const pythonBin =
     ? ".\\.venv\\Scripts\\python.exe"
     : "./.venv/bin/python");
 const reuseServers = process.env.ECHO_E2E_REUSE_SERVER === "1";
+// The lane signs in through the appliance lock screen like a device owner. A
+// fresh state root gets a fresh owner password generated for this run only; it
+// is never a real credential. Playwright loads this config in the runner first
+// and the workers inherit the runner's environment, so every process sees the
+// same value. A reused server must be given the password it was started with.
+if (!process.env.ECHO_E2E_OWNER_PASSWORD && !reuseServers) {
+  process.env.ECHO_E2E_OWNER_PASSWORD = `e2e-owner-${randomBytes(18).toString("base64url")}`;
+}
+const ownerPassword = process.env.ECHO_E2E_OWNER_PASSWORD || "";
 const jsonReportPath = process.env.ECHO_E2E_JSON_REPORT;
 const reporter: ReporterDescription | ReporterDescription[] = jsonReportPath
   ? [["list"], ["json", { outputFile: jsonReportPath }]]
@@ -32,10 +46,10 @@ const reporter: ReporterDescription | ReporterDescription[] = jsonReportPath
     : "list";
 const defaultTestMatch = [
   "full-stack-smoke.spec.ts",
-  "chat.spec.ts",
+  "workbench.spec.ts",
+  "desktop-apps.spec.ts",
   "regression.spec.ts",
-  "workflow-editor.spec.ts",
-  "visual-regression.spec.ts",
+  "desktop-layout.spec.ts",
 ];
 const testMatch =
   process.env.ECHO_E2E_TEST_MATCH?.split(",")
@@ -54,10 +68,20 @@ const backendProcessEnv: NodeJS.ProcessEnv = {
   ECHO_INTERNAL_GATEWAY_BASE_URL: backendBase,
   ECHO_HOME: e2eStateRoot,
   ECHO_DATA_DIR: e2eDataDir,
+  ECHO_NAS_ROOT: join(e2eDataDir, "nas"),
   // Keep the Codex control lease outside the developer account so an
   // unrelated desktop worker cannot make the offline lane nondeterministic.
   ECHO_CODEX_STATE_DIR: join(e2eStateRoot, "codex"),
+  // Appliance mode, exactly as the NAS image boots it: the entrypoint
+  // provisions the owner from this password and enables local auth.
+  ECHO_ADMIN_PASSWORD: ownerPassword,
+  ECHO_APPLIANCE_TRUSTED_ORIGINS: frontendOrigins.join(","),
 };
+// The Vite all-in-one launcher's passwordless login must never leak into the
+// lane that proves the lock screen; the backend only learns the owner password
+// through ECHO_ADMIN_PASSWORD, which the entrypoint consumes and removes.
+delete backendProcessEnv.ECHO_APPLIANCE_DEV_PASSWORDLESS;
+delete backendProcessEnv.ECHO_E2E_OWNER_PASSWORD;
 
 const resolvedTestResultsRoot = resolve(repoRoot, "test-results");
 const e2eStateRootRelative = relative(resolvedTestResultsRoot, e2eStateRoot);
@@ -89,18 +113,15 @@ const prepareStateCommand = reuseServers
  * Full-stack Playwright configuration.
  *
  * Unlike the default config, this starts both halves of the local app:
- * FastAPI backend with the deterministic offline e2e config, then Vite with
- * its /api proxy pointed at that backend. This catches the common failure mode
- * where the frontend is reachable but the backend on :8000 is stale or absent.
+ * the FastAPI backend through the appliance entrypoint (lock screen, owner
+ * account, appliance extension) with the deterministic offline e2e config,
+ * then Vite with its /api proxy pointed at that backend. This catches the
+ * common failure mode where the frontend is reachable but the backend is
+ * stale or absent, and it drives the product a device owner actually uses.
  */
 export default defineConfig({
   testDir: "./e2e",
   testMatch,
-  // Visual-regression baselines are shared across platforms (CI runs on
-  // Linux, dev on macOS): drop the default -{project}-{platform} suffix so
-  // both lanes compare against the same committed PNGs. Font rasterisation
-  // noise is absorbed by the maxDiffPixelRatio in visual-regression.spec.ts.
-  snapshotPathTemplate: "{testDir}/__screenshots__/{testFilePath}/{arg}{ext}",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -109,7 +130,12 @@ export default defineConfig({
   timeout: 45_000,
 
   use: {
-    baseURL: `http://127.0.0.1:${frontendPort}`,
+    // The SPA moves loopback visits to the canonical localhost origin, where
+    // its session cookie lives; start there so API helpers share the cookie.
+    baseURL: `http://localhost:${frontendPort}`,
+    // A device owner's ECHO OS speaks Chinese. The desktop shell is
+    // Chinese-only, and the workbench follows the browser locale.
+    locale: "zh-CN",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -117,14 +143,14 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], locale: "zh-CN" },
     },
   ],
 
   webServer: [
     {
-      command: `${prepareStateCommand}${pythonBin} -m runtime serve --config config.e2e.yaml --host ${backendHost} --port ${backendPort}`,
-      url: `${backendBase}/api/status`,
+      command: `${prepareStateCommand}${pythonBin} scripts/e2e_appliance_backend.py --config config.e2e.yaml --host ${backendHost} --port ${backendPort}`,
+      url: `${backendBase}/readyz`,
       cwd: repoRoot,
       env: backendProcessEnv,
       reuseExistingServer: reuseServers,
