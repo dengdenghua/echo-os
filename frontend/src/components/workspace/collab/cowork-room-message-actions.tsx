@@ -17,6 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -204,21 +205,25 @@ export function CoworkRoomMessageActions({
           {label}
           {applied.has(action) ? <CheckIcon className="ml-auto" /> : null}
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="min-w-44">
-          {milestoneOptions.map((milestone) => (
-            <DropdownMenuItem
-              key={milestone.id}
-              onSelect={() => void requestAction(action, milestone.id)}
-            >
-              <span className="min-w-0 flex-1 truncate">{milestone.name}</span>
-              {milestone.status ? (
-                <span className="text-[10px] text-muted-foreground">
-                  {milestone.status}
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent className="min-w-44">
+            {milestoneOptions.map((milestone) => (
+              <DropdownMenuItem
+                key={milestone.id}
+                onSelect={() => void requestAction(action, milestone.id)}
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  {milestone.name}
                 </span>
-              ) : null}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuSubContent>
+                {milestone.status ? (
+                  <span className="text-[10px] text-muted-foreground">
+                    {milestone.status}
+                  </span>
+                ) : null}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
       </DropdownMenuSub>
     );
   };

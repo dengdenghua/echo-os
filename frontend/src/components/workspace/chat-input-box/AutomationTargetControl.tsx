@@ -16,6 +16,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -222,9 +223,11 @@ export function AutomationTargetControl({
             {value ? ` · ${selectedLabel}` : ""}
           </span>
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="max-h-[min(70vh,32rem)] w-72 overflow-y-auto">
-          {menuContent}
-        </DropdownMenuSubContent>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent className="max-h-[min(70vh,32rem)] w-72 overflow-y-auto">
+            {menuContent}
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
       </DropdownMenuSub>
     );
   }

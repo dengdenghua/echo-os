@@ -593,9 +593,9 @@ describe("<ChatInputBox /> cowork materials", () => {
     await user.hover(screen.getByTestId("chat-commands-submenu"));
     expect(await screen.findByText("Spec")).toBeInTheDocument();
     expect(screen.getByText("Plan")).toBeInTheDocument();
-    expect(
-      screen.getByText("Goal").closest('[role="menuitem"]'),
-    ).toHaveTextContent("🎯Goal");
+    const goalItem = screen.getByText("Goal").closest('[role="menuitem"]');
+    expect(goalItem).toHaveTextContent("Goal");
+    expect(goalItem?.querySelector("svg.lucide-target")).not.toBeNull();
     expect(screen.getByText("Milestone")).toBeInTheDocument();
     expect(screen.getByText("Browser")).toBeInTheDocument();
     expect(screen.getByText("Chrome")).toBeInTheDocument();
@@ -653,9 +653,11 @@ describe("<ChatInputBox /> cowork materials", () => {
     expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
       "Goal",
     );
-    expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
-      "🎯",
-    );
+    expect(
+      screen
+        .getByTestId("composer-command-prefix")
+        .querySelector("svg.lucide-target"),
+    ).not.toBeNull();
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
       "text-core",
@@ -668,8 +670,10 @@ describe("<ChatInputBox /> cowork materials", () => {
       "text-muted-foreground",
     );
     expect(
-      screen.getByTestId("composer-long-task-indicator"),
-    ).toHaveTextContent("🎯");
+      screen
+        .getByTestId("composer-long-task-indicator")
+        .querySelector("svg.lucide-target"),
+    ).not.toBeNull();
     const longTaskIndicator = screen.getByTestId(
       "composer-long-task-indicator",
     );
