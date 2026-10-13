@@ -8827,6 +8827,29 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
   }
 }
 
+/* Keyboard focus ------------------------------------------------------------
+ * Menu-bar titles and status items and Dock items only had the base faint 1px
+ * ring (ring at 50%), so keyboard focus was nearly invisible. They show a 2px
+ * Echo Core ring; a focused menu item is highlighted like a hovered one and
+ * keeps an inset ring so it stays distinct from the pointer's row. */
+.macos-desktop-root .mac-menu-bar button:focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 0;
+}
+
+.macos-desktop-root .mac-menu-dropdown .mac-menu-item:focus-visible {
+  color: var(--echo-ink) !important;
+  background: color-mix(in srgb, var(--echo-core) 22%, transparent) !important;
+  box-shadow: none !important;
+  outline: 2px solid var(--echo-core);
+  outline-offset: -2px;
+}
+
+.macos-desktop-root .mac-dock :is(.dock-item, button):focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 2px;
+}
+
 /* Finder on the graphite and neural-glass desktops ------------------------
  * The Finder was authored as a light-only window, so on a graphite desktop
  * it was the one pale window among dark ones. Its panes follow the theme

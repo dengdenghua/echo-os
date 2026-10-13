@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -273,6 +274,18 @@ export type MacSystemCapabilities = {
 export type MacLiquidGlassStyle = "crystal" | "softlight";
 export type MacLiquidGlassIntensity = "weak" | "balanced" | "strong";
 
+/** The enabled items of the menu-bar menu `key`, in order. */
+function enabledMenuItems(
+  container: HTMLElement | null,
+  key: string,
+): HTMLButtonElement[] {
+  return Array.from(
+    container?.querySelectorAll<HTMLButtonElement>(
+      `[data-menu-root="${key}"] .mac-menu-item:not(:disabled)`,
+    ) ?? [],
+  );
+}
+
 function MacMenuDropdown({
   items,
   align = "left",
@@ -540,6 +553,87 @@ export function MacMenuBar({
     action();
   };
 
+  // Keyboard: the menu titles stay in the Tab order. Left/Right move between
+  // titles (or between menus while one is open), Down/Up open a menu and walk
+  // its items, Home/End jump, and Escape closes it back onto its title.
+  const pendingItemFocus = useRef<"first" | "last" | null>(null);
+  useEffect(() => {
+    const which = pendingItemFocus.current;
+    if (!activeMenu || !which) return;
+    pendingItemFocus.current = null;
+    const items = enabledMenuItems(menuRef.current, activeMenu);
+    (which === "last" ? items[items.length - 1] : items[0])?.focus();
+  }, [activeMenu]);
+
+  const focusMenuTitle = (key: string) =>
+    menuRef.current
+      ?.querySelector<HTMLElement>(`[data-menu-trigger="${key}"]`)
+      ?.focus();
+
+  const openMenuAt = (key: string, which: "first" | "last") => {
+    if (activeMenu === key) {
+      const items = enabledMenuItems(menuRef.current, key);
+      (which === "last" ? items[items.length - 1] : items[0])?.focus();
+      return;
+    }
+    pendingItemFocus.current = which;
+    setActiveMenu(key);
+  };
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const target = event.target as HTMLElement;
+    const key =
+      target.closest<HTMLElement>("[data-menu-root]")?.dataset.menuRoot;
+    if (!key) return;
+    const inMenu = target.classList.contains("mac-menu-item");
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowLeft": {
+        event.preventDefault();
+        const keys = ["system", ...menus.map((menu) => menu.key)];
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const next =
+          keys[(keys.indexOf(key) + step + keys.length) % keys.length]!;
+        if (activeMenu) openMenuAt(next, "first");
+        else focusMenuTitle(next);
+        return;
+      }
+      case "ArrowDown":
+      case "ArrowUp": {
+        event.preventDefault();
+        const forward = event.key === "ArrowDown";
+        if (!inMenu) {
+          openMenuAt(key, forward ? "first" : "last");
+          return;
+        }
+        const items = enabledMenuItems(menuRef.current, key);
+        const index = items.indexOf(target as HTMLButtonElement);
+        items[
+          (index + (forward ? 1 : -1) + items.length) % items.length
+        ]?.focus();
+        return;
+      }
+      case "Home":
+      case "End": {
+        if (!inMenu) return;
+        event.preventDefault();
+        const items = enabledMenuItems(menuRef.current, key);
+        (event.key === "Home" ? items[0] : items[items.length - 1])?.focus();
+        return;
+      }
+      case "Escape":
+        if (!activeMenu) return;
+        event.preventDefault();
+        setActiveMenu(null);
+        focusMenuTitle(key);
+        return;
+      case "Tab":
+        if (activeMenu) setActiveMenu(null);
+        return;
+    }
+  };
+
   const menus: Array<{ label: string; key: string; items: MenuAction[] }> = [
     {
       label: activeApp,
@@ -639,10 +733,13 @@ export function MacMenuBar({
       className={cn("mac-menu-bar", desktopTheme)}
       data-theme={desktopTheme}
     >
-      <div className="mac-menu-left">
-        <div className="relative">
+      <div className="mac-menu-left" onKeyDown={handleMenuKeyDown}>
+        <div className="relative" data-menu-root="system">
           <button
             type="button"
+            data-menu-trigger="system"
+            aria-haspopup="menu"
+            aria-expanded={activeMenu === "system"}
             className={cn(
               "mac-menu-logo",
               activeMenu === "system" && "is-active",
@@ -705,10 +802,14 @@ export function MacMenuBar({
           return (
             <div
               key={menu.key}
+              data-menu-root={menu.key}
               className={cn("relative", index === 0 && "mr-1")}
             >
               <button
                 type="button"
+                data-menu-trigger={menu.key}
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === menu.key}
                 className={cn(
                   "mac-menu-button",
                   index === 0

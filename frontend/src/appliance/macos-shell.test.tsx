@@ -701,6 +701,70 @@ describe("Echo desktop shell", () => {
     ).toBeInTheDocument();
   });
 
+  it("lets the keyboard reach and walk the menu-bar menus", async () => {
+    const user = userEvent.setup();
+    const onOpenSettings = vi.fn();
+
+    render(
+      <MacMenuBar
+        activeApp="照片"
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={onOpenSettings}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    // The first Tab lands on the Echo menu; arrows move between titles.
+    await user.tab();
+    expect(screen.getByLabelText("Echo 菜单")).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    const appTitle = screen.getByRole("button", { name: "照片", exact: true });
+    expect(appTitle).toHaveFocus();
+    expect(appTitle).toHaveAttribute("aria-expanded", "false");
+
+    // Down opens the menu on its first item and walks the items.
+    await user.keyboard("{ArrowDown}");
+    expect(appTitle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "关于 照片" })).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("button", { name: /设置…/ })).toHaveFocus();
+
+    // With a menu open, Right moves to the next menu's first item.
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("button", { name: /新建文件窗口/ })).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "关于 照片" }),
+    ).not.toBeInTheDocument();
+
+    // Escape closes it back onto its title.
+    await user.keyboard("{Escape}");
+    const fileTitle = screen.getByRole("button", { name: "文件", exact: true });
+    expect(fileTitle).toHaveFocus();
+    expect(fileTitle).toHaveAttribute("aria-expanded", "false");
+
+    // Enter on an item runs it.
+    await user.keyboard("{ArrowLeft}{ArrowDown}{ArrowDown}{Enter}");
+    expect(onOpenSettings).toHaveBeenCalledOnce();
+  });
+
   it("only enables power actions exposed by the native shell", async () => {
     const user = userEvent.setup();
     const onSystemAction = vi.fn();
