@@ -9,8 +9,9 @@
 export type WorkspacePreset = {
   id: string;
   direction: string;
-  /** Persona accent palette. The base Echo preset has none, so the workspace
-   *  keeps the ECHO tokens: monochrome primary, core-cyan focus. */
+  /** Persona scope id, set as `data-persona-theme` on the workspace and
+   *  browser shells. It never recolours the UI: every persona keeps the ECHO
+   *  tokens (monochrome primary, core-cyan focus). The base preset has none. */
   themeId?: PersonaThemeId;
   defaultHiddenModuleIds: readonly string[];
   defaultVisibleModuleIds?: readonly string[];
