@@ -14,8 +14,9 @@ Misclassification is fail-safe: unknown/mutating subcommands are left alone.
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from runtime.execution.suckers._write_skills_exec import (
     _exec_shell,
