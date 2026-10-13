@@ -149,11 +149,13 @@ export function OrganizerResult({ receipt }: { receipt: OrganizerReceipt }) {
     uncertain,
     incomplete,
   } = receipt;
+  // Incomplete moves need a check (warning); a clean run is the stable Echo
+  // Core state, since ECHO has no green.
   return (
     <section
       aria-label="桌面整理结果"
       role="status"
-      className={`mt-3 rounded-xl border p-3 text-xs ${incomplete ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}
+      className={`mt-3 rounded-xl border p-3 text-xs text-foreground ${incomplete ? "border-warning/40 bg-warning/10" : "border-core/40 bg-core/10"}`}
     >
       <p className="font-medium">
         {uncertain

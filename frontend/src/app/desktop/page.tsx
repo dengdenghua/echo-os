@@ -2182,7 +2182,7 @@ export default function DesktopShellPage() {
             <section
               ref={drawerRef}
               className={cn(
-                "absolute inset-x-8 bottom-28 top-14 mx-auto max-w-[760px] rounded-[28px] border border-white/34 bg-white/72 p-5 text-slate-800 shadow-2xl shadow-black/24 backdrop-blur-2xl transition-all duration-300 ease-out",
+                "absolute inset-x-8 bottom-28 top-14 mx-auto max-w-[760px] rounded-[28px] border border-border bg-card/90 p-5 text-card-foreground shadow-2xl shadow-black/24 backdrop-blur-2xl transition-all duration-300 ease-out",
                 desktopDrawerOpen
                   ? "translate-y-0 opacity-100"
                   : "translate-y-4 opacity-0",
@@ -2191,7 +2191,7 @@ export default function DesktopShellPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-semibold">桌面助手</h2>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {loadingItems
                       ? "正在读取桌面文件..."
                       : itemsError
@@ -2205,7 +2205,7 @@ export default function DesktopShellPage() {
                       type="button"
                       onClick={handleAutoArchive}
                       disabled={Boolean(organizer.busy) || loadingItems}
-                      className="inline-flex h-7 items-center gap-1 rounded-lg bg-blue-600 px-2.5 text-[11px] font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                      className="inline-flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
                       title="一键整理桌面文件"
                     >
                       <ArchiveIcon className="size-3" />
@@ -2217,7 +2217,7 @@ export default function DesktopShellPage() {
                       type="button"
                       onClick={handleUndo}
                       disabled={Boolean(organizer.busy) || loadingItems}
-                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 text-[11px] font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-border px-2.5 text-xs font-medium text-foreground transition hover:bg-foreground/5 disabled:opacity-50"
                       title="撤销上一次整理"
                     >
                       <RotateCcwIcon className="size-3" />
@@ -2228,10 +2228,10 @@ export default function DesktopShellPage() {
                     ref={closeButtonRef}
                     type="button"
                     onClick={() => setDesktopDrawerOpen(false)}
-                    className="grid size-8 place-items-center rounded-full bg-slate-900/8 text-lg leading-none text-slate-600 transition hover:bg-slate-900/14"
+                    className="grid size-8 place-items-center rounded-full bg-foreground/8 text-muted-foreground transition hover:bg-foreground/14 hover:text-foreground"
                     aria-label="关闭桌面文件"
                   >
-                    ×
+                    <XIcon className="size-4" />
                   </button>
                 </div>
               </div>
@@ -2241,13 +2241,13 @@ export default function DesktopShellPage() {
               )}
 
               {itemsError && (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+                <div className="mt-4 rounded-2xl border border-breach/30 bg-breach/10 px-4 py-3 text-xs text-breach">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">读取失败</span>
                     <button
                       type="button"
                       onClick={refreshDesktopItems}
-                      className="ml-auto rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 transition hover:bg-red-200"
+                      className="ml-auto rounded-md border border-breach/30 px-2 py-0.5 text-xs font-medium text-breach transition hover:bg-breach/10"
                     >
                       重试
                     </button>
@@ -2258,19 +2258,20 @@ export default function DesktopShellPage() {
 
               {!itemsError && (
                 <>
-                  <div className="mt-4 flex items-center gap-2 rounded-2xl border border-white/45 bg-white/56 px-3 py-2">
-                    <SearchIcon className="size-4 shrink-0 text-slate-400" />
+                  <div className="mt-4 flex items-center gap-2 rounded-2xl border border-border bg-muted/60 px-3 py-2">
+                    <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
                     <input
                       value={desktopSearch}
                       onChange={(event) => setDesktopSearch(event.target.value)}
                       placeholder="搜索桌面文件、应用、图片"
-                      className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                      className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                     />
                     {desktopSearch && (
                       <button
                         type="button"
                         onClick={() => setDesktopSearch("")}
-                        className="grid size-4 place-items-center rounded-full text-slate-400 transition hover:text-slate-600"
+                        aria-label="清除搜索"
+                        className="grid size-4 place-items-center rounded-full text-muted-foreground transition hover:text-foreground"
                       >
                         <XIcon className="size-3" />
                       </button>
@@ -2312,10 +2313,10 @@ export default function DesktopShellPage() {
                           className={cn(
                             "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition",
                             desktopCategory === category.key
-                              ? "bg-slate-900 text-white"
+                              ? "bg-primary text-primary-foreground"
                               : dragOverCategory === category.key
-                                ? "bg-blue-500 text-white ring-2 ring-blue-300"
-                                : "bg-white/56 text-slate-600 hover:bg-white/80",
+                                ? "bg-core/15 text-core ring-2 ring-core"
+                                : "bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
                           )}
                         >
                           {category.label}
@@ -2329,8 +2330,8 @@ export default function DesktopShellPage() {
                     {loadingItems ? (
                       <div className="grid h-56 place-items-center">
                         <div className="text-center">
-                          <Loader2Icon className="mx-auto size-8 animate-spin text-slate-400" />
-                          <p className="mt-3 text-sm font-medium text-slate-500">
+                          <Loader2Icon className="mx-auto size-8 animate-spin text-muted-foreground" />
+                          <p className="mt-3 text-sm font-medium text-muted-foreground">
                             正在读取桌面文件...
                           </p>
                         </div>
@@ -2351,7 +2352,7 @@ export default function DesktopShellPage() {
                             ]
                         ).map((group) => (
                           <div key={group.key}>
-                            <div className="mb-2 text-xs font-semibold text-slate-500">
+                            <div className="mb-2 text-xs font-semibold text-muted-foreground">
                               {group.title}
                             </div>
                             <div className="grid grid-cols-5 gap-3">
@@ -2387,27 +2388,18 @@ export default function DesktopShellPage() {
                                       });
                                     }}
                                     title={item.path}
-                                    className="group flex min-h-[92px] flex-col items-center justify-center gap-1.5 rounded-2xl p-2 text-center transition hover:bg-white/62 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+                                    className="group flex min-h-[92px] flex-col items-center justify-center gap-1.5 rounded-2xl p-2 text-center transition hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-core focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                                   >
+                                    {/* One graphite tile for every item: the
+                                        glyph, not a colour, tells folders,
+                                        apps, images and files apart. */}
                                     <span
-                                      className={cn(
-                                        "grid size-12 place-items-center rounded-[14px] text-white shadow-lg shadow-black/12 ring-1 ring-white/35 transition-transform duration-150 group-hover:scale-105",
-                                        category === "folder"
-                                          ? "bg-gradient-to-br from-amber-400 to-orange-500"
-                                          : category === "app"
-                                            ? "bg-gradient-to-br from-violet-500 to-fuchsia-500"
-                                            : category === "image"
-                                              ? "bg-gradient-to-br from-cyan-400 to-blue-500"
-                                              : category === "document"
-                                                ? "bg-gradient-to-br from-blue-500 to-indigo-500"
-                                                : category === "package"
-                                                  ? "bg-gradient-to-br from-rose-500 to-orange-500"
-                                                  : "bg-gradient-to-br from-slate-600 to-slate-500",
-                                      )}
+                                      data-echo-theme="graphite"
+                                      className="grid size-12 place-items-center rounded-[14px] bg-card text-foreground shadow-lg shadow-black/12 ring-1 ring-border transition-transform duration-150 group-hover:scale-105"
                                     >
                                       <Icon className="size-6" />
                                     </span>
-                                    <span className="line-clamp-2 max-w-24 text-[11px] font-medium leading-tight text-slate-700">
+                                    <span className="line-clamp-2 max-w-24 text-xs font-medium leading-tight text-foreground">
                                       {item.name}
                                     </span>
                                   </button>
@@ -2418,17 +2410,17 @@ export default function DesktopShellPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="grid h-56 place-items-center rounded-3xl border border-dashed border-slate-300/80 bg-white/32 text-center">
+                      <div className="grid h-56 place-items-center rounded-3xl border border-dashed border-border bg-muted/40 text-center">
                         <div>
-                          <SearchIcon className="mx-auto size-8 text-slate-400" />
-                          <p className="mt-3 text-sm font-medium text-slate-600">
+                          <SearchIcon className="mx-auto size-8 text-muted-foreground" />
+                          <p className="mt-3 text-sm font-medium text-foreground">
                             {desktopSearch.trim()
                               ? "未找到匹配的文件"
                               : nativeDesktopItems.length === 0
                                 ? "桌面暂无文件"
                                 : "该分类下暂无文件"}
                           </p>
-                          <p className="mt-1 text-xs text-slate-400">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             {desktopSearch.trim()
                               ? "尝试更换搜索关键词"
                               : "将文件放到桌面即可在此管理"}
