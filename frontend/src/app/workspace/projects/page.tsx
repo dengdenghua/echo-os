@@ -306,7 +306,7 @@ const HEALTH_LABEL: Record<string, string> = {
 };
 
 const HEALTH_TONE: Record<Health, string> = {
-  on_track: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  on_track: "bg-core/15 text-core border-core/30",
   at_risk: "bg-amber-500/15 text-amber-600 border-amber-500/30",
   overdue: "bg-orange-500/15 text-orange-600 border-orange-500/30",
   blocked: "bg-rose-500/15 text-rose-600 border-rose-500/30",
@@ -315,7 +315,7 @@ const HEALTH_TONE: Record<Health, string> = {
 
 const STATUS_TONE: Record<string, string> = {
   planning: "bg-muted text-muted-foreground",
-  running: "bg-emerald-500/15 text-emerald-600",
+  running: "bg-core/15 text-core",
   blocked: "bg-rose-500/15 text-rose-600",
   done: "bg-sky-500/15 text-sky-600",
   failed: "bg-rose-500/15 text-rose-600",
@@ -882,7 +882,7 @@ export default function ProjectsPage() {
                           <Card>
                             <CardHeader className="pb-2">
                               <CardTitle className="flex items-center gap-1.5 text-sm">
-                                <ListChecksIcon className="size-4 text-emerald-500" />
+                                <ListChecksIcon className="size-4 text-core" />
                                 下一步动作
                               </CardTitle>
                             </CardHeader>

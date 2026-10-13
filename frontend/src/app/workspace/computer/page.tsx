@@ -2232,7 +2232,8 @@ function ScreenshotActionOverlay({
             y1={cursorPosition.top}
             x2={targetPosition.left}
             y2={targetPosition.top}
-            stroke="rgb(16 185 129 / 0.85)"
+            className="stroke-core"
+            strokeOpacity={0.85}
             strokeDasharray="7 6"
             strokeLinecap="round"
             strokeWidth="2.5"

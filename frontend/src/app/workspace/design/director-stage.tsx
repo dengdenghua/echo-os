@@ -1500,7 +1500,7 @@ export function DirectorStage({
                         ? "bg-violet-500"
                         : track.type === "character_animation"
                           ? "bg-blue-500"
-                          : "bg-emerald-500";
+                          : "bg-core";
                     return (
                       <div
                         key={track.id}

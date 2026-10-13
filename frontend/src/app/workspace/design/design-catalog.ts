@@ -129,7 +129,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "教育",
     description: "把知识目标拆为讲解、图解、练习和理解验证。",
     icon: Table2Icon,
-    tone: "from-emerald-500/35 via-lime-400/16 to-teal-500/10",
+    tone: "from-cyan-500/35 via-sky-400/16 to-cyan-500/10",
     downloads: "2.8k",
   },
   {
@@ -219,7 +219,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "音频音乐",
     description: "保持角色音色、语气、时长、口型与字幕同步的本地化。",
     icon: AudioLinesIcon,
-    tone: "from-emerald-400/40 via-cyan-300/18 to-blue-400/12",
+    tone: "from-cyan-400/40 via-cyan-300/18 to-blue-400/12",
     downloads: "2.4k",
   },
   {
@@ -291,7 +291,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "动画",
     description: "从角色参考生成四向动作、障碍反馈和短时反应挑战。",
     icon: VideoIcon,
-    tone: "from-emerald-600/45 via-lime-300/20 to-slate-900/14",
+    tone: "from-cyan-600/45 via-sky-300/20 to-slate-900/14",
     downloads: "1.9k",
   },
   {
@@ -309,7 +309,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "商业广告",
     description: "把真实界面与交互路径转成准确、电影感的产品演示。",
     icon: PanelsTopLeftIcon,
-    tone: "from-slate-950/55 via-cyan-600/25 to-emerald-300/14",
+    tone: "from-slate-950/55 via-cyan-600/25 to-cyan-300/14",
     downloads: "1.7k",
   },
   {
@@ -345,7 +345,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "平台工具",
     description: "编排角色、场景、相机、动作 DSL、运镜路径和可撤销时间线。",
     icon: CuboidIcon,
-    tone: "from-lime-400/40 via-emerald-300/18 to-slate-700/12",
+    tone: "from-sky-400/40 via-cyan-300/18 to-slate-700/12",
     downloads: "内置",
   },
   {
@@ -453,7 +453,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "创意实验",
     description: "提取参考图的构图、光线和材质关系，形成原创视觉变体。",
     icon: ImageIcon,
-    tone: "from-emerald-700/44 via-cyan-300/20 to-fuchsia-300/14",
+    tone: "from-cyan-700/44 via-cyan-300/20 to-fuchsia-300/14",
     downloads: "21.1k",
   },
   {
@@ -462,7 +462,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "创意实验",
     description: "将图像简化为可搭建网格、有限调色板与材料清单。",
     icon: CuboidIcon,
-    tone: "from-emerald-500/45 via-lime-300/22 to-amber-300/14",
+    tone: "from-cyan-500/45 via-sky-300/22 to-amber-300/14",
     downloads: "2.7k",
   },
   {
@@ -507,7 +507,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "平台工具",
     description: "固定主体结构与身份锚点，生成多方位相机视角。",
     icon: CuboidIcon,
-    tone: "from-slate-600/44 via-teal-300/20 to-amber-200/12",
+    tone: "from-slate-600/44 via-cyan-300/20 to-amber-200/12",
     downloads: "3.1k",
   },
   {
@@ -579,7 +579,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "教育",
     description: "规划儿童英语故事、儿歌、重复句型和连续剧集资产。",
     icon: AudioLinesIcon,
-    tone: "from-red-500/36 via-yellow-300/22 to-emerald-400/12",
+    tone: "from-red-500/36 via-yellow-300/22 to-cyan-400/12",
     downloads: "1.6k",
   },
   {
@@ -588,7 +588,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "创意实验",
     description: "建立自洽的异常空间规则、镜头漫游和环境声音氛围。",
     icon: CuboidIcon,
-    tone: "from-lime-300/35 via-cyan-200/18 to-violet-800/18",
+    tone: "from-sky-300/35 via-cyan-200/18 to-violet-800/18",
     downloads: "1.6k",
   },
   {
@@ -606,7 +606,7 @@ export const CREATIVE_SKILL_COLLECTION = [
     category: "创意实验",
     description: "用可控的低面数、笨拙绑定和生硬运镜建立一致失败感。",
     icon: BoxIcon,
-    tone: "from-fuchsia-500/34 via-blue-400/20 to-lime-300/12",
+    tone: "from-fuchsia-500/34 via-blue-400/20 to-sky-300/12",
     downloads: "1.3k",
   },
 ] as const;

@@ -771,7 +771,7 @@ export function DeployPanel({
                     <RoutedWebLink
                       href={currentDeploy.url}
                       openTargetSource="deployment"
-                      className="flex-1 truncate text-xs font-medium text-success underline decoration-green-400 dark:text-success"
+                      className="flex-1 truncate text-xs font-medium text-success underline decoration-core/40 dark:text-success"
                     >
                       {currentDeploy.url}
                     </RoutedWebLink>

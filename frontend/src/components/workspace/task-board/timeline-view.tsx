@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, { fill: string; stroke: string }> = {
   queued: { fill: "#94a3b8", stroke: "#64748b" },
   running: { fill: "#f59e0b", stroke: "#d97706" },
   paused: { fill: "#fbbf24", stroke: "#f59e0b" },
-  completed: { fill: "#10b981", stroke: "#059669" },
+  completed: { fill: "#08788a", stroke: "#065f6c" },
   failed: { fill: "#ef4444", stroke: "#dc2626" },
   cancelled: { fill: "#9ca3af", stroke: "#6b7280" },
 };

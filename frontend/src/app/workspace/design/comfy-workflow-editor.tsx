@@ -116,7 +116,7 @@ function initialPositions(
 }
 
 function nodeAccent(classType: string): string {
-  const accents = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899"];
+  const accents = ["#8b5cf6", "#3b82f6", "#08788a", "#f59e0b", "#ec4899"];
   const hash = [...classType].reduce(
     (total, char) => total + char.charCodeAt(0),
     0,

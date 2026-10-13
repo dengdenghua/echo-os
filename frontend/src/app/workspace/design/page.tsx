@@ -342,7 +342,7 @@ const KIND_STYLE: Record<
   brief: { label: "需求", tint: "bg-amber-50", accent: "bg-amber-400" },
   agent: { label: "角色", tint: "bg-violet-50", accent: "bg-violet-500" },
   skill: { label: "Skill", tint: "bg-blue-50", accent: "bg-blue-500" },
-  plugin: { label: "插件", tint: "bg-emerald-50", accent: "bg-emerald-500" },
+  plugin: { label: "插件", tint: "bg-core/10", accent: "bg-core" },
   text: { label: "文本", tint: "bg-zinc-50", accent: "bg-zinc-500" },
   table: { label: "表格", tint: "bg-cyan-50", accent: "bg-cyan-500" },
   image: { label: "图片", tint: "bg-pink-50", accent: "bg-pink-500" },
@@ -352,7 +352,7 @@ const KIND_STYLE: Record<
   placeholder: { label: "生成中", tint: "bg-zinc-50", accent: "bg-zinc-300" },
   group: { label: "分组", tint: "bg-purple-50", accent: "bg-purple-400" },
   sticker: { label: "贴纸", tint: "bg-yellow-50", accent: "bg-yellow-400" },
-  director: { label: "3D", tint: "bg-lime-50", accent: "bg-lime-500" },
+  director: { label: "3D", tint: "bg-stone-50", accent: "bg-stone-500" },
   editor: { label: "剪辑", tint: "bg-rose-50", accent: "bg-rose-500" },
   comfyui: { label: "ComfyUI", tint: "bg-sky-50", accent: "bg-sky-500" },
   output: { label: "交付", tint: "bg-purple-50", accent: "bg-purple-500" },
@@ -758,7 +758,7 @@ function CanvasNode({
               {style.label}
             </div>
           </div>
-          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="size-1.5 rounded-full bg-core" />
         </div>
         {node.kind === "image" && assetPreviewUrl ? (
           <img
@@ -2984,7 +2984,7 @@ function SkillsView({
                             className={cn(
                               "size-3",
                               installed.enabled
-                                ? "text-emerald-500"
+                                ? "text-core"
                                 : "text-amber-500",
                             )}
                           />
@@ -3991,7 +3991,7 @@ function ComfyUIView({
               className={cn(
                 "mr-1.5 size-1.5 rounded-full",
                 online === true
-                  ? "bg-emerald-500"
+                  ? "bg-core"
                   : online === false
                     ? "bg-red-500"
                     : "bg-zinc-400",
@@ -4330,7 +4330,7 @@ function ComfyUIView({
                           {node.name}
                         </span>
                         {node.installed ? (
-                          <span className="shrink-0 rounded bg-emerald-100 px-1 py-0.5 text-xs text-emerald-700">
+                          <span className="shrink-0 rounded bg-core/10 px-1 py-0.5 text-xs text-core">
                             已安装
                           </span>
                         ) : null}
@@ -4407,7 +4407,7 @@ function ComfyUIView({
               runState.state === "error"
                 ? "border-red-200 bg-red-50 text-red-800"
                 : runState.state === "completed"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  ? "border-core/30 bg-core/10 text-core"
                   : "border-violet-200 bg-violet-50 text-violet-800",
             )}
           >
@@ -4599,7 +4599,7 @@ function ComfyUIView({
                   className={cn(
                     "mt-4 max-w-xl rounded-2xl border p-4",
                     selectedWorkflowDiagnostics.compatible
-                      ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/25"
+                      ? "border-core/30 bg-core/5"
                       : selectedWorkflowDiagnostics.counts.errors
                         ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25"
                         : "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/25",
@@ -4701,7 +4701,7 @@ function ComfyUIView({
                         : index % 4 === 1
                           ? "bg-[radial-gradient(circle_at_28%_30%,#dfd5ff,transparent_28%),radial-gradient(circle_at_72%_75%,#8ca6ff,transparent_35%),linear-gradient(135deg,#1f2937,#63558d)]"
                           : index % 4 === 2
-                            ? "bg-[radial-gradient(circle_at_65%_22%,#ffe7c2,transparent_24%),radial-gradient(circle_at_28%_80%,#9fd1bb,transparent_38%),linear-gradient(135deg,#263b39,#80714d)]"
+                            ? "bg-[radial-gradient(circle_at_65%_22%,#ffe7c2,transparent_24%),radial-gradient(circle_at_28%_80%,#9fd3e0,transparent_38%),linear-gradient(135deg,#26353b,#80714d)]"
                             : "bg-[radial-gradient(circle_at_24%_35%,#ffc7df,transparent_25%),radial-gradient(circle_at_78%_75%,#bc9cff,transparent_35%),linear-gradient(135deg,#3b304f,#76647b)]",
                     )}
                   >
@@ -4752,7 +4752,7 @@ function ComfyUIView({
                         className={cn(
                           "shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium",
                           workflow.availability !== "dependency"
-                            ? "bg-emerald-50 text-emerald-700"
+                            ? "bg-core/10 text-core"
                             : "bg-amber-50 text-amber-700",
                         )}
                       >

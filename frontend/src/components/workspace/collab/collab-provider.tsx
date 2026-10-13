@@ -702,7 +702,7 @@ function numberOr(value: unknown): number | undefined {
 function colorFor(id: string): string {
   const palette = [
     "#2563eb",
-    "#059669",
+    "#475569",
     "#dc2626",
     "#7c3aed",
     "#ca8a04",
