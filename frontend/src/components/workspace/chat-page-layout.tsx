@@ -310,14 +310,38 @@ export function ChatPageLayout({
     [restoreSecondaryOverlayFocus],
   );
 
+  // Escape closes the right panel whether it is docked or an overlay. The
+  // panel consumes the key so it never reaches the ECHO OS desktop, whose
+  // global Escape handlers would act on the window instead. A docked panel
+  // only claims Escape aimed at this layout, so other desktop windows and
+  // overlays keep theirs.
+  const secondaryPanelOpen = Boolean(secondaryPanel);
+  const lastPointerInsideRef = useRef(false);
   useEffect(() => {
-    if (!secondaryModalOpen || !onSecondaryClose) return;
+    if (!secondaryPanelOpen || !onSecondaryClose) return;
 
+    const rememberPointer = (event: PointerEvent) => {
+      lastPointerInsideRef.current =
+        event.target instanceof Node &&
+        Boolean(layoutRootRef.current?.contains(event.target));
+    };
+    const escapeTargetsLayout = (target: EventTarget | null) => {
+      if (secondaryModalOpen) return true;
+      if (target === document.body || target === document.documentElement) {
+        // Clicking plain text leaves focus on <body>.
+        return lastPointerInsideRef.current;
+      }
+      return (
+        target instanceof Node &&
+        Boolean(layoutRootRef.current?.contains(target))
+      );
+    };
     const handleEscape = (event: KeyboardEvent) => {
       if (
         event.key !== "Escape" ||
         event.defaultPrevented ||
-        escapeBelongsToNestedControl(event.target)
+        escapeBelongsToNestedControl(event.target) ||
+        !escapeTargetsLayout(event.target)
       ) {
         return;
       }
@@ -326,9 +350,13 @@ export function ChatPageLayout({
       onSecondaryClose();
     };
 
+    document.addEventListener("pointerdown", rememberPointer, true);
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onSecondaryClose, secondaryModalOpen]);
+    return () => {
+      document.removeEventListener("pointerdown", rememberPointer, true);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onSecondaryClose, secondaryModalOpen, secondaryPanelOpen]);
 
   // Removing the active utility/tab can leave focus on <body> without changing
   // the drawer presentation. Recover in that case on the next parent render,
