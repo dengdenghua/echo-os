@@ -1,6 +1,6 @@
 # 💻 Coder · `coder`
 
-> Coding-focused agent — writes, debugs, refactors, and reviews code.
+> 编程助手：编写、调试、重构与审查代码。
 
 **Agent dir**: `agents/coder/`
 

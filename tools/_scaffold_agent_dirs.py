@@ -44,10 +44,7 @@ SPECS = [
         "name": "Echo",
         "icon": "🐙",
         "did": "DID-F456DA-2B0D4C",
-        "description": (
-            "General-purpose assistant for writing, planning, research, "
-            "summarization, Q&A · 也能操作桌面。"
-        ),
+        "description": "通用助手：写作、规划、调研、总结与问答，也能操作桌面。",
         "soul": dedent(
             """
             # Soul
@@ -118,7 +115,7 @@ SPECS = [
         "name": "Coder",
         "icon": "💻",
         "did": "DID-DB9653-765527",
-        "description": ("Coding-focused agent — writes, debugs, refactors, and reviews code."),
+        "description": "编程助手：编写、调试、重构与审查代码。",
         "soul": dedent(
             """
             # Soul

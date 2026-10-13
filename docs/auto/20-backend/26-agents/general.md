@@ -1,6 +1,6 @@
 # 🐙 Echo · `general`
 
-> General-purpose assistant for writing, planning, research, summarization, Q&A · 也能操作桌面。
+> 通用助手：写作、规划、调研、总结与问答，也能操作桌面。
 
 **Agent dir**: `agents/general/`
 
