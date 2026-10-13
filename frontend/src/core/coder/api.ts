@@ -116,6 +116,20 @@ export interface CoderModelProfile {
   execution_unavailable_reason?: string | null;
 }
 
+/**
+ * Whether this device has a Codex App Server at all. Account, login and quota
+ * calls all start that server, so on a device without it they can only fail;
+ * the profile already says so and the UI shows its reason instead.
+ */
+export function codexRuntimeInstalled(
+  profile: CoderModelProfile | undefined,
+): boolean {
+  return (
+    profile !== undefined &&
+    profile.execution_unavailable_reason !== "executable_unavailable"
+  );
+}
+
 export interface UpdateCoderModelProfile {
   source: CoderModelSource;
   model?: string;

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  codexRuntimeInstalled,
   coderQueryKeys,
   getCoderModelProfile,
   updateCoderModelProfile,
@@ -116,7 +117,7 @@ export function SystemModelStatus({
             };
   const account = useQuery({
     ...coderAccountQueryOptions(queryKeys),
-    enabled: open && !authLoading,
+    enabled: open && !authLoading && codexRuntimeInstalled(profile.data),
   });
   const hasAccount =
     !authLoading && !account.isError && !!account.data?.account;

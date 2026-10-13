@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/select";
 import {
   cancelCoderLogin,
+  codexRuntimeInstalled,
   coderQueryKeys,
   getCoderApps,
   getCoderModelProfile,
@@ -478,7 +479,7 @@ export function CoderEngineControl({
   });
   const accountQuery = useQuery({
     ...coderAccountQueryOptions(queryKeys),
-    enabled: !authLoading,
+    enabled: !authLoading && codexRuntimeInstalled(profileQuery.data),
   });
   const modelsQuery = useQuery({
     queryKey: queryKeys.models,
@@ -1173,8 +1174,10 @@ export function CoderEngineSettings() {
     queryFn: ({ signal }) => getCoderModelProfile(signal),
     staleTime: 30_000,
   });
+  const codexInstalled = codexRuntimeInstalled(profileQuery.data);
   const accountQuery = useQuery({
     ...coderAccountQueryOptions(queryKeys),
+    enabled: codexInstalled,
   });
   const refetchAccount = accountQuery.refetch;
 
@@ -1440,7 +1443,7 @@ export function CoderEngineSettings() {
           title={copy.retry}
           onClick={() => {
             void profileQuery.refetch();
-            void accountQuery.refetch();
+            if (codexInstalled) void accountQuery.refetch();
             if (account) void modelsQuery.refetch();
             if (hasChatGPTUsage) {
               void rateLimitsQuery.refetch();
@@ -1814,7 +1817,7 @@ export function CoderEngineSettings() {
                 <Button
                   type="button"
                   size="sm"
-                  disabled={busy || loginPending}
+                  disabled={busy || loginPending || !codexInstalled}
                   onClick={() => void beginLogin("chatgpt")}
                 >
                   <UserRoundIcon className="size-3.5" /> {copy.connectChatGPT}
@@ -1823,7 +1826,7 @@ export function CoderEngineSettings() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={busy || loginPending}
+                  disabled={busy || loginPending || !codexInstalled}
                   onClick={() => void beginLogin("chatgptDeviceCode")}
                 >
                   <ExternalLinkIcon className="size-3.5" /> {copy.connectDevice}
@@ -1924,7 +1927,7 @@ export function CoderEngineSettings() {
                   <Button
                     type="submit"
                     size="sm"
-                    disabled={busy || loginPending}
+                    disabled={busy || loginPending || !codexInstalled}
                   >
                     {loginBusy === "apiKey" ? (
                       <Loader2Icon className="size-3.5 animate-spin" />

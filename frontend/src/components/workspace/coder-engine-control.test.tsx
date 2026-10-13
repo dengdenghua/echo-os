@@ -124,6 +124,9 @@ describe("CoderEngineControl", () => {
 
     expect(await screen.findByText("当前暂不可执行")).toBeVisible();
     expect(screen.getByText("未找到可用的 Codex App Server")).toBeVisible();
+    // Without a Codex runtime there is no account to read.
+    const requested = fetchMock.mock.calls.map(([input]) => urlOf(input));
+    expect(requested.some((url) => url.includes("/codex/account"))).toBe(false);
   });
 
   it("lets the Echo kernel switch between system and ChatGPT subscription models without mutating the Codex profile", async () => {
@@ -523,6 +526,31 @@ describe("CoderEngineControl", () => {
 });
 
 describe("CoderEngineSettings", () => {
+  it("does not ask a device without the Codex runtime for its account", async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = urlOf(input);
+      if (url.includes("/model-profile")) {
+        return jsonResponse({
+          ...systemProfile,
+          execution_available: false,
+          execution_unavailable_reason: "executable_unavailable",
+        });
+      }
+      return jsonResponse({ detail: "unexpected request" }, 400);
+    });
+
+    renderWithProviders(<CoderEngineSettings />, { locale: "zh-CN" });
+
+    expect(
+      await screen.findByText("未找到可用的 Codex App Server"),
+    ).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /登录 ChatGPT/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /使用设备码/ })).toBeDisabled();
+    const requested = fetchMock.mock.calls.map(([input]) => urlOf(input));
+    expect(requested.some((url) => url.includes("/codex/account"))).toBe(false);
+  });
+
   it("starts and explicitly cancels a device-code login without persisting the auth URL", async () => {
     const user = userEvent.setup();
     const openExternal = vi.fn().mockResolvedValue(undefined);
