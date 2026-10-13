@@ -864,7 +864,10 @@ function AgentCoreVisual({
         </div>
       </div>
       <Dialog open={visualPromptOpen} onOpenChange={setVisualPromptOpen}>
-        <DialogContent className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-2xl">
+        <DialogContent
+          data-echo-theme="graphite"
+          className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-2xl"
+        >
           <div className="relative overflow-hidden border-b border-border bg-[#202020]/92 px-5 py-4">
             <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:28px_28px]" />
             <DialogTitle className="relative flex items-center gap-2 text-base">
@@ -1040,7 +1043,7 @@ function AgentCoreVisual({
                 {t.agentRoleProfile.cancel}
               </Button>
               <Button
-                className="h-8 rounded-sm bg-white px-4 text-xs text-[#232323] hover:bg-white/90"
+                className="h-8 rounded-sm px-4 text-xs"
                 disabled={generateVisuals.isPending}
                 type="button"
                 onClick={() => void handleGenerateVisuals()}
@@ -1370,6 +1373,7 @@ export function AgentRoleProfileDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          data-echo-theme="graphite"
           className={cn(
             "!h-[min(760px,86vh)] !w-[min(1180px,92vw)] !max-w-none overflow-hidden border-border bg-[#2a2a2a] p-0 text-white shadow-2xl sm:rounded-lg",
             "data-[state=open]:duration-base",
@@ -1870,7 +1874,10 @@ export function AgentRoleProfileDialog({
       </Dialog>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-3xl">
+        <DialogContent
+          data-echo-theme="graphite"
+          className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-3xl"
+        >
           <div className="relative overflow-hidden border-b border-border bg-[#202020]/90 px-5 py-4">
             <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:28px_28px]" />
             <DialogTitle className="relative">
