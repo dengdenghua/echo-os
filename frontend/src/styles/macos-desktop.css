@@ -2305,7 +2305,7 @@
 .mac-login-form > p {
   margin-top: 1px;
   color: rgba(255, 255, 255, 0.66);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-login-username,
 .mac-login-password {
@@ -2338,7 +2338,7 @@
   color: white;
   background: transparent;
   outline: none;
-  font-size: 11px;
+  font-size: 13px;
 }
 .mac-login-username input::placeholder,
 .mac-login-password input::placeholder {
@@ -2365,16 +2365,16 @@
   width: 14px;
   height: 14px;
 }
-.mac-login-error {
+.mac-login-form > .mac-login-error {
   margin-top: 8px;
-  color: #ffd6d2;
+  color: var(--echo-breach);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-login-form > small {
   margin-top: 10px;
   color: rgba(255, 255, 255, 0.62);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-login-system-actions {
   position: absolute;
@@ -2410,7 +2410,7 @@
 }
 .mac-login-system-actions small {
   color: rgba(255, 255, 255, 0.72);
-  font-size: 8px;
+  font-size: 12px;
 }
 .mac-login-footer {
   position: absolute;
@@ -2422,7 +2422,7 @@
   flex-direction: column;
   gap: 4px;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 8px;
+  font-size: 12px;
 }
 .mac-login-footer span {
   display: flex;
