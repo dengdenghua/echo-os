@@ -91,7 +91,8 @@ const COPY = {
       ({
         disabled: "Codex 执行开关已关闭",
         executable_unavailable: "未找到可用的 Codex App Server",
-        model_incompatible: "当前模型不能安全交给 Codex",
+        model_incompatible:
+          "当前模型还没有接入，请先接入一个模型或登录 ChatGPT 订阅",
         tools_unavailable: "运行时工具尚未装配",
         account_required: "请先登录 Codex 账号",
         account_unavailable: "Codex 账号授权不可用",
@@ -182,7 +183,8 @@ const COPY = {
         disabled: "Codex execution is disabled",
         executable_unavailable:
           "No usable Codex App Server executable was found",
-        model_incompatible: "The selected model cannot safely run in Codex",
+        model_incompatible:
+          "The selected model is not connected yet. Connect a model or sign in to ChatGPT",
         tools_unavailable: "The runtime tool registry is not ready",
         account_required: "Sign in to a Codex account first",
         account_unavailable: "Codex account authorization is unavailable",
