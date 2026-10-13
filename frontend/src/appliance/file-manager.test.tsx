@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as FilesModule from "./files";
@@ -109,9 +109,29 @@ describe("Echo OS file manager transfers", () => {
     expect(screen.getByRole("button", { name: "上传文件" })).toBeEnabled();
   });
 
+  it("lists only locations that do something: no tags, no AirDrop, no host folders on the web", async () => {
+    const { container } = render(<FileManager onClose={vi.fn()} />);
+    await screen.findByText("report.txt");
+
+    const sidebar = container.querySelector<HTMLElement>(
+      ".mac-finder-sidebar",
+    )!;
+    expect(
+      within(sidebar).getByRole("button", { name: "NAS" }),
+    ).toBeInTheDocument();
+    for (const name of ["隔空投送", "重要", "项目", "个人", "最近使用"]) {
+      expect(
+        within(sidebar).queryByRole("button", { name }),
+      ).not.toBeInTheDocument();
+    }
+  });
+
   it("keeps unsupported local locations explicit instead of showing NAS entries", async () => {
     const user = userEvent.setup();
-    render(<FileManager onClose={vi.fn()} />);
+    const onOpenSystemFiles = vi.fn();
+    render(
+      <FileManager onClose={vi.fn()} onOpenSystemFiles={onOpenSystemFiles} />,
+    );
     await screen.findByText("report.txt");
 
     await user.click(screen.getByRole("button", { name: "个人" }));
@@ -125,6 +145,9 @@ describe("Echo OS file manager transfers", () => {
     expect(screen.queryByText("report.txt")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "上传文件" })).toBeDisabled();
     expect(listDir).toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "打开系统文件" }));
+    expect(onOpenSystemFiles).toHaveBeenCalledOnce();
   });
 
   it("uploads files selected from the toolbar", async () => {

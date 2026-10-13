@@ -2700,12 +2700,6 @@
   height: 15px;
   flex: 0 0 auto;
 }
-.mac-tag-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
 
 .mac-finder-content {
   display: flex;

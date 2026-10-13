@@ -12,7 +12,6 @@ import {
   ArrowRightIcon,
   Clock3Icon,
   ChevronRightIcon,
-  CloudIcon,
   CopyIcon,
   DatabaseIcon,
   DownloadIcon,
@@ -72,7 +71,6 @@ import {
 
 type FinderSidebarTarget =
   | "recent"
-  | "airdrop"
   | "applications"
   | "home"
   | "desktop"
@@ -81,7 +79,6 @@ type FinderSidebarTarget =
 
 const FINDER_TARGET_LABELS: Record<FinderSidebarTarget, string> = {
   recent: "最近使用",
-  airdrop: "隔空投送",
   applications: "应用程序",
   home: "个人",
   desktop: "桌面",
@@ -570,55 +567,55 @@ export function FileManager({
 
         <div className="mac-finder-main">
           <aside className="mac-finder-sidebar">
-            <p>个人收藏</p>
-            <button
-              type="button"
-              className={sidebarTarget === "recent" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("recent")}
-            >
-              <Clock3Icon className="text-muted-foreground" />
-              最近使用
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "airdrop" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("airdrop")}
-            >
-              <CloudIcon className="text-muted-foreground" />
-              隔空投送
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "applications" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("applications")}
-            >
-              <AppWindowIcon className="text-muted-foreground" />
-              应用程序
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "home" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("home")}
-            >
-              <HomeIcon className="text-muted-foreground" />
-              个人
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "desktop" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("desktop")}
-            >
-              <FolderIcon className="text-muted-foreground" />
-              桌面
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "downloads" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("downloads")}
-            >
-              <DownloadIcon className="text-muted-foreground" />
-              下载
-            </button>
+            {/* 本机位置由宿主系统管理：只有接入系统文件管理器时才列出，
+                点进去能打开系统文件；网页会话里只显示 NAS。 */}
+            {onOpenSystemFiles && (
+              <>
+                <p>个人收藏</p>
+                <button
+                  type="button"
+                  className={sidebarTarget === "recent" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("recent")}
+                >
+                  <Clock3Icon className="text-muted-foreground" />
+                  最近使用
+                </button>
+                <button
+                  type="button"
+                  className={
+                    sidebarTarget === "applications" ? "is-selected" : ""
+                  }
+                  onClick={() => selectSidebarTarget("applications")}
+                >
+                  <AppWindowIcon className="text-muted-foreground" />
+                  应用程序
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "home" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("home")}
+                >
+                  <HomeIcon className="text-muted-foreground" />
+                  个人
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "desktop" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("desktop")}
+                >
+                  <FolderIcon className="text-muted-foreground" />
+                  桌面
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "downloads" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("downloads")}
+                >
+                  <DownloadIcon className="text-muted-foreground" />
+                  下载
+                </button>
+              </>
+            )}
             <p>位置</p>
             {onOpenSystemFiles && (
               <button type="button" onClick={onOpenSystemFiles}>
@@ -640,15 +637,6 @@ export function FileManager({
             >
               <DatabaseIcon />
               NAS
-            </button>
-            <p>标签</p>
-            <button type="button">
-              <span className="mac-tag-dot bg-breach" />
-              重要
-            </button>
-            <button type="button">
-              <span className="mac-tag-dot bg-primary" />
-              项目
             </button>
           </aside>
 

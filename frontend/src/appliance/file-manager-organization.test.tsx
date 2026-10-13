@@ -156,7 +156,7 @@ describe("FileManager organization entry", () => {
 
   it("does not expose NAS organization from unconnected local folders or the recycle bin", async () => {
     const user = userEvent.setup();
-    render(<FileManager onClose={vi.fn()} />);
+    render(<FileManager onClose={vi.fn()} onOpenSystemFiles={vi.fn()} />);
     await screen.findByText("receipts");
     await user.click(screen.getByRole("button", { name: "个人" }));
     expect(screen.getByRole("button", { name: "整理此目录" })).toBeDisabled();
