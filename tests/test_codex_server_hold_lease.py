@@ -102,3 +102,21 @@ async def test_session_passes_the_hold_window_to_the_app_server_client(tmp_path:
         assert client.config.approval_timeout_s == 3660.0
     finally:
         await session.close()
+
+
+def test_time_waiting_for_the_owner_does_not_count_against_the_turn_limit() -> None:
+    # Golden path 2026-10: a desktop task parked in the inbox for 30 minutes
+    # hit the Codex turn limit; its held write was denied and the approval
+    # was left behind as stale.
+    clock = codex_drive._RunClock(started_at=0.0)
+    clock.observe(60.0, waiting=True)
+    assert clock.active_elapsed(1_860.0) == 60.0
+    clock.observe(1_900.0, waiting=False)
+    assert clock.active_elapsed(1_960.0) == 120.0
+
+
+def test_renewal_reports_a_task_parked_for_approval(tmp_path: Path) -> None:
+    _supervisor, guard = _guard(tmp_path, ttl=30.0)
+    assert codex_drive._renew_lease(guard, object()) is False
+    guard.transition(TaskRunStatus.WAITING_APPROVAL, require_open=True, reason="写文件")
+    assert codex_drive._renew_lease(guard, object()) is True
