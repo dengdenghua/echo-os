@@ -13,17 +13,23 @@ import {
 } from "react";
 import {
   ArrowRightIcon,
+  BotIcon,
   CheckIcon,
   ChevronDownIcon,
   DropletIcon,
   FileTextIcon,
+  HammerIcon,
+  LayoutGridIcon,
   ListChecksIcon,
   MoonIcon,
   PictureInPicture2Icon,
+  SearchIcon,
   ShieldAlertIcon,
+  ShieldIcon,
   SparklesIcon,
   SunIcon,
   XIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { LinkedDevice } from "./device-link";
@@ -87,7 +93,7 @@ export interface OpenRoom {
   id: OpenRoomType;
   title: string;
   agentLabel: string;
-  icon: string;
+  icon: LucideIcon;
   desc: string;
 }
 
@@ -97,28 +103,28 @@ export const OPEN_ROOMS: OpenRoom[] = [
     id: "all",
     title: "全局总览",
     agentLabel: "全部 Agent",
-    icon: "◫",
+    icon: LayoutGridIcon,
     desc: "所有任务统一呈现",
   },
   {
     id: "researcher",
     title: "调研室 (Research)",
     agentLabel: "通用助理",
-    icon: "🔍",
+    icon: SearchIcon,
     desc: "写作、调研、总结与问答",
   },
   {
     id: "builder",
     title: "工坊 (Builder Studio)",
     agentLabel: "编码 Agent",
-    icon: "⚡",
+    icon: HammerIcon,
     desc: "代码、构建与工程任务",
   },
   {
     id: "operator",
     title: "中枢 (Operator Suite)",
     agentLabel: "设备管家",
-    icon: "🛡️",
+    icon: ShieldIcon,
     desc: "桌面操作、存储与设备管理",
   },
 ];
@@ -758,7 +764,7 @@ export function IntentDesktopSurface({
                   )}
                   title={room.desc}
                 >
-                  <span>{room.icon}</span>
+                  <room.icon className="size-3" aria-hidden />
                   <span>{room.title.split(" ")[0]}</span>
                 </button>
               ))}
@@ -938,9 +944,7 @@ export function IntentDesktopSurface({
                   aria-haspopup="menu"
                   aria-expanded={isAgentMenuOpen}
                 >
-                  <span className="text-sm" aria-hidden>
-                    {selectedAgent?.icon ?? "✦"}
-                  </span>
+                  <BotIcon className="size-3.5" aria-hidden />
                   <span className="font-semibold">
                     {selectedAgent?.name ?? "默认 Agent"}
                   </span>
@@ -957,7 +961,12 @@ export function IntentDesktopSurface({
                     role="menu"
                     aria-label="Agent 选择菜单"
                     className={cn(
-                      "absolute bottom-full left-0 z-50 mb-2 max-h-[340px] w-72 overflow-y-auto rounded-2xl border p-1.5 text-left shadow-2xl backdrop-blur-xl",
+                      "absolute left-0 z-50 max-h-[340px] w-72 overflow-y-auto rounded-2xl border p-1.5 text-left shadow-2xl backdrop-blur-xl",
+                      // The composer docks to the top of the screen in the
+                      // workspace mode, so the menu opens downward there.
+                      mode === "workspace"
+                        ? "top-full mt-2"
+                        : "bottom-full mb-2",
                       "border-black/10 bg-card/95 text-foreground shadow-slate-900/15",
                       "   ",
                     )}
@@ -987,9 +996,10 @@ export function IntentDesktopSurface({
                                 : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]",
                             )}
                           >
-                            <span className="mt-0.5 text-base" aria-hidden>
-                              {agent.icon ?? "✦"}
-                            </span>
+                            <BotIcon
+                              className="mt-0.5 size-4 shrink-0"
+                              aria-hidden
+                            />
                             <span className="min-w-0 flex-1">
                               <span className="block text-[13px] font-semibold">
                                 {agent.name}

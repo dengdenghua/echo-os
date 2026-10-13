@@ -336,6 +336,7 @@ export function MacWorkspaceDropdown({
 
   const currentRoom =
     OPEN_ROOMS.find((r) => r.id === activeRoom) ?? OPEN_ROOMS[0]!;
+  const CurrentRoomIcon = currentRoom.icon;
 
   return (
     <div ref={containerRef} className="relative select-none">
@@ -358,10 +359,15 @@ export function MacWorkspaceDropdown({
             desktopMode === "pure" ? "bg-core animate-pulse" : "bg-primary",
           )}
         />
-        <span className="text-[11px] font-medium tracking-tight">
-          {desktopMode === "pure"
-            ? "意图纯净态"
-            : `${currentRoom.icon} ${currentRoom.title.split(" ")[0]}`}
+        <span className="flex items-center gap-1 text-[11px] font-medium tracking-tight">
+          {desktopMode === "pure" ? (
+            "意图纯净态"
+          ) : (
+            <>
+              <CurrentRoomIcon className="size-3" aria-hidden />
+              {currentRoom.title.split(" ")[0]}
+            </>
+          )}
         </span>
         <ChevronDownIcon
           className={cn(
@@ -438,7 +444,7 @@ export function MacWorkspaceDropdown({
                 className="mac-menu-item"
               >
                 <span className="flex items-center gap-2">
-                  <span>{room.icon}</span>
+                  <room.icon className="size-3.5" aria-hidden />
                   <span
                     className={isSelected ? "font-semibold" : "font-normal"}
                   >
@@ -756,11 +762,11 @@ export function MacMenuBar({
             title={`当前主题：${desktopTheme === "theme-white" ? "雪白" : desktopTheme === "theme-glass" ? "神经玻璃" : "石墨"} · 点击快速切换`}
           >
             {desktopTheme === "theme-white" ? (
-              <SunIcon className="size-[15px] text-warning" />
+              <SunIcon className="size-[15px]" />
             ) : desktopTheme === "theme-glass" ? (
-              <PaletteIcon className="size-[15px] text-core" />
+              <PaletteIcon className="size-[15px]" />
             ) : (
-              <MoonIcon className="size-[15px] text-core" />
+              <MoonIcon className="size-[15px]" />
             )}
           </button>
         )}
