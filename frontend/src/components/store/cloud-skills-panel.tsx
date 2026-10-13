@@ -20,6 +20,8 @@ import {
   type CloudSkillItem,
   type UnifiedAsset,
 } from "@/core/agents/agent-world-api";
+import { listSkills } from "@/core/skills/api";
+import type { SkillInfo } from "@/core/skills/types";
 
 function normalizeSkillName(value: string) {
   return value
@@ -32,6 +34,43 @@ function localSkillAliases(asset: UnifiedAsset) {
   return [asset.id, asset.name, asset.name_zh]
     .filter((value): value is string => Boolean(value?.trim()))
     .map(normalizeSkillName);
+}
+
+/** Runtime skill registry rows (what the composer lists) as local assets. */
+function runtimeSkillAsAsset(skill: SkillInfo): UnifiedAsset {
+  return {
+    id: skill.name,
+    kind: "skill",
+    source: "local",
+    name: skill.name,
+    description: skill.description,
+    category: skill.category,
+  };
+}
+
+/**
+ * Installed skills for the HUB. The unified asset index is optional: it
+ * answers 404 until someone runs POST /api/assets/sync, which a fresh ECHO OS
+ * never does. Fall back to the runtime skill registry, the same source the
+ * composer's skills menu reads, so the tab never shows zero installed skills
+ * while the composer lists them.
+ */
+async function loadLocalSkills(): Promise<UnifiedAsset[]> {
+  try {
+    const unified = await fetchUnifiedAssets({
+      kind: "skill",
+      limit: 500,
+      offset: 0,
+    });
+    if (unified.items.length > 0) return unified.items;
+  } catch {
+    // Index not built yet; use the runtime registry below.
+  }
+  try {
+    return (await listSkills()).map(runtimeSkillAsAsset);
+  } catch {
+    return [];
+  }
 }
 
 interface SkillEntry {
@@ -66,7 +105,7 @@ export function CloudSkillsPanel({
       await Promise.allSettled([
         fetchCloudSkills({ limit: 500 }),
         fetchCloudInstalled(),
-        fetchUnifiedAssets({ kind: "skill", limit: 500, offset: 0 }),
+        loadLocalSkills(),
       ]);
 
     if (cloudResult.status === "fulfilled") {
@@ -86,9 +125,7 @@ export function CloudSkillsPanel({
           : [],
       ),
     );
-    setLocalSkills(
-      localResult.status === "fulfilled" ? localResult.value.items : [],
-    );
+    setLocalSkills(localResult.status === "fulfilled" ? localResult.value : []);
     setLoading(false);
   }, []);
 
