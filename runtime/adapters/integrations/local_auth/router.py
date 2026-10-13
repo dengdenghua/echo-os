@@ -284,7 +284,9 @@ def create_local_auth_router(
 
         if not config.allow_any_username:
             if username not in config.allowed_usernames:
-                raise HTTPException(status_code=403, detail="用户名不在白名单")
+                # Same status and copy as a wrong password: the sign-in error
+                # must not reveal the allowlist or whether the username exists.
+                raise HTTPException(status_code=401, detail="用户名或密码错误")
             return
 
     def _check_second_factor(

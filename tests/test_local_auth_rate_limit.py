@@ -38,12 +38,14 @@ def _client(
     lockout_seconds: float = 20.0,
     max_entries: int = 100,
     allow_any_username: bool = False,
+    allowed_usernames: list[str] | None = None,
     second_factor_verifier=None,
 ) -> tuple[TestClient, object]:
     config = LocalAuthConfig(
         enabled=True,
         users=users or {},
         allow_any_username=allow_any_username,
+        allowed_usernames=allowed_usernames or [],
         login_max_failures=max_failures,
         login_ip_max_failures=ip_max_failures,
         login_failure_window_seconds=window_seconds,
@@ -261,6 +263,25 @@ def test_passwordless_dev_mode_is_not_rate_limited() -> None:
         assert _login(client, "developer", None).status_code == 200
     assert router.login_failure_limiter.entry_count == 0
     assert router.login_ip_failure_limiter.entry_count == 0
+
+
+def test_allowlist_rejection_is_the_generic_sign_in_failure(monkeypatch) -> None:
+    """A name outside the passwordless allowlist must not reveal the allowlist.
+
+    It answers exactly like a wrong password, so the response does not tell a
+    caller whether the username exists or which sign-in mode is configured.
+    """
+    monkeypatch.setattr(local_auth_router, "_DUMMY_BCRYPT_HASH", _TEST_BCRYPT_HASH)
+    allowlist_client, _ = _client(_Clock(), allowed_usernames=["admin"])
+    password_client, _ = _client(_Clock(), users={"admin": _TEST_BCRYPT_HASH})
+
+    unknown = _login(allowlist_client, "intruder", None)
+    wrong_password = _login(password_client, "admin", "wrong")
+
+    assert unknown.status_code == wrong_password.status_code == 401
+    assert unknown.json() == wrong_password.json() == {"detail": "用户名或密码错误"}
+    assert "白名单" not in unknown.text
+    assert _login(allowlist_client, "admin", None).status_code == 200
 
 
 def test_second_factor_has_an_independent_bounded_lockout() -> None:

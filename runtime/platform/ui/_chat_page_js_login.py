@@ -328,8 +328,10 @@ function localForm(passwordRequired) {
 function explainErr(e) {
   if (e.status === 503) return '服务未开启 · 请联系管理员';
   if (e.status === 502) return '上游不可达 · 请稍后重试';
-  if (e.status === 401) return '验证码错误或已过期';
-  if (e.status === 403) return '无权限 / 不在白名单';
+  if (e.status === 401) {
+    return (e.body || '').includes('用户名或密码错误') ? '用户名或密码错误' : '验证码错误或已过期';
+  }
+  if (e.status === 403) return '无权限';
   if (e.status === 400) return '请求参数错误：' + (e.body || '').slice(0, 100);
   return e.message || String(e);
 }
