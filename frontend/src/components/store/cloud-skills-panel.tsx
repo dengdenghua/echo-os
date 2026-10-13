@@ -285,7 +285,7 @@ export function CloudSkillsPanel({
                         style={{ width: `${state.progress}%` }}
                       />
                     </div>
-                    <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
                       {state.message}
                     </p>
                   </div>

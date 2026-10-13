@@ -74,7 +74,7 @@ export function DiffSummaryCard({
               )}
             />
             {headerLabel}
-            <span className="ml-1 inline-flex items-center gap-1.5 text-[11.5px] font-mono">
+            <span className="ml-1 inline-flex items-center gap-1.5 text-xs font-mono">
               <span className="text-emerald-600 dark:text-emerald-400">
                 +{totalAdded}
               </span>
@@ -87,7 +87,7 @@ export function DiffSummaryCard({
             <button
               type="button"
               onClick={onUndo}
-              className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <Undo2Icon className="size-3" />
               Undo
@@ -111,7 +111,7 @@ export function DiffSummaryCard({
                   <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground">
                     {f.path}
                   </span>
-                  <span className="shrink-0 font-mono text-[11px]">
+                  <span className="shrink-0 font-mono text-xs">
                     <span className="text-emerald-600 dark:text-emerald-400">
                       +{f.added}
                     </span>

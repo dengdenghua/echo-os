@@ -113,12 +113,12 @@ function PluginCard({
         />
       </CardHeader>
       <div className="flex flex-wrap items-center gap-1 px-3">
-        <Badge className={cn("border-transparent text-[11px]", kind.badge)}>
+        <Badge className={cn("border-transparent text-xs", kind.badge)}>
           {kind.label}
         </Badge>
         <Badge
           variant="outline"
-          className="text-[11px] font-normal text-muted-foreground"
+          className="text-xs font-normal text-muted-foreground"
         >
           {item.source === "codex"
             ? "ECHO 插件"
@@ -129,7 +129,7 @@ function PluginCard({
         {typeof item.skills_count === "number" && item.skills_count > 0 && (
           <Badge
             variant="outline"
-            className="text-[11px] font-normal text-muted-foreground"
+            className="text-xs font-normal text-muted-foreground"
           >
             技能 ×{item.skills_count}
           </Badge>
@@ -175,7 +175,7 @@ function SkillCard({
       <div className="flex flex-wrap items-center gap-1 px-3">
         <Badge
           className={cn(
-            "border-transparent text-[11px]",
+            "border-transparent text-xs",
             isEcho
               ? "bg-chart-2/10 text-chart-2"
               : "bg-chart-3/10 text-chart-3",
@@ -185,7 +185,7 @@ function SkillCard({
         </Badge>
         <Badge
           variant="outline"
-          className="text-[11px] font-normal text-muted-foreground"
+          className="text-xs font-normal text-muted-foreground"
         >
           v{item.version || "0.1.0"}
         </Badge>
@@ -314,7 +314,7 @@ export function CloudCatalogPanel() {
           <span className="text-sm font-medium">云商城 · 我们发布的资产</span>
           <Badge
             variant="outline"
-            className="text-[11px] font-normal text-muted-foreground"
+            className="text-xs font-normal text-muted-foreground"
           >
             {plugins.length} 插件 / {skills.length} 技能 · 已装{" "}
             {installedPluginCount}/{installedSkillCount}

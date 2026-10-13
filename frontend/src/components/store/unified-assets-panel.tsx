@@ -237,9 +237,7 @@ function DetailDialog({
           {asset.origin ? (
             <div className="flex flex-col gap-1">
               <dt className="text-muted-foreground">位置</dt>
-              <dd className="break-all font-mono text-[11px]">
-                {asset.origin}
-              </dd>
+              <dd className="break-all font-mono text-xs">{asset.origin}</dd>
             </div>
           ) : null}
         </dl>
@@ -372,7 +370,7 @@ export function UnifiedAssetsPanel({
                     <tab.icon className="h-3.5 w-3.5" />
                     {tab.label}
                     {totalForKind != null && tab.key === kind ? (
-                      <span className="ml-0.5 rounded bg-primary/10 px-1.5 text-[11px] text-primary">
+                      <span className="ml-0.5 rounded bg-primary/10 px-1.5 text-xs text-primary">
                         {totalForKind}
                       </span>
                     ) : null}

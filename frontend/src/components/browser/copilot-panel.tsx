@@ -720,7 +720,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         />
         {activeTab?.title && (
           <span
-            className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground"
+            className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
             title={activeTab.title}
           >
             · {activeTab.title}
@@ -730,7 +730,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         {agentLoopActive && (
           <button
             onClick={stopAgentLoop}
-            className="flex shrink-0 items-center gap-1 rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
+            className="flex shrink-0 items-center gap-1 rounded bg-rose-500/10 px-1.5 py-0.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
             title={t.browser.copilot.stopAgentTooltip}
           >
             <StopCircleIcon className="size-3" />
@@ -741,7 +741,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         <button
           onClick={() => setAutoBrowse((v) => !v)}
           className={cn(
-            "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+            "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
             autoBrowse
               ? "bg-primary/10 text-primary"
               : "border border-border text-muted-foreground hover:bg-muted",
@@ -757,7 +757,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         <button
           onClick={() => setRecorderMode((v) => !v)}
           className={cn(
-            "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+            "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
             recorderMode
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               : "border border-border text-muted-foreground hover:bg-muted",
@@ -805,10 +805,10 @@ export function CopilotPanel({ webviewHandle }: Props) {
         <div className="shrink-0 border-b bg-emerald-500/[0.04] px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 {t.browser.copilot.recorderTitle}
               </div>
-              <div className="truncate text-[10px] text-muted-foreground">
+              <div className="truncate text-xs text-muted-foreground">
                 {t.browser.copilot.recorderDesc}
               </div>
             </div>
@@ -818,7 +818,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               value={researchGoal}
               onChange={(e) => setResearchGoal(e.target.value)}
               placeholder={t.browser.copilot.researchGoalPlaceholder}
-              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-[11px] outline-none focus:ring-1 focus:ring-emerald-500/40"
+              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
             />
             <button
               type="button"
@@ -828,7 +828,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
                 thread.isLoading ||
                 (!researchGoal.trim() && !input.trim())
               }
-              className="rounded bg-emerald-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+              className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
             >
               {t.browser.copilot.start}
             </button>
@@ -838,7 +838,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               type="button"
               onClick={() => void addPageToResearchLog()}
               disabled={busy}
-              className="rounded border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted disabled:opacity-40"
+              className="rounded border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40"
             >
               {t.browser.copilot.recordCurrentPage}
             </button>
@@ -846,7 +846,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={() => setResearchLog([])}
-                className="text-[10px] text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 {t.browser.copilot.clearLog}
               </button>
@@ -857,7 +857,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={() => void copyResearchBrief()}
-                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 <ClipboardCheckIcon className="size-3" />
                 {briefCopied
@@ -867,7 +867,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={downloadResearchBrief}
-                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 <DownloadIcon className="size-3" />
                 {t.browser.copilot.exportMd}
@@ -879,14 +879,14 @@ export function CopilotPanel({ webviewHandle }: Props) {
               {researchLog.slice(0, 5).map((entry) => (
                 <div key={entry.id} className="rounded bg-muted/40 px-2 py-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[10px] font-medium">
+                    <span className="truncate text-xs font-medium">
                       {entry.platform} · {entry.title}
                     </span>
-                    <span className="shrink-0 text-[9px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                     {entry.note}
                   </div>
                 </div>
@@ -897,7 +897,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
       )}
 
       {errorMsg && (
-        <div className="shrink-0 border-b bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive">
+        <div className="shrink-0 border-b bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {errorMsg}
         </div>
       )}
@@ -907,7 +907,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
           {pendingConfirmations.map((pending) => (
             <div
               key={pending.id}
-              className="rounded-md border border-amber-500/30 bg-background/70 p-2 text-[11px]"
+              className="rounded-md border border-amber-500/30 bg-background/70 p-2 text-xs"
             >
               <div className="font-medium text-amber-700 dark:text-amber-300">
                 需要用户确认
@@ -1246,7 +1246,7 @@ function QuickAction({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+      className="flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-50"
     >
       <Icon className="size-3" />
       {label}

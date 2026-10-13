@@ -34,7 +34,7 @@ export default function HomePage() {
         onClick={() => navigate("/workspace")}
       >
         <div className="text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] text-white/60 backdrop-blur-sm">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-white/60 backdrop-blur-sm">
             <span className="size-1.5 rounded-lg bg-white/35" />
             Agent OS control surface
           </div>
@@ -93,7 +93,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 flex items-center gap-1.5 text-[11px] text-white/15 animate-pulse-soft">
+        <div className="absolute bottom-6 flex items-center gap-1.5 text-xs text-white/15 animate-pulse-soft">
           <span className="size-1 rounded-lg bg-white/20" />
           {t.landing.clickToEnter}
         </div>
@@ -122,7 +122,7 @@ export default function HomePage() {
               <h3 className="mb-0.5 text-[13px] font-semibold text-white/80">
                 {f.title}
               </h3>
-              <p className="text-[11px] leading-relaxed text-white/30">
+              <p className="text-xs leading-relaxed text-white/30">
                 {t.landing.features[f.key]}
               </p>
             </div>

@@ -53,7 +53,7 @@ export function AccessPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full border bg-transparent px-2 text-[11px] font-medium leading-none",
+        "inline-flex h-6 items-center gap-1 rounded-full border bg-transparent px-2 text-xs font-medium leading-none",
         "transition-[background-color,border-color] duration-150",
         t.styles,
         className,

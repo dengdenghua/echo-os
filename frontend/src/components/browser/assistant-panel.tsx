@@ -1220,7 +1220,7 @@ export function AssistantPanel({ webviewHandle }: Props) {
                     <span className="truncate text-micro font-medium">
                       {entry.platform} · {entry.title}
                     </span>
-                    <span className="shrink-0 text-[9px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
