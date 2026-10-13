@@ -445,53 +445,22 @@ def _lease_renewal_interval(execution_lease: Any) -> float | None:
     return max(0.1, min(ttl / 3.0, 30.0))
 
 
-def _renew_lease(execution_lease: TaskExecutionGuard, turn: Any) -> bool:
+def _renew_lease(execution_lease: TaskExecutionGuard, turn: Any) -> None:
     """Keep the task lease alive while App Server works or waits for approval.
 
     Without renewal a Codex turn lost its lease after the supervisor TTL
     (5 minutes), e.g. while a desktop task waited in the approval inbox, and
     the owner's later approval failed with "lease expired". A lost lease is
     reported by the next ``assert_allowed``/``assert_held`` as before.
-    Returns whether the task is parked waiting for the owner's approval.
     """
     try:
-        record = execution_lease.heartbeat()
+        execution_lease.heartbeat()
     except Exception as exc:  # noqa: BLE001 — surfaced by the next lease check
         _logger.warning(
             "codex task lease renewal failed for %s: %s",
             getattr(turn, "task_id", None) or getattr(turn, "id", None),
             exc,
         )
-        return False
-    status = getattr(getattr(record, "status", None), "value", getattr(record, "status", None))
-    return str(status or "") == "waiting_approval"
-
-
-class _RunClock:
-    """Turn run time that does not count time spent waiting for the owner.
-
-    The Codex turn limit (30 minutes by default) bounds work, not a person's
-    response time: a desktop task parked in the approval inbox was cut off
-    at the limit, its held call denied and its approval left stale. Waits are
-    observed at the lease-renewal cadence; the server hold window still
-    bounds how long one approval may wait.
-    """
-
-    def __init__(self, started_at: float) -> None:
-        self._started_at = started_at
-        self._waited = 0.0
-        self._waiting_since: float | None = None
-
-    def observe(self, now: float, *, waiting: bool) -> None:
-        if waiting and self._waiting_since is None:
-            self._waiting_since = now
-        elif not waiting and self._waiting_since is not None:
-            self._waited += now - self._waiting_since
-            self._waiting_since = None
-
-    def active_elapsed(self, now: float) -> float:
-        current_wait = now - self._waiting_since if self._waiting_since is not None else 0.0
-        return now - self._started_at - self._waited - current_wait
 
 
 async def _heartbeat(emitter: Any, turn: Any, *, started_at: float) -> None:
@@ -694,7 +663,6 @@ async def _drive_codex_app_server_inner(
         last_heartbeat = started_at
         last_lease_renewal = started_at
         lease_renewal_s = _lease_renewal_interval(execution_lease)
-        run_clock = _RunClock(started_at)
         interrupt_started: float | None = None
         interrupt_requested = False
         saw_terminal = False
@@ -703,7 +671,7 @@ async def _drive_codex_app_server_inner(
 
         while not saw_terminal:
             now = time.monotonic()
-            if run_clock.active_elapsed(now) >= timeout_s and not interrupt_requested:
+            if now - started_at >= timeout_s and not interrupt_requested:
                 interrupt_requested = True
                 interrupt_started = now
                 turn.status = TurnStatus.CANCELLED
@@ -754,7 +722,7 @@ async def _drive_codex_app_server_inner(
                 await _heartbeat(emitter, turn, started_at=started_at)
             if lease_renewal_s is not None and now - last_lease_renewal >= lease_renewal_s:
                 last_lease_renewal = now
-                run_clock.observe(now, waiting=_renew_lease(execution_lease, turn))
+                _renew_lease(execution_lease, turn)
 
             try:
                 notification = await session.next_notification(timeout_s=_NOTIFICATION_POLL_S)
