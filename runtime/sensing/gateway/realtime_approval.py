@@ -38,6 +38,9 @@ _SERVER_HOLD_POLL_S = 0.5
 _SERVER_HOLD_DEFAULT_MAX_S = 3600.0
 _SERVER_HOLD_MIN_S = 30.0
 _SERVER_HOLD_MAX_S = 24 * 3600.0
+# Time a held approval leaves the turn to act on the answer (a declined call
+# still needs a model step and the turn's own wrap-up) before its deadline.
+_SERVER_HOLD_DEADLINE_MARGIN_S = 60.0
 
 
 def _server_hold_max_seconds() -> float:
@@ -249,7 +252,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                 label="error",
             )
 
-        deadline = self._clock() + self._max_wait_s
+        deadline = self._clock() + self._hold_window_s()
         cancellation = current_cancellation_token()
         while True:
             if cancellation.is_cancelled:
@@ -294,6 +297,31 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                     guard=guard, req=req, approved=False, reason="timeout", label="timeout"
                 )
             self._sleep(self._poll_interval_s)
+
+    def _hold_window_s(self) -> float:
+        """How long this hold may wait: the hold window, but never past the turn.
+
+        The turn runs under a wall-clock execution deadline (the Codex limit
+        is 30 minutes) that also covers the wait. Holding past it left the
+        task interrupted with a stale approval in the inbox ("lease expired"
+        when the owner answered). Ending the hold just before the deadline
+        declines the call as a timeout, so the task finishes and says so.
+        """
+        from runtime.execution.request import (
+            ExecutionDeadlineExceeded,
+            current_execution_request,
+        )
+
+        request = current_execution_request()
+        if request is None:
+            return self._max_wait_s
+        try:
+            remaining = request.task.resources.remaining_seconds()
+        except ExecutionDeadlineExceeded:
+            return 0.0
+        if remaining is None:
+            return self._max_wait_s
+        return max(0.0, min(self._max_wait_s, remaining - _SERVER_HOLD_DEADLINE_MARGIN_S))
 
     def _finish(
         self,

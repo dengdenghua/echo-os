@@ -262,3 +262,30 @@ def test_server_hold_is_per_turn_and_never_inherited_from_the_thread():
 
     metadata = build_turn_metadata(thread_id="thread-1", body={"context": {}}, store=_Store())
     assert "approval_delivery" not in metadata
+
+
+def test_a_hold_never_outlives_the_turn_deadline(monkeypatch):
+    # Golden path 2026-10: a desktop task held for longer than its turn's
+    # execution deadline was cut off mid-wait; its approval stayed in the inbox
+    # and answering it failed with "lease expired".
+    from types import SimpleNamespace
+
+    from runtime.execution import request as execution_request
+
+    resources = SimpleNamespace(remaining_seconds=lambda: 300.0)
+    monkeypatch.setattr(
+        execution_request,
+        "current_execution_request",
+        lambda: SimpleNamespace(task=SimpleNamespace(resources=resources)),
+    )
+    provider = _provider(max_wait_s=3600.0)
+    assert provider._hold_window_s() == 240.0
+
+    def _expired() -> float:
+        raise execution_request.ExecutionDeadlineExceeded("late")
+
+    resources.remaining_seconds = _expired
+    assert provider._hold_window_s() == 0.0
+
+    monkeypatch.setattr(execution_request, "current_execution_request", lambda: None)
+    assert provider._hold_window_s() == 3600.0
