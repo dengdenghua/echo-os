@@ -267,8 +267,8 @@ export function ShareMenu({
               label={t.share.copyLink}
               disabled={busy !== null}
               onSelect={handleCopyLink}
-              icon={<LinkIcon className="size-[18px] text-[#3976f6]" />}
-              iconClassName="bg-[#3976f6]/10"
+              icon={<LinkIcon className="size-[18px] text-foreground" />}
+              iconClassName="bg-muted"
             />
             <ShareChannelItem
               label={t.share.qrCode}

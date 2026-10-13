@@ -3,9 +3,11 @@ import {
   CheckIcon,
   CoinsIcon,
   LoaderCircleIcon,
+  LockIcon,
   LogOutIcon,
   RefreshCwIcon,
   SettingsIcon,
+  StarIcon,
   UsersRoundIcon,
   UserCircleIcon,
 } from "lucide-react";
@@ -339,8 +341,18 @@ export function AgentFooter() {
                 <span className="ml-1.5 text-2xs font-normal text-muted-foreground/80">
                   Lv.{level}
                   {stars !== null && stars > 0 && (
-                    <span className="ml-0.5">
-                      {"⭐".repeat(Math.min(stars, 5))}
+                    <span
+                      role="img"
+                      className="ml-0.5 inline-flex items-center gap-px align-[-1px]"
+                      aria-label={`${Math.min(stars, 5)}/5`}
+                    >
+                      {Array.from({ length: Math.min(stars, 5) }, (_, i) => (
+                        <StarIcon
+                          key={i}
+                          aria-hidden="true"
+                          className="size-2.5 fill-current"
+                        />
+                      ))}
                     </span>
                   )}
                 </span>
@@ -348,10 +360,10 @@ export function AgentFooter() {
             </span>
             {lock ? (
               <span
-                className="shrink-0 text-2xs uppercase tracking-wider text-muted-foreground/60 group-data-[collapsible=icon]:hidden"
+                className="shrink-0 text-muted-foreground/60 group-data-[collapsible=icon]:hidden"
                 aria-hidden
               >
-                🔒
+                <LockIcon className="size-3" />
               </span>
             ) : (
               <span className="shrink-0 text-muted-foreground/60 group-hover/agent:text-muted-foreground group-data-[collapsible=icon]:hidden">
