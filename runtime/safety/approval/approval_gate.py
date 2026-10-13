@@ -21,12 +21,21 @@ emitter is the provider (see :class:`RpcConnection.request_approval`).
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import fnmatch
+import ipaddress
+import json
 import logging
+import re
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
+from urllib.parse import urlsplit
+
+from runtime.safety.approval.permission_modes import canonical_permission_mode
 
 _logger = logging.getLogger(__name__)
 
@@ -68,6 +77,13 @@ class ApprovalRisk:
         }
 
 
+_RISK_ACTION_ORDER: dict[str, int] = {"allow": 0, "audit": 1, "ask": 2, "confirm": 3, "deny": 4}
+# Risk categories of a call that reaches beyond this machine.
+NETWORK_RISK_CATEGORIES: frozenset[str] = frozenset(
+    {"network_read", "network_or_egress", "sensitive_egress", "external_mcp"}
+)
+
+
 @dataclass(frozen=True, slots=True)
 class ApprovalRiskPolicy:
     """Risk-level policy matrix for tool approval routing."""
@@ -76,29 +92,44 @@ class ApprovalRiskPolicy:
     medium: ApprovalRiskAction = "ask"
     high: ApprovalRiskAction = "ask"
     critical: ApprovalRiskAction = "confirm"
+    # Optional floor for network-reaching calls (``NETWORK_RISK_CATEGORIES``),
+    # applied on top of the level action; it only ever tightens. ``None`` keeps
+    # the level matrix alone. ``resolve_approval_risk_policy`` sets ``"ask"``
+    # for the "询问审批" permission mode, so every network call is reviewed
+    # whatever its level.
+    network: ApprovalRiskAction | None = None
 
     def action_for(self, risk: ApprovalRisk) -> ApprovalRiskAction:
-        return getattr(self, risk.level)
+        action: ApprovalRiskAction = getattr(self, risk.level)
+        if (
+            self.network is not None
+            and NETWORK_RISK_CATEGORIES.intersection(risk.categories)
+            and _RISK_ACTION_ORDER[self.network] > _RISK_ACTION_ORDER[action]
+        ):
+            return self.network
+        return action
 
     @classmethod
     def from_mapping(cls, value: object) -> ApprovalRiskPolicy:
         if not isinstance(value, dict):
             return cls()
-        allowed = {"allow", "audit", "ask", "confirm", "deny"}
         data: dict[str, ApprovalRiskAction] = {}
-        for level in ("low", "medium", "high", "critical"):
+        for level in ("low", "medium", "high", "critical", "network"):
             raw = value.get(level)
-            if isinstance(raw, str) and raw in allowed:
+            if isinstance(raw, str) and raw in _RISK_ACTION_ORDER:
                 data[level] = raw  # type: ignore[assignment]
         return cls(**data)
 
     def to_dict(self) -> dict[str, ApprovalRiskAction]:
-        return {
+        data: dict[str, ApprovalRiskAction] = {
             "low": self.low,
             "medium": self.medium,
             "high": self.high,
             "critical": self.critical,
         }
+        if self.network is not None:
+            data["network"] = self.network
+        return data
 
 
 # Heuristic catalog of tool names that require explicit approval when no
@@ -181,6 +212,39 @@ def is_dangerous_tool(tool_name: str) -> bool:
     return any(tool_name.startswith(prefix) for prefix in DANGEROUS_PREFIXES)
 
 
+# Network reads with no other risk signal stay ``low`` but are tagged
+# ``network_read`` so an ``ApprovalRiskPolicy.network`` floor routes them to
+# review. ``fetch_url``/``web_fetch``/``platform_read`` all GET a model-chosen
+# URL: whatever level each one has, all three must carry a network category,
+# or rejecting one leaves the same request open through another.
+_NETWORK_READ_TOOLS: frozenset[str] = frozenset(
+    {
+        "crawl_site",
+        "deep_research_answer",
+        "platform_collect",
+        "platform_monitor",
+        "platform_read",
+        "platform_search",
+        "reach_doctor",
+        "research_answer",
+        "screenshot_web_full_page",
+        "search_image_by_image",
+        "search_image_by_text",
+        "web_fetch",
+        "web_search",
+    }
+)
+_NETWORK_READ_PREFIXES: tuple[str, ...] = (
+    "web_",
+    "crawl_",
+    "platform_",
+    # Browser automation loads pages too; it is ``high`` already, but the
+    # category lets a refused target stay refused through a browser tool.
+    "browser_",
+    "live_browser_",
+)
+
+
 def assess_approval_risk(
     tool_name: str,
     args_preview: str = "",
@@ -217,6 +281,8 @@ def assess_approval_risk(
         )
     ):
         bump("medium", "network_or_egress")
+    if name in _NETWORK_READ_TOOLS or name.startswith(_NETWORK_READ_PREFIXES):
+        bump("low", "network_read")
     if name.startswith(("write_", "append_", "edit_", "delete_")) or name in DANGEROUS_TOOLS:
         bump("high", "filesystem_write")
     if name.startswith(
@@ -461,19 +527,203 @@ def needs_approval_for_chain(tool_names: list[str], auto_approve: bool = False) 
     return any(assess_approval_risk(name).requires_approval for name in tool_names)
 
 
-def approval_action_for_tool(
-    tool_name: str,
-    args_preview: str = "",
+def resolve_approval_risk_policy(
+    policy: ApprovalRiskPolicy | Mapping[str, Any] | None = None,
     *,
-    policy: ApprovalRiskPolicy | dict[str, str] | None = None,
-) -> tuple[ApprovalRisk, ApprovalRiskAction, ApprovalRiskPolicy]:
-    risk = assess_approval_risk(tool_name, args_preview)
-    resolved_policy = (
+    permission_mode: object = None,
+) -> ApprovalRiskPolicy:
+    """The risk policy a turn runs under, including its permission mode.
+
+    "询问审批" (``default``) tells the user it asks before network access, so
+    an explicit default mode floors every network-reaching call at ``ask``,
+    whatever its level. A missing mode keeps the policy as configured:
+    headless callers (cron, channels, tests) never chose that contract, and
+    realtime turns always stamp a mode.
+    """
+
+    resolved = (
         policy
         if isinstance(policy, ApprovalRiskPolicy)
         else ApprovalRiskPolicy.from_mapping(policy)
     )
+    if (
+        resolved.network is None
+        and isinstance(permission_mode, str)
+        and permission_mode.strip()
+        and canonical_permission_mode(permission_mode) == "default"
+    ):
+        resolved = dataclasses.replace(resolved, network="ask")
+    return resolved
+
+
+def approval_action_for_tool(
+    tool_name: str,
+    args_preview: str = "",
+    *,
+    policy: ApprovalRiskPolicy | Mapping[str, Any] | None = None,
+    permission_mode: object = None,
+) -> tuple[ApprovalRisk, ApprovalRiskAction, ApprovalRiskPolicy]:
+    risk = assess_approval_risk(tool_name, args_preview)
+    resolved_policy = resolve_approval_risk_policy(policy, permission_mode=permission_mode)
     return risk, resolved_policy.action_for(risk), resolved_policy
+
+
+def is_network_risk(risk: ApprovalRisk) -> bool:
+    """Whether a classified call reaches beyond this machine."""
+    return bool(NETWORK_RISK_CATEGORIES.intersection(risk.categories))
+
+
+# ── Refused network access, remembered for the turn ──────────
+#
+# The bypass this closes: the user refused ``fetch_url`` for a URL, and the
+# model fetched the same URL through ``web_fetch`` and ``platform_read``.
+# Each turn-scoped approval path (the ReAct loop, the external-engine host
+# tool broker) keeps one ``NetworkDenialMemory`` and consults it for every
+# network-reaching call, whichever tool makes it and whatever the policy
+# would otherwise do.
+
+# Argument names whose value is a destination even without a scheme.
+_TARGET_KEYS: frozenset[str] = frozenset(
+    {
+        "url",
+        "urls",
+        "uri",
+        "href",
+        "link",
+        "links",
+        "domain",
+        "domains",
+        "host",
+        "hostname",
+        "site",
+        "endpoint",
+        "base_url",
+        "target_url",
+        "page_url",
+        "start_url",
+    }
+)
+_URL_IN_TEXT = re.compile(r"\b[a-z][a-z0-9+.-]{1,15}://[^\s\"'<>()\[\]{}\\,]+", re.IGNORECASE)
+_HOST_LABELS = re.compile(
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\Z"
+)
+# Without a scheme, only a dotted name with an alphabetic TLD reads as a host
+# ("example.com"), so a bare word in a ``site`` field is not mistaken for one.
+_BARE_HOST = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{1,62}\Z")
+_MAX_TARGET_NODES = 512
+
+
+def _normalized_host(raw: str, *, bare_allowed: bool) -> str | None:
+    text = raw.strip().strip("\"'").lower()
+    if not text:
+        return None
+    has_scheme = "://" in text
+    if not has_scheme:
+        if not bare_allowed:
+            return None
+        text = "http://" + text.lstrip("/")
+    try:
+        host = urlsplit(text).hostname
+    except ValueError:
+        return None
+    host = (host or "").rstrip(".")
+    if host.startswith("www."):
+        host = host[4:]
+    if not host:
+        return None
+    try:
+        ipaddress.ip_address(host)
+        return host
+    except ValueError:
+        pass
+    pattern = _HOST_LABELS if has_scheme else _BARE_HOST
+    return host if pattern.fullmatch(host) else None
+
+
+def network_targets(arguments: Any) -> frozenset[str]:
+    """Hosts a tool call would reach, from its arguments or their preview.
+
+    Reads URL-valued fields (``url``, ``links``, ``domain`` …, with or
+    without a scheme) and any absolute URL inside other strings. A preview
+    that is not JSON is scanned as text. Returns an empty set when nothing
+    resolves; callers then fall back to the capability.
+    """
+
+    if isinstance(arguments, str):
+        with contextlib.suppress(ValueError):
+            arguments = json.loads(arguments)
+    hosts: set[str] = set()
+    stack: list[tuple[Any, bool]] = [(arguments, False)]
+    nodes = 0
+    while stack and nodes < _MAX_TARGET_NODES:
+        value, is_target = stack.pop()
+        nodes += 1
+        if isinstance(value, str):
+            if is_target:
+                host = _normalized_host(value, bare_allowed=True)
+                if host:
+                    hosts.add(host)
+            for match in _URL_IN_TEXT.findall(value):
+                host = _normalized_host(match, bare_allowed=False)
+                if host:
+                    hosts.add(host)
+        elif isinstance(value, Mapping):
+            for key, child in value.items():
+                stack.append((child, str(key).strip().lower() in _TARGET_KEYS))
+        elif isinstance(value, (list, tuple)):
+            stack.extend((child, is_target) for child in value)
+    return frozenset(hosts)
+
+
+def _same_site(host: str, refused: str) -> bool:
+    return host == refused or host.endswith("." + refused) or refused.endswith("." + host)
+
+
+class NetworkDenialMemory:
+    """Network access the user (or reviewer) refused earlier in this turn.
+
+    A refusal is remembered per target host. When the refused call names no
+    resolvable host (a search query, an opaque MCP call), the refusal is
+    remembered for that tool instead. Thread-safe; one instance per turn.
+    """
+
+    def __init__(self) -> None:
+        self._hosts: set[str] = set()
+        self._tools: set[str] = set()
+        self._lock = threading.Lock()
+
+    def note_denial(self, tool_name: str, risk: ApprovalRisk, arguments: Any) -> None:
+        if not is_network_risk(risk):
+            return
+        targets = network_targets(arguments)
+        with self._lock:
+            if targets:
+                self._hosts.update(targets)
+            else:
+                self._tools.add((tool_name or "").strip())
+
+    def refusal(self, tool_name: str, risk: ApprovalRisk, arguments: Any) -> str | None:
+        """Why this call is refused without asking again, or ``None``."""
+
+        if not is_network_risk(risk):
+            return None
+        targets = network_targets(arguments)
+        with self._lock:
+            refused = sorted(
+                host for host in targets if any(_same_site(host, denied) for denied in self._hosts)
+            )
+            tool_refused = (tool_name or "").strip() in self._tools
+        if refused:
+            return (
+                f"network access to {', '.join(refused)} was refused earlier in this "
+                "turn; do not retry it through this or another tool"
+            )
+        if tool_refused:
+            return (
+                f"{tool_name} was refused earlier in this turn; do not retry it or "
+                "reach the same result through another tool"
+            )
+        return None
 
 
 # ── Provider protocol ────────────────────────────────────────
@@ -667,12 +917,17 @@ __all__ = [
     "AutoDenyProvider",
     "DANGEROUS_PREFIXES",
     "DANGEROUS_TOOLS",
+    "NETWORK_RISK_CATEGORIES",
+    "NetworkDenialMemory",
     "RuleBasedProvider",
     "approval_action_for_tool",
     "assess_approval_risk",
     "is_dangerous_tool",
+    "is_network_risk",
     "needs_approval",
     "needs_approval_for_chain",
+    "network_targets",
+    "resolve_approval_risk_policy",
     "DenialCircuitBreaker",
 ]
 
