@@ -4,12 +4,15 @@ import { SystemAppFrame, SystemAppLightsSpacer } from "./system-app-window";
 import {
   APPROVAL_SESSION_CHANGED,
   APPROVAL_SESSION_CHANGED_AFTER_SUBMIT,
+  APPROVAL_TASK_INTERRUPTED,
   APPROVAL_UNVERIFIABLE,
+  approvalDecisionErrorMessage,
   type ApprovalConsent,
   assertApprovalConsent,
   approvalConsentSessionCurrent,
   captureApprovalConsent,
   isDecidableApproval,
+  isInterruptedApproval,
 } from "./task-approval-consent";
 import { TaskApprovalDialog, approvalOperation } from "./task-approval-dialog";
 import type {
@@ -77,7 +80,7 @@ export function DecisionInbox({
           !approvalConsentSessionCurrent(consent)
             ? APPROVAL_SESSION_CHANGED
             : reason instanceof Error
-              ? reason.message
+              ? approvalDecisionErrorMessage(reason.message)
               : "无法提交审批决定",
         );
     } finally {
@@ -161,6 +164,11 @@ export function DecisionInbox({
                     {APPROVAL_UNVERIFIABLE}
                   </p>
                 )}
+                {isInterruptedApproval(task) && (
+                  <p className="mt-2 text-xs text-warning">
+                    {APPROVAL_TASK_INTERRUPTED}
+                  </p>
+                )}
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
@@ -173,7 +181,11 @@ export function DecisionInbox({
                     <button
                       key={String(approved)}
                       type="button"
-                      disabled={busy || !task.approval?.version}
+                      disabled={
+                        busy ||
+                        !task.approval?.version ||
+                        isInterruptedApproval(task)
+                      }
                       onClick={() => {
                         setActionError(null);
                         setMessage(null);

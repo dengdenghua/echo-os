@@ -15,6 +15,26 @@ export const APPROVAL_UNVERIFIABLE =
   "当前任务服务无法核验审批版本，请升级服务后刷新。";
 
 export type ApprovalConsent = ReturnType<typeof captureApprovalConsent>;
+export const APPROVAL_TASK_INTERRUPTED =
+  "任务已中断，这个审批暂时无法处理。请在任务空间接管任务后再确认。";
+
+/** A parked approval whose task lost its lease can no longer be answered here. */
+export function isInterruptedApproval(task: EchoTaskProjection) {
+  return Boolean(task.leaseHealth?.recoveryNeeded);
+}
+
+/**
+ * The task service answers a refused decision with its own diagnostic
+ * (for example "task '…' lease is no longer current: lease expired"). The
+ * owner gets what happened and what to do instead.
+ */
+export function approvalDecisionErrorMessage(message: string) {
+  if (/lease|租约/i.test(message)) return APPROVAL_TASK_INTERRUPTED;
+  if (/approval request changed|version/i.test(message))
+    return "审批内容已变化，请刷新后重新确认。";
+  if (/[一-鿿]/.test(message)) return message;
+  return "无法提交审批决定，请刷新后重试。";
+}
 
 /** 只有运行时还能被管理员决定放行的等待（策略/能力拦截不算）。 */
 export function isDecidableApproval(task: EchoTaskProjection) {

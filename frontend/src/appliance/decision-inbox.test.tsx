@@ -134,6 +134,48 @@ describe("Decision inbox", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("提交期间");
     expect(screen.queryByText("操作已批准")).toBeNull();
   });
+  it("holds back an approval whose task was interrupted", () => {
+    // Golden path 2026-10: after the task lost its lease the inbox still
+    // offered 批准操作, which then failed with an English lease error.
+    const callbacks = props();
+    render(
+      <DecisionInbox
+        {...callbacks}
+        projection={{
+          ...projection,
+          tasks: [
+            {
+              ...task,
+              leaseHealth: {
+                state: "expired",
+                recoveryNeeded: true,
+                canTakeover: true,
+                canResume: false,
+                recommendedAction: "takeover_for_approval",
+                reason: "task is waiting for approval but has no live lease",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText(/任务已中断/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "批准操作" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "拒绝操作" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "打开原任务" })).toBeEnabled();
+  });
+  it("reports a refused decision in Chinese", async () => {
+    const user = userEvent.setup();
+    const callbacks = props();
+    callbacks.onDecision.mockRejectedValue(
+      new Error("task 'trn_1' lease is no longer current: lease expired"),
+    );
+    render(<DecisionInbox {...callbacks} />);
+    await user.click(screen.getByRole("button", { name: "批准操作" }));
+    await user.click(screen.getByRole("button", { name: "确认" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("任务已中断");
+    expect(screen.queryByText(/lease/)).toBeNull();
+  });
   it("names an Agent tool request in Chinese instead of its internal id", () => {
     // Golden path 2026-10: a Codex write showed "write_text_file · ask".
     const callbacks = props();
@@ -252,7 +294,7 @@ describe("Decision inbox", () => {
     await user.click(screen.getByRole("button", { name: "拒绝操作" }));
     await user.click(screen.getByRole("button", { name: "确认" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "approval request changed",
+      "审批内容已变化，请刷新后重新确认。",
     );
     expect(callbacks.onRefresh).not.toHaveBeenCalled();
   });
