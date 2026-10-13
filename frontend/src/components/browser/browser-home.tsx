@@ -904,6 +904,24 @@ export function BrowserHome({
       window.removeEventListener("resize", place);
     };
   }, [openAppGroupId]);
+  // Once it may cover the category tiles, a click elsewhere or Escape closes
+  // the popover instead of only its close button.
+  useEffect(() => {
+    if (!openAppGroupId) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (appGroupAnchorRef.current?.contains(event.target as Node)) return;
+      setOpenAppGroupId(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenAppGroupId(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openAppGroupId]);
   const [activePanel, setActivePanel] = useState<DesktopPanelId>("home");
   const [editMode, setEditMode] = useState(false);
   useEffect(() => {
@@ -2009,9 +2027,9 @@ export function BrowserHome({
                   <div
                     key={group.id}
                     ref={appGroupPopoverRef}
-                    className={cn(
-                      "absolute left-1/2 top-[calc(100%+8px)] z-20 w-72 -translate-x-1/2 rounded-2xl p-2.5 text-foreground liquid-glass",
-                    )}
+                    // A solid popover surface: when it moves up to fit the
+                    // window it sits over the category tiles.
+                    className="absolute left-1/2 top-[calc(100%+8px)] z-20 w-72 -translate-x-1/2 rounded-2xl border border-border bg-popover p-2.5 text-popover-foreground shadow-xl shadow-black/30"
                   >
                     <div className="mb-1.5 flex items-center justify-between px-1">
                       <div>
