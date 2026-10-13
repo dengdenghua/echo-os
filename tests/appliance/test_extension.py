@@ -277,7 +277,9 @@ def test_local_dev_passwordless_login_accepts_only_provisioned_accounts(
 
     assert admin.status_code == 200
     assert admin.json()["success"] is True
-    assert unknown.status_code == 403
+    # Answers like a wrong password, so the allowlist itself is not revealed (9ea22870).
+    assert unknown.status_code == 401
+    assert "白名单" not in unknown.text
 
 
 def test_registered_appliance_rejects_cross_origin_and_rebound_requests(
