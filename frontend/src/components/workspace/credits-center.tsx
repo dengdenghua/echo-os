@@ -184,11 +184,11 @@ export function CreditsCenterDialog({
                 +{formatN(earned)}
               </p>
             </div>
-            <div className="flex-1 rounded-lg bg-breach/10 px-3 py-2">
+            <div className="flex-1 rounded-lg bg-muted px-3 py-2">
               <p className="text-mini text-muted-foreground">
                 {t.creditsCenter.spent}
               </p>
-              <p className="text-base font-bold tabular-nums text-breach">
+              <p className="text-base font-bold tabular-nums text-foreground">
                 -{formatN(spent)}
               </p>
             </div>
@@ -241,7 +241,7 @@ export function CreditsCenterDialog({
                       <span
                         className={cn(
                           "shrink-0 font-semibold tabular-nums",
-                          positive ? "text-core" : "text-breach",
+                          positive ? "text-core" : "text-muted-foreground",
                         )}
                       >
                         {positive ? "+" : ""}

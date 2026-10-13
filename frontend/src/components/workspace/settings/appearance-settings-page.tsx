@@ -269,7 +269,7 @@ function AppearanceStepSlider<TValue extends AppearanceStepValue>({
       >
         <input
           aria-label={label}
-          className="octo-appearance-step-slider"
+          className="octo-appearance-step-slider w-full accent-core"
           aria-valuetext={[active.label, activeDetail]
             .filter(Boolean)
             .join(": ")}
