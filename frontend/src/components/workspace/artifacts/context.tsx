@@ -36,11 +36,17 @@ const ArtifactsContext = createContext<ArtifactsContextType | undefined>(
 interface ArtifactsProviderProps {
   children: ReactNode;
   threadId?: string | null;
+  /**
+   * False while the thread is a draft or its first turn is still running:
+   * the server has no record of it yet and the outputs list answers 404.
+   */
+  fetchEnabled?: boolean;
 }
 
 export function ArtifactsProvider({
   children,
   threadId,
+  fetchEnabled = true,
 }: ArtifactsProviderProps) {
   const [artifacts, setArtifacts] = useState<string[]>([]);
   const [selectedArtifact, setSelectedArtifact] = useState<string | null>(null);
@@ -71,7 +77,7 @@ export function ArtifactsProvider({
   // chat-box, so React Query deduplicates requests. This fallback only runs
   // when the shared query hasn't populated the list yet.
   const { data: fallbackArtifacts } = useWorkspaceArtifacts(threadId, {
-    enabled: !env.STATIC_WEBSITE_ONLY && artifacts.length === 0,
+    enabled: fetchEnabled && !env.STATIC_WEBSITE_ONLY && artifacts.length === 0,
   });
 
   useEffect(() => {

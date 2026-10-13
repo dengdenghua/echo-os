@@ -11,10 +11,17 @@ const mocks = vi.hoisted(() => ({
   setArtifacts: vi.fn(),
   setArtifactsOpen: vi.fn(),
   threadArtifacts: [] as string[],
+  artifactQueryOptions: [] as Array<{ enabled?: boolean } | undefined>,
 }));
 
 vi.mock("@/core/artifacts/use-workspace-artifacts", () => ({
-  useWorkspaceArtifacts: () => ({ data: ["workspace/report.md"] }),
+  useWorkspaceArtifacts: (
+    _threadId: string,
+    options?: { enabled?: boolean },
+  ) => {
+    mocks.artifactQueryOptions.push(options);
+    return { data: ["workspace/report.md"] };
+  },
 }));
 
 vi.mock("../artifacts", () => ({
@@ -44,6 +51,23 @@ describe("ChatBox artifact panel ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.threadArtifacts = [];
+    mocks.artifactQueryOptions = [];
+  });
+
+  it("does not list outputs for a thread the server has not recorded yet", () => {
+    // Golden path 2026-10: every new chat and first turn logged 404s from
+    // /api/threads/{id}/outputs before the thread existed on the server.
+    renderWithProviders(
+      <ChatBox
+        artifactPanelMode="external"
+        threadId="draft-thread"
+        artifactFetchEnabled={false}
+      >
+        <div>conversation</div>
+      </ChatBox>,
+    );
+
+    expect(mocks.artifactQueryOptions.at(-1)?.enabled).toBe(false);
   });
 
   it("does not auto-open legacy artifact state in external mode", async () => {

@@ -530,18 +530,38 @@ function latestArtifactFocusPathFromEvents(
  */
 export default function RealtimePage() {
   const chatState = useThreadChat();
+  // The id of a thread whose first turn this page started and that has not
+  // settled yet. Until then the server has no thread record: outputs, cowork,
+  // collab and project lookups answer 404 (one burst per new chat, plus polls
+  // during the first turn), so thread-scoped reads wait for it.
+  const [locallyStartedThreadId, setLocallyStartedThreadId] = useState<
+    string | null
+  >(null);
+  const threadQueryable =
+    !chatState.isNewThread && locallyStartedThreadId !== chatState.threadId;
 
   return (
-    <ArtifactsProvider threadId={chatState.threadId}>
-      <RealtimePageContent chatState={chatState} />
+    <ArtifactsProvider
+      threadId={chatState.threadId}
+      fetchEnabled={threadQueryable}
+    >
+      <RealtimePageContent
+        chatState={chatState}
+        threadQueryable={threadQueryable}
+        onLocalThreadStart={setLocallyStartedThreadId}
+      />
     </ArtifactsProvider>
   );
 }
 
 function RealtimePageContent({
   chatState,
+  threadQueryable,
+  onLocalThreadStart,
 }: {
   chatState: ReturnType<typeof useThreadChat>;
+  threadQueryable: boolean;
+  onLocalThreadStart: (threadId: string | null) => void;
 }) {
   const actor = currentActorId();
   const { t } = useI18n();
@@ -764,9 +784,13 @@ function RealtimePageContent({
     [threadIdentityQuery.data],
   );
   const [collaboratorPickerOpen, setCollaboratorPickerOpen] = useState(false);
-  const coworkGroupQuery = useCoworkGroup(isNewThread ? null : threadId);
-  const collabSessionQuery = useCollabSession(isNewThread ? null : threadId);
-  const boundProjectQuery = useBoundProjectState(isNewThread ? null : threadId);
+  const coworkGroupQuery = useCoworkGroup(threadQueryable ? threadId : null);
+  const collabSessionQuery = useCollabSession(
+    threadQueryable ? threadId : null,
+  );
+  const boundProjectQuery = useBoundProjectState(
+    threadQueryable ? threadId : null,
+  );
   const detachProjectFromGroupMutation = useDetachProjectFromGroup();
   const { confirm: confirmProjectDetach, confirmDialog: projectDetachDialog } =
     useConfirmDialog();
@@ -2477,6 +2501,7 @@ function RealtimePageContent({
         }
         markSidebarThreadRunning(startedThreadId);
         localStartedThreadIdRef.current = startedThreadId;
+        onLocalThreadStart(startedThreadId);
         setIsNewThread(false);
         const targetPath = threadRouteFor(startedThreadId);
         // The live page deliberately stays mounted until the turn settles, so
@@ -2501,6 +2526,7 @@ function RealtimePageContent({
         // permanently disable threadIdentityQuery, pinning the header/browser
         // title to "未命名" on every thread the user has messaged this session.
         localStartedThreadIdRef.current = null;
+        onLocalThreadStart(null);
         void qc.invalidateQueries({ queryKey: threadSearchQueryKey(actor) });
         commitThreadRoute();
       },
@@ -2521,6 +2547,7 @@ function RealtimePageContent({
       isGroupConversation,
       isProjectCodeMode,
       markSidebarThreadRunning,
+      onLocalThreadStart,
       personalMode,
       personalWorkspacePath,
       projectAgentMode,
@@ -4270,7 +4297,11 @@ function RealtimePageContent({
           }
           active={thread.isLoading}
         >
-          <ChatBox artifactPanelMode="external" threadId={threadId}>
+          <ChatBox
+            artifactPanelMode="external"
+            threadId={threadId}
+            artifactFetchEnabled={threadQueryable}
+          >
             <ChatPageLayout
               isNewThread={isNewThread}
               pageTitle={
