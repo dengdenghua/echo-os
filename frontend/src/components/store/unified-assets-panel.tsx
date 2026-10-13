@@ -56,7 +56,7 @@ const SOURCE_FILTERS: { key: UnifiedAssetSource | "all"; label: string }[] = [
 const SOURCE_BADGE: Record<UnifiedAssetSource, string> = {
   codex: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
   workbuddy: "bg-rose-500/10 text-rose-600 dark:text-rose-300",
-  local: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+  local: "bg-core/10 text-core",
   builtin: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
   imported: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
 };

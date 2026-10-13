@@ -86,7 +86,7 @@ const catalog: ExtensionListing[] = [
     tagline: "Collect web snippets, sources, and screenshots",
     category: "research",
     icon: BookOpen,
-    accent: "from-success to-teal-600",
+    accent: "from-success to-cyan-600",
     rating: "4.8",
     installs: "8.4K",
     tags: ["Library", "Citation", "Screenshot"],

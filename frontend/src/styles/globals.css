@@ -287,10 +287,11 @@
   @keyframes breathing {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgb(16 185 129 / 0%);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--echo-core) 0%, transparent);
     }
     50% {
-      box-shadow: 0 0 12px 2px rgb(16 185 129 / 35%);
+      box-shadow: 0 0 12px 2px
+        color-mix(in srgb, var(--echo-core) 35%, transparent);
     }
   }
 
@@ -1036,60 +1037,6 @@
     @media (width >= 80rem) {
       max-width: 80rem;
     }
-  }
-
-  .ambilight {
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 1s ease-in-out;
-  }
-  .ambilight:before,
-  .ambilight:after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    left: 0;
-    top: 0;
-    background: linear-gradient(
-      45deg,
-      #fb0094,
-      #0000ff,
-      #00ff00,
-      #ffff00,
-      #ff0000,
-      #fb0094,
-      #0000ff,
-      #00ff00,
-      #ffff00,
-      #ff0000
-    );
-    background-size: 400%;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    z-index: -1;
-    animation: ambilight 40s ease-in-out infinite;
-  }
-  .ambilight.enabled {
-    opacity: 1;
-  }
-  .dark .ambilight:before,
-  .dark .ambilight:after {
-    opacity: 0.85;
-  }
-  @keyframes ambilight {
-    0% {
-      background-position: 0 0;
-    }
-    50% {
-      background-position: 400% 0;
-    }
-    100% {
-      background-position: 0 0;
-    }
-  }
-  .ambilight:after {
-    filter: blur(60px);
   }
 
   .golden-text {

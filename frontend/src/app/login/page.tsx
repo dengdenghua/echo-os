@@ -284,9 +284,7 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
           <p
             aria-live="polite"
             className={`px-1 text-xs ${
-              sendStatus.kind === "error"
-                ? "text-destructive"
-                : "text-emerald-600 dark:text-emerald-400"
+              sendStatus.kind === "error" ? "text-destructive" : "text-core"
             }`}
             id="email-send-feedback"
             role={sendStatus.kind === "error" ? "alert" : "status"}

@@ -49,7 +49,7 @@ export const AI_DESKTOP_APPS: BrowserDesktopApp[] = [
     url: "https://www.doubao.com/chat/",
     icon: MessageCircleIcon,
     logoUrl: "https://www.google.com/s2/favicons?domain=www.doubao.com&sz=128",
-    color: "from-success to-teal-400",
+    color: "from-success to-cyan-400",
     description: "Chinese research, Chinese rewriting",
     descriptionKey: "chineseResearch",
     category: "ai",

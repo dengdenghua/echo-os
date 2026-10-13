@@ -24,8 +24,7 @@ export interface AccessPillProps {
 const TONE: Record<AccessTone, { icon: ReactNode; styles: string }> = {
   safe: {
     icon: <ShieldCheckIcon className="size-3.5" />,
-    styles:
-      "border-emerald-500/25 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10",
+    styles: "border-core/25 text-core hover:bg-core/10",
   },
   warn: {
     icon: <ShieldIcon className="size-3.5" />,

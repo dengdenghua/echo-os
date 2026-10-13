@@ -75,12 +75,8 @@ export function DiffSummaryCard({
             />
             {headerLabel}
             <span className="ml-1 inline-flex items-center gap-1.5 text-xs font-mono">
-              <span className="text-emerald-600 dark:text-emerald-400">
-                +{totalAdded}
-              </span>
-              <span className="text-red-600 dark:text-red-400">
-                -{totalRemoved}
-              </span>
+              <span className="text-core">+{totalAdded}</span>
+              <span className="text-breach">-{totalRemoved}</span>
             </span>
           </CollapsibleTrigger>
           {onUndo && (
@@ -112,13 +108,9 @@ export function DiffSummaryCard({
                     {f.path}
                   </span>
                   <span className="shrink-0 font-mono text-xs">
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      +{f.added}
-                    </span>
+                    <span className="text-core">+{f.added}</span>
                     {"  "}
-                    <span className="text-red-600 dark:text-red-400">
-                      -{f.removed}
-                    </span>
+                    <span className="text-breach">-{f.removed}</span>
                   </span>
                 </button>
               </li>

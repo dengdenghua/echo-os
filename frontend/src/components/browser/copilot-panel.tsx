@@ -759,7 +759,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
           className={cn(
             "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
             recorderMode
-              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              ? "bg-core/10 text-core"
               : "border border-border text-muted-foreground hover:bg-muted",
           )}
           title={t.browser.copilot.recorderTitle}
@@ -802,10 +802,10 @@ export function CopilotPanel({ webviewHandle }: Props) {
       </div>
 
       {recorderMode && (
-        <div className="shrink-0 border-b bg-emerald-500/[0.04] px-3 py-2">
+        <div className="shrink-0 border-b bg-core/[0.04] px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="text-xs font-medium text-core">
                 {t.browser.copilot.recorderTitle}
               </div>
               <div className="truncate text-xs text-muted-foreground">
@@ -818,7 +818,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               value={researchGoal}
               onChange={(e) => setResearchGoal(e.target.value)}
               placeholder={t.browser.copilot.researchGoalPlaceholder}
-              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500/40"
+              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-core/40"
             />
             <button
               type="button"
@@ -828,7 +828,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
                 thread.isLoading ||
                 (!researchGoal.trim() && !input.trim())
               }
-              className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+              className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
             >
               {t.browser.copilot.start}
             </button>

@@ -1345,9 +1345,7 @@ function PermissionReviewDialog({
                       <span>{dependency.id}</span>
                       <span
                         className={
-                          dependency.ready
-                            ? "text-emerald-600"
-                            : "text-amber-600"
+                          dependency.ready ? "text-core" : "text-amber-600"
                         }
                       >
                         {dependency.ready ? "已验证" : "待安装"}
@@ -2268,7 +2266,7 @@ export function CapabilityMarketPanel({
                       className={cn(
                         "border-transparent text-xs",
                         connected
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          ? "bg-core/15 text-core"
                           : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                       )}
                     >
@@ -2327,9 +2325,7 @@ export function CapabilityMarketPanel({
                     </Button>
                   ) : isCodexMarketplace ? (
                     <>
-                      <span className="px-1 text-xs text-emerald-600 dark:text-emerald-400">
-                        已安装
-                      </span>
+                      <span className="px-1 text-xs text-core">已安装</span>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -2371,7 +2367,7 @@ export function CapabilityMarketPanel({
                         {busy ? (
                           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                         ) : cap.enabled ? (
-                          <PlugZap className="mr-1 h-3 w-3 text-emerald-500" />
+                          <PlugZap className="mr-1 h-3 w-3 text-core" />
                         ) : cap.model_provider &&
                           cap.permission_review_required ? (
                           <KeyRound className="mr-1 h-3 w-3" />

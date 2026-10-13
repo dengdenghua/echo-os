@@ -633,7 +633,7 @@ html:has(.echo-login-shell) {
 }
 
 .echo-login-security-note svg {
-  color: #83d5ad;
+  color: #6fe3f0; /* Graphite core: the sign-in shell is always dark */
 }
 
 .echo-login-footer {
