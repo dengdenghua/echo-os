@@ -43,9 +43,34 @@ const gatewayTarget =
   process.env.ECHO_INTERNAL_GATEWAY_BASE_URL ||
   `http://127.0.0.1:${devInstance.ports.backend}`;
 
+// While the dev backend is down or still booting, answer like the appliance's
+// nginx does (deploy/provision/base/echo-nginx.conf: 502/504 -> 503
+// appliance_starting with Retry-After). The desktop then shows
+// "系统服务正在启动" and reconnects by itself instead of a dead-end
+// "暂时无法连接系统服务" followed by the lock screen.
+function answerBackendStarting(proxy: any) {
+  proxy.on("error", (_err: unknown, _req: unknown, res: any) => {
+    if (!res || typeof res.writeHead !== "function" || res.headersSent) return;
+    res.writeHead(503, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "Retry-After": "3",
+    });
+    res.end(
+      JSON.stringify({
+        detail: {
+          code: "appliance_starting",
+          message: "ECHO OS 正在启动，请稍后重试",
+        },
+      }),
+    );
+  });
+}
+
 const proxyConfig = {
   "/api/files/stream": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     // Keep the browser's same-origin Host so the appliance trust middleware
     // can validate the request against the visible Echo OS origin.
     changeOrigin: false,
@@ -61,6 +86,7 @@ const proxyConfig = {
   },
   "/api/preview/stream": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     changeOrigin: false,
     secure: false,
     timeout: 0,
@@ -74,6 +100,7 @@ const proxyConfig = {
   },
   "/api": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     changeOrigin: false,
     secure: false,
     timeout: 0,
