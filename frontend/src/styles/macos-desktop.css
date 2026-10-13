@@ -8799,6 +8799,34 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
   color: var(--muted-foreground) !important;
 }
 
+/* Control Center, Notification Center and the liquid-glass panel open under
+ * the menu bar at the right edge, where the toaster sits too, so a toast used
+ * to cover the panel's first row. While one of them is open the toasts move to
+ * its left (panel right inset + width + a 12px gap); on a phone-width screen,
+ * where the panel spans the width, they wait until it closes. */
+:root:has(:is(.mac-control-center, .mac-notification-center))
+  [data-sonner-toaster][data-x-position="right"] {
+  right: calc(8px + 320px + 12px) !important;
+}
+
+:root:has(.mac-liquid-glass-panel)
+  [data-sonner-toaster][data-x-position="right"] {
+  right: calc(8px + 382px + 12px) !important;
+}
+
+@media (max-width: 640px) {
+  :root:has(
+      :is(
+        .mac-control-center,
+        .mac-notification-center,
+        .mac-liquid-glass-panel
+      )
+    )
+    [data-sonner-toaster] {
+    visibility: hidden;
+  }
+}
+
 /* Finder on the graphite and neural-glass desktops ------------------------
  * The Finder was authored as a light-only window, so on a graphite desktop
  * it was the one pale window among dark ones. Its panes follow the theme
