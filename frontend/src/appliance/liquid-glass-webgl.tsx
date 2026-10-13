@@ -536,8 +536,8 @@ void main() {
   // broadBevel ~ 0, so it settles on the neutral mid-tone.
   float horizon = clamp(outward.y * broadBevel * 0.5 + 0.5, 0.0, 1.0);
   vec3 envColour = mix(
-    vec3(0.46, 0.51, 0.60),
-    vec3(0.88, 0.94, 1.02),
+    vec3(0.52),
+    vec3(0.94),
     smoothstep(0.18, 0.82, horizon)
   );
   colour = mix(colour, envColour, reflection);
@@ -547,14 +547,14 @@ void main() {
   float rimBand = exp(-pow(-distanceToEdge / 1.7, 2.0));
   float tir = rimBand * clamp(u_thickness / 12.0, 0.0, 1.6) * 0.055 *
     u_intensity;
-  colour += vec3(0.90, 0.96, 1.0) * tir;
+  colour += vec3(0.95) * tir;
 
   float causticWave = 0.5 + 0.5 * sin(
     local.x * 22.0 - local.y * 15.0 + u_time * 0.7
   );
   float caustic = pointerReach * dome *
     (0.012 + causticWave * 0.018 * u_motion) * u_intensity;
-  colour += vec3(0.82, 0.94, 1.0) * caustic;
+  colour += vec3(0.92) * caustic;
   colour *= 1.0 - edge * (1.0 - facing) * 0.035;
 
   float alpha = clamp(
