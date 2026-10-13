@@ -301,6 +301,12 @@ function presetForViewport(
   return match ?? null;
 }
 
+/** A fresh browser session sits on about:blank: there is no page to show. */
+function isBlankPageUrl(url: string | null | undefined): boolean {
+  const trimmed = (url ?? "").trim();
+  return !trimmed || trimmed.toLowerCase().startsWith("about:blank");
+}
+
 function normalizePreviewUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return "";
@@ -921,7 +927,7 @@ export function BrowserPreviewPanel({
     const snapshotTitle = next.current_title || "";
     if (snapshotUrl || snapshotTitle) {
       setPageInfo({ url: snapshotUrl, title: snapshotTitle });
-      setUrlInput(snapshotUrl);
+      setUrlInput(isBlankPageUrl(snapshotUrl) ? "" : snapshotUrl);
     }
   }, []);
 
@@ -931,35 +937,46 @@ export function BrowserPreviewPanel({
     return data;
   }, [applySessionSnapshot, sessionId]);
 
-  const refreshBrowserArtifacts = useCallback(async () => {
-    const [shotResult, logResult, healthResult] = await Promise.allSettled([
-      browserApi.screenshotBase64(sessionId),
-      browserApi.actionLog(sessionId),
-      browserApi.sessionHealth(sessionId),
-    ]);
+  // Each screenshot is logged as a browser action, so a blank page is not
+  // captured: it would only add a white image and a phantom "1 action".
+  const refreshBrowserArtifacts = useCallback(
+    async ({
+      captureScreenshot = true,
+    }: { captureScreenshot?: boolean } = {}) => {
+      const [shotResult, logResult, healthResult] = await Promise.allSettled([
+        captureScreenshot
+          ? browserApi.screenshotBase64(sessionId)
+          : Promise.resolve(null),
+        browserApi.actionLog(sessionId),
+        browserApi.sessionHealth(sessionId),
+      ]);
 
-    if (shotResult.status === "fulfilled") {
-      setScreenshot(shotResult.value.base64);
-      setScreenshotSize({
-        width: shotResult.value.width,
-        height: shotResult.value.height,
-      });
-    } else {
-      swallow(shotResult.reason);
-    }
+      if (shotResult.status === "fulfilled") {
+        if (shotResult.value) {
+          setScreenshot(shotResult.value.base64);
+          setScreenshotSize({
+            width: shotResult.value.width,
+            height: shotResult.value.height,
+          });
+        }
+      } else {
+        swallow(shotResult.reason);
+      }
 
-    if (logResult.status === "fulfilled") {
-      setActionLog(logResult.value.actions);
-    } else {
-      swallow(logResult.reason);
-    }
+      if (logResult.status === "fulfilled") {
+        setActionLog(logResult.value.actions);
+      } else {
+        swallow(logResult.reason);
+      }
 
-    if (healthResult.status === "fulfilled") {
-      setSessionHealth(healthResult.value);
-    } else {
-      swallow(healthResult.reason);
-    }
-  }, [sessionId]);
+      if (healthResult.status === "fulfilled") {
+        setSessionHealth(healthResult.value);
+      } else {
+        swallow(healthResult.reason);
+      }
+    },
+    [sessionId],
+  );
 
   // Start or reconnect the browser as soon as the panel is opened.
   useEffect(() => {
@@ -972,15 +989,19 @@ export function BrowserPreviewPanel({
         const status = await browserApi.sessionStatus(sessionId);
         if (cancelled) return;
 
-        if (status.exists) {
-          applySessionSnapshot(status.session);
+        let current = status.exists ? status.session : null;
+        if (current) {
+          applySessionSnapshot(current);
         } else {
           const data = await browserApi.ensure(sessionIdentity);
           if (cancelled) return;
-          applySessionSnapshot(data.session);
+          current = data.session;
+          applySessionSnapshot(current);
         }
 
-        await refreshBrowserArtifacts();
+        await refreshBrowserArtifacts({
+          captureScreenshot: !isBlankPageUrl(current?.current_url),
+        });
       } catch (err) {
         swallow(err);
         if (!cancelled) {
@@ -1117,7 +1138,9 @@ export function BrowserPreviewPanel({
     try {
       const data = await browserApi.ensure(sessionIdentity);
       applySessionSnapshot(data.session);
-      await refreshBrowserArtifacts();
+      await refreshBrowserArtifacts({
+        captureScreenshot: !isBlankPageUrl(data.session?.current_url),
+      });
     } catch (err) {
       swallow(err);
       setError(err instanceof Error ? err.message : "Failed to launch browser");
@@ -1578,6 +1601,13 @@ export function BrowserPreviewPanel({
         : "tablet";
   const currentViewportLabel = `${activeDevicePreview.width}x${activeDevicePreview.height}`;
   const livePreviewUrl = normalizePreviewUrl(pageInfo.url || urlInput);
+  // Until a real page loads, show the empty state rather than a capture of
+  // about:blank, and keep the loading veil off that empty state unless the
+  // user is actually navigating somewhere.
+  const pageIsBlank = isBlankPageUrl(pageInfo.url);
+  const visibleScreenshot = pageIsBlank ? "" : screenshot;
+  const showLoadingVeil =
+    viewportChanging || (loading && !(pageIsBlank && isBlankPageUrl(urlInput)));
   const canLivePreview = Boolean(livePreviewUrl);
   const effectiveSurfaceMode =
     surfaceMode === "live" && canLivePreview ? "live" : "screenshot";
@@ -1737,7 +1767,7 @@ export function BrowserPreviewPanel({
 
       {/* Screenshot area */}
       <div className="relative flex-1 overflow-auto bg-[radial-gradient(circle_at_top,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_34%),linear-gradient(180deg,color-mix(in_oklch,var(--muted)_34%,transparent),var(--background))] [&::-webkit-scrollbar]:size-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/80 [&::-webkit-scrollbar-track]:bg-transparent">
-        {screenshot && effectiveSurfaceMode === "screenshot" && (
+        {visibleScreenshot && effectiveSurfaceMode === "screenshot" && (
           <div
             className={cn(
               AUTOMATION_CAPSULE_OVERLAY_CLASS_NAME,
@@ -1766,7 +1796,7 @@ export function BrowserPreviewPanel({
           </div>
         )}
         {annotationMode &&
-          screenshot &&
+          visibleScreenshot &&
           effectiveSurfaceMode === "screenshot" && (
             <div
               className={cn(
@@ -1872,7 +1902,7 @@ export function BrowserPreviewPanel({
               )}
             </div>
           </div>
-        ) : screenshot ? (
+        ) : visibleScreenshot ? (
           <div className="flex min-h-full items-center justify-center p-3">
             <div
               className={cn(
@@ -1900,7 +1930,7 @@ export function BrowserPreviewPanel({
               }}
             >
               <img
-                src={`data:image/png;base64,${screenshot}`}
+                src={`data:image/png;base64,${visibleScreenshot}`}
                 alt={t.browser.browserAutomation}
                 className={cn(
                   "size-full",
@@ -2069,12 +2099,12 @@ export function BrowserPreviewPanel({
             )}
           </div>
         )}
-        {(loading || viewportChanging) && (
+        {showLoadingVeil && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/60">
             <Loader2Icon className="text-primary size-6 animate-spin" />
           </div>
         )}
-        {screenshotSize.width > 0 && (
+        {visibleScreenshot && screenshotSize.width > 0 && (
           <span className="text-muted-foreground/50 absolute right-1 bottom-1 text-xs">
             {screenshotSize.width}x{screenshotSize.height} · {pointerMode}
           </span>
