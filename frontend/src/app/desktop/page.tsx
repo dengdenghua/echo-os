@@ -236,7 +236,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     subtitle: "多屏协同与手机投屏",
     route: "/phone-mirror",
     icon: SmartphoneIcon,
-    color: "linear-gradient(150deg, #34d399 0%, #059669 60%, #064e3b 100%)",
+    color: "linear-gradient(150deg, #6fe3f0 0%, #08788a 60%, #043c45 100%)",
     dock: true,
   },
   {
@@ -472,7 +472,7 @@ export default function DesktopShellPage() {
             subtitle: app.description,
             route: app.workspaceRoute,
             icon: app.icon === "database" ? DatabaseIcon : AppWindowIcon,
-            color: "linear-gradient(145deg, #54d59d, #0c8e66)",
+            color: "linear-gradient(145deg, #555d68, #1e232b)",
             windowed: true,
             dock: app.dock,
           }),

@@ -3941,10 +3941,10 @@
 .mac-glass-live-dot {
   width: 6px;
   height: 6px;
-  background: #31c86a;
-  border: 1px solid rgba(0, 96, 38, 0.18);
+  background: var(--echo-core);
+  border: 1px solid color-mix(in srgb, var(--echo-core) 30%, transparent);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(49, 200, 106, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--echo-core) 12%, transparent);
 }
 
 @media (max-width: 640px) {
@@ -4790,7 +4790,7 @@
   background:
     radial-gradient(circle at 34% 34%, #69b8ff 0 8%, transparent 9%),
     radial-gradient(circle at 66% 34%, #ff8b71 0 8%, transparent 9%),
-    radial-gradient(circle at 34% 66%, #69d39f 0 8%, transparent 9%),
+    radial-gradient(circle at 34% 66%, #6fe3f0 0 8%, transparent 9%),
     radial-gradient(circle at 66% 66%, #9f8cff 0 8%, transparent 9%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.98), #cdd6e2);
 }
@@ -4834,8 +4834,8 @@
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:activity-monitor"] {
   background:
-    linear-gradient(rgba(72, 242, 162, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(72, 242, 162, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(111, 227, 240, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 227, 240, 0.055) 1px, transparent 1px),
     linear-gradient(145deg, #263238, #070a0c);
   background-size:
     8px 8px,
@@ -4846,8 +4846,8 @@
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:activity-monitor"]
   .mac-app-icon-glyph {
-  color: #6df1a9;
-  filter: drop-shadow(0 0 3px rgba(74, 235, 151, 0.28));
+  color: #6fe3f0;
+  filter: drop-shadow(0 0 3px rgba(111, 227, 240, 0.28));
 }
 
 .macos-desktop-root.mac-liquid-crystal
