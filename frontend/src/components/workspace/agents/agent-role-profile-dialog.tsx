@@ -696,7 +696,7 @@ function AgentCoreVisual({
             className={cn(
               "group relative h-[74px] w-[62px] rounded-sm border bg-black/18 p-1 text-left transition xl:h-[92px] xl:w-[78px]",
               view === key
-                ? "border-[#f4e86f] shadow-[0_0_18px_rgba(244,232,111,0.16)]"
+                ? "border-core"
                 : "border-border opacity-45 hover:opacity-85",
             )}
             type="button"
@@ -744,7 +744,7 @@ function AgentCoreVisual({
       </div>
       <div className="relative z-10 h-full min-h-[520px] px-4 pb-8 pt-8 xl:min-h-[620px] xl:px-6 xl:pb-10 xl:pt-10">
         <div className="relative flex h-full min-h-0 items-end justify-center overflow-hidden pr-20 xl:pr-24">
-          <div className="absolute bottom-[60px] h-16 w-[62%] rounded-[50%] border border-[#f4e86f]/25 bg-[#f4e86f]/10 shadow-[0_0_34px_rgba(244,232,111,0.12)]" />
+          <div className="absolute bottom-[60px] h-16 w-[62%] rounded-[50%] border border-white/15 bg-white/[0.06]" />
           <div className="absolute bottom-[100px] left-[10%] right-[18%] h-px bg-card/10" />
           <div className="relative z-10 flex h-[500px] w-full max-w-[460px] items-end justify-center xl:h-[640px] xl:max-w-[580px]">
             {activeVisual ? (
@@ -783,7 +783,7 @@ function AgentCoreVisual({
                 </span>
               </div>
             )}
-            <div className="absolute bottom-[52px] left-[6%] right-[6%] h-9 border-y border-[#111]/30 bg-[#f4e86f] text-center font-mono text-xs font-semibold uppercase tracking-[0.55em] text-[#232323] shadow-[0_0_24px_rgba(244,232,111,0.18)]">
+            <div className="absolute bottom-[52px] left-[6%] right-[6%] h-9 border-y border-[#111]/30 bg-white text-center font-mono text-xs font-semibold uppercase tracking-[0.55em] text-[#232323]">
               <div className="flex h-full items-center justify-center gap-4">
                 <span className="h-px w-10 bg-[#232323]/50" />
                 {t.agentConfig.visualSystemOnline}
@@ -816,7 +816,7 @@ function AgentCoreVisual({
                     className={cn(
                       "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-sm border bg-white/[0.04] text-sm transition",
                       active
-                        ? "border-[#f4e86f] shadow-[0_0_18px_rgba(244,232,111,0.22)]"
+                        ? "border-core"
                         : "border-border opacity-68 hover:border-border hover:opacity-100",
                     )}
                     onClick={() => {
@@ -835,7 +835,7 @@ function AgentCoreVisual({
                       </span>
                     )}
                     {active ? (
-                      <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-[#f4e86f]" />
+                      <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-core" />
                     ) : null}
                   </button>
                 );
@@ -845,7 +845,7 @@ function AgentCoreVisual({
                   type="button"
                   aria-label={t.agentWorld.newAgent}
                   title={t.agentWorld.newAgent}
-                  className="group relative flex size-11 shrink-0 items-center justify-center rounded-sm border border-dashed border-[#f4e86f]/45 bg-[#f4e86f]/8 text-[#f4e86f] transition hover:border-[#f4e86f]/85 hover:bg-[#f4e86f]/14"
+                  className="group relative flex size-11 shrink-0 items-center justify-center rounded-sm border border-dashed border-white/25 bg-white/[0.04] text-white/72 transition hover:border-white/50 hover:bg-white/[0.08] hover:text-white"
                   onClick={onCreateAgent}
                 >
                   <Plus className="size-4 transition-transform group-hover:scale-110" />
@@ -898,7 +898,7 @@ function AgentCoreVisual({
                           className={cn(
                             "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs leading-5 transition",
                             active
-                              ? "border-[#f4e86f]/45 bg-[#f4e86f]/12 text-white"
+                              ? "border-core/45 bg-core/12 text-white"
                               : "border-border bg-white/[0.025] text-white/52 hover:border-border hover:text-white/82",
                           )}
                           onClick={() => toggleVisualPromptOption(option.id)}
@@ -906,7 +906,7 @@ function AgentCoreVisual({
                           <span
                             className={cn(
                               "size-1.5 rounded-full",
-                              active ? "bg-[#f4e86f]" : "bg-card/18",
+                              active ? "bg-core" : "bg-card/18",
                             )}
                           />
                           {option.label}
@@ -953,7 +953,7 @@ function AgentCoreVisual({
                       setReferenceImageInput(event.target.value)
                     }
                   />
-                  <label className="inline-flex h-[58px] cursor-pointer items-center justify-center gap-2 rounded-sm border border-border bg-white/[0.04] px-3 text-xs text-white/72 transition hover:border-[#f4e86f]/45 hover:text-white">
+                  <label className="inline-flex h-[58px] cursor-pointer items-center justify-center gap-2 rounded-sm border border-border bg-white/[0.04] px-3 text-xs text-white/72 transition hover:border-white/40 hover:text-white">
                     <Upload className="size-3.5" />
                     {t.agentRoleProfile.upload}
                     <input
@@ -1003,7 +1003,7 @@ function AgentCoreVisual({
                   Prompt Preview
                 </div>
                 {referenceImages.length > 0 ? (
-                  <div className="mb-2 text-xs text-[#f4e86f]/78">
+                  <div className="mb-2 text-xs text-white/60">
                     {t.agentRoleProfile.referenceImagesGenerateHint(
                       referenceImages.length,
                     )}
@@ -1040,7 +1040,7 @@ function AgentCoreVisual({
                 {t.agentRoleProfile.cancel}
               </Button>
               <Button
-                className="h-8 rounded-sm bg-[#f4e86f] px-4 text-xs text-[#232323] hover:bg-[#fff27c]"
+                className="h-8 rounded-sm bg-white px-4 text-xs text-[#232323] hover:bg-white/90"
                 disabled={generateVisuals.isPending}
                 type="button"
                 onClick={() => void handleGenerateVisuals()}
@@ -1425,7 +1425,7 @@ export function AgentRoleProfileDialog({
                       <h1 className="mt-4 truncate text-5xl font-semibold leading-none text-white">
                         {agent.display_name}
                       </h1>
-                      <p className="mt-3 text-xl font-medium leading-7 text-[#f4e86f]">
+                      <p className="mt-3 text-xl font-medium leading-7 text-white/72">
                         {characterProfile.epithet}
                       </p>
 
@@ -1467,7 +1467,7 @@ export function AgentRoleProfileDialog({
                               <div className="mt-2">
                                 <div className="h-1.5 overflow-hidden rounded-full bg-card/10">
                                   <div
-                                    className="h-full rounded-full bg-[#f4e86f] transition-all duration-500"
+                                    className="h-full rounded-full bg-core transition-all duration-500"
                                     style={{ width: `${progress}%` }}
                                   />
                                 </div>
@@ -1496,7 +1496,7 @@ export function AgentRoleProfileDialog({
                       </div>
                     </div>
 
-                    <div className="mt-6 border-l-2 border-[#f4e86f] bg-[#f4e86f]/[0.045] px-4 py-3">
+                    <div className="mt-6 border-l-2 border-white/30 bg-white/[0.04] px-4 py-3">
                       <p className="text-base font-medium leading-7 text-white/95">
                         &ldquo;{characterProfile.quote}&rdquo;
                       </p>

@@ -641,8 +641,8 @@ export default function NewAgentPage() {
       <div className="relative flex size-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_18%,hsl(var(--primary)/0.08),transparent_34%),linear-gradient(to_bottom,hsl(var(--background)),hsl(var(--muted)/0.28))] p-6 text-white">
         <div className="pointer-events-none absolute inset-x-[20%] top-[8%] h-24 rounded-[50%] bg-primary/10 blur-3xl" />
         <div className="relative h-[min(700px,80vh)] w-[min(1080px,86vw)] overflow-hidden rounded-lg border border-white/10 bg-[#202020]/96 shadow-[0_28px_90px_rgba(15,23,42,0.28)] ring-1 ring-black/20 backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.09] [background-image:radial-gradient(circle_at_76%_28%,rgba(244,232,111,0.1),transparent_30%),linear-gradient(to_right,rgba(255,255,255,0.032)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.024)_1px,transparent_1px)] [background-size:100%_100%,40px_40px,40px_40px]" />
-          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#f4e86f]/24 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.09] [background-image:radial-gradient(circle_at_76%_28%,rgba(255,255,255,0.06),transparent_30%),linear-gradient(to_right,rgba(255,255,255,0.032)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.024)_1px,transparent_1px)] [background-size:100%_100%,40px_40px,40px_40px]" />
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/16 to-transparent" />
           <div className="pointer-events-none absolute inset-x-14 bottom-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
           <div className="relative grid h-full grid-cols-1 lg:grid-cols-[minmax(0,0.64fr)_minmax(260px,0.36fr)]">
             <section className="relative flex min-h-0 flex-col px-8 py-6 lg:px-10 lg:py-7">
@@ -672,7 +672,7 @@ export default function NewAgentPage() {
                   <h1 className="mt-4 text-5xl font-semibold leading-none text-white">
                     {agentNew.pageTitle}
                   </h1>
-                  <p className="mt-3 text-lg font-medium leading-7 text-[#f4e86f]">
+                  <p className="mt-3 text-lg font-medium leading-7 text-white/72">
                     {agentNew.pageSubtitle}
                   </p>
 
@@ -737,7 +737,7 @@ export default function NewAgentPage() {
 
                   <div className="mt-5 flex items-center gap-2">
                     <Button
-                      className="h-9 rounded-sm bg-[#f4e86f] px-5 text-[#232323] hover:bg-[#fff27c]"
+                      className="h-9 rounded-sm bg-white px-5 text-[#232323] hover:bg-white/90"
                       onClick={() => void handleConfirmName()}
                       disabled={
                         (!agentBrief.trim() && !selectedTemplate) ||
@@ -794,7 +794,7 @@ export default function NewAgentPage() {
                             className={cn(
                               "rounded-full border px-2.5 py-1 text-xs leading-4 transition",
                               active
-                                ? "border-[#f4e86f]/45 bg-[#f4e86f]/10 text-white"
+                                ? "border-core/45 bg-core/10 text-white"
                                 : "border-white/10 bg-white/[0.025] text-white/52 hover:border-white/20 hover:text-white/82",
                             )}
                             onClick={() => setSelectedRolePresetId(preset.id)}
@@ -822,7 +822,7 @@ export default function NewAgentPage() {
                             className={cn(
                               "rounded-full border px-2.5 py-1 text-xs leading-4 transition",
                               active
-                                ? "border-[#f4e86f]/45 bg-[#f4e86f]/10 text-white"
+                                ? "border-core/45 bg-core/10 text-white"
                                 : "border-white/10 bg-white/[0.025] text-white/52 hover:border-white/20 hover:text-white/82",
                             )}
                             onClick={() => toggleSelectedScenePreset(preset.id)}
@@ -889,7 +889,7 @@ export default function NewAgentPage() {
                   ) : null}
 
                   <Button
-                    className="h-9 w-full rounded-sm bg-[#f4e86f] text-[#232323] hover:bg-[#fff27c]"
+                    className="h-9 w-full rounded-sm bg-white text-[#232323] hover:bg-white/90"
                     onClick={handleApplyGuidedConfig}
                   >
                     {agentNew.buttons.generateConfig}
@@ -909,7 +909,7 @@ export default function NewAgentPage() {
                             className={cn(
                               "rounded-full border px-2 py-0.5 text-xs leading-4 transition",
                               active
-                                ? "border-[#f4e86f]/30 bg-[#f4e86f]/8 text-white"
+                                ? "border-core/30 bg-core/8 text-white"
                                 : "border-white/8 bg-black/12 text-white/40 hover:border-white/16 hover:text-white/72",
                             )}
                             onClick={() => handleSelectTemplate(template)}
