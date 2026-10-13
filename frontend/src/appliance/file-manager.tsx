@@ -41,6 +41,7 @@ import {
   downloadFile,
   emptyTrash,
   FileServiceUnavailableError,
+  FolderNotFoundError,
   formatSize,
   listDir,
   listTrash,
@@ -169,6 +170,7 @@ export function FileManager({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileServiceUnavailable, setFileServiceUnavailable] = useState(false);
+  const [missingFolder, setMissingFolder] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [transfer, setTransfer] = useState<{
@@ -206,6 +208,7 @@ export function FileManager({
     const request = ++directoryRequest.current;
     setLoading(true);
     setError(null);
+    setMissingFolder(null);
     listDir(path)
       .then((r) => {
         if (request !== directoryRequest.current) return;
@@ -214,6 +217,12 @@ export function FileManager({
       })
       .catch((e) => {
         if (request !== directoryRequest.current) return;
+        if (e instanceof FolderNotFoundError) {
+          setEntries([]);
+          setFileServiceUnavailable(false);
+          setMissingFolder(e.path);
+          return;
+        }
         if (e instanceof FileServiceUnavailableError) {
           setEntries([]);
           setFileServiceUnavailable(true);
@@ -811,7 +820,7 @@ export function FileManager({
                     <button
                       type="button"
                       onClick={onOpenSystemFiles}
-                      className="mt-3 rounded-md bg-slate-900/8 px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-slate-900/12"
+                      className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
                     >
                       打开系统文件
                     </button>
@@ -835,7 +844,7 @@ export function FileManager({
                     <button
                       type="button"
                       onClick={refresh}
-                      className="rounded-md bg-slate-900/8 px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-slate-900/12"
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
                     >
                       重试连接
                     </button>
@@ -849,6 +858,22 @@ export function FileManager({
                       </button>
                     )}
                   </div>
+                </div>
+              ) : missingFolder ? (
+                <div className="mac-finder-empty" role="status">
+                  <FolderIcon
+                    className="size-14 text-muted-foreground"
+                    strokeWidth={1.25}
+                  />
+                  <strong>找不到这个文件夹</strong>
+                  <span>“{missingFolder}”可能尚未创建，或已被移动。</span>
+                  <button
+                    type="button"
+                    onClick={() => setPath("")}
+                    className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
+                  >
+                    返回 NAS
+                  </button>
                 </div>
               ) : entries.length === 0 ? (
                 <div className="mac-finder-empty">

@@ -9,6 +9,7 @@ import {
   FILE_SERVICE_UNAVAILABLE_MESSAGE,
   FileServiceUnavailableError,
   fetchStorageUsage,
+  FolderNotFoundError,
   listDir,
   RESUMABLE_UPLOAD_THRESHOLD_BYTES,
   resolveResourceLocation,
@@ -171,6 +172,27 @@ describe("NAS file transfers", () => {
     const request = listDir("");
     await expect(request).rejects.toBeInstanceOf(FileServiceUnavailableError);
     await expect(request).rejects.toThrow(FILE_SERVICE_UNAVAILABLE_MESSAGE);
+  });
+
+  it("reports a missing or non-directory folder as a folder state", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: "Downloads" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: "not found: gone" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+    await expect(listDir("Downloads")).rejects.toBeInstanceOf(
+      FolderNotFoundError,
+    );
+    await expect(listDir("gone")).rejects.toMatchObject({ path: "gone" });
   });
 
   it("uploads with auth, destination directory and byte progress", async () => {

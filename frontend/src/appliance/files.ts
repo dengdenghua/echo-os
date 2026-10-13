@@ -628,10 +628,42 @@ async function streamDownloadToHandle(
   }
 }
 
-export function listDir(
+/** The requested folder does not exist (or is a file), so there is nothing to list. */
+export class FolderNotFoundError extends Error {
+  constructor(public readonly path: string) {
+    super(`找不到“${path}”文件夹`);
+    this.name = "FolderNotFoundError";
+  }
+}
+
+export async function listDir(
   path: string,
 ): Promise<{ path: string; entries: FileEntry[] }> {
-  return jsonGet(`/api/appliance/files/list?path=${encodeURIComponent(path)}`);
+  let r: Response;
+  try {
+    r = await fetch(
+      `/api/appliance/files/list?path=${encodeURIComponent(path)}`,
+      { headers: authHeader() },
+    );
+  } catch {
+    throw new FileServiceUnavailableError();
+  }
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    const error = fileApiError(r, text, "无法读取 NAS 文件");
+    const detail = fileApiDetail(text);
+    // The list route answers a missing folder with 404 "not found: …" and a
+    // path that is not a directory with 400 and the bare path as detail.
+    const missing =
+      typeof detail === "string" &&
+      ((r.status === 404 && detail.startsWith("not found")) ||
+        (r.status === 400 && detail === path));
+    if (path && missing && !(error instanceof FileServiceUnavailableError)) {
+      throw new FolderNotFoundError(path);
+    }
+    throw error;
+  }
+  return (await r.json()) as { path: string; entries: FileEntry[] };
 }
 
 export function fetchStorageUsage(fresh = false): Promise<StorageUsage> {
