@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RefreshCwIcon, ShieldCheckIcon } from "lucide-react";
+import { InboxIcon, RefreshCwIcon, ShieldCheckIcon } from "lucide-react";
 import { SystemAppFrame, SystemAppLightsSpacer } from "./system-app-window";
 import {
   APPROVAL_SESSION_CHANGED,
@@ -129,9 +129,19 @@ export function DecisionInbox({
             {loading ? "正在读取审批…" : "任务服务暂时不可用"}
           </p>
         ) : waiting.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            当前没有等待确认的操作
-          </p>
+          <div className="grid place-items-center py-16 text-center">
+            <InboxIcon
+              aria-hidden
+              className="size-10 text-muted-foreground"
+              strokeWidth={1.4}
+            />
+            <p className="mt-3 text-sm font-medium text-foreground">
+              当前没有等待确认的操作
+            </p>
+            <p className="mt-1 max-w-80 text-xs text-muted-foreground">
+              现在无需处理。Agent 需要你确认时会暂停任务，请求会出现在这里。
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {waiting.map((task) => (

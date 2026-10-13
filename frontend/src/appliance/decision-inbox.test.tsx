@@ -202,6 +202,10 @@ describe("Decision inbox", () => {
       />,
     );
     expect(screen.getByText("当前没有等待确认的操作")).toBeInTheDocument();
+    // The empty state says what will happen next, not just that it is empty.
+    expect(
+      screen.getByText(/Agent 需要你确认时会暂停任务，请求会出现在这里/),
+    ).toBeInTheDocument();
     rerender(
       <DecisionInbox
         {...callbacks}
