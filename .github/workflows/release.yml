@@ -115,11 +115,25 @@ jobs:
             -f head_sha="${GITHUB_SHA}" \
             -f status=success \
             -F per_page=100)"
-          windows_run_id="$(jq -r --arg sha "${GITHUB_SHA}" \
-            '[.workflow_runs[] | select(.head_sha == $sha and .conclusion == "success")] | sort_by(.run_started_at) | last | .id // empty' \
-            <<<"${windows_response}")"
+          # build-win.yml also succeeds without signing secrets, but then it
+          # only uploads Echo-Setup-Windows-unsigned-<sha>. Select the newest
+          # successful run that produced the signed installer artifact.
+          windows_run_id=""
+          while read -r candidate_run_id; do
+            [[ -n "${candidate_run_id}" ]] || continue
+            signed_artifact="$(gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate_run_id}/artifacts" \
+              -F per_page=100 \
+              --jq "[.artifacts[] | select(.name == \"Echo-Setup-Windows-${GITHUB_SHA}\")] | length")"
+            if [[ "${signed_artifact}" == "1" ]]; then
+              windows_run_id="${candidate_run_id}"
+              break
+            fi
+          done < <(jq -r --arg sha "${GITHUB_SHA}" \
+            '[.workflow_runs[] | select(.head_sha == $sha and .conclusion == "success")] | sort_by(.run_started_at) | reverse | .[].id' \
+            <<<"${windows_response}")
           if [[ -z "${windows_run_id}" ]]; then
-            echo "::error::No successful build-win workflow exists for ${GITHUB_SHA}."
+            echo "::error::No successful, signed build-win workflow exists for ${GITHUB_SHA}."
             echo "::error::The release requires same-commit, protected-environment Authenticode evidence."
             exit 1
           fi

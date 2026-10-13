@@ -19,7 +19,10 @@ jobs:
     name: Build Windows EXE
     runs-on: windows-2025
     # Production signing credentials live only in this protected environment.
-    # Configure required reviewers in GitHub; a missing secret fails before build work.
+    # Configure required reviewers in GitHub. With neither signing secret the
+    # job builds an explicitly unsigned, non-releasable package (artifact names
+    # carry "-unsigned-" and release.yml never selects them); exactly one
+    # missing secret, or an invalid certificate, still fails before build work.
     environment: windows-code-signing
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -37,10 +40,21 @@ jobs:
           CSC_LINK: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE_PASSWORD }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:CSC_LINK)) {
+          $hasCertificate = -not [string]::IsNullOrWhiteSpace($env:CSC_LINK)
+          $hasPassword = -not [string]::IsNullOrWhiteSpace($env:CSC_KEY_PASSWORD)
+          if (-not $hasCertificate -and -not $hasPassword) {
+            "ECHO_WINDOWS_SIGNING=unsigned" | Out-File `
+              -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Output ("::warning title=Unsigned Windows build::" +
+              "WINDOWS_CODE_SIGNING_CERTIFICATE_BASE64 and _PASSWORD are not configured. " +
+              "Authenticode signing is skipped; artifacts are uploaded as *-unsigned-* " +
+              "and cannot be published by release.yml.")
+            return
+          }
+          if (-not $hasCertificate) {
             throw "Protected secret WINDOWS_CODE_SIGNING_CERTIFICATE_BASE64 is required"
           }
-          if ([string]::IsNullOrWhiteSpace($env:CSC_KEY_PASSWORD)) {
+          if (-not $hasPassword) {
             throw "Protected secret WINDOWS_CODE_SIGNING_CERTIFICATE_PASSWORD is required"
           }
 
@@ -83,6 +97,8 @@ jobs:
               -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             "ECHO_WINDOWS_SIGNER_SUBJECT_BASE64=$([Convert]::ToBase64String($publisherBytes))" | Out-File `
               -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            "ECHO_WINDOWS_SIGNING=signed" | Out-File `
+              -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } finally {
             if ($null -ne $certificate) { $certificate.Dispose() }
           }
@@ -114,13 +130,25 @@ jobs:
           --extra desktop-core
           --extra desktop-build
 
+      # A signed (releasable) build always requires the publisher variables. An
+      # unsigned test build without them ships no built-in publisher trust
+      # store, so first-party marketplace plugins stay unverified in it.
       - name: Configure trusted first-party plugin publisher
+        if: env.ECHO_WINDOWS_SIGNING == 'signed' || vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY != ''
         shell: pwsh
         env:
           ECHO_PLUGIN_SIGNING_PUBLIC_KEY: ${{ vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY }}
           ECHO_PLUGIN_SIGNING_PUBLISHER_ID: ${{ vars.ECHO_PLUGIN_SIGNING_PUBLISHER_ID }}
           ECHO_PLUGIN_SIGNING_KEY_ID: ${{ vars.ECHO_PLUGIN_SIGNING_KEY_ID }}
         run: ./.venv/Scripts/python.exe scripts/configure_builtin_plugin_publisher.py
+
+      - name: Report the unconfigured plugin publisher of an unsigned build
+        if: env.ECHO_WINDOWS_SIGNING != 'signed' && vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY == ''
+        shell: pwsh
+        run: >-
+          Write-Output ("::warning title=No built-in plugin publisher::" +
+          "ECHO_PLUGIN_SIGNING_PUBLIC_KEY/_KEY_ID/_PUBLISHER_ID are not configured; " +
+          "this unsigned build trusts no first-party plugin publisher.")
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -270,6 +298,7 @@ jobs:
         run: pnpm build
 
       - name: Build canonical Electron EXE
+        if: env.ECHO_WINDOWS_SIGNING == 'signed'
         working-directory: frontend
         env:
           # electron-builder consumes these only for this signing step. They are
@@ -277,6 +306,14 @@ jobs:
           CSC_LINK: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE_PASSWORD }}
         run: pnpm electron:build:win
+
+      # packaging/desktop/build.yml sets win.forceCodeSigning so a release
+      # build can never silently skip Authenticode; only this explicitly
+      # unsigned path overrides it, and it receives no signing material.
+      - name: Build unsigned Electron EXE (no signing identity configured)
+        if: env.ECHO_WINDOWS_SIGNING == 'unsigned'
+        working-directory: frontend
+        run: pnpm electron:build:win -c.win.forceCodeSigning=false
 
       - name: Verify connector marketplace stays on demand
         shell: pwsh
@@ -514,6 +551,7 @@ jobs:
           }
 
       - name: Verify Authenticode signatures and create commit-bound checksums
+        if: env.ECHO_WINDOWS_SIGNING == 'signed'
         shell: pwsh
         run: |
           $releaseRoot = (Resolve-Path "frontend/release").Path
@@ -647,6 +685,62 @@ jobs:
             -LiteralPath (Join-Path $releaseRoot "UPDATE-SHA256SUMS-Windows") `
             -Encoding ascii
 
+      - name: Create commit-bound checksums for the unsigned build
+        if: env.ECHO_WINDOWS_SIGNING == 'unsigned'
+        shell: pwsh
+        run: |
+          $releaseRoot = (Resolve-Path "frontend/release").Path
+          $installerCandidates = @(
+            Get-ChildItem -LiteralPath $releaseRoot -File -Filter "Echo-Setup-*.exe"
+          )
+          if ($installerCandidates.Count -ne 1) {
+            throw "Expected exactly one Echo installer, found $($installerCandidates.Count)"
+          }
+          $installer = $installerCandidates[0]
+          if (-not $installer.Name.Contains($env:GITHUB_SHA)) {
+            throw "Installer filename is not bound to GITHUB_SHA: $($installer.Name)"
+          }
+          $installerHash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$installerHash *$($installer.Name)" | Set-Content `
+            -LiteralPath (Join-Path $releaseRoot "SHA256SUMS") `
+            -Encoding ascii
+          $updateAssets = @(
+            $installer.FullName
+            "$($installer.FullName).blockmap"
+            (Join-Path $releaseRoot "latest.yml")
+          )
+          foreach ($asset in $updateAssets) {
+            if (-not (Test-Path -LiteralPath $asset -PathType Leaf) -or
+                (Get-Item -LiteralPath $asset).Length -le 0) {
+              throw "Windows update asset is missing: $asset"
+            }
+          }
+          $version = (Get-Content -LiteralPath "frontend/package.json" -Raw | ConvertFrom-Json).version
+          & ./.venv/Scripts/python.exe `
+            packaging/desktop/verify-electron-update-metadata.py `
+            --metadata (Join-Path $releaseRoot "latest.yml") `
+            --asset-root $releaseRoot `
+            --platform windows `
+            --expected-version $version `
+            --expected-revision $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw "Windows update metadata verification failed" }
+          @($updateAssets | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash *$(Split-Path -Leaf $_)"
+          }) | Set-Content `
+            -LiteralPath (Join-Path $releaseRoot "UPDATE-SHA256SUMS-Windows") `
+            -Encoding ascii
+          [ordered]@{
+            schema = "echo.windows_unsigned_build.v1"
+            sourceRevision = $env:GITHUB_SHA
+            releasable = $false
+            reason = "no Authenticode signing identity was configured"
+            generatedAt = (Get-Date).ToUniversalTime().ToString("o")
+            installer = [ordered]@{ path = $installer.Name; sha256 = $installerHash }
+          } | ConvertTo-Json -Depth 4 | Set-Content `
+            -LiteralPath (Join-Path $releaseRoot "windows-unsigned-build.json") `
+            -Encoding utf8
+
       - name: Attest canonical installer provenance
         id: installer-provenance
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
@@ -671,6 +765,7 @@ jobs:
           Get-ChildItem -File | ForEach-Object { "{0:N1} MB`t{1}" -f ($_.Length / 1MB), $_.Name }
 
       - name: Upload EXE installer
+        if: env.ECHO_WINDOWS_SIGNING == 'signed'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Echo-Setup-Windows-${{ github.sha }}
@@ -686,9 +781,35 @@ jobs:
           retention-days: 30
 
       - name: Upload portable (unpacked)
+        if: env.ECHO_WINDOWS_SIGNING == 'signed'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Echo-Portable-Windows-${{ github.sha }}
           path: frontend/release/win-unpacked/**
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload unsigned EXE installer (not releasable)
+        if: env.ECHO_WINDOWS_SIGNING == 'unsigned'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Echo-Setup-Windows-unsigned-${{ github.sha }}
+          path: |
+            frontend/release/Echo-Setup-*.exe
+            frontend/release/SHA256SUMS
+            frontend/release/UPDATE-SHA256SUMS-Windows
+            frontend/release/windows-unsigned-build.json
+            frontend/release/Echo-Setup-Windows-provenance.sigstore.json
+            frontend/release/*.blockmap
+            frontend/release/*.yml
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unsigned portable (unpacked, not releasable)
+        if: env.ECHO_WINDOWS_SIGNING == 'unsigned'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Echo-Portable-Windows-unsigned-${{ github.sha }}
+          path: frontend/release/win-unpacked/**
+          if-no-files-found: error
+          retention-days: 14
