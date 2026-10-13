@@ -9049,3 +9049,12 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
   border-color: var(--echo-line-strong) !important;
   box-shadow: none !important;
 }
+
+/* A selected or focused desktop icon highlights its label with Echo Core. */
+.macos-desktop-root
+  .mac-desktop-icon:is(:focus, :active)
+  .mac-desktop-icon-label {
+  color: var(--echo-on-core);
+  background: var(--echo-core);
+  box-shadow: none;
+}
