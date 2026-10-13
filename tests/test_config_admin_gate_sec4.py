@@ -67,3 +67,55 @@ def test_dev_mode_does_not_require_admin(monkeypatch) -> None:
     r = client.post("/api/path-denylist", json={"path": "/tmp/x"})
     assert r.status_code == 200
 
+
+
+_JWT_SECRET = "Golden-Path-Cookie-Secret-0123456789!"
+
+
+def _session_cookie(actor_id: str) -> dict[str, str]:
+    import time
+
+    from runtime.safety.auth.identity import encode_jwt_hs256
+    from runtime.safety.auth.principal import SESSION_COOKIE_NAME
+
+    now = int(time.time())
+    token = encode_jwt_hs256(
+        {"sub": actor_id, "iat": now, "exp": now + 600, "iss": "echo-agent"},
+        secret=_JWT_SECRET,
+    )
+    return {SESSION_COOKIE_NAME: token}
+
+
+def _cookie_client() -> TestClient:
+    store = IdentityStore()
+    store.add(Identity(actor_id="local:admin", roles=("user", "local", "admin")))
+    store.add(Identity(actor_id="local:member", roles=("user", "local")))
+    cr = create_config_router(
+        require_auth=True,
+        identity_store=store,
+        jwt_secret=_JWT_SECRET,
+        jwt_issuer="echo-agent",
+    )
+    app = FastAPI()
+    app.include_router(cr.router)
+    return TestClient(app)
+
+
+def test_admin_signed_in_with_the_session_cookie_passes_the_gate(monkeypatch) -> None:
+    # Golden path 2026-10: the browser holds only the HttpOnly session cookie;
+    # a bearer-only role lookup answered 403 to the device owner on 测试连接.
+    monkeypatch.setattr(
+        "runtime.safety.auth.path_denylist.add_user_denylist_entry",
+        lambda p: [p],
+    )
+    client = _cookie_client()
+    client.cookies.update(_session_cookie("local:admin"))
+    r = client.post("/api/path-denylist", json={"path": "/tmp/x"})
+    assert r.status_code == 200
+
+
+def test_member_signed_in_with_the_session_cookie_is_still_forbidden() -> None:
+    client = _cookie_client()
+    client.cookies.update(_session_cookie("local:member"))
+    r = client.post("/api/path-denylist", json={"path": "/tmp/x"})
+    assert r.status_code == 403
