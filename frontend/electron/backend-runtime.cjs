@@ -509,7 +509,7 @@ const CORE_DEPS = [
   "python-docx>=1.2.0",
   "openpyxl>=3.1.5",
   "python-pptx>=1.0.2",
-  "pypdf>=6.15.0",
+  "pypdf>=6.19.0",
   "reportlab>=4.4.4",
 ];
 
@@ -532,12 +532,12 @@ const OPTIONAL_GROUPS = {
     "opencv-python-headless>=5.0.0.93",
     "rapidocr-onnxruntime>=1.3.0",
   ],
-  extract: ["trafilatura>=2.0", "pypdf>=6.15.0"],
+  extract: ["trafilatura>=2.0", "pypdf>=6.19.0"],
   office: [
     "python-docx>=1.2.0",
     "openpyxl>=3.1.5",
     "python-pptx>=1.0.2",
-    "pypdf>=6.15.0",
+    "pypdf>=6.19.0",
     "reportlab>=4.4.4",
   ],
   mcp: [
