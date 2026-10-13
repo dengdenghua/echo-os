@@ -194,6 +194,7 @@ EMBEDDED_RUNTIME_TESTS = (
     "tests/appliance/test_state_recovery.py",
     "tests/appliance/test_task_projection.py",
     "tests/appliance/test_task_changes.py",
+    "tests/appliance/test_owner_identity.py",
     "tests/appliance/test_sync.py",
     "tests/appliance/test_totp.py",
     "tests/appliance/test_windows_state.py",
