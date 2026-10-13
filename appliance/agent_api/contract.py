@@ -36,6 +36,7 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "runtime.adapters.integrations.local_auth.passwords",
             "verify_password",
         ),
+        _Symbol("identity", "runtime.safety.auth.identity", "Identity"),
         _Symbol("jwt_error", "runtime.safety.auth.identity", "JWTError"),
         _Symbol("jwt_verify", "runtime.safety.auth.identity", "verify_jwt_hs256"),
         _Symbol("session_cookie", "runtime.safety.auth.principal", "SESSION_COOKIE_NAME"),

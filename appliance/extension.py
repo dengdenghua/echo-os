@@ -60,7 +60,7 @@ def register_app(app: Any, context: Any) -> None:
         ApplianceSessionRevocationMiddleware,
         create_account_security_router,
     )
-    from appliance.agent_api.auth import create_local_auth_router
+    from appliance.agent_api.auth import create_local_auth_router, provision_owner_identity
     from appliance.agent_api.capabilities import AgentCapabilityBridge
     from appliance.agent_api.devices import create_device_coordinator
     from appliance.agent_assets import (
@@ -131,6 +131,14 @@ def register_app(app: Any, context: Any) -> None:
         )
     # 容器入口已把同一份凭据注入 Agent config 时，Agent 会先挂本地认证路由；开发环境
     # 直接调用扩展时仍由此处补挂。始终只保留一套路由和一套设备密码。
+    # The owner account is the device administrator; Agent must agree, or its
+    # own admin-gated control plane (model connections first) answers 403.
+    provision_owner_identity(
+        getattr(context, "identity_store", None),
+        username=ADMIN_USERNAME,
+        actor_prefix=getattr(auth_cfg, "actor_prefix", "local:"),
+        base_roles=tuple(getattr(auth_cfg, "default_roles", ("user", "local"))),
+    )
     has_local_auth = "/api/auth/local/login" in _route_paths(getattr(app, "routes", ()))
     if not has_local_auth:
         app.include_router(
