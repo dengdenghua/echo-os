@@ -41,6 +41,14 @@ class ActionReview:
     stop_batch: bool = False
 
 
+def turn_network_denials(state: _LoopState) -> NetworkDenialMemory:
+    """The turn's memory of refused network access, created on first use."""
+    denials = state.network_denials
+    if denials is None:
+        denials = state.network_denials = NetworkDenialMemory()
+    return denials
+
+
 def review_tool_action(
     state: _LoopState,
     *,
@@ -118,9 +126,7 @@ def review_tool_action(
         if _approval_action not in {"ask", "confirm", "deny"}:
             _approval_action = "ask"
         _approval_risk = _approval_risk.with_injection_taint()
-    _network_denials = state.network_denials
-    if _network_denials is None:
-        _network_denials = state.network_denials = NetworkDenialMemory()
+    _network_denials = turn_network_denials(state)
     _refused = (
         None
         if _auto_approve or _scoped_artifact_write
