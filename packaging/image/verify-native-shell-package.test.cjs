@@ -78,7 +78,12 @@ async function fixture({
     path.join(asarSource, "package.json"),
     JSON.stringify({
       name: "echo-frontend",
-      version: "0.2.0",
+      version: JSON.parse(
+        fs.readFileSync(
+          path.join(REPO_ROOT, "frontend", "package.json"),
+          "utf8",
+        ),
+      ).version,
       main: "electron/main.cjs",
     }),
   );

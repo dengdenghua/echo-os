@@ -24,7 +24,7 @@
   "echo": {
     "auth_modes": [],
     "dependencies": [],
-    "host_api": ">=0.2,<0.3",
+    "host_api": ">=0.2,<0.4",
     "permissions": [
       "content.read",
       "content.write",

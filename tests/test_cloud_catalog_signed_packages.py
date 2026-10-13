@@ -342,7 +342,7 @@ def test_packaged_agent_rejects_missing_signed_dependency_before_switch(
         kind,
         signed=True,
         requirements={
-            "host_api": ">=0.2,<0.3",
+            "host_api": ">=0.2,<0.4",
             "dependencies": ["base-tools"],
         },
     )

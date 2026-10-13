@@ -126,19 +126,19 @@ helper 生命周期；桥 unit 安装到 `/usr/lib/systemd/system/echo-omv-bridg
 ```bash
 python3 deploy/omv/plugin_package.py build --output-directory dist
 python3 deploy/omv/plugin_package.py verify \
-  dist/openmediavault-echo-os_0.2.0-1_all.deb
-dpkg-deb --info dist/openmediavault-echo-os_0.2.0-1_all.deb
-dpkg-deb --contents dist/openmediavault-echo-os_0.2.0-1_all.deb
+  dist/openmediavault-echo-os_0.3.0-1_all.deb
+dpkg-deb --info dist/openmediavault-echo-os_0.3.0-1_all.deb
+dpkg-deb --contents dist/openmediavault-echo-os_0.3.0-1_all.deb
 ```
 
-版本默认由前端产品版本生成 Debian revision（例如 `0.2.0` 生成 `0.2.0-1`）。构建同时输出
+版本默认由前端产品版本生成 Debian revision（例如 `0.3.0` 生成 `0.3.0-1`）。构建同时输出
 `.deb.sha256` 和 SPDX 2.3 SBOM；CI 会在 Ubuntu 上再用系统 `dpkg-deb` 检查包，并在 main 发布
 构建中为 `.deb` 和 SBOM 分别生成 GitHub OIDC/Sigstore 证明。正式安装前必须核对摘要和仓库身份：
 
 ```bash
-gh attestation verify openmediavault-echo-os_0.2.0-1_all.deb \
+gh attestation verify openmediavault-echo-os_0.3.0-1_all.deb \
   --repo <owner>/<repository>
-sudo apt install ./openmediavault-echo-os_0.2.0-1_all.deb
+sudo apt install ./openmediavault-echo-os_0.3.0-1_all.deb
 sudo python3 /usr/lib/echo-os/omv-bridge/platform_preflight.py
 getent group echo-omv
 sudo systemctl status echo-omv-bridge.service
@@ -200,9 +200,9 @@ attestation。下载并进入 artifact 目录后可再次离线复核：
 sha256sum -c echo-real-omv-x86-artifact-set.sha256
 python3 verify-real-omv-x86-evidence.py \
   "$PWD/echo-real-omv-x86-evidence.json" \
-  --plugin-package "$PWD/openmediavault-echo-os_0.2.0-1_all.deb" \
+  --plugin-package "$PWD/openmediavault-echo-os_0.3.0-1_all.deb" \
   --expected-source-revision '<artifact 对应的 40 位 Git SHA>'
-gh attestation verify openmediavault-echo-os_0.2.0-1_all.deb \
+gh attestation verify openmediavault-echo-os_0.3.0-1_all.deb \
   --repo '<owner>/<repository>'
 gh attestation verify echo-real-omv-x86-evidence.json \
   --repo '<owner>/<repository>'

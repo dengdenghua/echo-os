@@ -25,7 +25,7 @@ def _catalog(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[CloudCata
                 "module_id": "narrative",
                 "version": "0.2.0",
                 "release_summary": "0.2.0：支持角色、世界观与剧情分支协作。",
-                "host_api": ">=0.2,<0.3",
+                "host_api": ">=0.2,<0.4",
                 "dependencies": [],
                 "entry": "dist/index.html",
                 "runtime_plugin": "narrative_studio",
@@ -74,7 +74,7 @@ def _add_design_dependency(tmp_path: Path, *, dependencies: list[str] | None = N
                 "route": "/workspace/design",
                 "module_id": "design",
                 "version": "1.0.0",
-                "host_api": ">=0.2,<0.3",
+                "host_api": ">=0.2,<0.4",
                 "dependencies": dependencies or [],
                 "entry": "dist/index.html",
                 "isolation": "iframe",
@@ -194,7 +194,7 @@ def test_remote_install_materializes_frontend_and_backend_and_uninstall_keeps_wo
     }
     assert status["compatibility"] == {
         "status": "compatible",
-        "host_api": ">=0.2,<0.3",
+        "host_api": ">=0.2,<0.4",
     }
     assert status["release_summary"] == "0.2.0：支持角色、世界观与剧情分支协作。"
 
@@ -264,7 +264,7 @@ def test_installed_package_incompatible_with_current_host_is_reported_broken(
 ) -> None:
     catalog, _plugin_root = _catalog(tmp_path, monkeypatch)
     catalog.install_plugin("narrative_studio", plugin_kind="workbench")
-    monkeypatch.setattr(cloud_catalog, "__version__", "0.3.0")
+    monkeypatch.setattr(cloud_catalog, "__version__", "0.4.0")
 
     status = catalog.plugin_statuses()["narrative_studio"]
 
@@ -275,7 +275,7 @@ def test_installed_package_incompatible_with_current_host_is_reported_broken(
     assert status["trust"]["integrity_verified"] is True
     assert status["compatibility"] == {
         "status": "incompatible",
-        "host_api": ">=0.2,<0.3",
+        "host_api": ">=0.2,<0.4",
     }
     assert "requires host_api" in status["error"]
 

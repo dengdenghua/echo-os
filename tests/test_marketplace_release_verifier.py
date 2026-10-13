@@ -35,7 +35,7 @@ def _release(tmp_path: Path) -> tuple[Path, Path]:
                         "plugin": "documents",
                         "kind": "plugin",
                         "version": "1.0.0",
-                        "host_api": ">=0.2,<0.3",
+                        "host_api": ">=0.2,<0.4",
                         "permissions": ["content.read"],
                         "auth_modes": [],
                         "dependencies": [],
@@ -52,7 +52,7 @@ def _release(tmp_path: Path) -> tuple[Path, Path]:
             "name": "documents",
             "version": "1.0.0",
             "echo": {
-                "host_api": ">=0.2,<0.3",
+                "host_api": ">=0.2,<0.4",
                 "permissions": ["content.read"],
                 "auth_modes": [],
                 "dependencies": [],

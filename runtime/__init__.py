@@ -17,7 +17,7 @@ Subpackages are physically organized under 7 semantic groups:
 Prefer the explicit group path `from runtime.<group>.X` in new code.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 import os
 from typing import Any

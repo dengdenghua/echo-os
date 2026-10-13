@@ -148,9 +148,13 @@ function verifyAsar(archive, sourceRoot) {
   const packagedManifest = JSON.parse(
     asar.extractFile(archive, "package.json").toString("utf8"),
   );
+  // The packaged identity must be the checkout's own product version.
+  const sourceManifest = JSON.parse(
+    fs.readFileSync(path.join(sourceRoot, "frontend", "package.json"), "utf8"),
+  );
   if (
     packagedManifest.name !== "echo-frontend" ||
-    packagedManifest.version !== "0.2.0" ||
+    packagedManifest.version !== sourceManifest.version ||
     packagedManifest.main !== "electron/main.cjs"
   ) {
     fail("packaged application identity changed");

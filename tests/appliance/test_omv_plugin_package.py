@@ -35,7 +35,8 @@ def test_native_plugin_build_is_deterministic_and_self_verifying(
     second_path = Path(second["path"])
 
     assert first["package"] == "openmediavault-echo-os"
-    assert first["version"] == "0.2.0-1"
+    product = json.loads((_REPOSITORY / "frontend" / "package.json").read_text(encoding="utf-8"))
+    assert first["version"] == f"{product['version']}-1"
     assert first["architecture"] == "all"
     assert first["pluginArchitectures"] == ["amd64", "arm64"]
     assert first["supportMatrix"] == "debian-13+omv-8"
@@ -63,7 +64,7 @@ def test_native_plugin_build_is_deterministic_and_self_verifying(
     sbom = json.loads(Path(first["sbomPath"]).read_text())
     assert sbom["spdxVersion"] == "SPDX-2.3"
     assert sbom["packages"][0]["name"] == "openmediavault-echo-os"
-    assert sbom["packages"][0]["versionInfo"] == "0.2.0-1"
+    assert sbom["packages"][0]["versionInfo"] == first["version"]
     assert len(sbom["files"]) == first["dataFileCount"]
 
 

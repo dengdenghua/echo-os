@@ -133,7 +133,7 @@ def test_plugin_content_builder_signs_codex_and_connector_packages(
             require_trusted=True,
         )
         assert runtime_trust["publisher_verified"] is True
-        assert runtime_trust["host_api"] == ">=0.2,<0.3"
+        assert runtime_trust["host_api"] == ">=0.2,<0.4"
     connector_trust = verify_marketplace_package_trust(
         runtime_extracted / "connector" / "documents",
         package_kind="connector",

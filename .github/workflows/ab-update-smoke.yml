@@ -114,7 +114,7 @@ jobs:
           cat /tmp/echo-operations-native-systemd-verification.json
 
   signed-update-rollback:
-    name: Signed 0.2.0 → 0.2.1 · failed-root rollback
+    name: Signed base → next patch · failed-root rollback
     if: >-
       github.event_name != 'pull_request' &&
       (github.ref == 'refs/heads/os-main' || github.ref == 'refs/heads/main')
@@ -134,7 +134,7 @@ jobs:
       CI: "true"
       NODE_OPTIONS: --max-old-space-size=4096
       TMPDIR: /__w/_temp
-      UPDATE_VERSION: 0.2.1
+      UPDATE_VERSION: 0.3.1
 
     steps:
       - name: Install image, update, VM and frontend dependencies

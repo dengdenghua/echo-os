@@ -1,6 +1,6 @@
 [project]
 name = "echo-os"
-version = "0.2.0"
+version = "0.3.0"
 description = "Echo OS · 内建 Agent 运行时、桌面、NAS 管理与本地应用平台。"
 readme = "README.md"
 license = {text = "Apache-2.0"}

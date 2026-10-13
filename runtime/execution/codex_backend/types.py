@@ -12,6 +12,8 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, TypeAlias
 
+from runtime import __version__ as _runtime_version
+
 JsonScalar: TypeAlias = None | bool | int | float | str
 JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
 JsonObject: TypeAlias = dict[str, JsonValue]
@@ -235,7 +237,7 @@ class CodexAppServerConfig:
     source_environment: Mapping[str, str] | None = field(default=None, repr=False)
     client_name: str = "echo_agent"
     client_title: str = "Echo Agent"
-    client_version: str = "0.2.0"
+    client_version: str = _runtime_version
     experimental_api: bool = False
     opt_out_notification_methods: tuple[str, ...] = ()
     request_timeout_s: float = 30.0

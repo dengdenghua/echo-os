@@ -32,7 +32,7 @@ def test_omv_plugin_lifecycle_verifier_is_shell_valid_and_covers_delivery_gates(
     for required in (
         'distribution_version" 13',
         "dpkg --force-depends --install",
-        "install ok half-configured|0.2.0-4",
+        "install ok half-configured|$upstream_version-4",
         "failed upgrade state",
         "manual installer conflict unexpectedly succeeded",
         "OMV 9 upgrade unexpectedly passed",

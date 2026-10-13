@@ -22,7 +22,7 @@ CONNECTOR_MANIFEST_RELATIVE_PATH = Path(".echo-connector/manifest.json")
 CONNECTOR_SIGNATURE_RELATIVE_PATH = Path(".echo-connector/provenance.json")
 CONNECTOR_MANIFEST_SCHEMA = "echo.connector_package.v1"
 CONNECTOR_RELEASE_SUMMARY = "1.0.0：首次纳入 Echo 受信连接器内容包。"
-MARKETPLACE_HOST_API = ">=0.2,<0.3"
+MARKETPLACE_HOST_API = ">=0.2,<0.4"
 
 MARKETPLACE_PERMISSIONS = frozenset(
     {

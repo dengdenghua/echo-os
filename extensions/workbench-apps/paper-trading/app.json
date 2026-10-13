@@ -8,7 +8,7 @@
   "module_id": "paper.trading",
   "version": "1.0.0",
   "release_summary": "1.0.0：提供模拟交易、行情观察与策略验证工作台。",
-  "host_api": ">=0.2,<0.3",
+  "host_api": ">=0.2,<0.4",
   "dependencies": [],
   "entry": "dist/index.html",
   "runtime_plugin": "paper_trading",
