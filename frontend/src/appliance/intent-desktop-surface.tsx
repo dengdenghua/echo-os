@@ -933,7 +933,7 @@ export function IntentDesktopSurface({
                 ref={agentMenuRef}
               >
                 <span className="select-none text-[11px] font-semibold text-muted-foreground">
-                  交给:
+                  交给：
                 </span>
                 <button
                   type="button"
