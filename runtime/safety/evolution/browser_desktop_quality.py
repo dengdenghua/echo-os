@@ -154,7 +154,7 @@ CHECKS: tuple[BrowserDesktopCheck, ...] = (
             "openpanelonactionclick",
             "connect-src",
             "ws://127.0.0.1:8000",
-            "echoai browser relay",
+            "echo browser relay",
             "turn/start",
             "item/agentmessage/delta",
             "request.params",
