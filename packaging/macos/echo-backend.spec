@@ -41,6 +41,17 @@ hiddenimports = [
     "uvicorn.lifespan.on",
     "multipart",
     "python_multipart",
+    # Electron starts the packaged backend with
+    # ECHO_APP_EXTENSIONS=appliance.native_extension and requires it
+    # (frontend/electron/backend-runtime.cjs). It is imported by name at
+    # runtime, so PyInstaller cannot discover it from the entry script.
+    "appliance.native_extension",
+    "appliance.agent_api.contract",
+    "appliance.agent_api.storage",
+    "appliance.agent_ui",
+    "appliance.files",
+    "appliance.security",
+    "appliance.task_projection",
 ]
 
 datas = [

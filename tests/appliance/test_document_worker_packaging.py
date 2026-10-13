@@ -126,6 +126,9 @@ def test_release_spec_keeps_worker_and_extractor_in_frozen_bundle(monkeypatch, p
         "defusedxml",
     } <= set(captured["hiddenimports"])
     assert not {"pypdf", "defusedxml"} & set(captured["excludes"])
+    # The packaged desktop backend refuses to start without the native
+    # app extension Electron requires (ECHO_REQUIRED_APP_EXTENSIONS).
+    assert "appliance.native_extension" in captured["hiddenimports"]
 
 
 @pytest.fixture
