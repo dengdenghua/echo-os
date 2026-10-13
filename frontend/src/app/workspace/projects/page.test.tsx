@@ -143,7 +143,7 @@ describe("ProjectsPage production error states", () => {
     renderWithProviders(<ProjectsPage />, { locale: "zh-CN" });
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "🗂️ 项目管理" }),
+      screen.getByRole("heading", { level: 1, name: "项目管理" }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/还没有项目/)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

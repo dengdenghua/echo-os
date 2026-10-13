@@ -25,6 +25,7 @@ import {
   CircleIcon,
   ClipboardListIcon,
   FlagIcon,
+  FolderKanbanIcon,
   ListChecksIcon,
   MessageSquareIcon,
   PlayIcon,
@@ -497,7 +498,11 @@ export default function ProjectsPage() {
           {/* Header */}
           <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b px-4">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <h1>🗂️ {t.sidebar.navProjects}</h1>
+              <FolderKanbanIcon
+                aria-hidden="true"
+                className="size-4 text-muted-foreground"
+              />
+              <h1>{t.sidebar.navProjects}</h1>
               <span className="text-xs font-normal text-muted-foreground">
                 里程碑健康度 · 风险 · 下一步 · 复盘 —— 真实 PM 视角
               </span>

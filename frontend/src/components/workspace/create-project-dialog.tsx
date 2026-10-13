@@ -180,7 +180,7 @@ export function CreateProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[var(--dialog-lg)]">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>{t.createProjectDialog.title}</DialogTitle>
           <DialogDescription>{t.createProjectDialog.hint}</DialogDescription>
@@ -333,7 +333,7 @@ export function CreateProjectDialog({
             </div>
 
             <div className="flex items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
-              <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-warning/10 text-warning">
+              <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                 <CrownIcon className="size-4" />
               </span>
               <div className="min-w-0">
