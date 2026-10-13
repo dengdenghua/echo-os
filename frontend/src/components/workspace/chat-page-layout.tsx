@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { cn } from "@/lib/utils";
+import { useEchoDesktopWindowChrome } from "./embedded-window-bridge";
 import { currentActorId } from "@/core/auth/api";
 import { actorScopedStorageKey } from "@/core/auth/scoped-storage";
 import { useI18n } from "@/core/i18n/hooks";
@@ -76,6 +77,7 @@ export function ChatPageLayout({
   onSecondaryClose,
 }: ChatPageLayoutProps) {
   const { t } = useI18n();
+  const echoDesktopOwnsChrome = useEchoDesktopWindowChrome();
   const actor = currentActorId();
   // Backwards compat: old callers pass Tailwind classes like "lg:w-72" or
   // "lg:w-[44rem]". Extract the pixel/rem value so we can drive inline
@@ -414,6 +416,9 @@ export function ChatPageLayout({
           data-chat-page-header="true"
           className={cn(
             "flex h-11 shrink-0 items-center justify-between overflow-hidden pl-12 pr-3",
+            // Narrow Echo OS windows: clear the window controls and the
+            // history button that sits after them.
+            echoDesktopOwnsChrome && "max-md:pl-[6.5rem]",
             isNewThread
               ? "border-b border-transparent"
               : "border-b border-border-subtle",

@@ -61,6 +61,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useEchoDesktopWindowChrome } from "../embedded-window-bridge";
 import {
   Select,
   SelectContent,
@@ -1330,6 +1331,8 @@ export function AgentWorldUnified() {
   );
   const [hubSmartTeamOpen, setHubSmartTeamOpen] = useState(false);
   const hudOnly = new URLSearchParams(location.search).get("hud") === "1";
+  // Echo OS overlays its 64px window controls on the top-left corner.
+  const echoDesktopOwnsChrome = useEchoDesktopWindowChrome();
   const requestedAgentName =
     new URLSearchParams(location.search).get("agent")?.trim() || "";
 
@@ -1659,7 +1662,12 @@ export function AgentWorldUnified() {
   return (
     <div className="relative flex size-full flex-col px-2 pb-2 pt-2 md:px-3">
       {!hudOnly ? (
-        <div className="-mx-2 -mt-2 flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle bg-background/95 px-2 md:hidden">
+        <div
+          className={cn(
+            "-mx-2 -mt-2 flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle bg-background/95 px-2 md:hidden",
+            echoDesktopOwnsChrome && "pl-16",
+          )}
+        >
           <SidebarTrigger
             className="size-9 shrink-0"
             aria-label={t.common.openSidebarMenu}
