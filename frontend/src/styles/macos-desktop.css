@@ -8798,3 +8798,165 @@
 html[data-echo-theme] [data-sonner-toast] [data-description] {
   color: var(--muted-foreground) !important;
 }
+
+/* Finder on the graphite and neural-glass desktops ------------------------
+ * The Finder was authored as a light-only window, so on a graphite desktop
+ * it was the one pale window among dark ones. Its panes follow the theme
+ * tokens here; accents (row hover, transfers, drop target) use Echo Core in
+ * every theme instead of system blue. */
+.macos-desktop-root .mac-finder-table > li:not(.mac-finder-table-head):hover {
+  background: var(--echo-core-soft) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-finder-row-actions button:hover {
+  color: var(--echo-core) !important;
+  background: var(--echo-core-soft) !important;
+}
+
+.macos-desktop-root .mac-finder-transfer {
+  background: var(--echo-core-soft);
+  border-bottom-color: color-mix(in srgb, var(--echo-core) 20%, transparent);
+}
+
+.macos-desktop-root .mac-finder-transfer > svg {
+  color: var(--echo-core);
+}
+
+.macos-desktop-root .mac-finder-transfer-progress {
+  background: color-mix(in srgb, var(--echo-core) 15%, transparent);
+}
+
+.macos-desktop-root .mac-finder-transfer i {
+  background: var(--echo-core);
+}
+
+.macos-desktop-root .mac-finder-drop-overlay {
+  color: var(--echo-core);
+  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);
+  border-color: color-mix(in srgb, var(--echo-core) 55%, transparent);
+}
+
+.macos-desktop-root .mac-finder-drop-overlay span {
+  color: var(--echo-ink-muted);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-window {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-toolbar, .mac-finder-status) {
+  color: var(--echo-ink-muted) !important;
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-raised) 72%,
+    transparent
+  ) !important;
+  border-color: var(--echo-line) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-location {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-navigation, .mac-finder-actions)
+  button {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-navigation, .mac-finder-actions)
+  button:is(:hover:not(:disabled), .is-active) {
+  color: var(--echo-ink) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-sunken) 60%,
+    transparent
+  ) !important;
+  border-right-color: var(--echo-line) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar p {
+  color: var(--echo-ink-faint) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar button {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-finder-sidebar
+  button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-finder-sidebar
+  button.is-selected {
+  background: rgba(255, 255, 255, 0.11) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-content {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface) 90%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-table-head {
+  color: var(--echo-ink-muted) !important;
+  background: var(--echo-surface) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-table > li {
+  border-bottom-color: var(--echo-line) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-table li > span, .mac-finder-row-actions button) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-row-actions {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--echo-surface) 16px
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-finder-empty,
+    .mac-finder-local-empty,
+    .mac-finder-local-empty span
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-empty strong, .mac-finder-local-empty strong) {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-error {
+  color: var(--echo-breach);
+  background: var(--echo-breach-soft);
+  border-color: color-mix(in srgb, var(--echo-breach) 30%, transparent);
+}
+
+.macos-desktop-root .mac-finder-sidebar button.is-selected svg {
+  color: var(--echo-core) !important;
+}

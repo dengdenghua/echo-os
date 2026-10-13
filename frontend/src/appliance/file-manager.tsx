@@ -573,7 +573,7 @@ export function FileManager({
               className={sidebarTarget === "recent" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("recent")}
             >
-              <Clock3Icon className="text-[#0a84ff]" />
+              <Clock3Icon className="text-muted-foreground" />
               最近使用
             </button>
             <button
@@ -581,7 +581,7 @@ export function FileManager({
               className={sidebarTarget === "airdrop" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("airdrop")}
             >
-              <CloudIcon className="text-[#0a84ff]" />
+              <CloudIcon className="text-muted-foreground" />
               隔空投送
             </button>
             <button
@@ -589,7 +589,7 @@ export function FileManager({
               className={sidebarTarget === "applications" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("applications")}
             >
-              <AppWindowIcon className="text-[#0a84ff]" />
+              <AppWindowIcon className="text-muted-foreground" />
               应用程序
             </button>
             <button
@@ -597,7 +597,7 @@ export function FileManager({
               className={sidebarTarget === "home" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("home")}
             >
-              <HomeIcon className="text-[#0a84ff]" />
+              <HomeIcon className="text-muted-foreground" />
               个人
             </button>
             <button
@@ -605,7 +605,7 @@ export function FileManager({
               className={sidebarTarget === "desktop" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("desktop")}
             >
-              <FolderIcon className="text-[#0a84ff]" />
+              <FolderIcon className="text-muted-foreground" />
               桌面
             </button>
             <button
@@ -613,7 +613,7 @@ export function FileManager({
               className={sidebarTarget === "downloads" ? "is-selected" : ""}
               onClick={() => selectSidebarTarget("downloads")}
             >
-              <DownloadIcon className="text-[#0a84ff]" />
+              <DownloadIcon className="text-muted-foreground" />
               下载
             </button>
             <p>位置</p>
@@ -843,7 +843,7 @@ export function FileManager({
                       <button
                         type="button"
                         onClick={onOpenSettings}
-                        className="rounded-md bg-[#0a84ff] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#0077ed]"
+                        className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90"
                       >
                         打开系统设置
                       </button>
@@ -853,7 +853,7 @@ export function FileManager({
               ) : entries.length === 0 ? (
                 <div className="mac-finder-empty">
                   <FolderIcon
-                    className="size-14 text-[#63b6ee]"
+                    className="size-14 text-muted-foreground"
                     strokeWidth={1.25}
                   />
                   <strong>此文件夹为空</strong>
@@ -890,7 +890,7 @@ export function FileManager({
                         }}
                       >
                         {entry.kind === "dir" ? (
-                          <FolderIcon className="text-[#5eb6ed]" />
+                          <FolderIcon className="text-muted-foreground" />
                         ) : (
                           <FileIcon className="text-muted-foreground" />
                         )}
