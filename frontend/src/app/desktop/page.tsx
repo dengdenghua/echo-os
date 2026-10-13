@@ -608,10 +608,12 @@ export default function DesktopShellPage() {
   }, []);
 
   useEffect(() => {
+    // The lock screen has no session yet; polling would only collect 401s.
+    if (applianceAuthed !== true) return;
     refreshTrashEntries();
     const timer = window.setInterval(refreshTrashEntries, 20_000);
     return () => window.clearInterval(timer);
-  }, [refreshTrashEntries]);
+  }, [applianceAuthed, refreshTrashEntries]);
 
   // 文件窗口常驻，"打开废纸篓"是一次性请求：交给已挂载的文件窗口后立即复位，
   // 下一次点击废纸篓才能再次触发。
@@ -1139,7 +1141,7 @@ export default function DesktopShellPage() {
   // Echo OS:Dock 的"本地应用"段只接真实数据(Docker 应用注册器)。
   // API 不可用或没有应用时保持为空，不能用不可启动的占位图标伪报能力。
   const { apps: applianceApps, refresh: refreshApplianceApps } =
-    useApplianceApps();
+    useApplianceApps(applianceAuthed === true);
   // 原生 shell:本地已装应用(仅 Electron 会话 shell;web 端为空,Dock 不变)。
   const reportNativeAppLaunchError = useCallback(
     (message: string) => toast.error(message),
