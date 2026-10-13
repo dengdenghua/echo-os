@@ -1,7 +1,6 @@
 import type { Extension } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { CheckIcon, SaveIcon, RotateCcwIcon, SearchIcon } from "lucide-react";
-import { useTheme } from "next-themes";
 import {
   lazy,
   Suspense,
@@ -17,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { swallow } from "@/core/utils/log";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
+import { useScopedDarkMode } from "@/hooks/use-scoped-dark-mode";
 import { cn } from "@/lib/utils";
 import {
   customDarkTheme,
@@ -177,7 +177,7 @@ export function CodeEditor({
   const {
     thread: { isLoading },
   } = useThread();
-  const { resolvedTheme } = useTheme();
+  const [themeScopeRef, isDark] = useScopedDarkMode<HTMLDivElement>();
   const isEditable = !readonly && !disabled && !!filePath;
   const [localValue, setLocalValue] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -415,6 +415,7 @@ export function CodeEditor({
 
   return (
     <div
+      ref={themeScopeRef}
       className={cn(
         "relative flex cursor-text flex-col overflow-hidden rounded-lg",
         className,
@@ -519,9 +520,7 @@ export function CodeEditor({
               "h-full overflow-auto font-mono [&_.cm-editor]:h-full [&_.cm-focused]:outline-none!",
               "px-2 py-0! [&_.cm-line]:px-2! [&_.cm-line]:py-0!",
             )}
-            theme={
-              resolvedTheme === "dark" ? customDarkTheme : customLightTheme
-            }
+            theme={isDark ? customDarkTheme : customLightTheme}
             extensions={extensions}
             basicSetup={{
               foldGutter:

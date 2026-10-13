@@ -31,7 +31,6 @@ import {
   PlayIcon,
   SaveIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -48,6 +47,7 @@ import {
   WorkspaceContainer,
 } from "@/components/workspace/workspace-container";
 import { useI18n } from "@/core/i18n/hooks";
+import { useScopedDarkMode } from "@/hooks/use-scoped-dark-mode";
 import { cn } from "@/lib/utils";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
@@ -104,7 +104,7 @@ function localizeReflexError(error: string, fallback: string) {
 export default function ReflexEditorPage() {
   const { t } = useI18n();
   const { search } = useLocation();
-  const { resolvedTheme } = useTheme();
+  const [themeScopeRef, isDark] = useScopedDarkMode<HTMLDivElement>();
   const [content, setContent] = useState<string>("");
   const [path, setPath] = useState<string>("");
   const [mtime, setMtime] = useState<number>(0);
@@ -232,13 +232,16 @@ export default function ReflexEditorPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [save]);
 
-  const cmTheme = resolvedTheme === "dark" ? customDarkTheme : customLightTheme;
+  const cmTheme = isDark ? customDarkTheme : customLightTheme;
   const initialLoadFailed = statusKind === "err" && !content && !path;
 
   return (
     <WorkspaceContainer>
       <WorkspaceBody className="px-4 pb-4">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <div
+          ref={themeScopeRef}
+          className="mx-auto flex w-full max-w-6xl flex-col gap-4"
+        >
           <section className="workspace-panel px-6 py-4">
             <div className="flex items-center gap-3">
               <Button asChild variant="ghost" size="sm">

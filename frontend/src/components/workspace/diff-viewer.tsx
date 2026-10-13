@@ -1,8 +1,8 @@
 import { unifiedMergeView } from "@codemirror/merge";
 import type { Extension } from "@codemirror/state";
-import { useTheme } from "next-themes";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
+import { useScopedDarkMode } from "@/hooks/use-scoped-dark-mode";
 import { cn } from "@/lib/utils";
 import {
   customDarkTheme,
@@ -21,7 +21,7 @@ export function DiffViewer({
   oldValue: string;
   newValue: string;
 }) {
-  const { resolvedTheme } = useTheme();
+  const [themeScopeRef, isDark] = useScopedDarkMode<HTMLDivElement>();
   const [languageExtensions, setLanguageExtensions] = useState<Extension[]>([]);
 
   useEffect(() => {
@@ -50,6 +50,7 @@ export function DiffViewer({
 
   return (
     <div
+      ref={themeScopeRef}
       className={cn(
         "flex cursor-text flex-col overflow-hidden rounded-lg",
         className,
@@ -67,7 +68,7 @@ export function DiffViewer({
             "h-full overflow-auto font-mono [&_.cm-editor]:h-full [&_.cm-focused]:outline-none!",
             "px-2 py-0! [&_.cm-line]:px-2! [&_.cm-line]:py-0!",
           )}
-          theme={resolvedTheme === "dark" ? customDarkTheme : customLightTheme}
+          theme={isDark ? customDarkTheme : customLightTheme}
           extensions={extensions}
           basicSetup={{
             foldGutter: false,
