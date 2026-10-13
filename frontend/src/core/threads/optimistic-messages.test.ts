@@ -4,6 +4,7 @@ import type { HumanMessage, Message } from "@/core/api/types";
 
 import {
   acknowledgedClientMessageIds,
+  isLocallyQueuedMessage,
   mergeOptimisticHumanMessages,
   optimisticMessageReducer,
   pendingOutboundToHumanMessage,
@@ -181,5 +182,34 @@ describe("optimistic realtime message reconciliation", () => {
     });
 
     expect(unrelated).toBe(state);
+  });
+});
+
+describe("isLocallyQueuedMessage", () => {
+  // Golden path 2026-10: a first message sent before the realtime transport
+  // was ready made the page treat its draft id as a server thread; the queued
+  // message was never delivered and disappeared.
+  it("does not count a locally queued bubble as a server thread", () => {
+    const pending = {
+      clientMessageId: "client-1",
+      threadId: "draft-thread",
+      intent: "start" as const,
+      message: { text: "整理下载文件夹", files: [] },
+      displayText: "整理下载文件夹",
+      createdAt: "2026-10-13T00:00:00.000Z",
+      deliveryState: "queued" as const,
+    };
+    expect(isLocallyQueuedMessage(pendingOutboundToHumanMessage(pending))).toBe(
+      true,
+    );
+    expect(
+      isLocallyQueuedMessage(
+        pendingOutboundToHumanMessage({ ...pending, deliveryState: "sending" }),
+      ),
+    ).toBe(false);
+    expect(
+      isLocallyQueuedMessage({ type: "human", additional_kwargs: {} }),
+    ).toBe(false);
+    expect(isLocallyQueuedMessage({ type: "ai" })).toBe(false);
   });
 });

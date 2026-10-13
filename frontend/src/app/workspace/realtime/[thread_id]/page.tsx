@@ -122,6 +122,7 @@ import { convertToSteps } from "@/components/workspace/messages/message-group";
 import { extractResultUrl } from "@/components/workspace/messages/message-output-summary";
 import { LoadOlderTurnsBanner } from "@/components/workspace/messages/load-older-turns-banner";
 import { ThreadProviders } from "@/components/workspace/messages/context";
+import { isLocallyQueuedMessage } from "@/core/threads/optimistic-messages";
 import { liveEventIsReportLike } from "@/core/threads/report-deliverable";
 import { ThreadTitle } from "@/components/workspace/thread-title";
 import {
@@ -2678,8 +2679,17 @@ function RealtimePageContent({
   // true while messages already rendered, producing a Welcome overlay
   // on top of the live conversation. Second source of truth: once any
   // messages arrive, treat the thread as established.
+  //
+  // A message typed before the realtime transport is ready is only queued
+  // locally; nothing exists on the server yet. Treating that bubble as an
+  // established thread switched the page to resume a thread the server does
+  // not know, so the queued message was never delivered and vanished (golden
+  // path 2026-10: an immediate first send was silently lost).
+  const hasEstablishedMessage = thread.messages.some(
+    (message) => !isLocallyQueuedMessage(message),
+  );
   useEffect(() => {
-    if (isNewThread && thread.messages.length > 0) {
+    if (isNewThread && hasEstablishedMessage) {
       setIsNewThread(false);
       const targetPath = threadRouteFor(threadId);
       // Same deferred route commit as onStart. This fallback can run before
@@ -2700,8 +2710,8 @@ function RealtimePageContent({
     }
   }, [
     commitThreadRoute,
+    hasEstablishedMessage,
     isNewThread,
-    thread.messages.length,
     thread.isLoading,
     setIsNewThread,
     stageThreadRoute,

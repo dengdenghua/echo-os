@@ -154,6 +154,21 @@ export function pendingOutboundToHumanMessage(
 }
 
 /**
+ * A human bubble typed before the realtime transport was ready is only queued
+ * in this tab; the server has not seen it, so it does not prove the thread
+ * exists there yet.
+ */
+export function isLocallyQueuedMessage(message: {
+  type?: string;
+  additional_kwargs?: Record<string, unknown> | null;
+}): boolean {
+  return (
+    message.type === "human" &&
+    message.additional_kwargs?.delivery_state === "queued"
+  );
+}
+
+/**
  * Server messages win as soon as their stable client item id is observed.
  * Keeping the same React key lets the optimistic bubble become the canonical
  * server bubble without a duplicate row or a visual jump.
