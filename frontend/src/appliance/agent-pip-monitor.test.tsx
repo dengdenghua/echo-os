@@ -52,6 +52,26 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a stopped task as ended instead of in progress", () => {
+    render(
+      <AgentPipMonitor
+        demo={false}
+        initialCollapsed
+        task={{
+          id: "task-failed",
+          title: "未命名任务",
+          agentName: "Echo",
+          agentType: "researcher",
+          stepText: "失败",
+          progress: null,
+          endedLabel: "失败",
+        }}
+      />,
+    );
+    expect(screen.getByText("Echo PiP · 失败")).toBeInTheDocument();
+    expect(screen.queryByText(/进行中/)).not.toBeInTheDocument();
+  });
+
   it("collapses into a compact pill and expands back", () => {
     render(<AgentPipMonitor />);
     const minimizeBtn = screen.getByRole("button", { name: /最小化/i });

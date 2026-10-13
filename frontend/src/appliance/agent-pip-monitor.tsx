@@ -30,6 +30,11 @@ export interface PipTask {
   stepText: string;
   /** null 表示 Agent 没有汇报进度，界面显示"进行中"而不是一个假的百分比。 */
   progress: number | null;
+  /**
+   * Set when the task has stopped (failed, finished, cancelled). The monitor
+   * then shows this state instead of a running progress bar.
+   */
+  endedLabel?: string;
   needsApproval?: boolean;
   approvalRiskMessage?: string;
 }
@@ -224,7 +229,9 @@ export function AgentPipMonitor({
   };
 
   const agentFirstName = (task.agentName || "Agent").split(" ")[0];
-  const progressLabel = task.progress == null ? "进行中" : `${task.progress}%`;
+  const ended = Boolean(task.endedLabel);
+  const progressLabel =
+    task.endedLabel ?? (task.progress == null ? "进行中" : `${task.progress}%`);
   // 收起的胶囊只有一行字：等你批准比进度更值得被看见。
   const pillLabel =
     task.needsApproval && !approvalHandled ? "待批准" : progressLabel;
@@ -269,8 +276,12 @@ export function AgentPipMonitor({
         title="点击展开 · 按住拖拽 · 双击复位"
       >
         <span className="relative flex size-2 items-center justify-center">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-          <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+          <span
+            className={cn(
+              "relative inline-flex size-1.5 rounded-full",
+              ended ? "bg-muted-foreground" : "bg-core",
+            )}
+          />
         </span>
         <span className="text-[11px] font-semibold text-foreground">
           {agentFirstName} PiP · {pillLabel}
@@ -392,7 +403,12 @@ export function AgentPipMonitor({
         )}
         <div className="flex items-center justify-between text-xs font-semibold">
           <span className="truncate pr-2">{task.title}</span>
-          <span className="shrink-0 text-[10px] text-core font-mono">
+          <span
+            className={cn(
+              "shrink-0 text-[10px] font-mono",
+              ended ? "text-muted-foreground" : "text-core",
+            )}
+          >
             {progressLabel}
           </span>
         </div>
@@ -402,10 +418,15 @@ export function AgentPipMonitor({
           <div
             className={cn(
               "h-full bg-primary transition-all duration-300",
-              task.progress == null && "w-1/3 animate-pulse",
+              !ended && task.progress == null && "w-1/3 animate-pulse",
+              ended && "bg-muted-foreground/50",
             )}
             style={
-              task.progress == null ? undefined : { width: `${task.progress}%` }
+              ended
+                ? { width: `${task.progress ?? 100}%` }
+                : task.progress == null
+                  ? undefined
+                  : { width: `${task.progress}%` }
             }
           />
         </div>

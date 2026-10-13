@@ -41,7 +41,11 @@ import {
 } from "@/core/auth/scoped-storage";
 import { formatTimeAgo } from "@/core/utils/datetime";
 import { AgentPipMonitor, type PipTask } from "./agent-pip-monitor";
-import { ACTIVE_TASK_STATUSES, type EchoTaskProjection } from "./task-space";
+import {
+  ACTIVE_TASK_STATUSES,
+  FAILED_TASK_STATUSES,
+  type EchoTaskProjection,
+} from "./task-space";
 import {
   approvalText,
   attentionRank,
@@ -412,10 +416,6 @@ export function IntentDesktopSurface({
     (agentId ? agentById.get(agentId)?.name : undefined) ??
     (agentId && agentId !== DEFAULT_AGENT_ID ? agentId : defaultAgent?.name) ??
     "Echo";
-  const agentIcon = (agentId: string | null | undefined) =>
-    (agentId ? agentById.get(agentId)?.icon : undefined) ??
-    (agentId ? undefined : defaultAgent?.icon) ??
-    "✦";
 
   const desktopTasks = useMemo(
     () =>
@@ -454,6 +454,11 @@ export function IntentDesktopSurface({
         stepText:
           taskHeadline(watchedTask) ?? taskStatusView(watchedTask).label,
         progress: taskProgress(watchedTask),
+        endedLabel:
+          watchedTask.displayStatus === "completed" ||
+          FAILED_TASK_STATUSES.includes(watchedTask.displayStatus)
+            ? taskStatusView(watchedTask).label
+            : undefined,
         needsApproval: watchedTask.displayStatus === "waiting_approval",
         approvalRiskMessage:
           watchedTask.displayStatus === "waiting_approval"
@@ -1084,9 +1089,10 @@ export function IntentDesktopSurface({
                       title="按住拖动可移动卡片"
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-base" aria-hidden>
-                          {agentIcon(task.agentId)}
-                        </span>
+                        <BotIcon
+                          className="size-4 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
                         <span className="truncate text-[13px] font-semibold text-muted-foreground">
                           {agentLabel(task.agentId)}
                         </span>
