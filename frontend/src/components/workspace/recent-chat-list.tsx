@@ -33,7 +33,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -372,53 +371,49 @@ export function RecentChatList() {
                   <Download className="text-muted-foreground" />
                   <span>{t.common.export}</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem
-                      onSelect={() => handleExport(thread, "markdown")}
-                    >
-                      <FileText className="text-muted-foreground" />
-                      <span>{t.common.exportAsMarkdown}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleExport(thread, "json")}
-                    >
-                      <FileJson className="text-muted-foreground" />
-                      <span>{t.common.exportAsJSON}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onSelect={() => handleExport(thread, "markdown")}
+                  >
+                    <FileText className="text-muted-foreground" />
+                    <span>{t.common.exportAsMarkdown}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => handleExport(thread, "json")}
+                  >
+                    <FileJson className="text-muted-foreground" />
+                    <span>{t.common.exportAsJSON}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <FolderIcon className="text-muted-foreground" />
                   <span>{t.sidebar.moveToProject}</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent>
-                    {projects.map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        onSelect={() =>
-                          moveThreadToProject({
-                            threadId: thread.thread_id,
-                            projectId: project.id,
-                          })
-                        }
-                      >
-                        <span className="mr-1">{project.icon}</span>
-                        <span>{project.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                    {projects.length > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuSubContent>
+                  {projects.map((project) => (
                     <DropdownMenuItem
-                      onSelect={() => setCreateProjectDialogOpen(true)}
+                      key={project.id}
+                      onSelect={() =>
+                        moveThreadToProject({
+                          threadId: thread.thread_id,
+                          projectId: project.id,
+                        })
+                      }
                     >
-                      <PlusIcon className="text-muted-foreground" />
-                      <span>{t.sidebar.newProject}</span>
+                      <span className="mr-1">{project.icon}</span>
+                      <span>{project.name}</span>
                     </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                  ))}
+                  {projects.length > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuItem
+                    onSelect={() => setCreateProjectDialogOpen(true)}
+                  >
+                    <PlusIcon className="text-muted-foreground" />
+                    <span>{t.sidebar.newProject}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem

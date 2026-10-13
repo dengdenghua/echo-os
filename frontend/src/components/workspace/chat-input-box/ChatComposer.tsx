@@ -60,7 +60,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -1426,44 +1425,42 @@ export function ChatComposer({
                       : t.chatInputBox.projectFiles}
                   </span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-80 overflow-hidden p-1.5">
-                    {workDir?.trim() ? (
-                      <>
-                        <DropdownMenuLabel className="px-2 py-1 text-xs text-muted-foreground">
-                          {workspaceLabel}
-                        </DropdownMenuLabel>
-                        <FileTree
-                          workDir={workDir.trim()}
-                          threadId={threadId}
-                          className="max-h-72 overflow-y-auto rounded-lg border border-border-subtle bg-muted/10"
-                          onFileClick={(path) => {
-                            addPendingWorkspaceFile({
-                              path,
-                              workDir: workDir.trim(),
-                              threadId,
-                              sourceLabel: workspaceLabel,
-                            });
-                            setToolsMenuOpen(false);
-                          }}
-                        />
-                        <DropdownMenuSeparator />
-                      </>
-                    ) : (
-                      <DropdownMenuLabel className="px-2 py-2 text-xs font-normal text-muted-foreground">
-                        {t.chatInputBox.noWorkspaceFiles}
+                <DropdownMenuSubContent className="w-80 overflow-hidden p-1.5">
+                  {workDir?.trim() ? (
+                    <>
+                      <DropdownMenuLabel className="px-2 py-1 text-xs text-muted-foreground">
+                        {workspaceLabel}
                       </DropdownMenuLabel>
-                    )}
-                    <DropdownMenuItem
-                      data-testid="chat-upload-device-files"
-                      onSelect={() => contextFileInputRef.current?.click()}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <PaperclipIcon className="size-4" />
-                      {t.chatInputBox.uploadDeviceFiles}
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                      <FileTree
+                        workDir={workDir.trim()}
+                        threadId={threadId}
+                        className="max-h-72 overflow-y-auto rounded-lg border border-border-subtle bg-muted/10"
+                        onFileClick={(path) => {
+                          addPendingWorkspaceFile({
+                            path,
+                            workDir: workDir.trim(),
+                            threadId,
+                            sourceLabel: workspaceLabel,
+                          });
+                          setToolsMenuOpen(false);
+                        }}
+                      />
+                      <DropdownMenuSeparator />
+                    </>
+                  ) : (
+                    <DropdownMenuLabel className="px-2 py-2 text-xs font-normal text-muted-foreground">
+                      {t.chatInputBox.noWorkspaceFiles}
+                    </DropdownMenuLabel>
+                  )}
+                  <DropdownMenuItem
+                    data-testid="chat-upload-device-files"
+                    onSelect={() => contextFileInputRef.current?.click()}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <PaperclipIcon className="size-4" />
+                    {t.chatInputBox.uploadDeviceFiles}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               {onAutomationTargetChange ? (
                 <AutomationTargetControl
@@ -1500,58 +1497,56 @@ export function ChatComposer({
                   <ZapIcon className="size-4" />
                   {t.chatInputBox.commands}
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-56 p-1.5">
-                    <DropdownMenuItem
-                      data-testid="chat-insert-codex-spec"
-                      onSelect={() => insertCommandModeMarker("spec")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <ListTodoIcon className="size-4" />
-                      Spec
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-insert-codex-plan"
-                      onSelect={() => insertCommandModeMarker("plan")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <MapIcon className="size-4" />
-                      Plan
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-insert-codex-goal"
-                      onSelect={() => insertCommandModeMarker("goal")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <TargetIcon className="size-4" />
-                      Goal
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-insert-project-mode"
-                      onSelect={() => insertCommandModeMarker("project")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <FlagIcon className="size-4" />
-                      Milestone
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-insert-browser-surface"
-                      onSelect={insertBrowserSurface}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <MonitorIcon className="size-4" />
-                      Browser
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-insert-chrome-surface"
-                      onSelect={insertChromeSurface}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <MonitorIcon className="size-4" />
-                      Chrome
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                <DropdownMenuSubContent className="w-56 p-1.5">
+                  <DropdownMenuItem
+                    data-testid="chat-insert-codex-spec"
+                    onSelect={() => insertCommandModeMarker("spec")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <ListTodoIcon className="size-4" />
+                    Spec
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-insert-codex-plan"
+                    onSelect={() => insertCommandModeMarker("plan")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <MapIcon className="size-4" />
+                    Plan
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-insert-codex-goal"
+                    onSelect={() => insertCommandModeMarker("goal")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <TargetIcon className="size-4" />
+                    Goal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-insert-project-mode"
+                    onSelect={() => insertCommandModeMarker("project")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <FlagIcon className="size-4" />
+                    Milestone
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-insert-browser-surface"
+                    onSelect={insertBrowserSurface}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <MonitorIcon className="size-4" />
+                    Browser
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-insert-chrome-surface"
+                    onSelect={insertChromeSurface}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <MonitorIcon className="size-4" />
+                    Chrome
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger
@@ -1561,70 +1556,68 @@ export function ChatComposer({
                   <PuzzleIcon className="size-4" />
                   {t.chatInputBox.plugins}
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="max-h-[min(70vh,32rem)] w-80 overflow-y-auto p-1.5">
-                    <DropdownMenuLabel className="px-2 py-1 text-xs text-muted-foreground">
-                      {t.chatInputBox.availablePlugins}
-                    </DropdownMenuLabel>
-                    {pluginsLoading ? (
-                      <DropdownMenuItem disabled>
-                        <Loader2Icon className="size-4 animate-spin" />
-                        {t.common.loading}
-                      </DropdownMenuItem>
-                    ) : pluginsError ? (
-                      <DropdownMenuItem disabled>
-                        {t.chatInputBox.capabilityLoadFailed}
-                      </DropdownMenuItem>
-                    ) : enabledPlugins.length === 0 ? (
-                      <DropdownMenuItem disabled>
-                        {t.chatInputBox.noAvailablePlugins}
-                      </DropdownMenuItem>
-                    ) : (
-                      enabledPlugins.map((plugin) => (
-                        <DropdownMenuItem
-                          key={plugin.id}
-                          data-testid={`chat-plugin-${plugin.id}`}
-                          onSelect={() =>
-                            insertCapabilityRef({
-                              type: "plugin",
-                              id: plugin.id,
-                            })
-                          }
-                          className="items-start gap-2 rounded-lg py-2 text-sm"
-                        >
-                          <PuzzleIcon className="mt-0.5 size-4 text-muted-foreground" />
-                          <span className="min-w-0">
-                            <span className="block truncate font-medium">
-                              {plugin.name}
-                            </span>
-                            {plugin.description ? (
-                              <span className="block truncate text-xs text-muted-foreground">
-                                {plugin.description}
-                              </span>
-                            ) : null}
+                <DropdownMenuSubContent className="max-h-[min(70vh,32rem)] w-80 overflow-y-auto p-1.5">
+                  <DropdownMenuLabel className="px-2 py-1 text-xs text-muted-foreground">
+                    {t.chatInputBox.availablePlugins}
+                  </DropdownMenuLabel>
+                  {pluginsLoading ? (
+                    <DropdownMenuItem disabled>
+                      <Loader2Icon className="size-4 animate-spin" />
+                      {t.common.loading}
+                    </DropdownMenuItem>
+                  ) : pluginsError ? (
+                    <DropdownMenuItem disabled>
+                      {t.chatInputBox.capabilityLoadFailed}
+                    </DropdownMenuItem>
+                  ) : enabledPlugins.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      {t.chatInputBox.noAvailablePlugins}
+                    </DropdownMenuItem>
+                  ) : (
+                    enabledPlugins.map((plugin) => (
+                      <DropdownMenuItem
+                        key={plugin.id}
+                        data-testid={`chat-plugin-${plugin.id}`}
+                        onSelect={() =>
+                          insertCapabilityRef({
+                            type: "plugin",
+                            id: plugin.id,
+                          })
+                        }
+                        className="items-start gap-2 rounded-lg py-2 text-sm"
+                      >
+                        <PuzzleIcon className="mt-0.5 size-4 text-muted-foreground" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {plugin.name}
                           </span>
-                        </DropdownMenuItem>
-                      ))
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      data-testid="chat-manage-plugins"
-                      onSelect={() => openHubCatalog("plugins", "installed")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <Settings2Icon className="size-4" />
-                      {t.chatInputBox.managePlugins}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      data-testid="chat-explore-plugins"
-                      onSelect={() => openHubCatalog("plugins", "all")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <ExternalLinkIcon className="size-4" />
-                      {t.chatInputBox.explorePlugins}
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                          {plugin.description ? (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {plugin.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    data-testid="chat-manage-plugins"
+                    onSelect={() => openHubCatalog("plugins", "installed")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <Settings2Icon className="size-4" />
+                    {t.chatInputBox.managePlugins}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="chat-explore-plugins"
+                    onSelect={() => openHubCatalog("plugins", "all")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <ExternalLinkIcon className="size-4" />
+                    {t.chatInputBox.explorePlugins}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger
@@ -1634,75 +1627,71 @@ export function ChatComposer({
                   <BookOpenIcon className="size-4" />
                   {t.chatInputBox.skills}
                 </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="max-h-[min(72vh,36rem)] w-96 overflow-y-auto p-1.5">
-                    <div className="sticky top-0 z-10 bg-popover px-1 pb-1">
-                      <div className="flex h-9 items-center gap-2 rounded-lg border border-border-default bg-background px-2">
-                        <SearchIcon className="size-4 text-muted-foreground" />
-                        <input
-                          data-testid="chat-skill-search"
-                          value={skillSearch}
-                          onChange={(event) =>
-                            setSkillSearch(event.target.value)
-                          }
-                          onKeyDown={(event) => event.stopPropagation()}
-                          placeholder={t.chatInputBox.searchSkills}
-                          aria-label={t.chatInputBox.searchSkills}
-                          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                        />
-                      </div>
+                <DropdownMenuSubContent className="max-h-[min(72vh,36rem)] w-96 overflow-y-auto p-1.5">
+                  <div className="sticky top-0 z-10 bg-popover px-1 pb-1">
+                    <div className="flex h-9 items-center gap-2 rounded-lg border border-border-default bg-background px-2">
+                      <SearchIcon className="size-4 text-muted-foreground" />
+                      <input
+                        data-testid="chat-skill-search"
+                        value={skillSearch}
+                        onChange={(event) => setSkillSearch(event.target.value)}
+                        onKeyDown={(event) => event.stopPropagation()}
+                        placeholder={t.chatInputBox.searchSkills}
+                        aria-label={t.chatInputBox.searchSkills}
+                        className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                      />
                     </div>
-                    {skillsLoading ? (
-                      <DropdownMenuItem disabled>
-                        <Loader2Icon className="size-4 animate-spin" />
-                        {t.common.loading}
-                      </DropdownMenuItem>
-                    ) : skillsError ? (
-                      <DropdownMenuItem disabled>
-                        {t.chatInputBox.capabilityLoadFailed}
-                      </DropdownMenuItem>
-                    ) : enabledSkills.length === 0 ? (
-                      <DropdownMenuItem disabled>
-                        {t.chatInputBox.noAvailableSkills}
-                      </DropdownMenuItem>
-                    ) : (
-                      enabledSkills.map((skill) => (
-                        <DropdownMenuItem
-                          key={skill.name}
-                          data-testid={`chat-skill-${skill.name}`}
-                          onSelect={() =>
-                            insertCapabilityRef({
-                              type: "skill",
-                              id: skill.name,
-                            })
-                          }
-                          className="items-start gap-2 rounded-lg py-2 text-sm"
-                        >
-                          <BookOpenIcon className="mt-0.5 size-4 text-muted-foreground" />
-                          <span className="min-w-0">
-                            <span className="block truncate font-medium">
-                              {skill.name}
-                            </span>
-                            {skill.description ? (
-                              <span className="block truncate text-xs text-muted-foreground">
-                                {skill.description}
-                              </span>
-                            ) : null}
-                          </span>
-                        </DropdownMenuItem>
-                      ))
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      data-testid="chat-manage-skills"
-                      onSelect={() => openHubCatalog("skills")}
-                      className="gap-2 rounded-lg text-sm"
-                    >
-                      <Settings2Icon className="size-4" />
-                      {t.chatInputBox.manageSkills}
+                  </div>
+                  {skillsLoading ? (
+                    <DropdownMenuItem disabled>
+                      <Loader2Icon className="size-4 animate-spin" />
+                      {t.common.loading}
                     </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
+                  ) : skillsError ? (
+                    <DropdownMenuItem disabled>
+                      {t.chatInputBox.capabilityLoadFailed}
+                    </DropdownMenuItem>
+                  ) : enabledSkills.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      {t.chatInputBox.noAvailableSkills}
+                    </DropdownMenuItem>
+                  ) : (
+                    enabledSkills.map((skill) => (
+                      <DropdownMenuItem
+                        key={skill.name}
+                        data-testid={`chat-skill-${skill.name}`}
+                        onSelect={() =>
+                          insertCapabilityRef({
+                            type: "skill",
+                            id: skill.name,
+                          })
+                        }
+                        className="items-start gap-2 rounded-lg py-2 text-sm"
+                      >
+                        <BookOpenIcon className="mt-0.5 size-4 text-muted-foreground" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {skill.name}
+                          </span>
+                          {skill.description ? (
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {skill.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    data-testid="chat-manage-skills"
+                    onSelect={() => openHubCatalog("skills")}
+                    className="gap-2 rounded-lg text-sm"
+                  >
+                    <Settings2Icon className="size-4" />
+                    {t.chatInputBox.manageSkills}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuSub>
               {(isGroupConversation || canUseDeepResearch) && (
                 <DropdownMenuSeparator />
