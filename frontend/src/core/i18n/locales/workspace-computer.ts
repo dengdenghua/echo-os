@@ -80,6 +80,12 @@ export const workspaceComputerZhCN: WorkspaceComputerCopy = {
   "The backend is running, but required automation capabilities are not ready. Screenshots, previews, mouse, and keyboard actions are temporarily unavailable.":
     "后端已启动，但关键电脑自动化能力还没有就绪，暂时不能截图、预演或执行鼠标键盘动作。",
   "Screen observation": "屏幕观察",
+  // Runtime readiness capability titles (computer_runtime_readiness.py).
+  "Preview-confirm-execute contract": "预演—确认—执行约定",
+  "Desktop lease coordination": "桌面租约协调",
+  "UIA semantic grounding": "UIA 语义定位",
+  "Replay evidence and review queue": "回放证据与复核队列",
+  Limited: "受限",
   Snapshot: "截图",
   Live: "实时",
   "Stop live": "停止实时",

@@ -3,6 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 
+import { isMac } from "@/components/electron-title-bar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,11 @@ const SIDEBAR_WIDTH = "14rem";
 const SIDEBAR_WIDTH_MOBILE = "16rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+
+/** The toggle accepts Cmd or Ctrl; show the one this platform uses. */
+function sidebarShortcutLabel(): string {
+  return isMac() ? "⌘B" : "Ctrl+B";
+}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
@@ -366,7 +372,9 @@ function SidebarTrigger({
     >
       {isOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
       <span className="sr-only">
-        {isOpen ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar}
+        {isOpen
+          ? t.sidebar.collapseSidebar(sidebarShortcutLabel())
+          : t.sidebar.expandSidebar(sidebarShortcutLabel())}
       </span>
     </Button>
   );
@@ -375,7 +383,9 @@ function SidebarTrigger({
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   const { open, toggleSidebar } = useSidebar();
   const { t } = useI18n();
-  const label = open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar;
+  const label = open
+    ? t.sidebar.collapseSidebar(sidebarShortcutLabel())
+    : t.sidebar.expandSidebar(sidebarShortcutLabel());
 
   return (
     <button
@@ -820,6 +830,7 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  sidebarShortcutLabel,
   useCloseMobileSidebarOnChange,
   useSidebar,
 };

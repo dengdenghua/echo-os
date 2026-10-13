@@ -155,6 +155,24 @@ describe("AgentFooter roster states", () => {
     );
   });
 
+  it("labels each HUD shortcut with the agent's display name", async () => {
+    const user = userEvent.setup();
+    mocks.agentState.agents = [echo];
+    renderWithProviders(<AgentFooter />, {
+      initialRoute: "/workspace/realtime/new",
+      locale: "zh-CN",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Echo" }));
+
+    expect(
+      screen.getByRole("button", { name: "打开 Echo 的 HUD" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "打开 general 的 HUD" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows a real loading state instead of a fake question-mark agent", () => {
     mocks.agentState.isLoading = true;
     mocks.agentState.isFetching = true;

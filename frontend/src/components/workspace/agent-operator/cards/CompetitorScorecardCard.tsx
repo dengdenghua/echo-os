@@ -97,7 +97,7 @@ export function CompetitorScorecardCard({
             />
             {to("Competitor scorecard")}
             <Badge variant="outline" className="text-xs">
-              {error ? to("degraded") : report.verdict.replaceAll("_", " ")}
+              {error ? to("degraded") : to(report.verdict.replaceAll("_", " "))}
             </Badge>
           </div>
           <div className="mt-1 truncate text-xs text-muted-foreground">

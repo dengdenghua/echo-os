@@ -1835,7 +1835,7 @@ function RuntimeReadinessPanel({ status }: { status: ComputerStatus }) {
               className="rounded-lg border border-current/15 bg-background/45 px-3 py-2 text-xs leading-5 text-foreground"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{item.title}</span>
+                <span className="font-semibold">{tc(item.title)}</span>
                 <span
                   className={cn(
                     "shrink-0 rounded-md border px-1.5 py-0.5 font-mono text-xs",
@@ -1847,10 +1847,10 @@ function RuntimeReadinessPanel({ status }: { status: ComputerStatus }) {
                   )}
                 >
                   {item.available
-                    ? "ready"
+                    ? tc("Ready")
                     : item.critical
-                      ? "blocked"
-                      : "degraded"}
+                      ? tc("Blocked")
+                      : tc("Limited")}
                 </span>
               </div>
               <div className="mt-1 text-muted-foreground">
@@ -2039,7 +2039,7 @@ function getRuntimeState(
     };
   }
   if (health === "degraded" || degraded.length > 0) {
-    const names = degraded.map((item) => item.title).join("、");
+    const names = degraded.map((item) => tc(item.title)).join("、");
     return {
       health,
       label: tc("Available with limits"),

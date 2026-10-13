@@ -60,6 +60,15 @@ export const agentOperatorZhCN: AgentOperatorCopy = {
   "Worker dispatch is pending": "工作单元仍待派发",
   "Competitor scorecard": "竞品评分卡",
   degraded: "降级",
+  // Scorecard verdicts (_agent_competitor_scorecard_scoring.py).
+  leading: "领先",
+  competitive: "接近",
+  "near parity": "略逊",
+  behind: "落后",
+  "Replay gate": "回放门禁",
+  passed: "已通过",
+  loading: "加载中",
+  "Waiting for replay evaluations": "等待回放评估",
   "Behavioral head-to-head is not certified": "同任务行为对比尚未认证",
   "Echo has no tracked effective scorecard gaps":
     "Echo 当前没有已跟踪的有效评分差距",

@@ -2010,8 +2010,9 @@ export const jaJP: Translations = {
     sectionChats: "チャット",
     sectionSessions: "セッション",
     noChatsYet: "チャットはまだありません",
-    collapseSidebar: "サイドバーを折りたたむ (⌘B)",
-    expandSidebar: "サイドバーを展開 (⌘B)",
+    collapseSidebar: (shortcut: string) =>
+      `サイドバーを折りたたむ (${shortcut})`,
+    expandSidebar: (shortcut: string) => `サイドバーを展開 (${shortcut})`,
     collapseSection: (label: string) => `${label}を折りたたむ`,
     expandSection: (label: string) => `${label}を展開`,
     projectNamePlaceholder: "プロジェクト名",

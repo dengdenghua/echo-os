@@ -218,11 +218,11 @@ export function AgentFooter() {
   // Per-row HUD shortcut. Rendered inside a DropdownMenuItem, so it has to stop
   // both the pointer event and Radix's own `select` from bubbling — otherwise
   // clicking it would also fire the row's `onSelect` and switch agents.
-  const renderHudButton = (agentName: string) => (
+  const renderHudButton = (agentName: string, displayName: string) => (
     <button
       type="button"
       title={t.sidebar.openAgentHud}
-      aria-label={t.sidebar.openAgentHudFor(agentName)}
+      aria-label={t.sidebar.openAgentHudFor(displayName)}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.preventDefault();
@@ -262,7 +262,7 @@ export function AgentFooter() {
               : a.description || t.sidebar.soloChat}
           </span>
         </span>
-        {renderHudButton(a.name)}
+        {renderHudButton(a.name, a.display_name || a.name)}
         {isActive && (
           <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <CheckIcon className="size-3" />

@@ -1765,8 +1765,8 @@ export interface Translations {
     sectionChats: string;
     sectionSessions: string;
     noChatsYet: string;
-    collapseSidebar: string;
-    expandSidebar: string;
+    collapseSidebar: (shortcut: string) => string;
+    expandSidebar: (shortcut: string) => string;
     collapseSection: (label: string) => string;
     expandSection: (label: string) => string;
     projectNamePlaceholder: string;

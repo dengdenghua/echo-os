@@ -98,6 +98,7 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  sidebarShortcutLabel,
   useCloseMobileSidebarOnChange,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -2511,6 +2512,9 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const Icon = open ? PanelLeftCloseIcon : PanelLeftOpenIcon;
   const isCollapsed = state === "collapsed";
+  const toggleLabel = open
+    ? t.sidebar.collapseSidebar(sidebarShortcutLabel())
+    : t.sidebar.expandSidebar(sidebarShortcutLabel());
 
   return (
     <Tooltip>
@@ -2518,10 +2522,8 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={toggleSidebar}
-          title={open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar}
-          aria-label={
-            open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar
-          }
+          title={toggleLabel}
+          aria-label={toggleLabel}
           aria-expanded={open}
           className={cn(
             "flex shrink-0 items-center justify-center justify-self-center border border-transparent bg-transparent text-muted-foreground shadow-none transition-[background-color,border-color,color] hover:border-border-default hover:bg-muted/55 hover:text-foreground",
@@ -2534,7 +2536,7 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
         </button>
       </TooltipTrigger>
       <TooltipContent side={isCollapsed ? "right" : "bottom"} align="center">
-        {open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar}
+        {toggleLabel}
       </TooltipContent>
     </Tooltip>
   );

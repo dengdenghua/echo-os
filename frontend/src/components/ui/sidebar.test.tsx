@@ -41,13 +41,14 @@ describe("mobile sidebar", () => {
     );
 
     const trigger = screen.getByRole("button", { name: "打开侧栏菜单" });
-    expect(trigger).toHaveTextContent("展开侧栏 (⌘B)");
+    // jsdom reports a non-Apple platform, so the label names Ctrl+B.
+    expect(trigger).toHaveTextContent("展开侧栏 (Ctrl+B)");
 
     await user.click(trigger);
 
     expect(await screen.findByRole("dialog", { name: "导航" })).toBeVisible();
     expect(screen.getByText("打开侧栏菜单")).toBeInTheDocument();
-    expect(trigger).toHaveTextContent("收起侧栏 (⌘B)");
+    expect(trigger).toHaveTextContent("收起侧栏 (Ctrl+B)");
   });
 
   it("keeps a contained sheet inside the provider instead of on body", async () => {
@@ -112,5 +113,22 @@ describe("mobile sidebar", () => {
         screen.queryByRole("dialog", { name: "导航" }),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("names the Cmd shortcut on Apple platforms", () => {
+    const platform = vi
+      .spyOn(navigator, "platform", "get")
+      .mockReturnValue("MacIntel");
+    renderWithProviders(
+      <SidebarProvider>
+        <SidebarTrigger aria-label="打开侧栏菜单" />
+      </SidebarProvider>,
+      { locale: "zh-CN" },
+    );
+
+    expect(
+      screen.getByRole("button", { name: "打开侧栏菜单" }),
+    ).toHaveTextContent("展开侧栏 (⌘B)");
+    platform.mockRestore();
   });
 });
