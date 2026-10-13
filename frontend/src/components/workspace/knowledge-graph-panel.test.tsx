@@ -1,25 +1,35 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/i18n/hooks", () => ({
-  useI18n: () => ({
-    t: {
-      knowledgeGraph: { refresh: "刷新", loadFailed: "加载失败" },
-      knowledgePanel: {
-        graphView: "图谱视图",
-        listView: "列表视图",
-        entityTypes: {
-          center: "中心",
-          subject: "主体",
-          object: "对象",
-          neighbor: "邻居",
-        },
+// One stable i18n value, like the real hook: the panel reloads its data
+// whenever `t` changes identity.
+const i18n = vi.hoisted(() => ({
+  t: {
+    knowledgeGraph: { refresh: "刷新", loadFailed: "加载失败" },
+    knowledgePanel: {
+      graphView: "图谱视图",
+      listView: "列表视图",
+      entityTypes: {
+        center: "中心",
+        subject: "主体",
+        object: "对象",
+        neighbor: "邻居",
       },
-      observabilityPage: { crossTenantAdminRequired: "需要管理员" },
     },
-    locale: "zh-CN",
-  }),
+    observabilityPage: { crossTenantAdminRequired: "需要管理员" },
+  },
+  locale: "zh-CN",
+}));
+
+vi.mock("@/core/i18n/hooks", () => ({
+  useI18n: () => i18n,
 }));
 
 vi.mock("./knowledge-graph-view", () => ({
@@ -144,12 +154,19 @@ describe("KnowledgeRelationMap", () => {
         <KnowledgeGraphPanel />
       </MemoryRouter>,
     );
-    const map = await screen.findByRole("img", { name: "知识关系图" });
-    const objectNode = map.querySelector("[data-entity-type='object']")!;
-    fireEvent.mouseOver(objectNode);
-    expect(objectNode.getAttribute("data-focus")).toBe("true");
-    expect(nodeMark(objectNode).style.fill).toBe("var(--echo-core)");
-    const neighbor = map.querySelector("[data-entity-type='neighbor']")!;
-    expect(INK_RAMP).toContain(nodeMark(neighbor).style.fill);
+    // Re-query after each step: the map may re-render while its data settles,
+    // replacing the node elements.
+    const findNode = (type: string) =>
+      screen
+        .getByRole("img", { name: "知识关系图" })
+        .querySelector<SVGElement>(`[data-entity-type='${type}']`);
+    await screen.findByRole("img", { name: "知识关系图" });
+    await waitFor(() => expect(findNode("object")).not.toBeNull());
+    fireEvent.mouseEnter(findNode("object")!);
+    await waitFor(() =>
+      expect(findNode("object")?.getAttribute("data-focus")).toBe("true"),
+    );
+    expect(nodeMark(findNode("object")!).style.fill).toBe("var(--echo-core)");
+    expect(INK_RAMP).toContain(nodeMark(findNode("neighbor")!).style.fill);
   });
 });
