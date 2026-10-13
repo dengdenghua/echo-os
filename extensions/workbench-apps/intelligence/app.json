@@ -2,7 +2,7 @@
   "schema": "echo.workbench_app.v1",
   "id": "intelligence",
   "catalog_id": "workbench_intelligence",
-  "name": "订阅",
+  "name": "自动化",
   "description": "持续跟踪主题与情报",
   "route": "/workspace/intelligence?surface=chat",
   "module_id": "intelligence",
