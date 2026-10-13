@@ -10,7 +10,7 @@
 // unpackaged `--smoke-test-backend` workflow useful without becoming a hidden
 // network or host-tool fallback in a released installer.
 
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -693,6 +693,22 @@ async function spawnBackend(configPath, onProgress) {
   return child;
 }
 
+// The packaged Windows backend is a PyInstaller one-file executable: its
+// bootloader runs Python in a child process. TerminateProcess on the
+// bootloader alone (what child.kill() does on Windows) orphans that child,
+// which keeps serving the port after Echo quits. Stop the whole tree there.
+function terminateBackendProcess(child) {
+  if (process.platform === "win32" && child.pid) {
+    const result = spawnSync(
+      "taskkill",
+      ["/PID", String(child.pid), "/T", "/F"],
+      { stdio: "ignore", windowsHide: true },
+    );
+    if (result.status === 0) return;
+  }
+  child.kill();
+}
+
 async function killBackend() {
   if (!backendChild) return;
   const child = backendChild;
@@ -711,7 +727,7 @@ async function killBackend() {
     child.once("exit", finish);
     child.once("error", finish);
     try {
-      child.kill();
+      terminateBackendProcess(child);
     } catch (err) {
       console.warn("[echo] backend kill failed:", err.message);
       finish();

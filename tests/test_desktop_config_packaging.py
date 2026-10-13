@@ -326,6 +326,10 @@ def test_packaged_backend_restart_waits_for_the_previous_process() -> None:
     assert 'child.once("exit", finish);' in stop
     assert 'child.kill("SIGKILL");' in stop
     assert "hardTimer = setTimeout(finish, 7000);" in stop
+    # A PyInstaller one-file backend runs Python in a child of its
+    # bootloader; Windows must stop the whole tree or the port stays served.
+    assert "terminateBackendProcess(child);" in stop
+    assert '["/PID", String(child.pid), "/T", "/F"]' in runtime_source
 
 
 def test_native_os_shell_uses_only_the_system_agent_service() -> None:
