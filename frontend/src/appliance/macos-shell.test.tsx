@@ -768,6 +768,40 @@ describe("Echo desktop shell", () => {
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
+  it("closes the About dialog and cancels a system action with Escape", async () => {
+    const user = userEvent.setup();
+    const onCloseAbout = vi.fn();
+    const onCancelAction = vi.fn();
+
+    const about = render(
+      <MacAboutDialog
+        open
+        onClose={onCloseAbout}
+        onOpenSettings={vi.fn()}
+        agentHealth={unverifiedAgentHealth}
+      />,
+    );
+    expect(screen.getByRole("dialog", { name: "关于本机" })).toHaveAttribute(
+      "aria-modal",
+      "true",
+    );
+    await user.keyboard("{Escape}");
+    expect(onCloseAbout).toHaveBeenCalledOnce();
+    about.unmount();
+
+    render(
+      <MacSystemActionDialog
+        action="restart"
+        busy={false}
+        error={null}
+        onCancel={onCancelAction}
+        onConfirm={vi.fn()}
+      />,
+    );
+    await user.keyboard("{Escape}");
+    expect(onCancelAction).toHaveBeenCalledOnce();
+  });
+
   it("opens the native app store when the OS exposes it", async () => {
     const user = userEvent.setup();
     const onOpenAppStore = vi.fn();

@@ -1950,6 +1950,7 @@ export function MacAboutDialog({
   onApplyUpdate?: () => void;
   onRestart?: () => void;
 }) {
+  useEscapeToClose(open, onClose);
   if (!open) return null;
   const state = updateStatus?.state || "unavailable";
   const updateCopy: Record<
@@ -2005,6 +2006,9 @@ export function MacAboutDialog({
       onPointerDown={onClose}
     >
       <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="关于本机"
         className="mac-about-dialog"
         data-liquid-surface="ultra-thick"
         onPointerDown={(event) => event.stopPropagation()}
@@ -2141,6 +2145,23 @@ const SYSTEM_ACTION_COPY: Record<
   },
 };
 
+/**
+ * Modal shell dialogs mark themselves aria-modal, which makes the desktop's
+ * global Escape handlers stand down; the dialog then owns Escape itself.
+ */
+function useEscapeToClose(active: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [active, onClose]);
+}
+
 export function MacSystemActionDialog({
   action,
   busy,
@@ -2154,6 +2175,7 @@ export function MacSystemActionDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  useEscapeToClose(Boolean(action) && !busy, onCancel);
   if (!action) return null;
   const copy = SYSTEM_ACTION_COPY[action];
   return (

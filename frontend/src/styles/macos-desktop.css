@@ -8960,3 +8960,92 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
 .macos-desktop-root .mac-finder-sidebar button.is-selected svg {
   color: var(--echo-core) !important;
 }
+
+/* About and system confirmations ---------------------------------------------
+ * The ECHO app tile is graphite with the snow mark and its core light, not a
+ * violet gradient; primary buttons are the monochrome action, not system
+ * blue. On the graphite and neural-glass desktops these dialogs sit on the
+ * graphite film with snow text instead of graphite text on grey glass. */
+.macos-desktop-root :is(.mac-about-mark, .mac-system-action-mark) {
+  background: linear-gradient(180deg, #1b1f25, #0c0e11) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.35) !important;
+}
+
+.macos-desktop-root
+  :is(
+    .mac-about-settings,
+    .mac-about-update-actions button.is-primary,
+    .mac-system-action-buttons button.is-primary
+  ) {
+  color: var(--echo-on-action) !important;
+  background: var(--echo-action) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-about-update-icon {
+  color: var(--echo-ink-muted);
+  background: color-mix(in srgb, var(--echo-ink) 8%, transparent);
+}
+
+.macos-desktop-root .mac-system-action-copy .mac-system-action-error {
+  color: var(--echo-breach);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog) {
+  color: var(--echo-ink) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--echo-surface) 94%,
+    transparent
+  ) !important;
+  background-image: none !important;
+  border-color: var(--echo-line-strong) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog)::before,
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--echo-line) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update)::before,
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-about-dialog > p,
+    .mac-about-dialog dt,
+    .mac-about-dialog > small,
+    .mac-about-update-heading small,
+    .mac-system-action-copy > p:not(.mac-system-action-error)
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-about-update-actions button:not(.is-primary),
+    .mac-system-action-buttons button:not(.is-primary)
+  ) {
+  color: var(--echo-ink) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--echo-line-strong) !important;
+  box-shadow: none !important;
+}
