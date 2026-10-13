@@ -166,17 +166,18 @@ const BUILTIN_ICON_MAP: Record<WorkbenchBuiltinIcon, LucideIcon> = {
   community: CompassIcon,
 };
 
-/** Keep native app tiles distinct without letting the theme's saturated
- * primary color overpower translucent desktop and Dock surfaces. */
+/** ECHO app tiles are one graphite tile with a snow glyph; the glyph, not
+ * a colour, tells native apps apart. */
+const ECHO_APP_TILE = "from-zinc-700/85 to-zinc-900/85";
 const BUILTIN_ICON_TONE: Record<WorkbenchBuiltinIcon, string> = {
-  database: "from-sky-600/75 to-blue-500/65",
-  projects: "from-slate-600/75 to-sky-500/65",
-  trading: "from-teal-600/75 to-emerald-500/65",
-  design: "from-violet-600/70 to-indigo-400/60",
-  narrative: "from-fuchsia-600/70 to-violet-500/60",
-  evolution: "from-violet-600/75 to-cyan-500/60",
-  intelligence: "from-cyan-600/75 to-blue-500/65",
-  community: "from-indigo-600/70 to-violet-500/60",
+  database: ECHO_APP_TILE,
+  projects: ECHO_APP_TILE,
+  trading: ECHO_APP_TILE,
+  design: ECHO_APP_TILE,
+  narrative: ECHO_APP_TILE,
+  evolution: ECHO_APP_TILE,
+  intelligence: ECHO_APP_TILE,
+  community: ECHO_APP_TILE,
 };
 
 const WORKSPACE_DESKTOP_APPS: BrowserDesktopApp[] = WORKBENCH_BUILTIN_APPS.map(
@@ -1031,7 +1032,7 @@ export function BrowserHome({
       DesktopAppCategory,
       { title: string; subtitle: string }
     > = {
-      workspace: { title: "EchoAI 工作台", subtitle: "原生能力，一键直达" },
+      workspace: { title: "ECHO 工作台", subtitle: "原生能力，一键直达" },
       ai: { title: bt.groupAiTools, subtitle: bt.groupAiToolsSubtitle },
       video: { title: bt.groupVideo, subtitle: bt.groupVideoSubtitle },
       dev: { title: bt.groupDev, subtitle: bt.groupDevSubtitle },
