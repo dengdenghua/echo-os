@@ -111,18 +111,12 @@ describe("<ModelPicker />", () => {
     );
 
     const trigger = screen.getByTestId("model-picker-trigger");
-    expect(within(trigger).getByText("big-pickle")).toHaveClass(
-      "text-core",
-    );
+    expect(within(trigger).getByText("big-pickle")).toHaveClass("text-core");
 
     await user.click(trigger);
     const menu = await screen.findByTestId("model-picker-menu");
-    expect(within(menu).getByText("big-pickle")).toHaveClass(
-      "text-core",
-    );
-    expect(within(menu).getByText("mimo-v2.5-free")).toHaveClass(
-      "text-core",
-    );
+    expect(within(menu).getByText("big-pickle")).toHaveClass("text-core");
+    expect(within(menu).getByText("mimo-v2.5-free")).toHaveClass("text-core");
     expect(within(menu).queryByText("FREE")).not.toBeInTheDocument();
   });
 

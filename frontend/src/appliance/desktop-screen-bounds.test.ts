@@ -49,7 +49,14 @@ describe("desktop-screen-bounds", () => {
       scaleFactor: 1.25,
     };
 
-    const clamped = clampToWorkArea(-1500, 200, 500, 400, secondaryWorkArea, 12);
+    const clamped = clampToWorkArea(
+      -1500,
+      200,
+      500,
+      400,
+      secondaryWorkArea,
+      12,
+    );
     expect(clamped.x).toBe(-1500);
     expect(clamped.y).toBe(200);
 
@@ -73,7 +80,11 @@ describe("desktop-screen-bounds", () => {
       scaleFactor: 2,
     });
 
-    (window as unknown as { echo: { window: { getScreenBounds: typeof mockGetScreenBounds } } }).echo = {
+    (
+      window as unknown as {
+        echo: { window: { getScreenBounds: typeof mockGetScreenBounds } };
+      }
+    ).echo = {
       window: {
         getScreenBounds: mockGetScreenBounds,
       },

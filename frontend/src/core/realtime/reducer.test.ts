@@ -1967,7 +1967,9 @@ describe("reducer · out-of-order event matrix", () => {
         },
       },
     );
-    expect(state.turns[0]?.execution).toEqual({ engine: "codex", status: "running" });
+    expect(state.turns[0]?.execution).toEqual({
+      engine: "codex",
+      status: "running",
+    });
   });
 });
-

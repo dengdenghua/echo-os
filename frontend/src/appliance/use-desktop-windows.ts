@@ -19,7 +19,9 @@ export type DesktopSessionSnapshot = {
 
 const DESKTOP_SESSION_PREFIX = "echo-desktop-session";
 
-function loadSessionSnapshot(actor: string): Record<string, WindowGeometry> | null {
+function loadSessionSnapshot(
+  actor: string,
+): Record<string, WindowGeometry> | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(
@@ -211,17 +213,13 @@ export function useDesktopWindows() {
   const actor = currentActorId();
   const ownerRef = useRef(actor);
   const [owner, setOwner] = useState(actor);
-  const [state, dispatch] = useReducer(
-    reduce,
-    undefined,
-    () => ({
-      windows: [],
-      minimized: new Set<string>(),
-      focusedWin: null,
-      geometries: loadSessionSnapshot(actor) ?? {},
-      stack: [],
-    }),
-  );
+  const [state, dispatch] = useReducer(reduce, undefined, () => ({
+    windows: [],
+    minimized: new Set<string>(),
+    focusedWin: null,
+    geometries: loadSessionSnapshot(actor) ?? {},
+    stack: [],
+  }));
 
   useEffect(() => {
     if (ownerRef.current === actor) return;

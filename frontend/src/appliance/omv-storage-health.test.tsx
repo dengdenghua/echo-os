@@ -371,7 +371,9 @@ describe("native storage health settings", () => {
 
     expect(await screen.findByText("Family")).toBeInTheDocument();
     expect(screen.getByText("PASSED")).toHaveClass("text-core");
-    expect(screen.getByText("健康状态未知")).toHaveClass("text-muted-foreground");
+    expect(screen.getByText("健康状态未知")).toHaveClass(
+      "text-muted-foreground",
+    );
     expect(screen.getByText(/SMART 组件尚未安装/)).toBeInTheDocument();
     expect(screen.queryByText(/发现严重故障/)).not.toBeInTheDocument();
   });

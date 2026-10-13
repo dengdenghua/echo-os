@@ -19,8 +19,7 @@ export const DEFAULT_WORK_AREA: ScreenWorkArea = {
   y: 0,
   width: typeof window !== "undefined" ? window.innerWidth : 1920,
   height: typeof window !== "undefined" ? window.innerHeight : 1080,
-  scaleFactor:
-    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+  scaleFactor: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
 };
 
 let cachedWorkArea: ScreenWorkArea | null = null;
@@ -46,7 +45,10 @@ function toClientWorkArea(
   if (!origin) return workArea;
   const left = Math.max(0, workArea.x - origin.x);
   const top = Math.max(0, workArea.y - origin.y);
-  const right = Math.min(window.innerWidth, workArea.x + workArea.width - origin.x);
+  const right = Math.min(
+    window.innerWidth,
+    workArea.x + workArea.width - origin.x,
+  );
   const bottom = Math.min(
     window.innerHeight,
     workArea.y + workArea.height - origin.y,

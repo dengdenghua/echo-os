@@ -156,7 +156,6 @@ it("restores a minimized window into focus", () => {
   expect(result.current.focusedWin).toBe("win-doc");
 });
 
-
 it("keeps a most-recently-used stack without reordering the window list", () => {
   const { result } = renderHook(useDesktopWindows);
   act(() => {
