@@ -707,7 +707,7 @@ function KnowledgeRelationMap({
         </svg>
       )}
       {selectedNode && (
-        <div className="absolute bottom-3 left-3 max-w-[var(--text-truncate-2xl)] rounded-md border border-white/10 bg-black/45 px-3 py-2 text-white backdrop-blur-md">
+        <div className="absolute bottom-3 left-3 max-w-[var(--text-truncate-2xl,320px)] rounded-md border border-white/10 bg-black/45 px-3 py-2 text-white backdrop-blur-md">
           <div className="truncate text-xs font-semibold">
             {labelFor(selectedNode.name)}
           </div>

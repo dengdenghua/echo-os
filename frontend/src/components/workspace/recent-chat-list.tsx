@@ -531,7 +531,7 @@ export function RecentChatList() {
       })}
 
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent className="sm:max-w-[var(--dialog-md)]">
+        <DialogContent className="sm:max-w-[var(--dialog-md,425px)]">
           <DialogHeader>
             <DialogTitle>{t.common.rename}</DialogTitle>
           </DialogHeader>
@@ -564,7 +564,7 @@ export function RecentChatList() {
         open={projectToDelete !== null}
         onOpenChange={(open) => !open && setProjectToDelete(null)}
       >
-        <DialogContent className="sm:max-w-[var(--dialog-md)]">
+        <DialogContent className="sm:max-w-[var(--dialog-md,425px)]">
           <DialogHeader>
             <DialogTitle>{t.sidebar.confirmDeleteProjectTitle}</DialogTitle>
             <DialogDescription>
@@ -592,7 +592,7 @@ export function RecentChatList() {
         open={threadToDelete !== null}
         onOpenChange={(open) => !open && setThreadToDelete(null)}
       >
-        <DialogContent className="sm:max-w-[var(--dialog-md)]">
+        <DialogContent className="sm:max-w-[var(--dialog-md,425px)]">
           <DialogHeader>
             <DialogTitle>{t.common.delete}</DialogTitle>
             <DialogDescription>

@@ -645,7 +645,7 @@ export function ChannelCredentialDialog({
                 {fields.map((f) => (
                   <div key={f.key} className="flex justify-between gap-2">
                     <span>{f.label}</span>
-                    <span className="font-mono truncate max-w-[var(--text-truncate-xl)]">
+                    <span className="font-mono truncate max-w-[var(--text-truncate-xl,220px)]">
                       {masked[f.key] ?? "—"}
                     </span>
                   </div>

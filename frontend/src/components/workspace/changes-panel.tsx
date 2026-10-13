@@ -231,7 +231,7 @@ function ChangeRow({
       {expanded && event.diff && (
         <div className="mx-3 mb-2 overflow-hidden rounded border border-border-subtle bg-background">
           {hunks.length > 0 ? (
-            <div className="max-h-[var(--panel-height-lg)] overflow-y-auto">
+            <div className="max-h-[var(--panel-height-lg,400px)] overflow-y-auto">
               {hunks.map((hunk) => (
                 <HunkBlock
                   key={hunk.id}
@@ -246,7 +246,7 @@ function ChangeRow({
           ) : (
             <pre
               className={cn(
-                "max-h-[var(--panel-height-md)] overflow-x-auto overflow-y-auto px-2 py-1.5",
+                "max-h-[var(--panel-height-md,320px)] overflow-x-auto overflow-y-auto px-2 py-1.5",
                 "whitespace-pre text-xs font-mono leading-snug",
               )}
             >

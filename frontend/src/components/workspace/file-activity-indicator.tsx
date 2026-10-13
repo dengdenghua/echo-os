@@ -70,7 +70,7 @@ export function FileActivityIndicator({ className }: Props) {
             )}
             onAnimationEnd={() => setFlashKey(null)}
           />
-          <span className="truncate max-w-[var(--text-truncate-md)]">
+          <span className="truncate max-w-[var(--text-truncate-md,140px)]">
             {latest
               ? shortPath(latest.path)
               : t.activityIndicators.filesCount(events.length)}
@@ -140,7 +140,7 @@ function DiffBlock({ diff }: { diff: string }) {
       className={cn(
         "m-1 rounded border border-border-subtle bg-background px-2 py-1.5",
         "text-xs font-mono leading-snug whitespace-pre overflow-x-auto",
-        "max-h-[var(--panel-height-md)] overflow-y-auto",
+        "max-h-[var(--panel-height-md,320px)] overflow-y-auto",
       )}
     >
       {diff.split("\n").map((line, i) => (

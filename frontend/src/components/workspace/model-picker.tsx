@@ -583,7 +583,7 @@ export function ModelPicker({
       title={selectedDisplayLabel}
     >
       {isAutoMode && <SparklesIcon className="size-3 shrink-0 text-info" />}
-      <span className="truncate max-w-[var(--text-truncate-md)]">
+      <span className="truncate max-w-[var(--text-truncate-md,140px)]">
         <span className={cn(isOpenCodeZenFreeModel(selected) && "text-core")}>
           {selectedDisplayLabel}
         </span>

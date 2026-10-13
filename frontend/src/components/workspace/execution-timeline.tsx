@@ -227,7 +227,7 @@ export function ExecutionTimeline() {
   }
   if (!data) {
     return (
-      <Empty className="min-h-[var(--panel-height-sm)]">
+      <Empty className="min-h-[var(--panel-height-sm,220px)]">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <ClockIcon />
@@ -264,7 +264,7 @@ export function ExecutionTimeline() {
       </div>
 
       {taskIds.length === 0 ? (
-        <Empty className="min-h-[var(--panel-height-sm)]">
+        <Empty className="min-h-[var(--panel-height-sm,220px)]">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <SearchIcon />

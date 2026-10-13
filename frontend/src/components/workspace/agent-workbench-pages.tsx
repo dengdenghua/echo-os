@@ -1890,7 +1890,7 @@ export function AgentSummaryPage({
             <p className="text-xs font-medium text-foreground">
               {t.agentWorkbenchPages.dashboardOverview}
             </p>
-            <p className="mt-1 max-w-[var(--text-truncate-xl)] text-xs text-muted-foreground">
+            <p className="mt-1 max-w-[var(--text-truncate-xl,220px)] text-xs text-muted-foreground">
               {t.agentWorkbenchPages.dashboardOverviewDescription}
             </p>
           </div>
