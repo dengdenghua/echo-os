@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # preview-release.yml calls this with preview: true. A preview build is
+  # always unsigned and uploads only the *-unsigned-* artifacts, which
+  # release.yml never selects.
+  workflow_call:
+    inputs:
+      preview:
+        description: Build the unsigned preview-channel installer
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -34,7 +43,20 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      # Preview builds never read the signing secrets: the validation step
+      # below is skipped and every signed-only step keys off this value.
+      - name: Select the unsigned preview build
+        if: ${{ inputs.preview }}
+        shell: pwsh
+        run: |
+          "ECHO_WINDOWS_SIGNING=unsigned" | Out-File `
+            -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output ("::notice title=Unsigned preview build::" +
+            "Authenticode signing is skipped for the preview channel; " +
+            "artifacts are uploaded as *-unsigned-*.")
+
       - name: Validate protected Windows signing identity
+        if: ${{ !inputs.preview }}
         shell: pwsh
         env:
           CSC_LINK: ${{ secrets.WINDOWS_CODE_SIGNING_CERTIFICATE_BASE64 }}

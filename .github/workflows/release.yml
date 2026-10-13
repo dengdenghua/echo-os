@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*.*.*"
+      # `*` also matches "-", so without this exclusion a preview tag such as
+      # v0.3.0-preview.1 would start the stable release. Preview tags belong
+      # to preview-release.yml; the version check below still requires the
+      # tag to be exactly v<pyproject version>.
+      - "!v*.*.*-*"
 
 permissions:
   contents: read
