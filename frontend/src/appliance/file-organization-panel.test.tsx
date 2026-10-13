@@ -153,6 +153,11 @@ function searchableResult() {
   });
 }
 
+// These flows type passwords and walk preview → approval → apply with
+// userEvent; they take 1–4 s on an idle machine, so the 5 s vitest default
+// times out on a loaded CI runner. Give every test in this file headroom.
+vi.setConfig({ testTimeout: 20_000 });
+
 describe("search within the loaded organization plan", () => {
   it.each([
     ["INVOICE.TXT", "invoice.txt"],

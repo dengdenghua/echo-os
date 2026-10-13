@@ -120,6 +120,12 @@ function settledCodeMatches(match: RegExp) {
     match.test(element.textContent);
 }
 
+// Each language grammar is a lazily loaded shiki chunk. The 1 s findBy
+// default is too tight on a loaded runner, so settled-code lookups wait 10 s.
+function findSettledCode(match: RegExp) {
+  return screen.findByText(settledCodeMatches(match), {}, { timeout: 10_000 });
+}
+
 describe("<MarkdownContent /> web links", () => {
   let acknowledge: (event: Event) => void;
 
@@ -330,17 +336,13 @@ describe("<MarkdownContent /> streaming state", () => {
 
     // Settled blocks render through shiki asynchronously — the code text
     // only appears once the highlight is ready (no raw-text flash).
-    expect(
-      await screen.findByText(settledCodeMatches(/<read_only>/)),
-    ).toBeInTheDocument();
+    expect(await findSettledCode(/<read_only>/)).toBeInTheDocument();
   });
 
   it("keeps internal component tags when they are shown as a fenced code example", async () => {
     renderMarkdown("```tsx\n<TextBlock>hello</TextBlock>\n```");
 
-    expect(
-      await screen.findByText(settledCodeMatches(/<TextBlock>/)),
-    ).toBeInTheDocument();
+    expect(await findSettledCode(/<TextBlock>/)).toBeInTheDocument();
   });
 
   it("keeps markdown controls and assistive technology in the streaming state", () => {
@@ -448,9 +450,7 @@ describe("<MarkdownContent /> code block streaming", () => {
 
   it("renders code language correctly", async () => {
     renderMarkdown("```typescript\nconst x = 1;\n```", false);
-    expect(
-      await screen.findByText(settledCodeMatches(/const x = 1/)),
-    ).toBeInTheDocument();
+    expect(await findSettledCode(/const x = 1/)).toBeInTheDocument();
   });
 
   it("handles incomplete code fence during streaming", () => {
@@ -501,9 +501,7 @@ describe("<MarkdownContent /> code block streaming", () => {
     );
     // After settling, the block re-renders through shiki; the content
     // reappears once the settled highlight resolves.
-    expect(
-      await screen.findByText(settledCodeMatches(/print\('world'\)/)),
-    ).toBeInTheDocument();
+    expect(await findSettledCode(/print\('world'\)/)).toBeInTheDocument();
   });
 });
 
