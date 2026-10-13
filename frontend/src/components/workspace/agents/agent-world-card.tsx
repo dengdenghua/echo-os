@@ -129,13 +129,13 @@ export function AgentWorldCard({
                 {installed ? (
                   <Badge
                     variant="secondary"
-                    className="h-5 shrink-0 rounded-full px-2 text-[11px] font-medium"
+                    className="h-5 shrink-0 rounded-full px-2 text-xs font-medium"
                   >
                     {t.agentWorld.agentInstalled}
                   </Badge>
                 ) : agent.is_official ? (
                   <span
-                    className="flex shrink-0 items-center gap-1 text-[11px] text-primary"
+                    className="flex shrink-0 items-center gap-1 text-xs text-primary"
                     aria-label={`${t.agentWorld.authorPrefix} ${agent.author}`}
                   >
                     <BadgeCheckIcon className="size-3.5" aria-hidden="true" />
@@ -155,7 +155,7 @@ export function AgentWorldCard({
                 {agent.description}
               </CardDescription>
               {!agent.is_official && (
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground/75">
+                <p className="mt-0.5 truncate text-xs text-muted-foreground/75">
                   {t.agentWorld.authorPrefix} {agent.author}
                 </p>
               )}
@@ -172,7 +172,7 @@ export function AgentWorldCard({
                   key={`${tag}-${index}`}
                   variant="outline"
                   className={cn(
-                    "max-w-32 truncate rounded-full px-2 py-0 text-[11px] font-normal",
+                    "max-w-32 truncate rounded-full px-2 py-0 text-xs font-normal",
                     index === 0
                       ? "border-border-default bg-muted text-foreground"
                       : "border-border-subtle bg-muted/35 text-muted-foreground",

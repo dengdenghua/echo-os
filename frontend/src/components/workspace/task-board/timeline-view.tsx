@@ -381,7 +381,7 @@ export function TimelineView({
                     y={PADDING_TOP - 10}
                     textAnchor="middle"
                     className="fill-muted-foreground text-xs"
-                    style={{ fontSize: "10px" }}
+                    style={{ fontSize: "12px" }}
                   >
                     {tick.label}
                   </text>
@@ -437,13 +437,13 @@ export function TimelineView({
                   y={y + BAR_HEIGHT / 2 + 1}
                   dominantBaseline="middle"
                   className="fill-foreground text-xs"
-                  style={{ fontSize: "11px" }}
+                  style={{ fontSize: "12px" }}
                 >
                   <tspan className="fill-muted-foreground">
                     {TYPE_ICON_EMOJI[task.type] ?? ""}{" "}
                   </tspan>
-                  {task.name.length > 18
-                    ? task.name.slice(0, 18) + "..."
+                  {task.name.length > 11
+                    ? task.name.slice(0, 11) + "..."
                     : task.name}
                 </text>
 

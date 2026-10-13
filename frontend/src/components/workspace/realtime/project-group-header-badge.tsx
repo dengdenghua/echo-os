@@ -70,7 +70,7 @@ export function ProjectGroupHeaderBadge({
         onClick={onOpenWorkbench}
         aria-label={`${copy.openWorkbench}：${safeName}`}
         title={`${copy.openWorkbench}：${safeName}`}
-        className="inline-flex h-7 min-w-0 max-w-52 items-center gap-1.5 rounded-l-md px-2 text-[11px] font-medium transition-colors hover:bg-primary/10"
+        className="inline-flex h-7 min-w-0 max-w-52 items-center gap-1.5 rounded-l-md px-2 text-xs font-medium transition-colors hover:bg-primary/10"
       >
         <FolderKanbanIcon
           data-slot="project-capability-icon"

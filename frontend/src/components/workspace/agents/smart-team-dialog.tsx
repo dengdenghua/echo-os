@@ -191,7 +191,7 @@ export function SmartTeamDialog({
                         <span className="block truncate text-sm font-medium">
                           {agent.display_name}
                         </span>
-                        <span className="block truncate text-[11px] text-muted-foreground">
+                        <span className="block truncate text-xs text-muted-foreground">
                           {index === 0
                             ? "任务协调候选"
                             : agent.tags.includes("专家团")
@@ -200,12 +200,12 @@ export function SmartTeamDialog({
                         </span>
                       </span>
                       {!agent.is_installed ? (
-                        <span className="text-[10px] text-warning">需安装</span>
+                        <span className="text-xs text-warning">需安装</span>
                       ) : null}
                     </div>
                   ))}
                   {catalogLoading ? (
-                    <div className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
                       <Loader2Icon className="size-3 animate-spin" />
                       正在扫描云端专家目录…
                     </div>
@@ -226,7 +226,7 @@ export function SmartTeamDialog({
                         <div className="text-sm font-medium">
                           {plugin.label}
                         </div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                        <div className="mt-0.5 text-xs text-muted-foreground">
                           {plugin.reason}
                         </div>
                       </div>
@@ -240,7 +240,7 @@ export function SmartTeamDialog({
               </section>
             </div>
           ) : null}
-          <p className="text-[11px] leading-5 text-muted-foreground">
+          <p className="text-xs leading-5 text-muted-foreground">
             专家优先按能力匹配，不强制主角入队。必要时系统协调层仅承载任务线程，不占专家席位。插件只推荐，不会静默安装。
           </p>
         </div>

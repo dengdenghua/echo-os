@@ -1019,7 +1019,7 @@ function ModelSettingsOverview({
 
       <div className="mt-3 flex flex-col border-t border-border pt-2.5 sm:flex-row sm:items-center sm:divide-x sm:divide-border">
         <div className="min-w-0 py-1 sm:flex-1 sm:py-0 sm:pr-4">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {copy.currentDefault}
           </div>
           <div className="truncate font-mono text-xs font-medium text-foreground">
@@ -1027,7 +1027,7 @@ function ModelSettingsOverview({
           </div>
         </div>
         <div className="min-w-0 py-1 sm:flex-1 sm:px-4 sm:py-0">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {copy.configuredModels}
           </div>
           <div className="text-xs font-medium text-foreground">
@@ -1036,9 +1036,7 @@ function ModelSettingsOverview({
         </div>
         <div className="flex items-center justify-between gap-3 py-1 sm:flex-1 sm:py-0 sm:pl-4">
           <div>
-            <div className="text-[11px] text-muted-foreground">
-              {copy.gateway}
-            </div>
+            <div className="text-xs text-muted-foreground">{copy.gateway}</div>
             <div
               role="status"
               aria-live="polite"
@@ -3218,7 +3216,7 @@ function EditModelForm({
               </div>
               {visionLocked && (
                 <span
-                  className="text-[11px] leading-tight text-muted-foreground"
+                  className="text-xs leading-tight text-muted-foreground"
                   role="status"
                 >
                   {t.settings.model.visionNotSupported}
@@ -3825,7 +3823,7 @@ function AddModelForm({
           </div>
           {visionLocked && (
             <span
-              className="text-[11px] leading-tight text-muted-foreground"
+              className="text-xs leading-tight text-muted-foreground"
               role="status"
             >
               {t.settings.model.visionNotSupported}

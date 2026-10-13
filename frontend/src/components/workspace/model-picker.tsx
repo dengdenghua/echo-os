@@ -198,7 +198,7 @@ export function ModelContextSetting({
               )}
             >
               <span className="truncate">{profileLabel}</span>
-              <span className="shrink-0 tabular-nums text-[11px] opacity-70">
+              <span className="shrink-0 tabular-nums text-xs opacity-70">
                 {formatted}
               </span>
             </button>
@@ -326,7 +326,7 @@ function ReasoningEffortSetting({
         </span>
       </div>
       {mapped && (
-        <div className="mb-1 px-1 text-[11px] text-muted-foreground/70">
+        <div className="mb-1 px-1 text-xs text-muted-foreground/70">
           {t.inputBox.reasoningEffortMapped(
             reasoningEffortLabel(rawCurrent, t),
             reasoningEffortLabel(effective, t),

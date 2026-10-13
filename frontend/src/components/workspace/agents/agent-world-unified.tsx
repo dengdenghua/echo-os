@@ -691,9 +691,7 @@ export function AgentsTab({
             >
               精选场景
             </h3>
-            <span className="text-[11px] text-muted-foreground">
-              选择即组队
-            </span>
+            <span className="text-xs text-muted-foreground">选择即组队</span>
           </div>
           <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
             {featuredScenarios.map((scenario) => (
@@ -738,7 +736,7 @@ export function AgentsTab({
                   ))}
                 </div>
                 {scenario.members.length > 3 ? (
-                  <span className="absolute bottom-4 right-4 text-[11px] text-muted-foreground">
+                  <span className="absolute bottom-4 right-4 text-xs text-muted-foreground">
                     +{scenario.members.length - 3} 位成员
                   </span>
                 ) : null}
@@ -752,7 +750,7 @@ export function AgentsTab({
         <>
           <div className="flex items-center justify-between pt-1">
             <h3 className="text-sm font-semibold text-foreground">全部角色</h3>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {visibleAgents.length} 位
             </span>
           </div>

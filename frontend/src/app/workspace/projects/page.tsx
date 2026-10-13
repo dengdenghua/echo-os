@@ -579,7 +579,7 @@ export default function ProjectsPage() {
                         {p.status && (
                           <Badge
                             variant="outline"
-                            className={`shrink-0 text-[10px] ${STATUS_TONE[p.status] ?? ""}`}
+                            className={`shrink-0 text-xs ${STATUS_TONE[p.status] ?? ""}`}
                           >
                             {STATUS_LABEL[p.status] ?? p.status}
                           </Badge>
@@ -769,14 +769,14 @@ export default function ProjectsPage() {
                                     </span>
                                     <Badge
                                       variant="outline"
-                                      className={`gap-1 text-[10px] ${HEALTH_TONE[m.health] ?? ""}`}
+                                      className={`gap-1 text-xs ${HEALTH_TONE[m.health] ?? ""}`}
                                     >
                                       {healthIcon(m.health)}
                                       {HEALTH_LABEL[m.health] ?? m.health}
                                     </Badge>
                                     <Badge
                                       variant="outline"
-                                      className={`text-[10px] ${PRIORITY_TONE[m.priority] ?? ""}`}
+                                      className={`text-xs ${PRIORITY_TONE[m.priority] ?? ""}`}
                                     >
                                       优先级 {m.priority}
                                     </Badge>
@@ -810,7 +810,7 @@ export default function ProjectsPage() {
                                 </div>
                                 {m.overdue_tasks.length > 0 && (
                                   <div className="mt-3 space-y-2 border-t border-orange-500/15 pt-2.5">
-                                    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-orange-600/90">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-orange-600/90">
                                       <TimerIcon className="size-3" />
                                       逾期任务 · {m.overdue_tasks.length}
                                     </div>
@@ -822,7 +822,7 @@ export default function ProjectsPage() {
                                         <div className="text-xs leading-relaxed text-orange-800">
                                           {o.goal}
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1 text-[11px] text-orange-600/80">
+                                        <div className="mt-1 flex items-center gap-1 text-xs text-orange-600/80">
                                           <CalendarRangeIcon className="size-3" />
                                           截止 {fmtDate(o.due_at)} · 已逾期
                                         </div>
@@ -899,7 +899,7 @@ export default function ProjectsPage() {
                                 >
                                   <Badge
                                     variant="outline"
-                                    className={`mt-0.5 shrink-0 text-[10px] ${PRIORITY_TONE[a.priority] ?? ""}`}
+                                    className={`mt-0.5 shrink-0 text-xs ${PRIORITY_TONE[a.priority] ?? ""}`}
                                   >
                                     {a.priority}
                                   </Badge>

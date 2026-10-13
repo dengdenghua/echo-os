@@ -197,7 +197,7 @@ function ModuleCard({
         )}
       >
         {unavailable ? (
-          <span className="whitespace-nowrap text-[10px]">需先安装或启用</span>
+          <span className="whitespace-nowrap text-xs">需先安装或启用</span>
         ) : enabled ? (
           <CheckIcon className="size-3" />
         ) : (

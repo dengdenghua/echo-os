@@ -140,7 +140,7 @@ function EntityReferences({
           <button
             type="button"
             key={`${ref.kind}:${ref.id}:${index}`}
-            className="inline-flex max-w-56 items-center gap-1 truncate rounded-md border border-border-subtle bg-background/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground outline-none hover:border-primary/30 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex max-w-56 items-center gap-1 truncate rounded-md border border-border-subtle bg-background/70 px-1.5 py-0.5 text-xs font-medium text-muted-foreground outline-none hover:border-primary/30 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => onEntityClick(ref)}
           >
             <Link2Icon className="size-2.5 shrink-0" />
@@ -149,7 +149,7 @@ function EntityReferences({
         ) : (
           <span
             key={`${ref.kind}:${ref.id}:${index}`}
-            className="inline-flex max-w-56 items-center gap-1 truncate rounded-md border border-border-subtle bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+            className="inline-flex max-w-56 items-center gap-1 truncate rounded-md border border-border-subtle bg-background/70 px-1.5 py-0.5 text-xs text-muted-foreground"
           >
             <Link2Icon className="size-2.5 shrink-0" />
             <span className="truncate">{label}</span>
@@ -221,7 +221,7 @@ function CoworkRoomTimelineEntryContent({
     >
       <Avatar className="mt-0.5 size-8 rounded-lg">
         {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-        <AvatarFallback className="rounded-lg text-[10px] font-semibold">
+        <AvatarFallback className="rounded-lg text-xs font-semibold">
           {initials(displayName)}
         </AvatarFallback>
       </Avatar>
@@ -233,7 +233,7 @@ function CoworkRoomTimelineEntryContent({
       >
         <div
           className={cn(
-            "mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground",
+            "mb-1 flex items-center gap-1.5 text-xs text-muted-foreground",
             own && "flex-row-reverse",
           )}
         >

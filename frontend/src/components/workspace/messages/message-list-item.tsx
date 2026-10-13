@@ -346,7 +346,7 @@ export function HumanMessageDeliveryStatus({
   return (
     <div
       className={cn(
-        "mt-1 flex items-center justify-end gap-1.5 text-[11px] leading-4",
+        "mt-1 flex items-center justify-end gap-1.5 text-xs leading-4",
         state === "failed" ? "text-destructive/80" : "text-muted-foreground/70",
       )}
       data-testid="human-message-delivery-status"
@@ -1396,7 +1396,7 @@ function ContextFilesList({
               <span className="block truncate text-sm font-medium">
                 {label}
               </span>
-              <span className="block truncate text-[11px] text-muted-foreground">
+              <span className="block truncate text-xs text-muted-foreground">
                 {file.sourceLabel || "文件引用"}
               </span>
             </span>

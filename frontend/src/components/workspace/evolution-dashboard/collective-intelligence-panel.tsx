@@ -76,9 +76,7 @@ function HealthGauge({ score }: { score: number }) {
           >
             {score}
           </div>
-          <div className="text-[10px] text-muted-foreground">
-            {getLabel(score)}
-          </div>
+          <div className="text-xs text-muted-foreground">{getLabel(score)}</div>
         </div>
       </div>
       <div>
@@ -111,9 +109,7 @@ function StatCard({
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-0.5 text-lg font-bold tabular-nums">{value}</div>
         {subtitle && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
-            {subtitle}
-          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{subtitle}</div>
         )}
       </div>
     </div>

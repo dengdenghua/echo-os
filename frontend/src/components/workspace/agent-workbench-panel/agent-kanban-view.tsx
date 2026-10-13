@@ -260,11 +260,11 @@ function AgentKanbanViewImpl({
             ) : (
               <ChevronRightIcon className="size-3 shrink-0 text-muted-foreground/60" />
             )}
-            <span className="text-[11px] font-medium text-warning">
+            <span className="text-xs font-medium text-warning">
               {t.agentWorkbenchPanel.visibilityPanelTitle} ·{" "}
               {t.agentWorkbenchPanel.visibilityPanelAttention}
             </span>
-            <span className="rounded-full bg-warning/10 px-1.5 text-[10px] tabular-nums text-warning">
+            <span className="rounded-full bg-warning/10 px-1.5 text-xs tabular-nums text-warning">
               {actionableVisibilitySteps.length}
             </span>
           </button>
@@ -275,13 +275,13 @@ function AgentKanbanViewImpl({
                   key={`${step.decision_point}:${index}`}
                   className="rounded-md border border-border-subtle bg-background/40 px-2 py-1.5"
                 >
-                  <span className="text-[10px] font-medium text-muted-foreground/60">
+                  <span className="text-xs font-medium text-muted-foreground/60">
                     {t.agentWorkbenchPanel.visibilityStep} {index + 1}
                   </span>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-foreground/75">
+                  <p className="mt-0.5 text-xs leading-relaxed text-foreground/75">
                     {step.conclusion}
                   </p>
-                  <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground/60">
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground/60">
                     {step.basis}
                   </p>
                 </div>

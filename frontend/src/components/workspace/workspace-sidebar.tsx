@@ -1653,7 +1653,7 @@ function ProjectGroupTrigger({
         className="max-w-72 break-words"
       >
         <span className="block font-medium">{project}</span>
-        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+        <span className="mt-0.5 block text-xs text-muted-foreground">
           {hasBoundFolder
             ? boundWorkspacePath || "本地目录项目"
             : "里程碑项目 · 不绑定本地目录"}

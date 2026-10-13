@@ -242,12 +242,12 @@ export function CloudRoleMarketPanel({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                  <Badge variant="secondary" className="gap-1 text-xs">
                     <CloudIcon className="size-3" />
                     云端角色
                   </Badge>
                   {(role.tags ?? []).slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-[11px]">
+                    <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
