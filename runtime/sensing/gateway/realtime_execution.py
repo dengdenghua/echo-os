@@ -59,6 +59,32 @@ def is_coding_task(intent: ParsedIntent) -> bool:
     )
 
 
+# User-facing copy for a fail-closed Codex selection. The durable reason code
+# stays in ``EngineSelectionError.reason``; the message is what the chat shows,
+# so it names the engine by its display label ("Echo 原生"), never the
+# ``octopus`` engine id.
+_CODEX_UNAVAILABLE_DETAIL = {
+    "disabled": "当前角色未启用 Codex 执行",
+    "workspace_required": "此任务没有可用的工作区",
+    "principal_unavailable": "无法确认当前账号身份",
+    "model_incompatible": "当前模型不能安全交给 Codex",
+    "configuration_unavailable": "Codex 执行配置暂不可用",
+    "executable_unavailable": "未找到可用的 Codex App Server",
+    "tools_unavailable": "运行时工具尚未装配",
+    "account_required": "尚未登录 Codex 账号",
+    "account_unavailable": "Codex 账号授权不可用",
+}
+
+
+def codex_unavailable_message(reason: str | None) -> str:
+    code = reason or "unavailable"
+    detail = _CODEX_UNAVAILABLE_DETAIL.get(code, f"执行条件未满足（{code}）")
+    return (
+        f"Codex 引擎暂不可用：{detail}。"
+        "请在 Codex 执行引擎设置中调整模型或账号，或改用 Echo 原生引擎后重试。"
+    )
+
+
 def codex_readiness_for_turn(runtime: Any, turn: Turn, agent: Any) -> CodexReadiness:
     from runtime.execution.codex_backend.account import resolve_codex_execution_auth_home
     from runtime.execution.codex_backend.model_profile import CodexModelPreferenceStore
@@ -166,7 +192,7 @@ async def select_turn_execution(
         # fail closed instead of acquiring a weaker execution path.
         return ExecutionRoute(EngineId.OCTOPUS, "react", f"codex_unavailable:{readiness.reason}")
     raise EngineSelectionError(
-        f"Codex is unavailable ({readiness.reason}). Configure the Codex engine or select Octopus.",
+        codex_unavailable_message(readiness.reason),
         engine=EngineId.CODEX,
         reason=readiness.reason or "unavailable",
     )

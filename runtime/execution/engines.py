@@ -82,8 +82,8 @@ def select_execution_route(
         project_command or group_fanout or topology_id or coordinated
     ):
         raise EngineSelectionError(
-            "Codex cannot own project or team orchestration. Select Auto or Octopus; "
-            "individual coding tasks can use Codex.",
+            "Codex 不能负责项目或团队编排：请选择自动或 Echo 原生引擎；"
+            "单个编码任务仍可使用 Codex。",
             engine=EngineId.CODEX,
             reason="orchestration_required",
         )

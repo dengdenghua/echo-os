@@ -133,3 +133,57 @@ def test_explicit_feature_disable_wins_before_other_checks(monkeypatch) -> None:
 
     assert result.available is False
     assert result.reason == "disabled"
+
+
+def test_unavailable_codex_selection_explains_itself_in_chinese(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import pytest
+
+    from runtime.execution.codex_backend.readiness import CodexReadiness
+    from runtime.execution.engines import EngineSelectionError
+    from runtime.platform.models import ParsedIntent
+    from runtime.protocol import Turn, TurnParams
+    from runtime.sensing.gateway import realtime_execution
+
+    monkeypatch.setattr(
+        realtime_execution,
+        "codex_readiness_for_turn",
+        lambda *_args: CodexReadiness(False, "model_incompatible"),
+    )
+    turn = Turn(
+        threadId="thread",
+        params=TurnParams(threadId="thread", executionEngine="codex"),
+    )
+    intent = ParsedIntent(raw="你好", intent_type="task", normalized_goal="你好")
+
+    with pytest.raises(EngineSelectionError) as caught:
+        asyncio.run(
+            realtime_execution.select_turn_execution(
+                SimpleNamespace(_stack=SimpleNamespace(config=None)),
+                turn,
+                object(),
+                intent,
+                project_command=False,
+                group_fanout=False,
+                topology_id=None,
+                codex_partner=False,
+                reflection_fast_path=False,
+            )
+        )
+
+    message = str(caught.value)
+    # The durable reason code stays machine-readable; the message is chat copy.
+    assert caught.value.reason == "model_incompatible"
+    assert message.startswith("Codex 引擎暂不可用：当前模型不能安全交给 Codex")
+    assert "Echo 原生引擎" in message
+    # ``octopus`` is the persisted engine id, never a user-facing name.
+    assert "octopus" not in message.lower()
+
+
+def test_unknown_codex_reason_keeps_the_code_visible() -> None:
+    from runtime.sensing.gateway.realtime_execution import codex_unavailable_message
+
+    assert "执行条件未满足（new_reason）" in codex_unavailable_message("new_reason")
+    assert "执行条件未满足（unavailable）" in codex_unavailable_message(None)

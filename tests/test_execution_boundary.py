@@ -183,7 +183,7 @@ def test_route_selection_keeps_orchestration_on_native() -> None:
     assert route.driver_for(ExecutionPhase.PRIMARY) == "codex_app_server"
     route = select_execution_route(project_command=True)
     assert route.engine is EngineId.NATIVE
-    with pytest.raises(EngineSelectionError, match="orchestration"):
+    with pytest.raises(EngineSelectionError, match="编排"):
         select_execution_route(requested_engine=EngineId.CODEX, project_command=True)
 
 
