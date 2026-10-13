@@ -4,11 +4,45 @@ import { cn } from "@/lib/utils";
 import type { ApprovalConsent } from "./task-approval-consent";
 import type { EchoTaskProjection } from "./task-space";
 
+// Agent tools reach the inbox by their internal ids (write_text_file …) and
+// the policy action (ask/confirm). The owner reads what the call does instead.
+const APPROVAL_TOOL_LABELS: Record<string, string> = {
+  bash: "运行命令",
+  exec_command: "运行命令",
+  exec_shell: "运行命令",
+  run_command: "运行命令",
+  shell_command: "运行命令",
+  append_text_file: "写文件",
+  create_file: "写文件",
+  write_file: "写文件",
+  write_text_file: "写文件",
+  apply_patch: "修改文件",
+  edit_file: "修改文件",
+  edit_text_file: "修改文件",
+  multi_edit_file: "修改文件",
+  str_replace: "修改文件",
+  git_add: "暂存代码改动",
+  git_commit: "提交代码",
+  fetch_url: "访问网页",
+  web_fetch: "访问网页",
+  web_search: "联网搜索",
+};
+const APPROVAL_ACTION_LABELS: Record<string, string> = {
+  ask: "需要确认",
+  confirm: "需要再次确认",
+};
+
 /** 工具与动作；两者都缺时给出可读的兜底，而不是孤零零的“ · ”。 */
 export function approvalOperation(task: EchoTaskProjection) {
+  const tool = task.approval?.tool?.trim();
+  const action = task.approval?.action?.trim();
   return (
-    [task.approval?.tool, task.approval?.action].filter(Boolean).join(" · ") ||
-    "任务正在等待管理员确认"
+    [
+      tool && (APPROVAL_TOOL_LABELS[tool.toLowerCase()] ?? tool),
+      action && (APPROVAL_ACTION_LABELS[action.toLowerCase()] ?? action),
+    ]
+      .filter(Boolean)
+      .join(" · ") || "任务正在等待管理员确认"
   );
 }
 

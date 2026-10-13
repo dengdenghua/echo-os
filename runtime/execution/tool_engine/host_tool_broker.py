@@ -284,6 +284,45 @@ def _arguments_error(arguments: Any) -> str | None:
     return None
 
 
+# User-facing approval copy. The detail is what the Task Space, the approval
+# inbox and the desktop card show to the device owner, so it is Chinese and
+# names what the call does and how risky it is, never the policy internals.
+_APPROVAL_ENGINE_LABELS = {"codex": "Codex 引擎", "opencode": "OpenCode 引擎"}
+_APPROVAL_RISK_LABELS = {"low": "低", "medium": "中", "high": "高", "critical": "极高"}
+_APPROVAL_CATEGORY_LABELS = {
+    "destructive_command": "可能删除或覆盖数据",
+    "credential_probing": "读取凭据",
+    "filesystem_write": "写入文件",
+    "interactive_control": "操作界面",
+    "mobile_device_control": "控制手机",
+    "secret_material": "接触敏感信息",
+    "sensitive_egress": "向外发送敏感数据",
+    "shell_execution": "运行命令",
+    "vcs_mutation": "修改代码仓库",
+    "local_read": "读取本机内容",
+    "network_read": "访问网络",
+    "network_or_egress": "访问网络",
+    "dangerous_tool_catalog": "使用高危工具",
+    "external_mcp": "调用外部 MCP 服务",
+    "prompt_injection_taint": "本轮读到了可疑内容",
+}
+
+
+def _approval_detail(engine: str, tool_name: str, risk: Any) -> str:
+    engine_label = _APPROVAL_ENGINE_LABELS.get(str(engine).lower(), str(engine) or "执行引擎")
+    effects = list(
+        dict.fromkeys(
+            _APPROVAL_CATEGORY_LABELS[category]
+            for category in getattr(risk, "categories", ()) or ()
+            if category in _APPROVAL_CATEGORY_LABELS
+        )
+    )
+    level = _APPROVAL_RISK_LABELS.get(str(getattr(risk, "level", "")), "")
+    effect = "、".join(effects) or "执行操作"
+    risk_text = f"（{level}风险）" if level else ""
+    return f"{engine_label}请求使用 {tool_name}：{effect}{risk_text}。你确认后才会执行。"
+
+
 def _approval_preview(arguments: Mapping[str, Any]) -> str:
     try:
         from runtime.platform.observability.redactor import redact_dict
@@ -752,11 +791,7 @@ class HostToolBroker:
                 tool_name=entry.skill_name,
                 tool_call_id=call_id,
                 args_preview=preview,
-                detail=(
-                    f"{self._execution_engine} requested an Echo tool "
-                    f"(risk={risk.level}: {risk.reason}; action={action}; "
-                    f"policy={policy.to_dict()})"
-                )[:1_000],
+                detail=_approval_detail(self._execution_engine, entry.skill_name, risk)[:1_000],
             )
             try:
                 decision = await asyncio.to_thread(

@@ -134,6 +134,30 @@ describe("Decision inbox", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("提交期间");
     expect(screen.queryByText("操作已批准")).toBeNull();
   });
+  it("names an Agent tool request in Chinese instead of its internal id", () => {
+    // Golden path 2026-10: a Codex write showed "write_text_file · ask".
+    const callbacks = props();
+    render(
+      <DecisionInbox
+        {...callbacks}
+        projection={{
+          ...projection,
+          tasks: [
+            {
+              ...task,
+              approval: {
+                ...task.approval!,
+                tool: "write_text_file",
+                action: "ask",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("写文件 · 需要确认")).toBeInTheDocument();
+    expect(screen.queryByText(/write_text_file/)).toBeNull();
+  });
   it("leaves blocked waits out and describes requests without tool details", () => {
     const callbacks = props();
     render(

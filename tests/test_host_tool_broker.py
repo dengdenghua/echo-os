@@ -216,6 +216,33 @@ async def test_approval_callback_restores_host_identity_instead_of_ambient_sessi
 
 
 @pytest.mark.asyncio
+async def test_approval_request_explains_the_call_in_chinese(tmp_path, monkeypatch):
+    # Golden path 2026-10: the approval inbox showed the raw diagnostic
+    # "codex requested an Echo tool (risk=high: filesystem_write; action=ask;
+    # policy={...})" to the device owner.
+    broker = make_broker(tmp_path, monkeypatch)
+    broker._server_auto_approve = False
+    details = []
+
+    def review(request, **kwargs):
+        details.append(request.detail)
+        return ApprovalDecision(approved=False, reason="test denial")
+
+    broker._approval_provider = SimpleNamespace(request=review)
+    await broker.invoke(
+        "write_text_file",
+        {"path": str(tmp_path / "denied.txt"), "content": "denied"},
+        call_id="explain",
+    )
+
+    assert len(details) == 1
+    assert "写入文件" in details[0]
+    assert "高风险" in details[0]
+    for internal in ("requested an Echo tool", "policy=", "action=", "risk="):
+        assert internal not in details[0]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("session_close_fails", [False, True])
 async def test_codex_lifecycle_revokes_and_drains_broker_even_on_close_failure(
     tmp_path,
