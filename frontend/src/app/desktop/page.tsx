@@ -1451,14 +1451,25 @@ export default function DesktopShellPage() {
   }, [desktopDrawerOpen]);
 
   useEffect(() => {
-    const onClick = () => {
+    const closeMenus = () => {
       setContextMenu(null);
       setDesktopMenu(null);
       setNativeWindowMenu(null);
       setTrashMenu(null);
     };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeMenus();
+    };
+    document.addEventListener("click", closeMenus);
+    // Capture phase: a new right-click closes the open menu before the
+    // target's own onContextMenu opens its menu, so two never stack.
+    document.addEventListener("contextmenu", closeMenus, true);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("click", closeMenus);
+      document.removeEventListener("contextmenu", closeMenus, true);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, []);
 
   const cycleWallpaper = () => {
