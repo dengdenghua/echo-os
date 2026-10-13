@@ -165,6 +165,39 @@ describe("custom model selection identity", () => {
 });
 
 describe("ModelSettingsPage · custom-model list rendering", () => {
+  it("does not probe optional services that this device does not have", async () => {
+    // Golden path 2026-10: every visit logged a 404 from the oct gateway's
+    // model catalog and a 503 from Echo Storage's model list on a device that
+    // has neither.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/auth/providers")) {
+        return jsonOk({ providers: [{ id: "local" }] });
+      }
+      if (url.includes("/api/local-brain/storage/start")) {
+        return jsonOk({
+          ok: false,
+          status: "not_found",
+          base_url: "/api/storage",
+          auth_token: null,
+        });
+      }
+      return jsonOk({ default: "", models: [] });
+    });
+
+    renderWithProviders(<ModelSettingsPage />, { locale: "zh-CN" });
+
+    expect(
+      await screen.findByText(/本地图片理解需要 Echo Storage 服务/),
+    ).toBeInTheDocument();
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls.some((url) => url.includes("/api/oct/openai/v1/models"))).toBe(
+      false,
+    );
+    expect(urls.some((url) => url.includes("/v1/models"))).toBe(false);
+    expect(screen.getByRole("button", { name: "下载并启用" })).toBeDisabled();
+  });
+
   it("refreshes the composer's cached model catalog once connections load", async () => {
     // Golden path 2026-10: a model added in 系统设置 stayed missing from the
     // workbench picker for up to five minutes (stale ["models"] query).

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
@@ -45,6 +45,7 @@ import {
   type NASModel,
 } from "@/core/storage/api";
 import { useI18n } from "@/core/i18n/hooks";
+import { octAvailabilityQuery } from "@/core/oct/hooks";
 import {
   clearThreadModelReferences,
   getLocalSettings,
@@ -1998,6 +1999,10 @@ function LocalVisionSection() {
   const [model, setModel] = useState<NASModel | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Echo Storage is optional. When it is not installed the start call says
+  // so (ok: false, "not_found"); listing its models anyway answered 503 on
+  // every visit to this page.
+  const [storageMissing, setStorageMissing] = useState(false);
 
   const presentError = useCallback((error: unknown) => {
     const raw = error instanceof Error ? error.message : String(error);
@@ -2010,7 +2015,15 @@ function LocalVisionSection() {
 
   const refresh = useCallback(async () => {
     try {
-      await startNASService();
+      const service = await startNASService();
+      if (!service.ok && service.status === "not_found") {
+        setStorageMissing(true);
+        setMessage(
+          "本地图片理解需要 Echo Storage 服务，这台设备还没有安装。安装后即可在这里下载并启用。",
+        );
+        return;
+      }
+      setStorageMissing(false);
       const models = await listNASModels();
       setModel(
         models.find((item) => item.model_id === "vision-default") ?? null,
@@ -2109,7 +2122,9 @@ function LocalVisionSection() {
                   "正在下载模型…",
                 )
               }
-              disabled={busy || Boolean(message?.includes("无权"))}
+              disabled={
+                busy || storageMissing || Boolean(message?.includes("无权"))
+              }
             >
               {busy ? "下载中…" : "下载并启用"}
             </Button>
@@ -2597,6 +2612,11 @@ interface UpstreamModel {
 
 function OfficialModelsSection() {
   const { t } = useI18n();
+  // The oct gateway (and its /api/oct/openai/v1/models catalog) is mounted
+  // only when the backend advertises the "oct" login provider. ECHO OS ships
+  // without it, so probing anyway logged a 404 on every visit to this page.
+  const { data: octAvailable, isPending: octPending } =
+    useQuery(octAvailabilityQuery);
   const [models, setModels] = useState<UpstreamModel[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailableReason, setUnavailableReason] = useState<string | null>(
@@ -2604,6 +2624,7 @@ function OfficialModelsSection() {
   );
 
   useEffect(() => {
+    if (!octAvailable) return;
     let cancelled = false;
     (async () => {
       try {
@@ -2644,9 +2665,14 @@ function OfficialModelsSection() {
     return () => {
       cancelled = true;
     };
-  }, [t.settings.model.gatewayNotEnabled, t.settings.model.accountNotLinked]);
+  }, [
+    octAvailable,
+    t.settings.model.gatewayNotEnabled,
+    t.settings.model.accountNotLinked,
+  ]);
 
-  if (loading) {
+  if (!octPending && !octAvailable) return null;
+  if (octPending || loading) {
     return (
       <SettingsSection title={t.settings.model.officialModels}>
         <PanelLoading label={t.common.loading} caption={t.common.loading} />
