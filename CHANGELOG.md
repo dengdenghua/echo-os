@@ -8,6 +8,9 @@ Release tags: `v<version>` publishes the desktop installers, the Python
 distribution and the GHCR image (`.github/workflows/release.yml`);
 `echo-appliance-v<version>` publishes the NAS appliance image and its operations
 bundle (`.github/workflows/appliance-release.yml`). Both use the version below.
+`v<version>-preview.<n>` publishes unsigned installers and the wheel/sdist as a
+GitHub pre-release (`.github/workflows/preview-release.yml`); see
+[docs/RELEASING.md](docs/RELEASING.md).
 
 ---
 
