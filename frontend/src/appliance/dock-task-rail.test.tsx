@@ -74,6 +74,25 @@ describe("DockTaskRail", () => {
     expect(onOpenTask).toHaveBeenCalledWith(running);
   });
 
+  it("draws the ECHO mark for the default agent instead of printing its icon token", () => {
+    // Golden path 2026-10: the runtime sends icon "echo" for the default agent
+    // and the Dock printed the word "echo" inside the progress ring.
+    const onOpenTask = vi.fn();
+    render(
+      <nav>
+        <DockTaskRail
+          tasks={[makeTask({ id: "run", title: "整理下载文件夹" })]}
+          agents={[{ id: "general", name: "Echo", icon: "echo" }]}
+          onOpenTask={onOpenTask}
+          onOpenTaskSpace={vi.fn()}
+        />
+      </nav>,
+    );
+    const item = screen.getByRole("button", { name: /整理下载文件夹/ });
+    expect(item.querySelector('[data-agent-avatar="echo"]')).not.toBeNull();
+    expect(item.textContent).not.toContain("echo");
+  });
+
   it("marks tasks without progress as indeterminate instead of inventing a number", () => {
     renderRail([makeTask({ id: "run", title: "写周报" })]);
     const item = screen.getByRole("button", { name: "Echo：写周报 · 执行中" });

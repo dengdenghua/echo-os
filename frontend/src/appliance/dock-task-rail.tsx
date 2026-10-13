@@ -6,6 +6,7 @@
  * 其余任务直接打开它所在的会话。
  */
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 
 import { DockItem } from "./dock";
@@ -109,9 +110,15 @@ export function DockTaskRail({
                   strokeDashoffset={RING_CIRCUMFERENCE * (1 - filled)}
                 />
               </svg>
-              <span className="mac-dock-task-glyph" aria-hidden>
-                {agent?.icon ?? "✦"}
-              </span>
+              {/* The roster's icon is an avatar token ("echo", an emoji, an
+                  image URL), never text to print: the default agent showed
+                  the word "echo" in the Dock. */}
+              <AgentAvatarTile
+                agentId={task.agentId ?? "general"}
+                name={agentName}
+                avatar={agent?.icon ?? null}
+                className="mac-dock-task-glyph size-7 rounded-lg"
+              />
               {needsUser && (
                 <span className="mac-dock-task-badge" aria-hidden>
                   !
