@@ -1,18 +1,14 @@
-import { useEffect, useCallback } from "react";
-import {
-  LayoutGridIcon,
-  XIcon,
-  SparklesIcon,
-  SmartphoneIcon,
-  LaptopIcon,
-  FileTextIcon,
-} from "lucide-react";
+import { useEffect, useCallback, type ReactNode } from "react";
+import { AppWindowIcon, LayoutGridIcon, LaptopIcon, XIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
+import { getEchoAppArtwork } from "./echo-app-artworks";
 
 export interface MissionControlWindow {
   id: string;
   title: string;
   url: string;
+  workspaceRoute?: string;
   integratedChrome?: boolean;
 }
 
@@ -23,6 +19,60 @@ export interface MissionControlProps {
   onSelectWindow: (id: string) => void;
   onCloseWindow: (id: string) => void;
   onClose: () => void;
+}
+
+/** 系统窗口（/system/<app>）对应 Dock 与启动台里的应用身份。 */
+const SYSTEM_WINDOW_APP_IDS: Record<string, string> = {
+  files: "system:files",
+  photos: "echo:/photos",
+  hub: "echo:/hub",
+  "storage-center": "echo:/storage-center",
+  "device-link": "echo:/device-link",
+  "task-space": "system:tasks",
+  "activity-monitor": "system:activity-monitor",
+  settings: "system:settings",
+  browser: "echo:/browser",
+};
+
+/** 按窗口找回它所属应用的 ID，用来画和 Dock 一样的应用图标。 */
+export function missionControlAppId(win: MissionControlWindow): string | null {
+  const route = (win.workspaceRoute ?? win.url).split(/[?#]/)[0] ?? "";
+  const system = /^\/system\/([^/]+)/.exec(route)?.[1];
+  if (system) return SYSTEM_WINDOW_APP_IDS[system] ?? null;
+  if (route === "/phone-mirror") return "echo:/phone-mirror";
+  if (route.includes("/workspace/observability"))
+    return "echo:/workspace/observability";
+  if (route.includes("/workspace/realtime"))
+    return "echo:/workspace/realtime/new";
+  return null;
+}
+
+function MissionControlAppIcon({
+  win,
+  size,
+}: {
+  win: MissionControlWindow;
+  size: "sm" | "lg";
+}) {
+  const appId = missionControlAppId(win);
+  const artwork: ReactNode = appId ? getEchoAppArtwork(appId) : null;
+  return (
+    <span
+      aria-hidden
+      data-app-id={appId ?? undefined}
+      className={cn(
+        "grid shrink-0 place-items-center bg-[var(--echo-surface-raised)] text-[var(--echo-ink)] ring-1 ring-[var(--echo-line-strong)] [&_svg]:size-full",
+        size === "sm" ? "size-5 rounded-md" : "size-16 rounded-2xl",
+      )}
+    >
+      {artwork ?? (
+        <AppWindowIcon
+          className={size === "sm" ? "size-3.5" : "size-8"}
+          strokeWidth={1.5}
+        />
+      )}
+    </span>
+  );
 }
 
 export function MissionControl({
@@ -51,51 +101,40 @@ export function MissionControl({
 
   if (!open) return null;
 
-  const getWindowIcon = (win: MissionControlWindow) => {
-    if (win.url === "/phone-mirror") {
-      return <SmartphoneIcon className="size-4 text-core" />;
-    }
-    if (win.url.includes("workspace")) {
-      return <SparklesIcon className="size-4 text-core" />;
-    }
-    return <FileTextIcon className="size-4 text-core" />;
-  };
-
   return (
     <div
       data-testid="mission-control-overlay"
-      className="fixed inset-0 z-[9990] flex flex-col items-center select-none bg-slate-950/75 p-6 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-250"
+      data-echo-theme="graphite"
+      className="fixed inset-0 z-[9990] flex flex-col items-center select-none bg-[color-mix(in_srgb,var(--echo-ground)_78%,transparent)] p-6 text-foreground backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-250"
       onClick={onClose}
     >
       {/* 调度中心顶部抬头栏 */}
       <div
-        className="flex w-full max-w-5xl items-center justify-between py-2 text-white"
+        className="flex w-full max-w-5xl items-center justify-between py-2"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2.5">
-          <div className="grid size-8 place-items-center rounded-xl bg-card/10 text-white shadow-sm ring-1 ring-border">
+          <div className="grid size-8 place-items-center rounded-xl bg-card ring-1 ring-border">
             <LayoutGridIcon className="size-4.5" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold tracking-wide">
-              调度中心 · 窗口平铺全览
-            </h2>
-            <p className="text-[11px] text-muted-foreground">
-              共 {windows.length} 个活动窗口 · 点击卡片切换或拖拽整理
+            <h2 className="text-sm font-semibold">调度中心 · 窗口平铺全览</h2>
+            <p className="text-[12px] text-muted-foreground">
+              共 {windows.length} 个活动窗口 · 点击卡片切换窗口
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:inline text-xs text-muted-foreground font-mono bg-card/5 px-2.5 py-1 rounded-lg border border-border">
-            按 Esc 退出
+          <span className="hidden rounded-lg border border-border bg-card px-2.5 py-1 text-[12px] text-muted-foreground sm:inline">
+            按 <kbd className="font-mono">Esc</kbd> 退出
           </span>
           <button
             type="button"
             data-testid="btn-close-mission-control"
             onClick={onClose}
             aria-label="关闭调度中心"
-            className="grid size-8 place-items-center rounded-xl bg-card/10 text-muted-foreground hover:bg-card/20 hover:text-white transition-colors"
+            className="grid size-8 place-items-center rounded-xl bg-card text-muted-foreground transition-colors hover:text-foreground"
           >
             <XIcon className="size-4" />
           </button>
@@ -110,13 +149,11 @@ export function MissionControl({
         {windows.length === 0 ? (
           <div
             data-testid="mission-control-empty"
-            className="flex flex-col items-center justify-center text-center p-8 rounded-3xl border border-border bg-slate-900/50 backdrop-blur-xl max-w-md"
+            className="flex max-w-md flex-col items-center justify-center rounded-3xl border border-border bg-card p-8 text-center"
           >
-            <LaptopIcon className="size-12 text-muted-foreground mb-3" />
-            <h3 className="text-base font-semibold text-slate-200">
-              当前没有打开的窗口
-            </h3>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            <LaptopIcon className="mb-3 size-12 text-muted-foreground" />
+            <h3 className="text-base font-semibold">当前没有打开的窗口</h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               在底部 Dock 栏或启动台中点击任意应用即可开启多任务协作。
             </p>
           </div>
@@ -141,27 +178,27 @@ export function MissionControl({
                   data-testid={`mission-card-${win.id}`}
                   onClick={() => onSelectWindow(win.id)}
                   className={cn(
-                    "group relative flex flex-col rounded-2xl border transition-all duration-300 ease-out cursor-pointer overflow-hidden shadow-2xl hover:scale-[1.03] active:scale-[0.99]",
+                    "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card shadow-[var(--echo-shadow-raised)] transition-all duration-300 ease-out hover:scale-[1.03] active:scale-[0.99]",
                     isActive
-                      ? "border-core/30 bg-slate-900/90 ring-2 ring-core/30 shadow-[0_12px_36px_rgba(59,130,246,0.3)]"
-                      : "border-border bg-slate-900/70 hover:border-border hover:bg-slate-900/85",
+                      ? "border-core/50 ring-2 ring-core/30"
+                      : "border-border hover:border-[var(--echo-line-strong)]",
                   )}
                   style={{
                     height: windows.length <= 2 ? "320px" : "240px",
                   }}
                 >
-                  {/* 卡片顶部仿拟物标题栏 */}
-                  <div className="flex h-9 shrink-0 items-center justify-between border-b border-border bg-card/5 px-3 backdrop-blur-md">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {getWindowIcon(win)}
-                      <span className="truncate text-xs font-semibold text-slate-200">
+                  {/* 卡片顶部标题栏：应用图标 + 窗口标题 */}
+                  <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <MissionControlAppIcon win={win} size="sm" />
+                      <span className="truncate text-[12px] font-semibold">
                         {win.title}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1.5 opacity-80 transition-opacity group-hover:opacity-100">
                       {isActive && (
-                        <span className="rounded bg-core/20 px-1.5 py-0.5 text-[9px] font-semibold text-core font-mono">
+                        <span className="rounded bg-core/15 px-1.5 py-0.5 text-[12px] font-medium text-core">
                           当前活跃
                         </span>
                       )}
@@ -174,30 +211,22 @@ export function MissionControl({
                         }}
                         aria-label={`关闭窗口 ${win.title}`}
                         title="关闭此窗口"
-                        className="grid size-5.5 place-items-center rounded-md text-muted-foreground hover:bg-breach/20 hover:text-breach transition-colors"
+                        className="grid size-5.5 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-breach/15 hover:text-breach"
                       >
                         <XIcon className="size-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* 卡片微缩内容体 */}
-                  <div className="flex flex-1 items-center justify-center p-4 bg-gradient-to-b from-transparent to-black/20 text-muted-foreground text-xs">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="size-10 rounded-2xl bg-card/10 grid place-items-center text-white/80 group-hover:text-core group-hover:bg-core/20 transition-colors shadow-inner">
-                        {getWindowIcon(win)}
-                      </div>
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                  {/* 卡片主体：大号应用图标 + 窗口标题 */}
+                  <div className="flex flex-1 items-center justify-center p-4">
+                    <div className="flex flex-col items-center gap-3">
+                      <MissionControlAppIcon win={win} size="lg" />
+                      <span className="max-w-[220px] truncate text-[13px] font-medium">
                         {win.title}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[200px]">
-                        {win.url}
                       </span>
                     </div>
                   </div>
-
-                  {/* 悬停光晕与指引 */}
-                  <div className="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-inset ring-border group-hover:ring-core/30 transition-all" />
                 </div>
               );
             })}
