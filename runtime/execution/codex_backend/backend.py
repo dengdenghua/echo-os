@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 from collections.abc import AsyncIterator, Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -93,6 +94,11 @@ class CodexExecutionRequest:
     selected_app_ids: tuple[str, ...] = ()
     app_mentions: tuple[tuple[str, str], ...] = ()
     fresh_thread_prompt: str | None = field(default=None, repr=False)
+    # How long App Server requests answered by Echo (approvals and dynamic
+    # tools) may wait. ``None`` keeps the client default meant for a person
+    # watching the chat; a desktop-dispatched turn parks approvals on its task
+    # record and passes its own, much longer hold window.
+    approval_timeout_s: float | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -159,6 +165,13 @@ class CodexExecutionRequest:
             raise ValueError("approval_reviewer must be 'user' or 'auto_review'")
         if self.approval_policy not in {"on-request", "never"}:
             raise ValueError("approval_policy must be 'on-request' or 'never'")
+        if self.approval_timeout_s is not None and (
+            isinstance(self.approval_timeout_s, bool)
+            or not isinstance(self.approval_timeout_s, (int, float))
+            or not math.isfinite(self.approval_timeout_s)
+            or self.approval_timeout_s <= 0
+        ):
+            raise ValueError("approval_timeout_s must be a positive number of seconds")
         if self.provider_profile is not None and not isinstance(
             self.provider_profile, CodexProviderProfile
         ):
@@ -351,6 +364,11 @@ class CodexExecutionSession:
                 env_overrides=launch_env,
                 source_environment={},
                 experimental_api=True,
+                **(
+                    {"approval_timeout_s": float(self.request.approval_timeout_s)}
+                    if self.request.approval_timeout_s is not None
+                    else {}
+                ),
             )
             client_kwargs: dict[str, Any] = {"approval_handler": broker}
             if self.request.dynamic_tool_handler is not None:

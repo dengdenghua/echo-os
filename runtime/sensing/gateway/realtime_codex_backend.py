@@ -302,7 +302,52 @@ def _host_codex_session(
     return parent, guard
 
 
+def _server_hold_approval_timeout_s(context: dict[str, Any]) -> float | None:
+    """Approval window for a desktop-dispatched turn, else ``None``.
+
+    Such a turn parks each approval on its task record and waits up to the
+    server hold window for the owner (Task Space / approval inbox). App Server
+    requests answered by Echo would otherwise give up after the client's
+    5-minute default, deny the call as "connection lost" and leave a stale
+    approval behind.
+    """
+    from runtime.sensing.gateway.realtime_approval import (
+        SERVER_HOLD_APPROVAL,
+        _server_hold_max_seconds,
+    )
+
+    if context.get("approval_delivery") != SERVER_HOLD_APPROVAL:
+        return None
+    return _server_hold_max_seconds() + 60.0
+
+
 def _request_for_turn(
+    runtime: Any,
+    turn: Any,
+    intent: Any,
+    agent: Any,
+    *,
+    text: str,
+    approval_provider: Any = None,
+    is_interrupted: Any = None,
+) -> CodexExecutionRequest:
+    request = _base_request_for_turn(
+        runtime,
+        turn,
+        intent,
+        agent,
+        text=text,
+        approval_provider=approval_provider,
+        is_interrupted=is_interrupted,
+    )
+    context = getattr(intent, "user_context", None)
+    hold_timeout_s = _server_hold_approval_timeout_s(context if isinstance(context, dict) else {})
+    if hold_timeout_s is None:
+        return request
+    return replace(request, approval_timeout_s=hold_timeout_s)
+
+
+def _base_request_for_turn(
     runtime: Any,
     turn: Any,
     intent: Any,
@@ -386,6 +431,36 @@ def _request_for_turn(
         server_auto_approve=server_auto_approve,
     )
     return request
+
+
+def _lease_renewal_interval(execution_lease: Any) -> float | None:
+    """Renewal cadence for the task lease, or ``None`` without a bound lease."""
+    if not isinstance(execution_lease, TaskExecutionGuard):
+        return None
+    supervisor = getattr(execution_lease, "_supervisor", None)
+    try:
+        ttl = float(getattr(supervisor, "lease_ttl_seconds", 300.0))
+    except (TypeError, ValueError):
+        ttl = 300.0
+    return max(0.1, min(ttl / 3.0, 30.0))
+
+
+def _renew_lease(execution_lease: TaskExecutionGuard, turn: Any) -> None:
+    """Keep the task lease alive while App Server works or waits for approval.
+
+    Without renewal a Codex turn lost its lease after the supervisor TTL
+    (5 minutes), e.g. while a desktop task waited in the approval inbox, and
+    the owner's later approval failed with "lease expired". A lost lease is
+    reported by the next ``assert_allowed``/``assert_held`` as before.
+    """
+    try:
+        execution_lease.heartbeat()
+    except Exception as exc:  # noqa: BLE001 — surfaced by the next lease check
+        _logger.warning(
+            "codex task lease renewal failed for %s: %s",
+            getattr(turn, "task_id", None) or getattr(turn, "id", None),
+            exc,
+        )
 
 
 async def _heartbeat(emitter: Any, turn: Any, *, started_at: float) -> None:
@@ -586,6 +661,8 @@ async def _drive_codex_app_server_inner(
         event_state = CodexEventState()
         started_at = time.monotonic()
         last_heartbeat = started_at
+        last_lease_renewal = started_at
+        lease_renewal_s = _lease_renewal_interval(execution_lease)
         interrupt_started: float | None = None
         interrupt_requested = False
         saw_terminal = False
@@ -643,6 +720,9 @@ async def _drive_codex_app_server_inner(
             if now - last_heartbeat >= _HEARTBEAT_INTERVAL_S:
                 last_heartbeat = now
                 await _heartbeat(emitter, turn, started_at=started_at)
+            if lease_renewal_s is not None and now - last_lease_renewal >= lease_renewal_s:
+                last_lease_renewal = now
+                _renew_lease(execution_lease, turn)
 
             try:
                 notification = await session.next_notification(timeout_s=_NOTIFICATION_POLL_S)
