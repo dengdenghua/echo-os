@@ -13,6 +13,7 @@ const SYSTEM_APP_IDS = [
   "echo:/storage-center",
   "system:tasks",
   "system:activity-monitor",
+  "echo:/workspace/observability",
   "system:settings",
 ];
 
@@ -45,6 +46,16 @@ describe("Echo app artworks", () => {
     const ids = [...container.querySelectorAll("mask")].map((mask) => mask.id);
     expect(ids).toHaveLength(3);
     expect(new Set(ids).size).toBe(3);
+  });
+
+  it("gives 终端日志 its own glyph instead of the activity monitor's", () => {
+    const terminal = render(
+      <>{getEchoAppArtwork("echo:/workspace/observability")}</>,
+    );
+    const activity = render(
+      <>{getEchoAppArtwork("system:activity-monitor")}</>,
+    );
+    expect(terminal.container.innerHTML).not.toBe(activity.container.innerHTML);
   });
 
   it("returns null for unknown apps so callers fall back to a line icon", () => {

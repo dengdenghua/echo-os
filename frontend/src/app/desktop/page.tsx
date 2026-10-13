@@ -262,7 +262,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     windowed: true,
   },
   {
-    name: "设置",
+    name: "系统设置",
     subtitle: "账号、模型、权限",
     route: "/workspace",
     icon: SettingsIcon,
@@ -692,6 +692,10 @@ export default function DesktopShellPage() {
     openWindow,
     closeWindow,
   );
+  // 从「手机镜像」进入时，设备连接先说明有没有可镜像的手机。
+  const [deviceLinkIntent, setDeviceLinkIntent] = useState<
+    "devices" | "phone-mirror"
+  >("devices");
   const [hubOpen, setHubOpen] = useSystemAppWindow(
     "hub",
     windows,
@@ -1086,12 +1090,14 @@ export default function DesktopShellPage() {
       return;
     }
     if (app.route === "/phone-mirror") {
+      setDeviceLinkIntent("phone-mirror");
       setDeviceLinkOpen(true);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
       return;
     }
     if (app.route === "/device-link") {
+      setDeviceLinkIntent("devices");
       setDeviceLinkOpen(true);
       setOverlay("launchpad", false);
       setOverlay("spotlight", false);
@@ -1292,6 +1298,46 @@ export default function DesktopShellPage() {
                   : app.windowed && isAppWindowOpen(app.route),
       onOpen: () => chooseAppPresentation(app),
     })),
+    // Dock 上的系统应用在启动台和 Spotlight 里同名同图标出现。
+    {
+      id: "system:files",
+      name: "文件",
+      subtitle: "NAS 与本机文件",
+      icon: FolderIcon,
+      gradient:
+        "linear-gradient(150deg, #60a5fa 0%, #2563eb 60%, #1d4ed8 100%)",
+      running: fileManagerOpen,
+      onOpen: openFinder,
+    },
+    {
+      id: "system:tasks",
+      name: "任务空间",
+      subtitle: "Agent 任务、进度与审批",
+      icon: ListChecksIcon,
+      gradient:
+        "linear-gradient(150deg, #a5b4fc 0%, #6366f1 60%, #4338ca 100%)",
+      running: taskSpaceOpen,
+      onOpen: () => setTaskSpaceOpen(true),
+    },
+    {
+      id: "system:decision-inbox",
+      name: "审批收件箱",
+      subtitle: "等待你确认的操作",
+      icon: ShieldCheckIcon,
+      gradient: "linear-gradient(150deg, #fcd34d, #d97706)",
+      running: decisionInboxOpen,
+      onOpen: () => setDecisionInboxOpen(true),
+    },
+    {
+      id: "system:activity-monitor",
+      name: "活动监视器",
+      subtitle: "CPU、内存与运行时间",
+      icon: CpuIcon,
+      gradient:
+        "linear-gradient(150deg, #1e293b 0%, #0f172a 60%, #020617 100%)",
+      running: showWidget,
+      onOpen: () => setShowWidget(true),
+    },
     ...libraryApplianceApps.map((app) => ({
       id: `appliance:${app.id}`,
       name: app.name,
@@ -1910,6 +1956,7 @@ export default function DesktopShellPage() {
         return isDeviceOperator ? (
           <DeviceLinkPanel
             open
+            intent={deviceLinkIntent}
             onClose={() => setDeviceLinkOpen(false)}
             onOpenPhoneMirror={openPhoneMirror}
           />

@@ -297,7 +297,7 @@ export const TasksArtwork = memo(function TasksArtwork() {
   );
 });
 
-/** 活动监视器 / 终端日志：一段心跳脉冲。 */
+/** 活动监视器：一段心跳脉冲。 */
 export const ActivityArtwork = memo(function ActivityArtwork() {
   return (
     <Glyph>
@@ -309,6 +309,37 @@ export const ActivityArtwork = memo(function ActivityArtwork() {
         strokeLinejoin="round"
       />
       <circle cx="45.5" cy="29.5" r="2.6" fill="currentColor" />
+    </Glyph>
+  );
+});
+
+/** 终端日志：终端窗口里的提示符和一行输出。 */
+export const TerminalLogArtwork = memo(function TerminalLogArtwork() {
+  return (
+    <Glyph>
+      <rect
+        x="9.5"
+        y="12.5"
+        width="35"
+        height="29"
+        rx="5"
+        stroke="currentColor"
+        strokeOpacity="0.55"
+        strokeWidth="3"
+      />
+      <path
+        d="M17 22.5l5 4.5-5 4.5"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M26 32h11"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
     </Glyph>
   );
 });
@@ -365,8 +396,9 @@ export function getEchoAppArtwork(appId?: string): ReactNode {
     case "system:tasks":
       return <TasksArtwork />;
     case "system:activity-monitor":
-    case "echo:/workspace/observability":
       return <ActivityArtwork />;
+    case "echo:/workspace/observability":
+      return <TerminalLogArtwork />;
     case "system:settings":
     case "echo:/workspace":
       return <SettingsArtwork />;

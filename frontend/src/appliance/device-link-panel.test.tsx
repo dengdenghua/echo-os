@@ -271,4 +271,36 @@ describe("device link panel", () => {
       expect.objectContaining({ id: "phone-1" }),
     );
   });
+
+  it("says there is no paired phone when opened from 手机镜像", async () => {
+    vi.mocked(fetchDeviceLinkStatus).mockResolvedValue({
+      ...status,
+      pairedDeviceCount: 0,
+      onlineDeviceCount: 0,
+      devices: [],
+    });
+    render(<DeviceLinkPanel open intent="phone-mirror" onClose={vi.fn()} />);
+
+    const notice = await screen.findByRole("status", { name: "手机镜像" });
+    expect(notice).toHaveTextContent("还没有配对的手机");
+    expect(notice).toHaveTextContent("在上方添加设备");
+  });
+
+  it("points at 多屏协同 when a paired phone is online", async () => {
+    render(<DeviceLinkPanel open intent="phone-mirror" onClose={vi.fn()} />);
+
+    await screen.findByText("Echo Pocket");
+    expect(screen.getByRole("status", { name: "手机镜像" })).toHaveTextContent(
+      "选择一台手机开始镜像",
+    );
+  });
+
+  it("shows no phone-mirror notice when opened as 设备连接", async () => {
+    render(<DeviceLinkPanel open onClose={vi.fn()} />);
+
+    await screen.findByText("Echo Pocket");
+    expect(
+      screen.queryByRole("status", { name: "手机镜像" }),
+    ).not.toBeInTheDocument();
+  });
 });

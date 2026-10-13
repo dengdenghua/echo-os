@@ -183,12 +183,49 @@ function DeviceCard({
   );
 }
 
+/** 手机镜像入口的说明：没有手机、手机离线、可以开始三种情况。 */
+function PhoneMirrorNotice({ devices }: { devices: LinkedDevice[] }) {
+  const phones = devices.filter((device) => device.type !== "desktop");
+  const online = phones.some((device) => device.online);
+  const title = !phones.length
+    ? "还没有配对的手机"
+    : online
+      ? "选择一台手机开始镜像"
+      : "已配对的手机当前不在线";
+  const detail = !phones.length
+    ? "手机镜像需要一台已配对的手机。在上方添加设备，用手机扫码加入后即可在这里镜像。"
+    : online
+      ? "在下方点“多屏协同”，手机画面会在新窗口中打开。"
+      : "在手机上打开 Echo Mobile 并连上同一网络，上线后即可在这里开始镜像。";
+  return (
+    <section
+      role="status"
+      aria-label="手机镜像"
+      className="mt-4 flex items-start gap-3 rounded-2xl bg-card/72 p-4 ring-1 ring-border"
+    >
+      <SmartphoneIcon
+        aria-hidden
+        className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+      />
+      <div>
+        <strong className="block text-[13px] text-foreground">{title}</strong>
+        <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
+          {detail}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export function DeviceLinkPanel({
   open,
+  intent = "devices",
   onClose,
   onOpenPhoneMirror,
 }: {
   open: boolean;
+  /** 从「手机镜像」打开时先说明有没有可以镜像的手机。 */
+  intent?: "devices" | "phone-mirror";
   onClose: () => void;
   onOpenPhoneMirror?: (device: LinkedDevice) => void;
 }) {
@@ -549,6 +586,10 @@ export function DeviceLinkPanel({
                 当前是开发模式连接：所有设备共用一份配对凭据，暂不能单独撤销某一台。
                 正式安装的 ECHO OS 会为每台设备单独签发凭据。
               </p>
+            )}
+
+            {intent === "phone-mirror" && (
+              <PhoneMirrorNotice devices={status?.devices ?? []} />
             )}
 
             <div className="mt-4 space-y-3">
