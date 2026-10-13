@@ -43,6 +43,7 @@ import {
 } from "@/core/agents/active";
 import { useAgents } from "@/core/agents/hooks";
 import { copyTextToClipboard } from "@/core/clipboard";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 
 import {
@@ -1356,8 +1357,13 @@ function AgentPicker({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold transition-colors hover:bg-muted"
       >
-        {activeAgent?.icon ? (
-          <span className="text-base leading-none">{activeAgent.icon}</span>
+        {activeAgent ? (
+          <AgentAvatarTile
+            agentId={activeAgent.name}
+            name={display}
+            avatar={activeAgent.icon}
+            className="size-4 rounded"
+          />
         ) : (
           <SparklesIcon className="size-4 text-primary" />
         )}
@@ -1387,13 +1393,12 @@ function AgentPicker({
                     active && "bg-muted font-semibold",
                   )}
                 >
-                  {a.icon ? (
-                    <span className="text-base leading-none">{a.icon}</span>
-                  ) : (
-                    <span className="grid size-4 place-items-center text-muted-foreground">
-                      <SparklesIcon className="size-3" />
-                    </span>
-                  )}
+                  <AgentAvatarTile
+                    agentId={a.name}
+                    name={a.display_name || a.name}
+                    avatar={a.icon}
+                    className="size-4 rounded"
+                  />
                   <span className="min-w-0 flex-1 truncate">
                     {a.display_name || a.name}
                   </span>

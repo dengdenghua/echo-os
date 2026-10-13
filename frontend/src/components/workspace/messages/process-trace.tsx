@@ -15,6 +15,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 import { DotProgress } from "@/components/workspace/swarm/dot-progress";
@@ -318,9 +319,11 @@ function AgentClusterRow({
           )}
         >
           {agent.avatar ? (
-            <span className="text-base leading-none" aria-hidden="true">
-              {agent.avatar}
-            </span>
+            <AgentAvatarTile
+              name={agent.name}
+              avatar={agent.avatar}
+              className="size-5"
+            />
           ) : (
             <BotIcon
               className={cn("size-4", agentRunIconClass(agent.status))}

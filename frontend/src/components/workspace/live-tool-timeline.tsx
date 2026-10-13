@@ -194,8 +194,8 @@ export interface LiveToolEvent {
    * sub-agent-attributable events so the workbench can group them
    * under one tile. */
   subagentCodename?: string;
-  /** Emoji avatar derived from role. Falls back to 🐙 for unknown
-   * roles. */
+  /** Avatar hint derived from role (an emoji, or "echo" for unknown
+   * roles). Rendered through <AgentAvatar>, never printed as text. */
   subagentAvatar?: string;
   /** Authoritative role display name from the backend built-in role
    * catalog (``BUILTIN_ROLES``), e.g. "Code Reviewer". Absent for

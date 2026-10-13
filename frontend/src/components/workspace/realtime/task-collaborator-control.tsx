@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { AgentAvatar } from "@/components/workspace/sidebar-footer";
 import { type TeamMode } from "@/components/workspace/team-mode-picker";
 import { type Agent } from "@/core/agents";
@@ -233,21 +234,13 @@ export function TaskCollaboratorControl({
                 };
                 const content = (
                   <>
-                    <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded-md bg-background text-xs font-semibold text-muted-foreground">
-                      {entry.avatar_url ? (
-                        <img
-                          src={entry.avatar_url}
-                          alt={entry.display_name}
-                          className="size-full object-cover"
-                        />
-                      ) : entry.icon?.trim() ? (
-                        <span className="text-sm leading-none">
-                          {entry.icon}
-                        </span>
-                      ) : (
-                        entry.display_name.charAt(0).toUpperCase()
-                      )}
-                    </span>
+                    <AgentAvatarTile
+                      agentId={entry.agent_id}
+                      name={entry.display_name}
+                      avatar={entry.icon}
+                      imageUrl={entry.avatar_url}
+                      className="size-6 rounded-md"
+                    />
                     <span className="min-w-0 flex-1 truncate text-xs font-medium">
                       {entry.display_name}
                     </span>

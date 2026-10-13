@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { AuthenticatedImage } from "@/components/ui/authenticated-image";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -134,34 +134,18 @@ export function AgentCard({
         >
           <CardHeader className="px-4 pb-2 pt-3.5">
             <div className="flex items-start gap-3">
-              <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-muted text-base leading-none">
-                {agent.avatar_url ? (
-                  <AuthenticatedImage
-                    src={withAgentAvatarVersion(agent.avatar_url)}
-                    alt={displayName}
-                    className="h-full w-full bg-muted object-cover [image-rendering:pixelated]"
-                    fallback={
-                      agent.icon ? (
-                        <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-foreground/80">
-                          {agent.icon}
-                        </span>
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                          <BotIcon className="h-4 w-4" />
-                        </span>
-                      )
-                    }
-                  />
-                ) : agent.icon ? (
-                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-foreground/80">
-                    {agent.icon}
-                  </span>
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <BotIcon className="h-4 w-4" />
-                  </span>
-                )}
-              </div>
+              <AgentAvatarTile
+                agentId={agent.name}
+                name={displayName}
+                avatar={agent.icon}
+                imageUrl={
+                  agent.avatar_url
+                    ? withAgentAvatarVersion(agent.avatar_url)
+                    : null
+                }
+                className="size-10 rounded-full"
+                imageClassName="[image-rendering:pixelated]"
+              />
               <div className="min-w-0 flex-1">
                 <CardTitle className="truncate text-sm font-semibold leading-5">
                   {displayName}

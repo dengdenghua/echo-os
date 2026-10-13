@@ -48,6 +48,7 @@ export function ConversationRosterStrip({
           <WorkstationSeat
             key={seat.id}
             name={seat.name}
+            agentId={seat.kind === "human" ? null : seat.id}
             avatar={seat.icon ?? null}
             avatarUrl={seat.avatarUrl ?? null}
             showBotBadge={seat.kind === "agent" && !leader}

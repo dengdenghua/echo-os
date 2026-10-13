@@ -32,7 +32,7 @@ describe("WorkstationSeat", () => {
     expect(img).toHaveAttribute("src", "/api/agents/coder/avatar");
   });
 
-  it("falls back to the emoji when an image avatar fails to load", () => {
+  it("falls back to a monogram (never the emoji) when an image avatar fails", () => {
     render(
       <WorkstationSeat
         name="coder"
@@ -42,7 +42,8 @@ describe("WorkstationSeat", () => {
     );
     fireEvent.error(screen.getByRole("img", { name: "coder" }));
     expect(screen.queryByRole("img", { name: "coder" })).toBeNull();
-    expect(screen.getByText("🤖")).toBeInTheDocument();
+    expect(screen.getByText("C")).toBeInTheDocument();
+    expect(screen.queryByText("🤖")).not.toBeInTheDocument();
   });
 
   it("falls back to an uppercased initial when no avatar is given", () => {

@@ -2,6 +2,7 @@ import type { ChatStatus } from "ai";
 import { memo, useMemo, type ReactNode } from "react";
 
 import { getBackendBaseURL } from "@/core/config";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { withAgentAvatarVersion } from "@/core/agents/avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import type { Agent } from "@/core/agents/types";
@@ -212,8 +213,6 @@ function ChatInputBoxImpl(props: ChatInputBoxProps) {
   }, [displayAgent?.avatar_url]);
   const displayAgentLabel =
     displayAgent?.display_name?.trim() || displayAgent?.name?.trim() || "Agent";
-  const displayAgentInitial =
-    displayAgentLabel.trim().charAt(0).toUpperCase() || "A";
   const displayAgentIcon = displayAgent?.icon?.trim() || "";
   // Surface the workspace-directory picker even in a fresh personal-space
   // conversation (no workDir yet). Previously this was gated on
@@ -302,19 +301,13 @@ function ChatInputBoxImpl(props: ChatInputBoxProps) {
                   className="inline-flex min-w-0 max-w-[124px] items-center gap-1.5 rounded-full px-2 py-1"
                   title={displayAgentLabel}
                 >
-                  <span className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                    {displayAgentAvatar ? (
-                      <img
-                        src={displayAgentAvatar}
-                        alt={displayAgentLabel}
-                        className="size-full object-cover"
-                      />
-                    ) : displayAgentIcon ? (
-                      displayAgentIcon
-                    ) : (
-                      displayAgentInitial
-                    )}
-                  </span>
+                  <AgentAvatarTile
+                    agentId={displayAgent?.name}
+                    name={displayAgentLabel}
+                    avatar={displayAgentIcon}
+                    imageUrl={displayAgentAvatar}
+                    className="size-4 rounded-full"
+                  />
                   <span className="truncate">{displayAgentLabel}</span>
                 </div>
                 {(showWorkDirSegment || showModeSegment) && (

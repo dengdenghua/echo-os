@@ -48,6 +48,7 @@ function MachineScopeRailImpl({
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <WorkstationSeat
           name={leaderSeat?.name ?? t.agentWorkbenchPanel.mainController}
+          agentId={leaderSeat?.kind === "human" ? null : leaderSeat?.id}
           avatar={leaderSeat?.icon ?? null}
           avatarUrl={leaderSeat?.avatarUrl ?? null}
           avatarNode={
@@ -109,6 +110,7 @@ function MachineScopeRailImpl({
             <WorkstationSeat
               key={seat.id}
               name={seat.name}
+              agentId={seat.kind === "human" ? null : seat.id}
               avatar={seat.icon ?? null}
               avatarUrl={seat.avatarUrl ?? null}
               showBotBadge

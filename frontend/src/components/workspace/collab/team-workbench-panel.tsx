@@ -200,6 +200,7 @@ function TeamMachineRail({
             <WorkstationSeat
               key={agent.name}
               name={name}
+              agentId={agent.name}
               avatar={agent.icon}
               avatarUrl={avatarSrc}
               avatarNode={

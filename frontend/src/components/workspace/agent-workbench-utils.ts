@@ -11,6 +11,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { ECHO_MARK_AVATAR } from "@/core/agents/avatar";
 import type { Translations } from "@/core/i18n/locales/types";
 import { deriveAgentPhases, type AgentPhaseStatus } from "./agent-phases";
 import type { LiveToolEvent } from "./live-tool-timeline";
@@ -157,9 +158,10 @@ const FINAL_DELIVERABLE_WRITE_OPS = new Set([
 ]);
 
 // Mirror runtime.execution.subagents.bridge._ROLE_AVATAR so the
-// frontend can pick a per-role emoji even when the backend hasn't
+// frontend can pick a per-role avatar hint even when the backend hasn't
 // piped the lifecycle ``subagent_spawned`` event through to the
-// LiveToolEvent stream yet. Keep these two maps in sync.
+// LiveToolEvent stream yet. Keep these two maps in sync. These emoji are
+// hints only: <AgentAvatar> draws every role as a monogram tile.
 export const ROLE_AVATAR: Record<string, string> = {
   researcher: "🔍",
   research: "🔍",
@@ -186,7 +188,8 @@ export const ROLE_AVATAR: Record<string, string> = {
   evaluator: "⚖️",
   generator: "✨",
 };
-export const DEFAULT_AVATAR = "🐙";
+/** Unknown roles fall back to the ECHO mark (see `ECHO_MARK_AVATAR`). */
+export const DEFAULT_AVATAR = ECHO_MARK_AVATAR;
 
 // Role → one-line description of what the role does. The nameplate
 // (角色卡) is each role's 说明 (identity/responsibility), not the turn's

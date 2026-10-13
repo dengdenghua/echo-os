@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardListIcon, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -224,9 +225,12 @@ export function CreateTaskDialog({
                           : "border-border-default bg-muted/10 hover:bg-muted/40",
                       )}
                     >
-                      <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-border-default bg-background text-sm">
-                        {agent.icon?.trim() || agent.label.charAt(0)}
-                      </span>
+                      <AgentAvatarTile
+                        agentId={agent.ref}
+                        name={agent.label}
+                        avatar={agent.icon}
+                        className="size-7 rounded-lg"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">
                           {agent.label}

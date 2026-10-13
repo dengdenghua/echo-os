@@ -4,13 +4,17 @@ import {
   Bot,
   ChevronRight,
   CircuitBoard,
+  ClipboardList,
   ImagePlus,
   Link,
+  ListTree,
   Loader2,
   Plus,
+  Radar,
   Save,
   Shield,
   Sparkles,
+  TrendingUp,
   Upload,
   Wrench,
   X,
@@ -34,9 +38,10 @@ import { GrowthTimeline } from "@/components/workspace/evolution-dashboard/growt
 import type { TimelineEvent } from "@/components/workspace/evolution-dashboard/growth-timeline";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { AuthenticatedImage } from "@/components/ui/authenticated-image";
 import { Button } from "@/components/ui/button";
-import { withAgentAvatarVersion } from "@/core/agents/avatar";
+import { isEchoAgentId, withAgentAvatarVersion } from "@/core/agents/avatar";
 import {
   Dialog,
   DialogContent,
@@ -599,9 +604,12 @@ function AgentCoreVisual({
   );
   const visualUrls = agent.visual_urls ?? {};
   const activeGeneratedVisual = visualUrls[view] ?? null;
-  const activeAvatar = agent.avatar_url
-    ? withAgentAvatarVersion(agent.avatar_url)
-    : null;
+  // The default Echo agent's portrait is the ECHO mark, never an image.
+  const isEchoAgent = isEchoAgentId(agent.name) || isEchoAgentId(agent.id);
+  const activeAvatar =
+    agent.avatar_url && !isEchoAgent
+      ? withAgentAvatarVersion(agent.avatar_url)
+      : null;
   const activeVisual = activeGeneratedVisual ?? activeAvatar;
   const isAvatarOnly = Boolean(activeVisual && !activeGeneratedVisual);
   const switchAgents = agents.length > 0 ? agents : [agent];
@@ -764,23 +772,30 @@ function AgentCoreVisual({
                       : "max-h-full w-full object-center",
                   )}
                   fallback={
-                    <div className="mb-24 flex size-32 items-center justify-center rounded-sm border border-primary/35 bg-background text-6xl shadow-[var(--shadow-xs)]">
-                      {agent.icon || (
-                        <Bot className="size-16 text-muted-foreground" />
-                      )}
-                    </div>
+                    <AgentAvatarTile
+                      agentId={agent.name}
+                      name={agent.display_name}
+                      avatar={agent.icon}
+                      className="mb-24 size-32 rounded-lg"
+                    />
                   }
                   src={activeVisual}
                 />
               </div>
             ) : (
               <div className="mb-28 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                <div className="flex size-32 items-center justify-center rounded-sm border border-primary/35 bg-background text-6xl shadow-[var(--shadow-xs)]">
-                  {agent.icon || <Bot className="size-16" />}
-                </div>
-                <span className="font-mono text-xs uppercase tracking-eyebrow">
-                  {t.agentConfig.visualMissing}
-                </span>
+                <AgentAvatarTile
+                  agentId={agent.name}
+                  name={agent.display_name}
+                  avatar={agent.icon}
+                  label={agent.display_name}
+                  className="size-32 rounded-lg"
+                />
+                {isEchoAgent ? null : (
+                  <span className="font-mono text-xs uppercase tracking-eyebrow">
+                    {t.agentConfig.visualMissing}
+                  </span>
+                )}
               </div>
             )}
             <div className="absolute bottom-[52px] left-[6%] right-[6%] h-9 border-y border-[#111]/30 bg-white text-center font-mono text-xs font-semibold uppercase tracking-[0.55em] text-[#232323]">
@@ -804,6 +819,8 @@ function AgentCoreVisual({
                 const avatar = candidate.avatar_url
                   ? withAgentAvatarVersion(candidate.avatar_url)
                   : null;
+                const candidateIsEcho =
+                  isEchoAgentId(candidate.name) || isEchoAgentId(candidate.id);
                 return (
                   <button
                     key={candidate.id}
@@ -823,16 +840,19 @@ function AgentCoreVisual({
                       if (!active) onSelectAgent?.(candidate);
                     }}
                   >
-                    {avatar ? (
+                    {avatar && !candidateIsEcho ? (
                       <AuthenticatedImage
                         alt={candidate.display_name}
                         className="size-full bg-card object-cover object-top"
                         src={avatar}
                       />
                     ) : (
-                      <span className="text-lg leading-none">
-                        {candidate.icon || <Bot className="size-4" />}
-                      </span>
+                      <AgentAvatarTile
+                        agentId={candidate.name}
+                        name={candidate.display_name}
+                        avatar={candidate.icon}
+                        className="size-full rounded-none"
+                      />
                     )}
                     {active ? (
                       <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-core" />
@@ -1643,10 +1663,10 @@ export function AgentRoleProfileDialog({
                   {/* Tab Navigation */}
                   <div className="flex items-center gap-1 border-b border-border pb-0">
                     {[
-                      { id: "overview", label: "概览", icon: "📋" },
-                      { id: "growth", label: "成长数据", icon: "📈" },
-                      { id: "radar", label: "能力雷达", icon: "🎯" },
-                      { id: "skills", label: "技能树", icon: "🌳" },
+                      { id: "overview", label: "概览", icon: ClipboardList },
+                      { id: "growth", label: "成长数据", icon: TrendingUp },
+                      { id: "radar", label: "能力雷达", icon: Radar },
+                      { id: "skills", label: "技能树", icon: ListTree },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -1667,7 +1687,7 @@ export function AgentRoleProfileDialog({
                           )
                         }
                       >
-                        <span>{tab.icon}</span>
+                        <tab.icon className="size-4" aria-hidden />
                         <span>{tab.label}</span>
                         {activeBottomTab === tab.id && (
                           <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />

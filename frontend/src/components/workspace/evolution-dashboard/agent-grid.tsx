@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { ChevronRightIcon, SparklesIcon } from "lucide-react";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 
 interface AgentCard {
@@ -79,9 +80,12 @@ function AgentCardItem({
 
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-2xl">
-          {agent.icon}
-        </div>
+        <AgentAvatarTile
+          agentId={agent.id}
+          name={agent.name}
+          avatar={agent.icon}
+          className="size-12 rounded-xl"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate font-semibold">{agent.name}</h3>

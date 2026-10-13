@@ -40,6 +40,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -725,17 +726,13 @@ export function AgentsTab({
                       key={member.id}
                       className="flex items-center gap-2 text-xs font-medium text-foreground/90"
                     >
-                      <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-background/80 bg-background/70 text-[11px]">
-                        {member.avatar_url ? (
-                          <img
-                            src={member.avatar_url}
-                            alt=""
-                            className="size-full object-cover"
-                          />
-                        ) : (
-                          member.icon || "·"
-                        )}
-                      </span>
+                      <AgentAvatarTile
+                        agentId={member.name}
+                        name={member.display_name}
+                        avatar={member.icon}
+                        imageUrl={member.avatar_url}
+                        className="size-6 rounded-full"
+                      />
                       <span className="truncate">{member.display_name}</span>
                     </div>
                   ))}

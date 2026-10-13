@@ -30,6 +30,7 @@ import {
   type WorkBlock,
   type WorkBlockStatus,
 } from "./work-blocks";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/core/i18n/hooks";
 import type { Translations } from "@/core/i18n/locales/types";
@@ -1995,9 +1996,11 @@ export function AgentCreationCard({
                 </div>
                 <div className="mt-12 flex size-28 items-center justify-center rounded-lg border border-border bg-muted/20">
                   {agent.avatar ? (
-                    <span className="text-5xl" aria-hidden="true">
-                      {agent.avatar}
-                    </span>
+                    <AgentAvatarTile
+                      name={displayName}
+                      avatar={agent.avatar}
+                      className="size-18 rounded-lg"
+                    />
                   ) : (
                     <BotIcon className="size-14 text-foreground" />
                   )}

@@ -15,7 +15,8 @@
  */
 
 import { swallow } from "@/core/utils/log";
-import { withAgentAvatarVersion } from "@/core/agents/avatar";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
+import { isEchoAgentId, withAgentAvatarVersion } from "@/core/agents/avatar";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
 import {
@@ -57,6 +58,8 @@ export interface MentionItem {
   icon: string;
   /** Real avatar image (group members) — rendered instead of the icon. */
   avatarUrl?: string;
+  /** Agent id of a group member; the default Echo agent shows the ECHO mark. */
+  agentId?: string;
 }
 
 export type MentionCategory =
@@ -279,6 +282,7 @@ function withMemberMentions(
         value: m.mention_value?.trim() || label,
         description: m.description || "群成员",
         icon: m.icon?.trim() || "bot",
+        agentId: m.name,
         avatarUrl: resolveMentionAvatar(
           rawAvatar ? withAgentAvatarVersion(rawAvatar) : null,
         ),
@@ -858,7 +862,12 @@ export function MentionAutocompletePopup({
                     isSelected ? "bg-accent-foreground/10" : "bg-muted",
                   )}
                 >
-                  {item.avatarUrl ? (
+                  {isEchoAgentId(item.agentId) ? (
+                    <AgentAvatarTile
+                      agentId="echo"
+                      className="size-full rounded"
+                    />
+                  ) : item.avatarUrl ? (
                     <img
                       src={item.avatarUrl}
                       alt={item.label}

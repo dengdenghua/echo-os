@@ -147,7 +147,7 @@ export default function GameifiedEvolutionDashboard() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold">
-              {selectedAgent.icon} {selectedAgent.name} 的成长详情
+              {selectedAgent.name} 的成长详情
             </h2>
             <button
               type="button"

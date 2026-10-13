@@ -2,6 +2,7 @@
  * ChatHeaderAgentBadge — extracted from `workspace/realtime/[thread_id]/page.tsx`
  * (P3 decomposition). Behavior-preserving move.
  */
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import type { useAgent } from "@/core/agents";
 import { getAssistantDisplayName } from "@/core/agents/assistant-naming";
 import { withAgentAvatarVersion } from "@/core/agents/avatar";
@@ -24,7 +25,6 @@ export function ChatHeaderAgentBadge({
       ? getAssistantDisplayName()
       : agent?.display_name?.trim() || agent?.name?.trim() || agentId;
   const icon = agent?.icon?.trim() || "";
-  const initial = label.trim().charAt(0).toUpperCase() || "A";
   const avatarUrl = agent?.avatar_url
     ? withAgentAvatarVersion(
         agent.avatar_url.startsWith("http://") ||
@@ -57,37 +57,25 @@ export function ChatHeaderAgentBadge({
         title={collaborators.map((a) => a.display_name).join("、")}
       >
         <span className="flex items-center -space-x-1.5">
-          {displayAgents.map((collab, index) => {
-            const collabAvatar = resolveAvatarUrl(collab.avatar_url);
-            const collabInitial = (collab.display_name || collab.name)
-              .charAt(0)
-              .toUpperCase();
-            return (
-              <span
-                key={collab.agent_id}
-                className={cn(
-                  "flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-background bg-muted text-[10px] font-semibold text-muted-foreground",
-                  index === 0 && "z-30",
-                  index === 1 && "z-20",
-                  index === 2 && "z-10",
-                )}
-              >
-                {collabAvatar ? (
-                  <img
-                    src={collabAvatar}
-                    alt={collab.display_name}
-                    className="size-full object-cover"
-                  />
-                ) : collab.icon?.trim() ? (
-                  <span className="text-[9px] leading-none">
-                    {collab.icon.trim()}
-                  </span>
-                ) : (
-                  collabInitial
-                )}
-              </span>
-            );
-          })}
+          {displayAgents.map((collab, index) => (
+            <span
+              key={collab.agent_id}
+              className={cn(
+                "flex size-5 shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted",
+                index === 0 && "z-30",
+                index === 1 && "z-20",
+                index === 2 && "z-10",
+              )}
+            >
+              <AgentAvatarTile
+                agentId={collab.agent_id}
+                name={collab.display_name || collab.name}
+                avatar={collab.icon}
+                imageUrl={resolveAvatarUrl(collab.avatar_url)}
+                className="size-4 rounded-full"
+              />
+            </span>
+          ))}
           {extraCount > 0 && (
             <span className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-background bg-muted text-[9px] font-semibold text-muted-foreground z-0">
               +{extraCount}
@@ -105,15 +93,13 @@ export function ChatHeaderAgentBadge({
       className="inline-flex h-8 max-w-[180px] shrink-0 items-center gap-1.5 px-1.5 text-xs text-foreground/88"
       title={label}
     >
-      <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={label} className="size-full object-cover" />
-        ) : icon ? (
-          icon
-        ) : (
-          initial
-        )}
-      </span>
+      <AgentAvatarTile
+        agentId={agentId}
+        name={label}
+        avatar={icon}
+        imageUrl={avatarUrl}
+        className="size-5 rounded-full"
+      />
       <span className="truncate">{label}</span>
     </div>
   );

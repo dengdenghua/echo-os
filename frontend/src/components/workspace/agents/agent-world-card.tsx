@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AuthenticatedImage } from "@/components/ui/authenticated-image";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { withAgentAvatarVersion } from "@/core/agents/avatar";
 import {
   Card,
@@ -17,52 +17,7 @@ import {
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 import { installAgent, uninstallAgent } from "@/core/agents/agent-world-api";
-import type { AgentWorldAgent, AgentWorldCategory } from "@/core/agents/types";
-
-// ---------------------------------------------------------------------------
-// Category colours
-// ---------------------------------------------------------------------------
-
-export const CATEGORY_STYLES: Record<
-  AgentWorldCategory,
-  { bg: string; text: string; icon: string }
-> = {
-  assistant: {
-    bg: "bg-info/10",
-    text: "text-info dark:text-info",
-    icon: "🤖",
-  },
-  coder: {
-    bg: "bg-success/10",
-    text: "text-success",
-    icon: "💻",
-  },
-  researcher: {
-    bg: "bg-chart-1/10",
-    text: "text-chart-1 dark:text-chart-1",
-    icon: "🔬",
-  },
-  creative: {
-    bg: "bg-warning/10",
-    text: "text-warning",
-    icon: "🎨",
-  },
-  automation: {
-    bg: "bg-destructive/10",
-    text: "text-destructive",
-    icon: "⚡",
-  },
-  specialist: {
-    bg: "bg-info/10",
-    text: "text-info dark:text-info",
-    icon: "🎯",
-  },
-  financial: {
-    bg: "bg-chart-2/10",
-    text: "text-chart-2 dark:text-chart-2",
-    icon: "💼",
-  },
-};
+import type { AgentWorldAgent } from "@/core/agents/types";
 
 // ---------------------------------------------------------------------------
 // AgentWorldCard
@@ -85,7 +40,6 @@ export function AgentWorldCard({
   const queryClient = useQueryClient();
   const [installing, setInstalling] = useState(false);
   const [installed, setInstalled] = useState(agent.is_installed);
-  const catStyle = CATEGORY_STYLES[agent.category] ?? CATEGORY_STYLES.assistant;
   const categoryLabel =
     t.agentWorld.categories[agent.category] ?? agent.category;
   const keySkillCount = agent.key_skills?.length ?? 0;
@@ -97,11 +51,6 @@ export function AgentWorldCard({
         .map((tag) => tag.trim()),
     ),
   ).slice(0, 3);
-  const iconFallback = (
-    <span className="bg-gradient-to-br from-primary/12 to-muted/35 text-primary flex h-full w-full items-center justify-center rounded-sm">
-      {agent.icon || catStyle.icon}
-    </span>
-  );
 
   async function handleInstallToggle(e: React.MouseEvent) {
     e.stopPropagation();
@@ -153,16 +102,18 @@ export function AgentWorldCard({
         <CardHeader className="flex flex-1 flex-col px-4 pb-3 pt-4">
           <div className="flex items-start gap-3">
             <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-background text-lg">
-              {agent.avatar_url ? (
-                <AuthenticatedImage
-                  src={withAgentAvatarVersion(agent.avatar_url)}
-                  alt={agent.display_name}
-                  className="h-full w-full bg-card object-cover [image-rendering:pixelated]"
-                  fallback={iconFallback}
-                />
-              ) : (
-                iconFallback
-              )}
+              <AgentAvatarTile
+                agentId={agent.name}
+                name={agent.display_name}
+                avatar={agent.icon}
+                imageUrl={
+                  agent.avatar_url
+                    ? withAgentAvatarVersion(agent.avatar_url)
+                    : null
+                }
+                className="size-full rounded-none shadow-none"
+                imageClassName="[image-rendering:pixelated]"
+              />
               {agent.is_official && (
                 <div className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-info shadow-[var(--shadow-xs)]">
                   <BadgeCheckIcon className="h-2.5 w-2.5 text-white" />
@@ -223,7 +174,7 @@ export function AgentWorldCard({
                   className={cn(
                     "max-w-32 truncate rounded-full px-2 py-0 text-[11px] font-normal",
                     index === 0
-                      ? cn("border-transparent", catStyle.bg, catStyle.text)
+                      ? "border-border-default bg-muted text-foreground"
                       : "border-border-subtle bg-muted/35 text-muted-foreground",
                   )}
                 >

@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useAgents, dedupeAgentsByName } from "@/core/agents";
 import type { Agent } from "@/core/agents";
 import { isPrimaryPersonaAgentId } from "@/core/agents/persona-policy";
@@ -106,37 +107,14 @@ export function AgentAvatar({
   agent: Agent | undefined;
   className?: string;
 }) {
-  const avatar = resolveAvatarUrl(agent?.avatar_url);
-  const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
-  const showAvatar = Boolean(avatar && failedAvatar !== avatar);
-  const emoji = agent?.icon?.trim() || "";
-  const initial = (agent?.display_name || agent?.name || "?")
-    .trim()
-    .charAt(0)
-    .toUpperCase();
   return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border-default bg-muted text-sm leading-none",
-        !emoji && !avatar && "font-semibold text-muted-foreground text-xs",
-        className,
-      )}
-    >
-      {showAvatar ? (
-        <img
-          src={avatar ?? undefined}
-          alt=""
-          className="size-full object-cover"
-          loading="lazy"
-          onError={() => setFailedAvatar(avatar)}
-        />
-      ) : emoji ? (
-        emoji
-      ) : (
-        initial
-      )}
-    </span>
+    <AgentAvatarTile
+      agentId={agent?.name}
+      name={agent?.display_name || agent?.name}
+      avatar={agent?.icon}
+      imageUrl={resolveAvatarUrl(agent?.avatar_url)}
+      className={cn("size-6 rounded-md", className)}
+    />
   );
 }
 

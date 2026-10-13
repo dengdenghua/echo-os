@@ -569,9 +569,12 @@ describe("<AgentWorkbenchPanel />", () => {
       "title",
       "Eve · 群主",
     );
+    // The default Echo agent's seat draws the ECHO mark, not its image.
     expect(
-      container.querySelector('button[aria-label="Eve · 群主"] img'),
-    ).toHaveAttribute("src", "/api/agents/general/avatar");
+      container.querySelector(
+        'button[aria-label="Eve · 群主"] [data-agent-avatar="echo"]',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("群主")).toBeInTheDocument();
     expect(screen.queryByText("工位")).not.toBeInTheDocument();
     const workbenchHeader = screen.getByRole("banner");
@@ -674,8 +677,10 @@ describe("<AgentWorkbenchPanel />", () => {
       "Eve",
     );
     expect(
-      container.querySelector('button[aria-label="Eve"] img'),
-    ).toHaveAttribute("src", "/api/agents/general/avatar");
+      container.querySelector(
+        'button[aria-label="Eve"] [data-agent-avatar="echo"]',
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText("群主")).not.toBeInTheDocument();
     expect(screen.queryByText("工位")).not.toBeInTheDocument();
   });
@@ -3260,7 +3265,7 @@ describe("avatarForRole", () => {
     expect(avatarForRole("  synthesizer  ")).toBe("✍️");
   });
 
-  test("falls back to echo mascot for unknown role", () => {
+  test("falls back to the ECHO mark for unknown role", () => {
     expect(avatarForRole("unknown_role_x")).toBe(DEFAULT_AVATAR);
   });
 
@@ -3270,8 +3275,8 @@ describe("avatarForRole", () => {
     expect(avatarForRole(undefined)).toBeUndefined();
   });
 
-  test("default avatar is echo", () => {
-    expect(DEFAULT_AVATAR).toBe("🐙");
+  test("default avatar is the ECHO mark token, not an emoji", () => {
+    expect(DEFAULT_AVATAR).toBe("echo");
   });
 
   test("ROLE_AVATAR has the canonical role keys", () => {

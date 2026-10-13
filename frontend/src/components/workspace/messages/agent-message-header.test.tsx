@@ -20,11 +20,26 @@ describe("AgentMessageHeader", () => {
     expect(screen.getByText("C")).toBeInTheDocument();
   });
 
-  it("renders emoji icon before initial when provided", () => {
+  it("draws an emoji icon as a monogram, never the emoji", () => {
     renderWithProviders(
       <AgentMessageHeader agentDisplayName="Coder" icon="💻" />,
     );
-    expect(screen.getByText("💻")).toBeInTheDocument();
+    expect(screen.getByText("C")).toBeInTheDocument();
+    expect(screen.queryByText("💻")).not.toBeInTheDocument();
+  });
+
+  it("draws the ECHO mark for the default Echo agent", () => {
+    const { container } = renderWithProviders(
+      <AgentMessageHeader
+        agentDisplayName="Echo"
+        avatarUrl="/api/agents/general/avatar"
+        icon="🐙"
+      />,
+    );
+    expect(
+      container.querySelector('[data-agent-avatar="echo"]'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("🐙")).not.toBeInTheDocument();
   });
 
   it("renders avatar image when avatarUrl is provided", () => {

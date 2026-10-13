@@ -14,6 +14,7 @@ import {
   listEnterpriseAssets,
   type EnterpriseAsset,
 } from "@/core/agents/agent-world-api";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useI18n } from "@/core/i18n/hooks";
 
 export function EnterpriseAssetsTab({ query }: { query?: string }) {
@@ -100,9 +101,11 @@ export function EnterpriseAssetsTab({ query }: { query?: string }) {
             key={a.id}
             className="flex gap-3 rounded-lg border border-border-default bg-muted/20 p-3"
           >
-            <div className="shrink-0 text-2xl leading-none">
-              {a.icon || "🤖"}
-            </div>
+            <AgentAvatarTile
+              name={a.name}
+              avatar={a.icon}
+              className="size-8 rounded-md"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="truncate text-sm font-medium">{a.name}</span>

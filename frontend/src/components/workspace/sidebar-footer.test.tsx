@@ -76,7 +76,7 @@ describe("AgentAvatar", () => {
     );
   });
 
-  it("falls back to the agent icon when a remote avatar fails", () => {
+  it("falls back to a monogram (never the emoji) when a remote avatar fails", () => {
     const agent: Agent = {
       name: "remote_researcher",
       display_name: "Remote Researcher",
@@ -93,7 +93,8 @@ describe("AgentAvatar", () => {
     fireEvent.error(image!);
 
     expect(container.querySelector("img")).not.toBeInTheDocument();
-    expect(screen.getByText("🟦")).toBeInTheDocument();
+    expect(screen.getByText("R")).toBeInTheDocument();
+    expect(screen.queryByText("🟦")).not.toBeInTheDocument();
   });
 });
 

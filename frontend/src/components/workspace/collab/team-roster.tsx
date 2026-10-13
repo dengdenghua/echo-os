@@ -68,6 +68,7 @@ export function TeamRoster({
                   key={agent.name}
                   className="max-w-full"
                   name={name}
+                  agentId={agent.name}
                   avatar={agent.icon}
                   avatarUrl={avatarSrc}
                   showBotBadge

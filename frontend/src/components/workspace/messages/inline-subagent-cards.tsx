@@ -1,5 +1,4 @@
 import {
-  BotIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   MonitorIcon,
@@ -11,6 +10,7 @@ import { useId, useMemo, useState } from "react";
 import type { LiveToolEvent } from "@/components/workspace/live-tool-timeline";
 import type { AIMessage, Message, ToolMessage } from "@/core/api/types";
 import { isTeammateToolName } from "@/components/workspace/messages/action-display";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 import { emitAgentWorkbenchFocus } from "@/components/workspace/agent-workbench-events";
@@ -896,56 +896,19 @@ function LConnector() {
   );
 }
 
-function isImageAvatar(avatar: string): boolean {
-  return (
-    avatar.startsWith("/") ||
-    avatar.startsWith("http://") ||
-    avatar.startsWith("https://") ||
-    avatar.startsWith("data:") ||
-    avatar.startsWith("blob:")
-  );
-}
-
-function AgentAvatar({
+function SubagentAvatar({
   agent,
   large = false,
 }: {
   agent: InlineSubagentInfo;
   large?: boolean;
 }) {
-  const className = large ? "size-8" : "size-4";
-  if (agent.avatar && isImageAvatar(agent.avatar)) {
-    return (
-      <img
-        alt=""
-        src={agent.avatar}
-        className={cn(className, "rounded-md object-cover")}
-      />
-    );
-  }
-  if (agent.avatar) {
-    return (
-      <span
-        aria-hidden="true"
-        className={cn(
-          className,
-          "flex items-center justify-center leading-none",
-          large ? "text-xl" : "text-sm",
-        )}
-      >
-        {agent.avatar}
-      </span>
-    );
-  }
   return (
-    <span
-      className={cn(
-        className,
-        "flex items-center justify-center rounded-md bg-muted text-muted-foreground/70",
-      )}
-    >
-      <BotIcon className={large ? "size-4" : "size-[13px]"} />
-    </span>
+    <AgentAvatarTile
+      name={agent.name}
+      avatar={agent.avatar}
+      className={large ? "size-8 rounded-md" : "size-4 rounded-sm"}
+    />
   );
 }
 
@@ -1015,7 +978,7 @@ function KimiStyleSubagentCard({
       >
         {/* Avatar - compact, matches Kimi's small avatar style */}
         <span className="mr-1.5 mt-px shrink-0">
-          <AgentAvatar agent={agent} />
+          <SubagentAvatar agent={agent} />
         </span>
 
         {/* Content area - two rows */}
@@ -1149,7 +1112,7 @@ function KimiStyleSubagentCard({
         >
           <div className="rounded-lg border border-border/70 bg-popover p-3 text-popover-foreground shadow-lg">
             <div className="flex items-start gap-2.5">
-              <AgentAvatar agent={agent} large />
+              <SubagentAvatar agent={agent} large />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm font-medium">

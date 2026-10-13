@@ -1,12 +1,17 @@
 import { useState, type ReactNode } from "react";
 import { BotIcon } from "lucide-react";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
+import { isEchoAgentId, isEchoMarkAvatar } from "@/core/agents/avatar";
 import { cn } from "@/lib/utils";
 
 export interface WorkstationSeatProps {
   /** Display name (codename / member name). Truncated when long. */
   name: string;
-  /** Emoji or single-glyph avatar. Ignored when ``avatarUrl`` is set. */
+  /** Agent id; the default Echo agent always shows the ECHO mark. */
+  agentId?: string | null;
+  /** Avatar hint (emoji or short text). Drawn as a monogram tile, never as
+   *  an emoji. Ignored when ``avatarUrl`` is set. */
   avatar?: string | null;
   /** Image avatar URL (takes precedence over ``avatar``). */
   avatarUrl?: string | null;
@@ -50,6 +55,7 @@ export interface WorkstationSeatProps {
  */
 export function WorkstationSeat({
   name,
+  agentId,
   avatar,
   avatarUrl,
   avatarNode,
@@ -70,6 +76,10 @@ export function WorkstationSeat({
 }: WorkstationSeatProps) {
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const showAvatarImage = Boolean(avatarUrl && avatarUrl !== failedAvatarUrl);
+  const isEcho =
+    isEchoAgentId(agentId) ||
+    isEchoMarkAvatar(avatar) ||
+    isEchoMarkAvatar(avatarUrl);
   const base = iconOnly
     ? iconCaption
       ? "group/seat relative inline-flex h-10 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md border text-left transition-colors"
@@ -88,7 +98,9 @@ export function WorkstationSeat({
         iconOnly && iconCaption ? "size-6 text-xs" : "size-7 text-sm",
       )}
     >
-      {showAvatarImage && avatarUrl ? (
+      {isEcho ? (
+        <AgentAvatarTile agentId="echo" className="size-full rounded-lg" />
+      ) : showAvatarImage && avatarUrl ? (
         <img
           src={avatarUrl}
           alt={iconOnly ? "" : name}
@@ -96,7 +108,11 @@ export function WorkstationSeat({
           className="size-full object-cover"
         />
       ) : avatar?.trim() ? (
-        <span aria-hidden="true">{avatar}</span>
+        <AgentAvatarTile
+          name={name}
+          avatar={avatar}
+          className="size-full rounded-lg"
+        />
       ) : avatarNode ? (
         avatarNode
       ) : (
