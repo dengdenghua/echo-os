@@ -196,7 +196,7 @@
 /* Echo 原创默认壁纸（scripts/generate-echo-wallpaper.mjs 生成）。
    3840 宽的候选覆盖高 DPI 屏，其余屏幕加载 2560 宽版本。 */
 .mac-wallpaper-orbit .desktop-wallpaper {
-  background-color: #1c1d5e;
+  background-color: #0a0b0e;
   /* Preserve the source colours; surfaces must not wash out the wallpaper. */
   filter: none;
   background-image: url("/echo/wallpaper-echo-2560.webp");
@@ -208,6 +208,18 @@
 @media (min-resolution: 1.5dppx) {
   .mac-wallpaper-orbit .desktop-wallpaper {
     background-image: url("/echo/wallpaper-echo-3840.webp");
+  }
+}
+
+/* 雪白桌面使用同一构图的雪白版本（同一生成器的 snow 色调）。 */
+.macos-desktop-root.theme-white.mac-wallpaper-orbit .desktop-wallpaper {
+  background-color: #eef0f3;
+  background-image: url("/echo/wallpaper-echo-snow-2560.webp");
+}
+
+@media (min-resolution: 1.5dppx) {
+  .macos-desktop-root.theme-white.mac-wallpaper-orbit .desktop-wallpaper {
+    background-image: url("/echo/wallpaper-echo-snow-3840.webp");
   }
 }
 
@@ -8332,31 +8344,22 @@
   color: #0f172a !important;
 }
 
-/* 2. 液态玻璃 / theme-glass: Cosmic Liquid Crystal Translucency */
+/* 2. 神经玻璃 / theme-glass: clear graphite glass over the wallpaper */
 .mac-menu-bar.theme-glass,
 .theme-glass .mac-menu-bar,
 .macos-desktop-root.theme-glass .mac-menu-bar {
-  background: rgba(15, 23, 42, 0.52) !important;
-  background-color: rgba(15, 23, 42, 0.52) !important;
-  background-image:
-    radial-gradient(
-      360px 70px at var(--liquid-pointer-x, 50%) -10%,
-      rgba(255, 255, 255, 0.22),
-      transparent 72%
-    ),
-    linear-gradient(
-      110deg,
-      rgba(255, 255, 255, 0.08),
-      transparent 32%,
-      rgba(255, 255, 255, 0.04)
-    ) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 4px 16px rgba(5, 10, 28, 0.25) !important;
-  color: rgba(255, 255, 255, 0.94) !important;
+  background: rgba(16, 18, 22, 0.36) !important;
+  background-color: rgba(16, 18, 22, 0.36) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  ) !important;
+  backdrop-filter: blur(28px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) !important;
+  border-bottom: 1px solid var(--echo-line-strong) !important;
+  box-shadow: none !important;
+  color: var(--echo-ink) !important;
 }
 
 .mac-menu-bar.theme-glass .mac-menu-button,
@@ -8591,51 +8594,68 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
-/* Deep Space: one quiet optical language across the desktop chrome. */
+/* 石墨 (graphite) and 神经玻璃 (neural glass) are one family at two
+ * densities. Graphite: the brand glass token (a 72% graphite film) on the
+ * menu bar and Dock, dense windows and a dimmed wallpaper. Neural glass: the
+ * wallpaper at full strength reads through clear graphite glass (the tuned
+ * film), held apart by blur and hairlines. No navy, no colour cast. */
+.macos-desktop-root.theme-dark {
+  --liquid-fill-floor-ultra-thin: 72%;
+  --liquid-fill-floor-thin: 72%;
+  --liquid-fill-floor-ultra-thick: 92%;
+  --liquid-fill-floor-inner: 62%;
+}
+
 .macos-desktop-root.theme-dark > .desktop-wallpaper {
-  filter: grayscale(1) brightness(0.42) sepia(1) hue-rotate(165deg)
-    saturate(1.8);
+  filter: brightness(0.62);
+}
+
+.macos-desktop-root.theme-glass {
+  --liquid-fill-floor-ultra-thin: 24%;
+  --liquid-fill-floor-thin: 30%;
 }
 
 .macos-desktop-root.theme-dark [data-task-card="true"] {
-  background: rgba(10, 21, 36, 0.84);
-  border: 1px solid rgba(155, 208, 235, 0.2);
-  box-shadow:
-    0 20px 48px rgba(0, 5, 15, 0.32),
-    inset 0 1px 0 rgba(204, 237, 255, 0.1);
+  background: color-mix(in srgb, var(--echo-surface) 94%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
   backdrop-filter: blur(24px);
 }
 
-.macos-desktop-root.theme-dark [data-task-card="true"] h4 {
-  color: #e1edf5;
+.macos-desktop-root.theme-glass [data-task-card="true"] {
+  background: color-mix(in srgb, var(--echo-surface) 46%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) [data-task-card="true"] h4 {
+  color: var(--echo-ink);
   font-weight: 500;
 }
 
-.macos-desktop-root.theme-dark [data-task-card="true"] button.bg-blue-600 {
-  background: #a5e6fa;
-  color: #082331;
-  box-shadow: 0 0 14px rgba(99, 211, 245, 0.12);
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  [data-task-card="true"]
+  button.bg-blue-600 {
+  background: var(--echo-action);
+  color: var(--echo-on-action);
+  box-shadow: none;
 }
 
-.macos-desktop-root.theme-dark
+.macos-desktop-root:is(.theme-dark, .theme-glass)
   [data-task-card="true"]
   button.bg-blue-600:hover {
-  background: #d1f4ff;
+  background: color-mix(in srgb, var(--echo-action) 86%, transparent);
 }
 
 .macos-desktop-root.theme-dark .mac-menu-bar {
-  background: rgba(7, 17, 30, 0.64) !important;
-  border-bottom: 1px solid rgba(170, 220, 246, 0.12) !important;
+  border-bottom: 1px solid var(--echo-line) !important;
   box-shadow: none !important;
-  color: #d7e8f1 !important;
+  color: var(--echo-ink) !important;
 }
 
 .macos-desktop-root.theme-dark .mac-dock {
-  background: rgba(8, 20, 34, 0.68) !important;
-  border-color: rgba(170, 220, 246, 0.22) !important;
-  box-shadow:
-    0 12px 36px rgba(0, 5, 15, 0.4),
-    inset 0 1px 0 rgba(204, 237, 255, 0.14) !important;
+  border-color: var(--echo-line-strong) !important;
 }
 
 .macos-desktop-root.theme-dark .mac-dock .mac-app-icon {
@@ -8654,18 +8674,24 @@
 }
 
 .macos-desktop-root.theme-dark [data-intent-composer] {
-  background: rgba(10, 21, 36, 0.82);
-  border-color: rgba(155, 208, 235, 0.24);
-  box-shadow:
-    0 16px 44px rgba(0, 5, 15, 0.28),
-    inset 0 1px 0 rgba(204, 237, 255, 0.12);
+  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);
+  border-color: var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
 }
 
-.macos-desktop-root.theme-dark [data-intent-composer]:focus-within {
-  border-color: rgba(165, 230, 250, 0.65);
+.macos-desktop-root.theme-glass [data-intent-composer] {
+  background: color-mix(in srgb, var(--echo-surface) 42%, transparent);
+  border-color: var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  [data-intent-composer]:focus-within {
+  border-color: color-mix(in srgb, var(--echo-core) 55%, transparent);
   box-shadow:
-    0 0 0 3px rgba(99, 211, 245, 0.1),
-    0 16px 44px rgba(0, 5, 15, 0.28);
+    0 0 0 3px var(--echo-core-soft),
+    var(--echo-shadow-raised);
 }
 
 /* ECHO theme-bound floating material ----------------------------------------
@@ -9157,4 +9183,45 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
   color: var(--echo-on-core);
   background: var(--echo-core);
   box-shadow: none;
+}
+
+/* 神经玻璃 windows -------------------------------------------------------------
+ * Neural glass is the translucent member of the graphite family: window
+ * bodies are frosted graphite glass, so the wallpaper reads through every
+ * window, panel and the Finder. Graphite keeps them solid. Popovers and menus
+ * stay on their legibility floor. */
+.macos-desktop-root.theme-glass :is(.mac-window, .mac-finder-window) {
+  --background: color-mix(in srgb, var(--echo-surface) 50%, transparent);
+  --card: color-mix(in srgb, var(--echo-surface-raised) 56%, transparent);
+  --sidebar: color-mix(in srgb, var(--echo-surface-sunken) 40%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--echo-surface) 36%,
+    transparent
+  ) !important;
+  backdrop-filter: blur(44px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(140%) !important;
+}
+
+.macos-desktop-root.theme-glass
+  :is(.mac-finder-content, .mac-finder-table-head) {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface) 34%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root.theme-glass .mac-finder-sidebar {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-sunken) 30%,
+    transparent
+  ) !important;
+}
+
+/* 雪白: desktop icon labels sit on the light snow wallpaper. */
+.macos-desktop-root.theme-white .mac-desktop-icon-label {
+  color: var(--echo-ink);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
 }

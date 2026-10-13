@@ -16,11 +16,7 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  DESKTOP_WALLPAPER_SIZES,
-  DESKTOP_WALLPAPER_SRCSET,
-  DESKTOP_WALLPAPER_URL,
-} from "@/appliance/desktop-wallpaper";
+import { useDesktopWallpaperSources } from "@/appliance/desktop-wallpaper";
 
 // 应用图标属于稳定的系统识别层，不随鼠标或玻璃模式改变尺寸和基线。
 const BASE_SIZE = 62;
@@ -81,6 +77,7 @@ export function Dock({
   onItemActivate?: () => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -126,9 +123,9 @@ export function Dock({
     >
       <span className="mac-dock-lens" aria-hidden>
         <img
-          src={DESKTOP_WALLPAPER_URL}
-          srcSet={DESKTOP_WALLPAPER_SRCSET}
-          sizes={DESKTOP_WALLPAPER_SIZES}
+          src={wallpaper.url}
+          srcSet={wallpaper.srcSet}
+          sizes={wallpaper.sizes}
           alt=""
         />
       </span>

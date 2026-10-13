@@ -9,11 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  DESKTOP_WALLPAPER_SIZES,
-  DESKTOP_WALLPAPER_SRCSET,
-  DESKTOP_WALLPAPER_URL,
-} from "@/appliance/desktop-wallpaper";
+import { useDesktopWallpaperSources } from "@/appliance/desktop-wallpaper";
 import {
   BatteryFullIcon,
   BellIcon,
@@ -154,13 +150,14 @@ export type MacAppIconState = "default" | "active" | "thinking" | "complete";
 
 /** Echo 默认壁纸，桌面与锁屏共用。 */
 export function MacDesktopWallpaperArtwork() {
+  const wallpaper = useDesktopWallpaperSources();
   return (
     <img
       aria-hidden="true"
       className="desktop-wallpaper-art"
-      src={DESKTOP_WALLPAPER_URL}
-      srcSet={DESKTOP_WALLPAPER_SRCSET}
-      sizes={DESKTOP_WALLPAPER_SIZES}
+      src={wallpaper.url}
+      srcSet={wallpaper.srcSet}
+      sizes={wallpaper.sizes}
       alt=""
     />
   );
@@ -1309,6 +1306,7 @@ export function MacDesktopIcon({ app }: { app: MacShellApp }) {
  */
 function MacSurfaceLens() {
   const lensRef = useRef<HTMLSpanElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const lens = lensRef.current;
@@ -1336,9 +1334,9 @@ function MacSurfaceLens() {
     <span ref={lensRef} className="mac-surface-lens" aria-hidden>
       <span className="mac-surface-lens-raster">
         <img
-          src={DESKTOP_WALLPAPER_URL}
-          srcSet={DESKTOP_WALLPAPER_SRCSET}
-          sizes={DESKTOP_WALLPAPER_SIZES}
+          src={wallpaper.url}
+          srcSet={wallpaper.srcSet}
+          sizes={wallpaper.sizes}
           alt=""
         />
       </span>
@@ -1355,6 +1353,7 @@ function MacSurfaceLens() {
  */
 function MacIconLiquidBackdrop() {
   const backdropRef = useRef<HTMLSpanElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const icon = backdropRef.current?.parentElement;
@@ -1384,9 +1383,9 @@ function MacIconLiquidBackdrop() {
       aria-hidden
     >
       <img
-        src={DESKTOP_WALLPAPER_URL}
-        srcSet={DESKTOP_WALLPAPER_SRCSET}
-        sizes={DESKTOP_WALLPAPER_SIZES}
+        src={wallpaper.url}
+        srcSet={wallpaper.srcSet}
+        sizes={wallpaper.sizes}
         alt=""
       />
     </span>

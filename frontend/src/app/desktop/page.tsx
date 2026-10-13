@@ -92,6 +92,10 @@ import {
 import { Dock, DockItem } from "@/appliance/dock";
 import { MacLiquidGlassOptics } from "@/appliance/liquid-glass-optics";
 import { MacLiquidGlassWebGL } from "@/appliance/liquid-glass-webgl";
+import {
+  DesktopWallpaperToneContext,
+  desktopWallpaperSources,
+} from "@/appliance/desktop-wallpaper";
 import { useDesktopAppearance } from "@/appliance/use-desktop-appearance";
 import { useLiquidGlassPointer } from "@/appliance/use-liquid-glass-pointer";
 import { useSystemControls } from "@/appliance/use-system-controls";
@@ -1955,7 +1959,10 @@ export default function DesktopShellPage() {
     }
   };
 
-  return (
+  // 雪白桌面换用雪白壁纸；石墨与神经玻璃共用石墨壁纸。
+  const wallpaperTone = desktopTheme === "theme-white" ? "snow" : "graphite";
+
+  const desktop = (
     <main
       aria-label="ECHO OS 桌面"
       className={cn(
@@ -2002,11 +2009,15 @@ export default function DesktopShellPage() {
       )}
       <MacNativeLiquidGlass
         enabled={
-          liquidGlassStyle === "crystal" && liquidGlassUsesNativeDefaults
+          liquidGlassStyle === "crystal" &&
+          liquidGlassUsesNativeDefaults &&
+          wallpaperTone === "graphite"
         }
         wallpaper={wallpaper}
       />
-      <MacLiquidGlassWebGL />
+      <MacLiquidGlassWebGL
+        wallpaperUrl={desktopWallpaperSources(wallpaperTone).url}
+      />
       {/* 不在这里建立层叠上下文：菜单栏（z-100）、Dock（z-90）和系统浮层
           必须与窗口层（z-40）同场比较，才能始终位于应用窗口之上。 */}
       <section className="relative flex h-full min-h-0 flex-col">
@@ -3038,5 +3049,11 @@ export default function DesktopShellPage() {
         onConfirm={confirmAppControl}
       />
     </main>
+  );
+
+  return (
+    <DesktopWallpaperToneContext.Provider value={wallpaperTone}>
+      {desktop}
+    </DesktopWallpaperToneContext.Provider>
   );
 }

@@ -521,7 +521,7 @@ export function IntentDesktopSurface({
       document.documentElement.classList.add(newTheme);
     }
     const themeNames = {
-      "theme-white": "象牙温和白",
+      "theme-white": "雪白",
       "theme-glass": "神经玻璃",
       "theme-dark": "石墨",
     };
@@ -691,9 +691,7 @@ export function IntentDesktopSurface({
         theme,
         theme !== "theme-white" && "dark",
         theme === "theme-white" && "bg-transparent text-foreground",
-        theme === "theme-glass" &&
-          "bg-[radial-gradient(at_15%_15%,rgba(56,189,248,0.15)_0%,transparent_55%),radial-gradient(at_85%_85%,rgba(168,85,247,0.12)_0%,transparent_55%),rgba(10,15,30,0.32)] text-slate-100",
-        theme === "theme-dark" && "bg-transparent text-slate-100",
+        theme !== "theme-white" && "bg-transparent text-foreground",
         className,
       )}
       onClick={handleBackdropClick}
@@ -878,7 +876,7 @@ export function IntentDesktopSurface({
               mode === "workspace" && "mt-0",
               theme === "theme-white"
                 ? "border-black/10 bg-card/85 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_20px_45px_-12px_rgba(0,0,0,0.12)] focus-within:border-core/30"
-                : "border-core/30 bg-slate-900/80 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_0_35px_rgba(56,189,248,0.14),0_20px_50px_-10px_rgba(0,0,0,0.5)] focus-within:border-core/30",
+                : "border-border bg-card/90 text-foreground shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] focus-within:border-core/30",
             )}
           >
             <div className="flex items-center gap-3">

@@ -11,7 +11,6 @@ import {
 } from "@/appliance/liquid-glass-motion";
 import { DESKTOP_WALLPAPER_URL } from "@/appliance/desktop-wallpaper";
 
-const WALLPAPER_URL = DESKTOP_WALLPAPER_URL;
 const MAX_LENSES = MAX_LIQUID_GLASS_SURFACES;
 export const LIQUID_GLASS_INTERACTION_SETTLE_MS = 180;
 
@@ -844,7 +843,12 @@ function createWallpaperTexture(
  * surfaces. The shader samples the exact wallpaper crop and paints only
  * inside real DOM bounds; content remains ordinary sharp DOM above it.
  */
-export function MacLiquidGlassWebGL() {
+export function MacLiquidGlassWebGL({
+  wallpaperUrl = DESKTOP_WALLPAPER_URL,
+}: {
+  /** The texture refracted under the glass; must match the visible wallpaper. */
+  wallpaperUrl?: string;
+} = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -1142,7 +1146,7 @@ export function MacLiquidGlassWebGL() {
     reducedMotion.addEventListener?.("change", handleMotionPreference);
 
     image.decoding = "async";
-    image.src = WALLPAPER_URL;
+    image.src = wallpaperUrl;
     image.onload = () => {
       if (disposed) return;
       texture = createWallpaperTexture(gl, image);
@@ -1210,7 +1214,7 @@ export function MacLiquidGlassWebGL() {
         delete root.dataset.liquidWebgl;
       }
     };
-  }, []);
+  }, [wallpaperUrl]);
 
   return (
     <canvas
