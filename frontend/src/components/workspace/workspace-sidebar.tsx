@@ -98,6 +98,7 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  useCloseMobileSidebarOnChange,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -484,6 +485,7 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
     }
   }, [pathname, pendingThreadPath]);
   const sidebarPathname = syncedSidebarPathname(pathname, pendingThreadPath);
+  useCloseMobileSidebarOnChange(`${pathname}${search}`);
 
   // Resolve a NavRoute's labelKey against the sidebar namespace. The cast
   // keeps TS narrowing happy without silently swallowing typos in route keys.

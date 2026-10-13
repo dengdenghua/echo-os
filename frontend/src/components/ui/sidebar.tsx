@@ -40,6 +40,8 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  /** Set when the phone-width sheet renders inside the provider's box. */
+  mobileContainer: HTMLDivElement | null;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -53,21 +55,47 @@ function useSidebar() {
   return context;
 }
 
+/**
+ * Close the phone-width sheet when `key` changes. Pass the current route so
+ * choosing a destination in the sheet reveals it instead of leaving the
+ * sheet over the page.
+ */
+function useCloseMobileSidebarOnChange(key: string) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const lastKeyRef = React.useRef(key);
+  React.useEffect(() => {
+    if (lastKeyRef.current === key) return;
+    lastKeyRef.current = key;
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, key, setOpenMobile]);
+}
+
 function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  containMobileSheet = false,
   className,
   style,
   children,
   ...props
-}: React.ComponentProps<"div"> & {
+}: Omit<React.ComponentProps<"div">, "ref"> & {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Render the phone-width sheet inside this provider instead of on
+   * document.body. A workspace hosted in an ECHO OS window needs this so
+   * the sheet stays within the window, clear of the desktop menu bar and dock.
+   */
+  containMobileSheet?: boolean;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [wrapperElement, setWrapperElement] =
+    React.useState<HTMLDivElement | null>(null);
+  const containSheet = containMobileSheet && isMobile;
+  const mobileContainer = containSheet ? wrapperElement : null;
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -123,14 +151,25 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      mobileContainer,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+      mobileContainer,
+    ],
   );
 
   return (
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
+          ref={setWrapperElement}
           data-slot="sidebar-wrapper"
           style={
             {
@@ -142,6 +181,7 @@ function SidebarProvider({
           className={cn(
             "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
             className,
+            containSheet && "relative",
           )}
           {...props}
         >
@@ -164,7 +204,8 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, mobileContainer } =
+    useSidebar();
   const { t } = useI18n();
 
   if (collapsible === "none") {
@@ -189,7 +230,12 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          container={mobileContainer}
+          overlayClassName={mobileContainer ? "absolute" : undefined}
+          className={cn(
+            "bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden",
+            mobileContainer && "absolute",
+          )}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -774,5 +820,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  useCloseMobileSidebarOnChange,
   useSidebar,
 };

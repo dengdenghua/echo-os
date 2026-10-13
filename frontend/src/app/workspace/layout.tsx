@@ -164,6 +164,7 @@ export default function WorkspaceLayout({
               embeddedInWindow ? "h-full min-h-0" : "h-screen",
             )}
             defaultOpen
+            containMobileSheet={embeddedInWindow}
             style={
               embeddedInWindow
                 ? ({ "--sidebar-width-icon": "64px" } as React.CSSProperties)
