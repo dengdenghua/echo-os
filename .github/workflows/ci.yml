@@ -328,6 +328,30 @@ jobs:
           path: ${{ runner.temp }}/echo-readiness/readiness_static.json
           if-no-files-found: error
 
+      # verify_local.sh --full-stack-only starts FastAPI + Vite and drives
+      # Chromium through `pnpm e2e:full` / `pnpm e2e:full:mobile`, so this lane
+      # needs the locked frontend toolchain and a Playwright browser too.
+      - name: Setup pnpm for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+        with:
+          version: 10.26.2
+
+      - name: Setup Node.js for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies and Chromium for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
       - name: Run full-stack smoke proof
         if: matrix.python-version == '3.11.9'
         env:
