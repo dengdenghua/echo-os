@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useState,
   useCallback,
   useRef,
@@ -76,6 +77,7 @@ import {
   useBrowserStore,
   type BrowserTab,
 } from "./browser-store";
+import { placePopoverWithin } from "./popover-placement";
 
 type DesktopPanelId =
   | "home"
@@ -864,6 +866,44 @@ export function BrowserHome({
   const [enginePickerOpen, setEnginePickerOpen] = useState(false);
   const [openAppGroupId, setOpenAppGroupId] =
     useState<DesktopAppCategory | null>(null);
+  const homeRootRef = useRef<HTMLDivElement>(null);
+  const appGroupAnchorRef = useRef<HTMLDivElement>(null);
+  const appGroupPopoverRef = useRef<HTMLDivElement>(null);
+  // The group popover opens below the category grid, which sits near the
+  // bottom of the start page; keep it inside the window instead of letting
+  // the window clip its last rows.
+  useLayoutEffect(() => {
+    if (!openAppGroupId) return;
+    const place = () => {
+      const root = homeRootRef.current;
+      const anchor = appGroupAnchorRef.current;
+      const popover = appGroupPopoverRef.current;
+      if (!root || !anchor || !popover) return;
+      const bounds = root.getBoundingClientRect();
+      if (bounds.height <= 0) return;
+      const anchorRect = anchor.getBoundingClientRect();
+      const { top, maxHeight } = placePopoverWithin({
+        anchorTop: anchorRect.top,
+        anchorHeight: anchorRect.height,
+        popoverHeight: popover.scrollHeight,
+        boundaryTop: bounds.top,
+        boundaryBottom: bounds.bottom,
+      });
+      popover.style.top = `${top}px`;
+      popover.style.maxHeight = maxHeight === undefined ? "" : `${maxHeight}px`;
+      popover.style.overflowY = maxHeight === undefined ? "" : "auto";
+    };
+    place();
+    // The app window can be resized without a window resize event.
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(place);
+    if (homeRootRef.current) observer?.observe(homeRootRef.current);
+    window.addEventListener("resize", place);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", place);
+    };
+  }, [openAppGroupId]);
   const [activePanel, setActivePanel] = useState<DesktopPanelId>("home");
   const [editMode, setEditMode] = useState(false);
   useEffect(() => {
@@ -1593,6 +1633,7 @@ export function BrowserHome({
 
   return (
     <div
+      ref={homeRootRef}
       style={
         active
           ? {
@@ -1919,7 +1960,7 @@ export function BrowserHome({
               </div>
             </div>
 
-            <div className="relative">
+            <div ref={appGroupAnchorRef} className="relative">
               <div
                 className={cn(
                   "grid grid-cols-2 gap-2.5 p-0.5",
@@ -1967,6 +2008,7 @@ export function BrowserHome({
                 openAppGroupId === group.id ? (
                   <div
                     key={group.id}
+                    ref={appGroupPopoverRef}
                     className={cn(
                       "absolute left-1/2 top-[calc(100%+8px)] z-20 w-72 -translate-x-1/2 rounded-2xl p-2.5 text-foreground liquid-glass",
                     )}
