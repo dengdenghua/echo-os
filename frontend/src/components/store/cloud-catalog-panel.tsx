@@ -121,7 +121,7 @@ function PluginCard({
           className="text-[11px] font-normal text-muted-foreground"
         >
           {item.source === "codex"
-            ? "EchoOS 插件"
+            ? "ECHO 插件"
             : item.source === "workbuddy"
               ? "WorkBuddy"
               : item.source}
@@ -181,7 +181,7 @@ function SkillCard({
               : "bg-chart-3/10 text-chart-3",
           )}
         >
-          {isEcho ? "EchoOS 自研" : "WorkBuddy"}
+          {isEcho ? "ECHO 自研" : "WorkBuddy"}
         </Badge>
         <Badge
           variant="outline"

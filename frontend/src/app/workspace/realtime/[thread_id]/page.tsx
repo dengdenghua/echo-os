@@ -2884,7 +2884,7 @@ function RealtimePageContent({
         replayBlocks,
         {
           title,
-          brand: "EchoAI · EchoOS",
+          brand: "ECHO · OS",
           footer: `${new Date().toLocaleDateString()} · ${t.realtime.replay.footer}`,
         },
         workBlockLabelsFromShape(
