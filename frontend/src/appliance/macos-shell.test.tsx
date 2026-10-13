@@ -328,7 +328,7 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    expect(screen.getByText("Echo OS 0.2.1 已认证")).toBeInTheDocument();
+    expect(screen.getByText("ECHO OS 0.2.1 已认证")).toBeInTheDocument();
     expect(screen.getByText(/未启用的系统槽/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "安装更新…" }));
     expect(onApplyUpdate).toHaveBeenCalledOnce();
@@ -826,7 +826,7 @@ describe("Echo desktop shell", () => {
     );
 
     expect(
-      screen.getByRole("alertdialog", { name: "关闭 Echo OS？" }),
+      screen.getByRole("alertdialog", { name: "关闭 ECHO OS？" }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关机" }));
     expect(onConfirm).toHaveBeenCalledOnce();
@@ -1087,7 +1087,7 @@ describe("Echo desktop shell", () => {
     // Open dropdown
     await user.click(trigger);
     expect(screen.getByText("桌面模式")).toBeVisible();
-    expect(screen.getByText("协作空间 (OpenRoom)")).toBeVisible();
+    expect(screen.getByText("协作空间")).toBeVisible();
 
     // Select a room
     const builderBtn = screen.getByRole("button", { name: /工坊/ });

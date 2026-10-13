@@ -1957,7 +1957,7 @@ export default function DesktopShellPage() {
 
   return (
     <main
-      aria-label="Echo OS 桌面"
+      aria-label="ECHO OS 桌面"
       className={cn(
         "macos-desktop-root relative h-screen overflow-hidden bg-transparent",
         desktopTheme,
@@ -2049,13 +2049,13 @@ export default function DesktopShellPage() {
                   const next = prev === "pure" ? "workspace" : "pure";
                   toast.info(
                     next === "pure"
-                      ? "已进入纯净意图态 (已退散工作区窗口)"
+                      ? "已进入意图纯净态，工作区窗口已收起"
                       : "已恢复多窗口工作台",
                     {
                       description:
                         next === "pure"
                           ? "点击空白壁纸或按空格键可随时恢复窗口"
-                          : "点击空白壁纸或按空格键可返回纯净意图态",
+                          : "点击空白壁纸或按空格键可返回意图纯净态",
                     },
                   );
                   return next;

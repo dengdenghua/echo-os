@@ -34,7 +34,7 @@ export function useSystemUpdates(options: {
       setStatus({
         schema: 1,
         state: "unavailable",
-        error: "请在 Echo OS 原生 Linux 桌面中查看系统更新。",
+        error: "请在 ECHO OS 原生 Linux 桌面中查看系统更新。",
       });
       return;
     }

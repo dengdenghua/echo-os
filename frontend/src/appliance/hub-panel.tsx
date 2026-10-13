@@ -243,7 +243,7 @@ function runtimeUnavailableMessage(error: string | null) {
     detail.includes("configure echo_docker_host") ||
     detail.includes("docker socket not found")
   ) {
-    return "当前预览未连接 Echo OS 设备应用服务；部署到设备或配置受限容器代理后即可安装。";
+    return "当前预览未连接 ECHO OS 设备应用服务；部署到设备或配置受限容器代理后即可安装。";
   }
   return "应用目录可浏览，但设备安装服务暂时离线。";
 }

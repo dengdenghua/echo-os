@@ -194,7 +194,7 @@ export function ActivityMonitorPanel({
             </p>
             {status !== "loading" && (
               <p className="mt-2 text-xs text-muted-foreground">
-                在 Echo OS 桌面客户端中可查看实时 CPU、内存与运行时间。
+                在 ECHO OS 桌面客户端中可查看实时 CPU、内存与运行时间。
               </p>
             )}
           </div>

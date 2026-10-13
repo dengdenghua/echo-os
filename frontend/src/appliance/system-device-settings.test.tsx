@@ -114,7 +114,7 @@ describe("SystemDeviceSettings", () => {
     render(<SystemDeviceSettings section="connectivity" controls={null} />);
 
     expect(
-      screen.getByText(/仅在 Echo OS 原生 Linux 会话中可用/),
+      screen.getByText(/仅在 ECHO OS 原生 Linux 会话中可用/),
     ).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Wi-Fi" })).toBeDisabled();
     expect(screen.getByRole("switch", { name: "蓝牙" })).toBeDisabled();

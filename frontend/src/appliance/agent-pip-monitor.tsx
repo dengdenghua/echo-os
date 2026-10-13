@@ -284,7 +284,7 @@ export function AgentPipMonitor({
           />
         </span>
         <span className="text-[11px] font-semibold text-foreground">
-          {agentFirstName} PiP · {pillLabel}
+          {agentFirstName} 画中画 · {pillLabel}
           {demo ? " · 演示" : ""}
         </span>
         <ChevronUpIcon className="size-3 text-muted-foreground" />

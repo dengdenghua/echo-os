@@ -140,7 +140,7 @@ it("keeps the dialog open and explains when the session is no longer native", as
   });
 
   expect(result.current.systemActionError).toBe(
-    "当前不是 Echo OS 原生系统会话",
+    "当前不是 ECHO OS 原生系统会话",
   );
   expect(result.current.pendingSystemAction).toBe("logout");
 });

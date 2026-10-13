@@ -364,7 +364,7 @@ export function MacWorkspaceDropdown({
             ? "bg-current/20 text-inherit border-current/25 shadow-xs"
             : "bg-current/10 text-inherit border-current/15 hover:bg-current/15",
         )}
-        title="桌面空间与模式控制 (点击切换协作空间或纯净态)"
+        title="桌面空间与模式：点击切换协作空间或纯净态"
       >
         <span
           className={cn(
@@ -440,7 +440,7 @@ export function MacWorkspaceDropdown({
           <div className="mac-menu-separator" />
 
           <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground tracking-wider">
-            协作空间 (OpenRoom)
+            协作空间
           </div>
           {OPEN_ROOMS.map((room) => {
             const isSelected =
@@ -700,7 +700,7 @@ export function MacMenuBar({
       label: "帮助",
       key: "help",
       items: [
-        { label: "Echo OS 帮助", onSelect: () => select(onOpenAbout) },
+        { label: "ECHO OS 帮助", onSelect: () => select(onOpenAbout) },
         { label: "系统设置…", onSelect: () => select(onOpenSettings) },
       ],
     },
@@ -1894,7 +1894,7 @@ export function MacControlCenter({
         </label>
         <div className="mac-control-footer">
           <span>
-            <CommandIcon className="size-3.5" /> Echo OS
+            <CommandIcon className="size-3.5" /> ECHO OS
           </span>
           <button type="button" onClick={onOpenSettings}>
             控制中心设置…
@@ -2018,7 +2018,7 @@ export function MacNotificationCenter({
               <span>
                 {nativeServiceAvailable
                   ? "来自应用和系统服务的新通知会显示在这里。"
-                  : "系统通知在 Echo OS 原生 Linux 会话中启用。"}
+                  : "系统通知在 ECHO OS 原生 Linux 会话中启用。"}
               </span>
             </section>
           )}
@@ -2068,7 +2068,7 @@ export function MacAboutDialog({
     },
     ready: {
       title: updateStatus?.version
-        ? `Echo OS ${updateStatus.version} 已认证`
+        ? `ECHO OS ${updateStatus.version} 已认证`
         : "更新已认证",
       detail: "安装将写入未启用的系统槽，当前系统保持可启动。",
     },
@@ -2078,7 +2078,7 @@ export function MacAboutDialog({
     },
     "reboot-required": {
       title: updateStatus?.version
-        ? `Echo OS ${updateStatus.version} 已就绪`
+        ? `ECHO OS ${updateStatus.version} 已就绪`
         : "更新已就绪",
       detail: "新系统已写入备用槽，重新启动后进行首次验证启动。",
     },
@@ -2089,7 +2089,7 @@ export function MacAboutDialog({
     unavailable: {
       title: "原生系统更新不可用",
       detail:
-        updateStatus?.error || "请在 Echo OS 原生 Linux 桌面中查看系统更新。",
+        updateStatus?.error || "请在 ECHO OS 原生 Linux 桌面中查看系统更新。",
     },
   };
   const copy = updateCopy[state];
@@ -2125,7 +2125,7 @@ export function MacAboutDialog({
         <div className="mac-about-mark">
           <EchoMark tone="light" />
         </div>
-        <h1>Echo OS</h1>
+        <h1>ECHO OS</h1>
         <p>Personal Agent Operating System</p>
         <dl data-liquid-surface="thick">
           <div>
@@ -2214,7 +2214,7 @@ export function MacAboutDialog({
         >
           打开系统设置…
         </button>
-        <small>© 2026 Echo Project</small>
+        <small>© 2026 ECHO</small>
       </section>
     </div>
   );
@@ -2225,22 +2225,22 @@ const SYSTEM_ACTION_COPY: Record<
   { title: string; detail: string; confirm: string }
 > = {
   logout: {
-    title: "退出当前 Echo OS 会话？",
+    title: "退出当前 ECHO OS 会话？",
     detail: "正在运行的应用会被关闭，并返回本地系统登录界面。",
     confirm: "退出登录",
   },
   suspend: {
-    title: "让 Echo OS 进入睡眠？",
+    title: "让 ECHO OS 进入睡眠？",
     detail: "当前会话会暂停，按电源键或键盘即可唤醒设备。",
     confirm: "睡眠",
   },
   restart: {
-    title: "重新启动 Echo OS？",
+    title: "重新启动 ECHO OS？",
     detail: "正在运行的应用会被关闭，请先保存尚未完成的工作。",
     confirm: "重新启动",
   },
   shutdown: {
-    title: "关闭 Echo OS？",
+    title: "关闭 ECHO OS？",
     detail: "正在运行的应用会被关闭，设备需要再次按下电源键才能启动。",
     confirm: "关机",
   },

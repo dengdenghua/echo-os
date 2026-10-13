@@ -112,21 +112,21 @@ export const OPEN_ROOMS: OpenRoom[] = [
   },
   {
     id: "researcher",
-    title: "调研室 (Research)",
+    title: "调研室",
     agentLabel: "通用助理",
     icon: SearchIcon,
     desc: "写作、调研、总结与问答",
   },
   {
     id: "builder",
-    title: "工坊 (Builder Studio)",
+    title: "工坊",
     agentLabel: "编码 Agent",
     icon: HammerIcon,
     desc: "代码、构建与工程任务",
   },
   {
     id: "operator",
-    title: "中枢 (Operator Suite)",
+    title: "中枢",
     agentLabel: "设备管家",
     icon: ShieldIcon,
     desc: "桌面操作、存储与设备管理",
@@ -491,13 +491,13 @@ export function IntentDesktopSurface({
     setMode(next);
     toast.info(
       next === "pure"
-        ? "已进入纯净意图态 (已退散工作区窗口)"
+        ? "已进入意图纯净态，工作区窗口已收起"
         : "已恢复多窗口工作台",
       {
         description:
           next === "pure"
             ? "点击空白壁纸或按空格键可随时恢复窗口"
-            : "点击空白壁纸或按空格键可返回纯净意图态",
+            : "点击空白壁纸或按空格键可返回意图纯净态",
       },
     );
   }, [mode, setMode]);

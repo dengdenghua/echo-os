@@ -68,7 +68,7 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
         }}
       />,
     );
-    expect(screen.getByText("Echo PiP · 失败")).toBeInTheDocument();
+    expect(screen.getByText("Echo 画中画 · 失败")).toBeInTheDocument();
     expect(screen.queryByText(/进行中/)).not.toBeInTheDocument();
   });
 
@@ -77,9 +77,9 @@ describe("AgentPipMonitor (Codex 画中画)", () => {
     const minimizeBtn = screen.getByRole("button", { name: /最小化/i });
     fireEvent.click(minimizeBtn);
 
-    expect(screen.getByText(/Builder PiP · 待批准/i)).toBeInTheDocument();
+    expect(screen.getByText(/Builder 画中画 · 待批准/i)).toBeInTheDocument();
 
-    const pill = screen.getByText(/Builder PiP · 待批准/i);
+    const pill = screen.getByText(/Builder 画中画 · 待批准/i);
     fireEvent.click(pill);
     expect(screen.getByText(/任务画中画/i)).toBeInTheDocument();
   });

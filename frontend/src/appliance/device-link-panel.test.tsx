@@ -217,9 +217,7 @@ describe("device link panel", () => {
       "href",
       "https://echo-os.example.ts.net",
     );
-    expect(
-      screen.getByText(/Tentacle 控制端口仍只在局域网/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/手机控制端口仍只在局域网/)).toBeInTheDocument();
     expect(screen.getByText(/WireGuard \+ HTTPS/)).toBeInTheDocument();
   });
 
@@ -263,7 +261,9 @@ describe("device link panel", () => {
     );
 
     await screen.findByText("Echo Pocket");
-    const mirrorBtn = screen.getByRole("button", { name: /多屏协同 Echo Pocket/ });
+    const mirrorBtn = screen.getByRole("button", {
+      name: /多屏协同 Echo Pocket/,
+    });
     expect(mirrorBtn).toBeInTheDocument();
 
     await user.click(mirrorBtn);

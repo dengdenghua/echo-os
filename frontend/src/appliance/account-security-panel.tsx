@@ -422,7 +422,7 @@ export function AccountSecurityPanel({
                 }
               </h1>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                管理 Echo OS 原生设备与桌面能力
+                管理 ECHO OS 原生设备与桌面能力
               </p>
             </header>
             <div className="mt-6">
@@ -495,7 +495,7 @@ export function AccountSecurityPanel({
                 账户与安全
               </h1>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                管理 Echo OS 设备密码和已登录会话
+                管理 ECHO OS 设备密码和已登录会话
               </p>
             </header>
 
@@ -753,7 +753,7 @@ export function AccountSecurityPanel({
 
             <p className="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <LockKeyholeIcon className="size-3.5" />
-              密码只发送到当前 Echo OS 设备，不会保存在浏览器中。
+              密码只发送到当前 ECHO OS 设备，不会保存在浏览器中。
             </p>
           </>
         )}

@@ -119,7 +119,7 @@ export function ApplianceLogin({
         <div className="mac-login-avatar">
           <EchoMark tone="light" />
         </div>
-        <h1>Echo</h1>
+        <h1>ECHO</h1>
         <p>{username.trim() === "admin" ? "设备管理员" : "家庭成员"}</p>
 
         <label className="mac-login-username">
@@ -242,7 +242,7 @@ export function ApplianceLogin({
       <footer className="mac-login-footer">
         <span>
           <WifiIcon />
-          Echo Home
+          ECHO Home
         </span>
         <span>首次启动密码可在设备控制台中查看</span>
       </footer>
@@ -267,7 +267,7 @@ export function ApplianceSessionGate({
     ? "无法安全确认当前设备会话。请检查服务状态后重试。"
     : state === "starting"
       ? "启动完成后将自动进入登录界面，请稍候。"
-      : "正在连接 Echo OS，请稍候。";
+      : "正在连接 ECHO OS，请稍候。";
 
   return (
     <main
@@ -308,7 +308,7 @@ export function ApplianceSessionGate({
       <footer className="mac-login-footer">
         <span>
           <WifiIcon />
-          Echo Home
+          ECHO Home
         </span>
         <span>设备会话采用失败关闭保护</span>
       </footer>

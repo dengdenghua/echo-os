@@ -287,7 +287,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
           description={
             wifiAvailable
               ? controls?.wifi.connection || "已打开，当前未连接网络"
-              : "仅在 Echo OS 原生 Linux 会话中可用"
+              : "仅在 ECHO OS 原生 Linux 会话中可用"
           }
         >
           <Toggle
@@ -514,7 +514,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
       </SettingsRow>
       <SettingsRow
         icon={CheckCircle2Icon}
-        title="Echo OS"
+        title="ECHO OS"
         description="Agent、文件、存储和自动化能力由同一系统会话统一管理。"
       />
       <SettingsRow

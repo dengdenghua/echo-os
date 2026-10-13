@@ -643,7 +643,7 @@ describe("Echo Hub panel", () => {
 
     expect(
       await screen.findByText(
-        "当前预览未连接 Echo OS 设备应用服务；部署到设备或配置受限容器代理后即可安装。",
+        "当前预览未连接 ECHO OS 设备应用服务；部署到设备或配置受限容器代理后即可安装。",
       ),
     ).toBeInTheDocument();
   });

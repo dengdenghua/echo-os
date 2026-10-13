@@ -111,7 +111,7 @@ export function useSystemControls(options?: {
     options?.closeTransientPanels?.();
     const system = window.echo?.system;
     if (!system) {
-      toast.error("当前不是 Echo OS 原生系统会话");
+      toast.error("当前不是 ECHO OS 原生系统会话");
       return;
     }
     try {
@@ -142,7 +142,7 @@ export function useSystemControls(options?: {
     if (!pendingSystemAction || systemActionBusy) return;
     const system = window.echo?.system;
     if (!system) {
-      setSystemActionError("当前不是 Echo OS 原生系统会话");
+      setSystemActionError("当前不是 ECHO OS 原生系统会话");
       return;
     }
     setSystemActionBusy(true);

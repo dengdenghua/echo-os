@@ -349,7 +349,7 @@ export function UpsPanel() {
         description={
           pendingDesired?.enabled
             ? `计划要求连续 ${pendingDesired.requiredConsecutiveSamples} 次低电量确认；FSD 会立即请求系统安全关机。请输入管理员密码继续。`
-            : "关闭后，UPS 低电量与 FSD 信号都不会再触发 Echo OS 自动关机。请输入管理员密码继续。"
+            : "关闭后，UPS 低电量与 FSD 信号都不会再触发 ECHO OS 自动关机。请输入管理员密码继续。"
         }
         targetLabel={pendingPlan?.planId}
         confirmLabel={pendingDesired?.enabled ? "确认启用" : "确认关闭"}

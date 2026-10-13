@@ -394,7 +394,7 @@ describe("IntentDesktopSurface", () => {
     renderSurface();
     const card = screen.getByRole("article", { name: "整理下载文件夹" });
     fireEvent.click(within(card).getByRole("button", { name: "钉在画中画" }));
-    expect(screen.getByText(/Echo PiP · 40%/)).toBeInTheDocument();
+    expect(screen.getByText(/Echo 画中画 · 40%/)).toBeInTheDocument();
   });
 
   it("toggles between workspace and pure mode on mode button click", () => {
@@ -403,7 +403,7 @@ describe("IntentDesktopSurface", () => {
 
     expect(screen.getByText("意图纯净态")).toBeInTheDocument();
     expect(toast.info).toHaveBeenCalledWith(
-      expect.stringContaining("已进入纯净意图态"),
+      expect.stringContaining("已进入意图纯净态"),
       expect.anything(),
     );
 

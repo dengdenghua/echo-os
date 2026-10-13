@@ -456,7 +456,7 @@ export function DeviceLinkPanel({
                 ? "查看公网连接能力与当前安全边界"
                 : section === "sync"
                   ? "按设备分别授权照片与文件，断点续传且不覆盖冲突版本"
-                  : "复用 Agent Tentacle，连接手机与其他个人终端"}
+                  : "连接手机与其他个人终端"}
             </p>
           </div>
           <button
@@ -554,8 +554,8 @@ export function DeviceLinkPanel({
             )}
             {status?.mode === "agent-shared" && (
               <p className="mt-3 rounded-xl bg-core/10 px-3 py-2.5 text-[10px] leading-4 text-core ring-1 ring-core/30">
-                当前复用 Agent 开发连接：设备共享同一配对凭据，暂不能单独撤销。
-                原生 Echo 模式会自动使用一机一凭据。
+                当前是开发模式连接：所有设备共用一份配对凭据，暂不能单独撤销某一台。
+                正式安装的 ECHO OS 会为每台设备单独签发凭据。
               </p>
             )}
 
@@ -622,7 +622,7 @@ export function DeviceLinkPanel({
                       在 Echo Mobile 的“连接设备”中粘贴以下链接。
                       {invitation.expiresAt
                         ? " 邀请将在 5 分钟后失效；首次连接后只绑定该设备。"
-                        : " 当前为 Agent 兼容模式，链接使用共享设备凭据。"}
+                        : " 当前是开发模式连接，链接使用共享设备凭据。"}
                     </p>
                   </div>
                 </div>
@@ -728,7 +728,7 @@ export function DeviceLinkPanel({
             ) : !syncStatus.available ? (
               <section className="rounded-[20px] bg-warning/10 p-5 ring-1 ring-warning/30">
                 <strong className="text-[13px] text-warning">
-                  当前 Agent 兼容模式不能开启自动备份
+                  开发模式连接下不能开启自动备份
                 </strong>
                 <p className="mt-1 text-[10px] leading-5 text-warning">
                   共享凭据无法判断是哪台手机，也不能单独撤销。原生 Echo
@@ -915,7 +915,7 @@ export function DeviceLinkPanel({
                 <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
                   {remoteConnected
                     ? "桌面、文件管理和照片页面可通过个人 Tailnet 加密访问；入口仍受 Echo 登录、Origin 防护和管理员审批保护。"
-                    : "管理员复核、短时邀请、一机一凭据、单设备撤销，以及 Agent Tentacle 的在线状态和能力上报。"}
+                    : "管理员复核、短时邀请、一机一凭据、单设备撤销，以及每台设备的在线状态和能力上报。"}
                 </p>
               </article>
               <article className="rounded-[18px] bg-card/75 p-4 ring-1 ring-border">
@@ -928,8 +928,8 @@ export function DeviceLinkPanel({
                 <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
                   {remoteConnected
                     ? remote?.features.fileSync && remote.features.photoSync
-                      ? "手机 Tentacle 控制端口仍只在局域网开放；已授权设备可通过 Tailnet HTTPS 断点备份文件与照片。"
-                      : "手机 Tentacle 控制端口仍只在局域网开放；当前远程网关还未挂载设备备份接口。"
+                      ? "手机控制端口仍只在局域网开放；已授权设备可通过 Tailnet HTTPS 断点备份文件与照片。"
+                      : "手机控制端口仍只在局域网开放；当前远程网关还未挂载设备备份接口。"
                     : "Tailscale 私网或受控中继、HTTPS、外网可达性检测，以及文件与照片的断点同步。"}
                 </p>
               </article>
