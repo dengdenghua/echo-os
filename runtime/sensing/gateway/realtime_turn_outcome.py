@@ -768,6 +768,20 @@ def _record_task_run_started(
         _logger.warning("trace store start failed for %s: %s", turn.id, exc)
 
 
+def _turn_goal(turn: Turn) -> str:
+    """The first user message of a turn: what the task list calls the task."""
+
+    return next(
+        (
+            str(getattr(item, "text", "") or "").strip()
+            for item in turn.items
+            if str(getattr(item, "type", "")) in {"userMessage", "ItemType.USER_MESSAGE"}
+            and str(getattr(item, "text", "") or "").strip()
+        ),
+        "",
+    )
+
+
 def _record_task_run_finished(
     runtime: CerebrumRuntime,
     turn: Turn,
@@ -821,11 +835,17 @@ def _record_task_run_finished(
                     )
             elif supervisor.store.get(supervisor_task_id) is None:
                 params = cast(TurnParams, turn.params)
+                # A turn that ended before execution (e.g. no model connected)
+                # is only recorded here; without its goal the Task Space and
+                # the desktop card listed it as 未命名任务.
+                goal = _turn_goal(turn)
                 supervisor.start_task(
                     task_id=supervisor_task_id,
                     kind="realtime_objective",
                     owner_id=getattr(params, "owner_actor_id", None),
                     thread_id=turn.thread_id,
+                    title=_preview_text(goal, limit=80),
+                    goal=goal,
                     mode=_turn_mode(params) or "direct",
                     origin_task_id=turn.id,
                     metadata=metadata,
@@ -903,16 +923,7 @@ def _record_react_trace_event(runtime: CerebrumRuntime, turn: Turn, evt: dict[st
         elif supervisor is not None and supervisor_task_id:
             try:
                 params = cast(TurnParams, turn.params)
-                goal = next(
-                    (
-                        str(getattr(item, "text", "") or "").strip()
-                        for item in turn.items
-                        if str(getattr(item, "type", ""))
-                        in {"userMessage", "ItemType.USER_MESSAGE"}
-                        and str(getattr(item, "text", "") or "").strip()
-                    ),
-                    "",
-                )
+                goal = _turn_goal(turn)
                 supervisor.start_task(
                     task_id=supervisor_task_id,
                     kind="realtime_objective",

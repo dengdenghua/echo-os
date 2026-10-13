@@ -143,6 +143,30 @@ def test_realtime_react_lifecycle_projects_to_task_supervisor(tmp_path):
     assert paused.metadata["turn_id"] == "turn-1"
 
 
+def test_turn_failed_before_execution_keeps_its_goal_as_title(tmp_path):
+    # Golden path 2026-10: a first task that stopped at engine selection (no
+    # model connected yet) was listed as 未命名任务 in the Task Space and on
+    # the desktop card.
+    from runtime.protocol.items import UserMessageItem
+
+    supervisor = TaskSupervisor.from_path(
+        tmp_path / "task_runs.json", holder_id="realtime-worker", lease_ttl_seconds=30
+    )
+    runtime = SimpleNamespace(_task_supervisor=supervisor, _trace_store=None)
+    params = TurnParams(threadId="thread-1", input=[], cwd=str(tmp_path))
+    turn = Turn(id="turn-1", threadId="thread-1", params=params)
+    turn.items.append(UserMessageItem(id="u1", text="在个人空间里创建 hello.txt，内容写 hello echo"))
+    turn.status = TurnStatus.FAILED
+    turn.error = {"code": "execution_unavailable", "disposition": "blocked_on_user"}
+
+    _record_task_run_finished(runtime, turn)
+
+    record = supervisor.store.get("turn-1")
+    assert record is not None
+    assert record.goal == "在个人空间里创建 hello.txt，内容写 hello echo"
+    assert record.title.startswith("在个人空间里创建 hello.txt")
+
+
 def test_task_supervisor_persists_lifecycle_and_releases_terminal_lease(tmp_path):
     supervisor = TaskSupervisor.from_path(
         tmp_path / "task_runs.json",
