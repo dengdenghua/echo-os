@@ -60,6 +60,14 @@ export const AVAILABLE_MODELS: ModelOption[] = [
   },
 ];
 
+const POLICY_SHORT_NAMES: Record<RoutingPolicy, string> = {
+  "local-first": "本地",
+  auto: "自动",
+  "quality-first": "品质",
+  "cost-first": "成本",
+  "privacy-first": "隐私",
+};
+
 export interface AiNetworkPulseProps {
   onOpenWorkbench?: () => void;
   onOpenSettings?: () => void;
@@ -141,8 +149,8 @@ export function AiNetworkPulse({
 
   const handleSelectPolicy = (newPolicy: RoutingPolicy) => {
     setPolicy(newPolicy);
-    toast.success(`调度原则已切换为：${policyLabels[newPolicy].name}`, {
-      description: policyLabels[newPolicy].desc,
+    toast.success(`演示：调度原则切换为${policyLabels[newPolicy].name}`, {
+      description: `${policyLabels[newPolicy].desc}。演示数据，不会改变实际调度。`,
     });
   };
 
@@ -153,8 +161,8 @@ export function AiNetworkPulse({
   const handleSelectModel = (model: ModelOption) => {
     setActiveModel(model.id);
     onSelectModel?.(model.id);
-    toast.success(`系统主模型已切换为：${model.name}`, {
-      description: `算力供应：${model.provider} · 特性：${model.tag || ""}`,
+    toast.success(`演示：主选模型切换为 ${model.name}`, {
+      description: `${model.provider} · ${model.tag || ""}。演示数据，不会改变实际使用的模型。`,
     });
   };
 
@@ -167,19 +175,19 @@ export function AiNetworkPulse({
           onPointerDown={handlePointerDown}
           onClick={handleClick}
           className={cn(
-            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 text-[11px] font-medium text-slate-100 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/20 select-none cursor-pointer",
+            "group inline-flex h-6 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 text-[12px] font-medium text-slate-100 shadow-sm backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-white/20 select-none cursor-pointer",
             open && "scale-[1.02] bg-white/20 ring-1 ring-white/30",
             className,
           )}
-          aria-label="打开 AI Network 实时脉搏"
-          title="AI Network · 演示预览，非实时遥测"
+          aria-label="打开 AI Network 面板（演示数据）"
+          title="AI 网络 · 演示数据，非实时遥测"
         >
           <span className="relative flex size-2 items-center justify-center">
             <span className="relative inline-flex size-1.5 rounded-full bg-core" />
           </span>
           <span className="font-semibold tracking-tight">AI</span>
           <span className="opacity-40">·</span>
-          <span className="text-[10px] opacity-70">
+          <span className="text-[12px] opacity-70">
             {activeModelObj.id === "auto"
               ? "演示"
               : activeModelObj.name.split(" ")[0]}
@@ -193,56 +201,46 @@ export function AiNetworkPulse({
         portalContainer={portalContainer}
         className="z-[200] w-[420px] max-w-[calc(100vw-24px)] rounded-2xl border border-border bg-popover/95 p-4 text-popover-foreground shadow-2xl shadow-black/20 backdrop-blur-2xl"
       >
-        {/* 顶部标题与状态 */}
+        {/* 顶部标题与状态：整个面板是演示数据，先说清楚 */}
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
             <RadioIcon className="size-4 text-core" />
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider">
-                ECHO AI NETWORK
-              </h3>
-              <p className="text-[10px] text-muted-foreground">
-                演示预览 · 下方为示例数据，非实时遥测
+              <h3 className="text-sm font-semibold">AI 网络</h3>
+              <p className="text-[12px] text-muted-foreground">
+                以下数字和模型均为示例，不是实时遥测
               </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-[9px] font-semibold text-warning">
-            <span className="size-1.5 rounded-full bg-warning" /> 演示数据
+          <span className="inline-flex items-center gap-1 rounded-full bg-signal/10 px-2 py-0.5 text-[12px] font-medium text-signal">
+            <span className="size-1.5 rounded-full bg-signal" /> 演示数据
           </span>
         </div>
 
-        {/* 实时心跳度量条 */}
-        <div className="my-3 grid grid-cols-4 gap-2 rounded-xl bg-foreground/[0.04] p-2.5 text-center">
+        {/* 概览（示例） */}
+        <div className="my-3 grid grid-cols-3 gap-2 rounded-xl bg-foreground/[0.04] p-2.5 text-center">
           <div>
-            <div className="text-[9px] font-semibold uppercase text-muted-foreground">
-              今日吞吐
+            <div className="text-[12px] text-muted-foreground">今日吞吐</div>
+            <div className="font-mono text-xs font-semibold text-foreground">
+              4.8M
             </div>
-            <div className="text-xs font-bold text-foreground">4.8M</div>
           </div>
           <div>
-            <div className="text-[9px] font-semibold uppercase text-muted-foreground">
-              本地私有
-            </div>
-            <div className="text-xs font-bold text-core">48%</div>
+            <div className="text-[12px] text-muted-foreground">本地处理</div>
+            <div className="font-mono text-xs font-semibold text-core">48%</div>
           </div>
           <div>
-            <div className="text-[9px] font-semibold uppercase text-muted-foreground">
-              预估花费
+            <div className="text-[12px] text-muted-foreground">数字员工</div>
+            <div className="text-xs font-semibold text-foreground">
+              3 位协同
             </div>
-            <div className="text-xs font-bold text-foreground">$2.31</div>
-          </div>
-          <div>
-            <div className="text-[9px] font-semibold uppercase text-muted-foreground">
-              数字员工
-            </div>
-            <div className="text-xs font-bold text-foreground">3 协同</div>
           </div>
         </div>
 
-        {/* 1. Policy 调度原则 (Master Rule) */}
+        {/* 调度原则 */}
         <div className="mb-3 space-y-1.5">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>1. 全局调度原则 (Policy)</span>
+          <div className="flex items-center justify-between text-[12px] font-medium text-muted-foreground">
+            <span>调度原则</span>
             <span className="text-foreground">{policyLabels[policy].name}</span>
           </div>
           <div className="grid grid-cols-5 gap-1">
@@ -260,29 +258,23 @@ export function AiNetworkPulse({
                 type="button"
                 onClick={() => handleSelectPolicy(item)}
                 className={cn(
-                  "rounded-lg border border-border py-1 text-[10px] font-medium transition-all",
+                  "rounded-lg border border-border py-1 text-[12px] font-medium transition-all",
                   policy === item
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
                 )}
               >
-                {item === "local-first" && "Local"}
-                {item === "auto" && "Auto"}
-                {item === "quality-first" && "Quality"}
-                {item === "cost-first" && "Cost"}
-                {item === "privacy-first" && "Privacy"}
+                {POLICY_SHORT_NAMES[item]}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 2. 状态栏主选模型快速切换 (Model Switcher) */}
+        {/* 主选模型（示例） */}
         <div className="mb-3 space-y-1.5">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>2. 状态栏主选模型 (Model Switcher)</span>
-            <span className="font-semibold text-core">
-              {activeModelObj.name}
-            </span>
+          <div className="flex items-center justify-between text-[12px] font-medium text-muted-foreground">
+            <span>主选模型（示例）</span>
+            <span className="font-medium text-core">{activeModelObj.name}</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             {AVAILABLE_MODELS.map((m) => {
@@ -300,10 +292,10 @@ export function AiNetworkPulse({
                   )}
                 >
                   <div className="min-w-0 pr-1">
-                    <div className="truncate text-[11px] font-medium leading-tight">
+                    <div className="truncate text-[12px] font-medium leading-tight">
                       {m.name}
                     </div>
-                    <div className="text-[9px] text-muted-foreground">
+                    <div className="truncate text-[12px] text-muted-foreground">
                       {m.provider} · {m.tag}
                     </div>
                   </div>
@@ -316,120 +308,60 @@ export function AiNetworkPulse({
           </div>
         </div>
 
-        {/* 3. Agents 数字员工 (Digital Coworkers) */}
+        {/* 数字员工（示例） */}
         <div className="mb-3 space-y-1.5">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>3. 数字工作人员 (Agents)</span>
-            <span>当前主选路线</span>
+          <div className="flex items-center justify-between text-[12px] font-medium text-muted-foreground">
+            <span>数字员工（示例）</span>
+            <span>当前路由</span>
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex items-center justify-between rounded-lg border border-border bg-foreground/5 p-2">
               <div className="flex items-center gap-2">
-                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[10px] font-bold text-foreground">
-                  R
+                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[12px] font-semibold text-foreground">
+                  调
                 </span>
                 <div>
-                  <div className="font-semibold">Researcher (调研员)</div>
-                  <div className="text-[9px] text-muted-foreground">
+                  <div className="font-semibold">调研员</div>
+                  <div className="text-[12px] text-muted-foreground">
                     论文检索 · 专利拆解 · 知识图谱
                   </div>
                 </div>
               </div>
-              <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[9px] font-medium">
+              <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[12px] font-medium">
                 Gemini 1.5 Pro
               </span>
             </div>
-
             <div className="flex items-center justify-between rounded-lg border border-border bg-foreground/5 p-2">
               <div className="flex items-center gap-2">
-                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[10px] font-bold text-foreground">
-                  B
+                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[12px] font-semibold text-foreground">
+                  架
                 </span>
                 <div>
-                  <div className="font-semibold">Builder (架构师)</div>
-                  <div className="text-[9px] text-muted-foreground">
+                  <div className="font-semibold">架构师</div>
+                  <div className="text-[12px] text-muted-foreground">
                     终端指令 · 代码编译 · 方案生成
                   </div>
                 </div>
               </div>
-              <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[9px] font-medium">
+              <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[12px] font-medium">
                 Claude 3.5 Sonnet
               </span>
             </div>
-
             <div className="flex items-center justify-between rounded-lg border border-border bg-foreground/5 p-2">
               <div className="flex items-center gap-2">
-                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[10px] font-bold text-foreground">
-                  O
+                <span className="grid size-6 place-items-center rounded-md bg-foreground/10 text-[12px] font-semibold text-foreground">
+                  管
                 </span>
                 <div>
-                  <div className="font-semibold">Operator (管家)</div>
-                  <div className="text-[9px] text-muted-foreground">
+                  <div className="font-semibold">管家</div>
+                  <div className="text-[12px] text-muted-foreground">
                     ZFS 存储 · Docker · 相册聚类
                   </div>
                 </div>
               </div>
-              <span className="rounded bg-core/10 px-1.5 py-0.5 text-[9px] font-semibold text-core">
-                Station 100% Local
+              <span className="rounded bg-core/10 px-1.5 py-0.5 text-[12px] font-medium text-core">
+                全部本地
               </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Plans 套餐池 */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <span>4. 算力套餐池 (Plans)</span>
-            <span>4 个已连接源</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 text-xs">
-            <div className="rounded-lg border border-border bg-foreground/5 p-2">
-              <div className="flex items-center justify-between text-[11px] font-medium">
-                <span>OpenAI Pro</span>
-                <span className="text-[9px] text-muted-foreground">42%</span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div
-                  className="h-full bg-foreground/70"
-                  style={{ width: "42%" }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-foreground/5 p-2">
-              <div className="flex items-center justify-between text-[11px] font-medium">
-                <span>Anthropic Max</span>
-                <span className="text-[9px] text-muted-foreground">68%</span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div
-                  className="h-full bg-foreground/70"
-                  style={{ width: "68%" }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-foreground/5 p-2">
-              <div className="flex items-center justify-between text-[11px] font-medium">
-                <span>Google AI Pro</span>
-                <span className="text-[9px] text-muted-foreground">31%</span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div
-                  className="h-full bg-foreground/70"
-                  style={{ width: "31%" }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border bg-foreground/5 p-2">
-              <div className="flex items-center justify-between text-[11px] font-medium text-core">
-                <span>Echo Station (NPU)</span>
-                <span className="text-[9px]">48%</span>
-              </div>
-              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-foreground/10">
-                <div className="h-full bg-core" style={{ width: "48%" }} />
-              </div>
             </div>
           </div>
         </div>
@@ -446,7 +378,7 @@ export function AiNetworkPulse({
         </div>
 
         {/* 底部功能按钮 */}
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-[11px]">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-[12px]">
           <button
             type="button"
             onClick={() => {
@@ -455,7 +387,7 @@ export function AiNetworkPulse({
             }}
             className="font-medium text-core transition hover:underline"
           >
-            打开完整 AI Network 工作台 →
+            打开 AI 网络工作台 →
           </button>
           <button
             type="button"
