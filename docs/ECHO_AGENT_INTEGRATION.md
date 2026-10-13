@@ -217,30 +217,21 @@ host boundary 推广到尚未接入的入口，完成跨进程与 Linux/物理�
 
 ## 本地开发
 
-不需要准备 sibling 仓库或发布 bundle。使用 Python 3.11+、Node.js 和
-`frontend/package.json` 指定的 pnpm 版本，在当前仓库执行。
-
-Linux / macOS：
+不需要准备 sibling 仓库或发布 bundle。使用 [uv](https://docs.astral.sh/uv/) 0.11.25
+（由它提供 Python 3.11+ 和锁定依赖）、Node.js 20+ 和 `frontend/package.json` 指定的 pnpm 版本
+（`corepack pnpm`），在当前仓库执行。Linux、macOS 与 Windows（PowerShell 或 Git Bash）命令相同：
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev,serve,tracing,web,local-auth]'
+git submodule update --init
+uv sync --locked --extra dev --extra serve --extra tracing --extra web --extra local-auth
 cd frontend
-pnpm install --frozen-lockfile
+corepack pnpm install --frozen-lockfile
 node scripts/dev-appliance-backend.mjs --check
-pnpm dev:with-agent
+corepack pnpm dev:with-agent
 ```
 
-Windows PowerShell：
-
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e '.[dev,serve,tracing,web,local-auth]'
-cd frontend
-pnpm install --frozen-lockfile
-node scripts/dev-appliance-backend.mjs --check
-pnpm dev:with-agent
-```
+`uv sync` 在仓库根目录创建 `.venv`（Windows 为 `.venv\Scripts\python.exe`，其他系统为
+`.venv/bin/python`）。Windows 上的裸 `python` 是应用商店占位程序，不要用它建环境。
 
 启动器依次使用显式 `ECHO_AGENT_CONFIG`、已有 `config.local.yaml`、
 `config.example.yaml`，不会修改配置。若需定制，复制示例为 `config.local.yaml`。

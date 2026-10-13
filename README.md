@@ -44,30 +44,39 @@ Echo OS 不重复建设文档索引，而是通过窄 HTTP API 调用可选的
 
 ## 快速开始
 
-首次开发请先按[开发接入](docs/ECHO_AGENT_INTEGRATION.md#本地开发)创建 Python
-虚拟环境、安装前后端依赖，再运行 `pnpm dev:with-agent`。源码开发不要求生成发布 bundle；
-缺少 `config.local.yaml` 时使用仓库的 `config.example.yaml`。
+10 分钟上手路径（首启 → 登录 → 第一个任务 → 审批 → 结果）见
+[docs/GOLDEN_PATH.md](docs/GOLDEN_PATH.md)。需要 [uv](https://docs.astral.sh/uv/) 0.11.25
+和带 corepack 的 Node.js 20+；不要用 `pip` 或裸 `python`（Windows 上它是应用商店占位程序）：
+
+```bash
+git submodule update --init
+uv sync --locked --extra dev --extra serve --extra tracing --extra web --extra local-auth
+cd frontend
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev:with-agent
+```
+
+源码开发不要求生成发布 bundle；缺少 `config.local.yaml` 时使用仓库的 `config.example.yaml`。
+更多细节见[开发接入](docs/ECHO_AGENT_INTEGRATION.md#本地开发)。
 
 Docker 与原生镜像属于单独的交付路径，见[NAS 部署说明](deploy/appliance/README.md)
 和[镜像构建](packaging/image/README.md)。
 
 本地 QA 快照和真机部署步骤见 [NAS 部署说明](deploy/appliance/README.md)。
 
-本地开发内建的 Echo 工作台：
+本地质量检查（与 CI 相同的命令）：
 
 ```bash
+uv run pytest tests/ -q --timeout=60 -p no:cacheprovider   # 完整 Python 套件；不带路径时只跑 tests/appliance
 cd frontend
-pnpm format
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-
-# 启动联调桌面
-pnpm dev:with-agent
+corepack pnpm format
+corepack pnpm lint
+corepack pnpm typecheck
+corepack pnpm test
+corepack pnpm build
 ```
 
-这会启动 `127.0.0.1:8000` 的 Agent 后端与 `3000` 的唯一 OS 前端；
+`dev:with-agent` 会启动 `127.0.0.1:8000` 的 Agent 后端与 `3000` 的唯一 OS 前端；
 工作台是 OS 内建页面。完整配置见
 [Echo Agent 工作台接入](docs/ECHO_AGENT_INTEGRATION.md)。
 
