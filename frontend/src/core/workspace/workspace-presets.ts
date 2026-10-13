@@ -9,7 +9,9 @@
 export type WorkspacePreset = {
   id: string;
   direction: string;
-  themeId: PersonaThemeId;
+  /** Persona accent palette. The base Echo preset has none, so the workspace
+   *  keeps the ECHO tokens: monochrome primary, core-cyan focus. */
+  themeId?: PersonaThemeId;
   defaultHiddenModuleIds: readonly string[];
   defaultVisibleModuleIds?: readonly string[];
   defaultWorkbenchTab: PersonaWorkbenchTab;
@@ -49,7 +51,6 @@ export type PersonaWorkbenchTab =
 const BASE_PRESET: WorkspacePreset = {
   id: "general",
   direction: "通用协作",
-  themeId: "eve",
   defaultHiddenModuleIds: ["paper.trading"],
   defaultWorkbenchTab: "agent",
   workbenchLabel: "协作工作台",

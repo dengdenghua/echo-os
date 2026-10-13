@@ -96,6 +96,16 @@ describe("<WorkspaceLayout /> stub response banner", () => {
     expect(screen.queryByText("模拟后端响应")).not.toBeInTheDocument();
   });
 
+  test("keeps the default Echo workspace on the ECHO tokens (no persona palette)", () => {
+    activeAgentMock.mockReturnValue("general");
+
+    renderWithProviders(<WorkspaceLayout />, { locale: "zh-CN" });
+
+    expect(screen.getByText("sidebar").parentElement).not.toHaveAttribute(
+      "data-persona-theme",
+    );
+  });
+
   test("applies the active persona's illustration palette to the workspace", () => {
     activeAgentMock.mockReturnValue("market_researcher");
 
