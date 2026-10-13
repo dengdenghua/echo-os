@@ -562,11 +562,13 @@ async def _start_turn(
             _auto_topology,
         )
 
-        # Preserve the caller's model before smart routing. External engines
-        # own their model coordinate and must not inherit a local reroute.
-        requested_model_before_routing = validated.model
+    # Preserve the caller's model before smart routing. External engines
+    # own their model coordinate and must not inherit a local reroute. This
+    # must run for every turn, not only auto-topology ones: a Codex turn
+    # otherwise failed with an UnboundLocalError shown in the chat.
+    requested_model_before_routing = validated.model
 
-        # Smart model routing — auto-route trivial / simple turns to
+    # Smart model routing — auto-route trivial / simple turns to
     # the cheap tier. Complex / research / topology / code-mode
     # turns stay on the user's primary. Explicit ``model`` pins
     # bypass this entirely.
