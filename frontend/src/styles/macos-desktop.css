@@ -8618,3 +8618,183 @@
   border-color: rgba(165, 230, 250, 0.65);
   box-shadow: 0 0 0 3px rgba(99, 211, 245, 0.1), 0 16px 44px rgba(0, 5, 15, 0.28);
 }
+
+/* ECHO theme-bound floating material ----------------------------------------
+ * The desktop theme decides the glass film, not the OS colour scheme: snow
+ * gets a white film with graphite text, graphite and neural glass a graphite
+ * film with snow text. Menus, Spotlight, Control Center and Notification
+ * Center carry text, and the menu-bar menus cannot blur the wallpaper (the
+ * menu bar is their backdrop root), so their film keeps a legibility floor
+ * instead of letting desktop content read through the copy. Selection and
+ * "on" states use the Echo Core accent instead of system blue; today in the
+ * calendar is a selection, not an alarm. */
+.macos-desktop-root {
+  --mac-blue: var(--echo-core);
+  --liquid-fill-floor-thick: 88%;
+}
+
+.macos-desktop-root.theme-white {
+  --liquid-film-base: #ffffff;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) {
+  --liquid-film-base: #101216;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  ) {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  )
+  :is(span, strong, p, label, button, input, header, svg):not(
+    [class*="text-"],
+    .mac-app-icon-art,
+    .mac-app-icon-glyph,
+    .mac-control-round,
+    .is-today,
+    small,
+    kbd,
+    .mac-menu-shortcut,
+    .mac-spotlight-heading,
+    .mac-result-kind,
+    .mac-spotlight-footer
+  ) {
+  color: inherit !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  )
+  :is(
+    small,
+    kbd,
+    .mac-menu-shortcut,
+    .mac-spotlight-heading,
+    .mac-result-kind,
+    .mac-spotlight-footer,
+    .mac-spotlight-search-icon,
+    .mac-calendar-week span,
+    .mac-control-footer
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-spotlight-input::placeholder {
+  color: var(--echo-ink-faint) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-menu-separator, .mac-desktop-context-menu > div) {
+  background: var(--echo-line-strong) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-control-center
+  .mac-control-round {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-item, .mac-desktop-context-menu button):hover:not(:disabled),
+.macos-desktop-root .mac-spotlight-result:is(:hover, .is-selected) {
+  color: var(--echo-ink) !important;
+  background: color-mix(in srgb, var(--echo-core) 22%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-spotlight-result::before {
+  background: var(--echo-core) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root
+  .mac-control-center
+  :is(.mac-control-round.is-on, .mac-control-tile.is-on .mac-control-round) {
+  color: var(--echo-on-core) !important;
+  background: var(--echo-core) !important;
+}
+
+.macos-desktop-root .mac-control-center .mac-control-tile.is-on {
+  color: var(--echo-ink) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--echo-core) 22%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root .mac-calendar-days span.is-today {
+  color: var(--echo-on-core) !important;
+  background: var(--echo-core) !important;
+}
+
+/* Text menus and Spotlight read like paper, not like a lens: a near-opaque
+ * film and no specular glare, so nothing behind them competes with the copy. */
+.macos-desktop-root[data-liquid-custom="true"]:not([data-liquid-native="ready"])
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight) {
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-custom-colour) max(var(--liquid-fill-thick), 94%),
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight) {
+  background-image: none !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight)::before,
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root[data-liquid-custom="true"]:not([data-liquid-native="ready"])
+  .mac-notification-empty {
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-custom-colour) var(--liquid-fill-inner),
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-notification-empty {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-notification-center
+  .mac-notification-empty
+  strong {
+  color: var(--echo-ink) !important;
+}
+
+/* Toasts portal outside the desktop root and take their light/dark palette
+ * from the OS theme, while their surface follows the desktop theme on <html>.
+ * Keep the description on the same scope as the surface so a snow desktop on
+ * a dark OS does not print white text on a white toast. */
+html[data-echo-theme] [data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+}
