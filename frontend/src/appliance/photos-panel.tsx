@@ -227,11 +227,30 @@ function PhotoTile({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  /** A secondary figure (e.g. a share) set apart in a smaller muted size, so
+   * "0" and "0%" never read as one decimal number. */
+  detail?: string;
+}) {
   return (
-    <div className="min-w-[104px] rounded-[16px] bg-card/58 px-3.5 py-3 shadow-[0_8px_22px_rgba(51,65,85,.05)]">
-      <div className="text-lg font-semibold tracking-tight text-foreground">
-        {value}
+    <div
+      role="group"
+      aria-label={label}
+      className="min-w-[104px] rounded-[16px] bg-card/58 px-3.5 py-3 shadow-[0_8px_22px_rgba(51,65,85,.05)]"
+    >
+      <div className="flex items-baseline gap-1.5 text-lg font-semibold tracking-tight text-foreground">
+        <span>{value}</span>
+        {detail && (
+          <span className="text-xs font-medium tracking-normal text-muted-foreground">
+            {detail}
+          </span>
+        )}
       </div>
       <div className="mt-0.5 text-[10px] font-medium text-muted-foreground">
         {label}
@@ -929,11 +948,8 @@ export function PhotosPanel({
               />
               <Metric
                 label={canCleanup ? "旧照片索引" : "已理解"}
-                value={
-                  canCleanup
-                    ? countLabel(status?.index.indexed ?? 0)
-                    : `${countLabel(status?.index.indexed ?? 0)} · ${indexedPercent}%`
-                }
+                value={countLabel(status?.index.indexed ?? 0)}
+                detail={canCleanup ? undefined : `${indexedPercent}%`}
               />
               <Metric
                 label="人脸记录"

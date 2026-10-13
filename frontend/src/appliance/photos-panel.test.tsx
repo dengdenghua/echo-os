@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -1850,7 +1851,11 @@ describe("PhotosPanel", () => {
     expect(
       screen.getByRole("button", { name: "查看 晚餐.png" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 · 50%")).toBeInTheDocument();
+    // The share sits apart from the count so "0" and "0%" never read as "0.0%".
+    const understood = screen.getByRole("group", { name: "已理解" });
+    expect(within(understood).getByText("1")).toBeInTheDocument();
+    expect(within(understood).getByText("50%")).toBeInTheDocument();
+    expect(understood).not.toHaveTextContent("·");
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("0 / 1")).toBeInTheDocument();
   });
