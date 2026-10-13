@@ -375,7 +375,7 @@ export function DeviceLinkPanel({
         />
       }
     >
-      <aside className="w-56 shrink-0 border-r border-border bg-card/44 px-3 py-4">
+      <aside className="relative w-56 shrink-0 border-r border-border bg-card/44 px-3 py-4">
         <div className="mb-5 flex items-center justify-between px-1">
           <div className="flex gap-2">
             {inWindow ? (
