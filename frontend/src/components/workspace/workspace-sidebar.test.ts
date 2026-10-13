@@ -480,6 +480,20 @@ describe("workspace sidebar project grouping", () => {
     expect(summary.title).toBe("来自旧会话的可读标题");
   });
 
+  test("shows a user-renamed title over the first-message projection", () => {
+    const summary = __testing.summarizeThreadForSidebar({
+      thread_id: "renamed-thread",
+      updated_at: "2026-10-13T00:00:00Z",
+      metadata: { mode: "chat", title_source: "user", title_pinned: true },
+      values: {
+        title: "走查测试对话",
+        sidebar_title_source: "你好，请用一句话介绍你自己。",
+      },
+    } as never);
+
+    expect(summary.title).toBe("走查测试对话");
+  });
+
   test("hides bare legacy team labels even when mode metadata was lost", () => {
     const [summary] = __testing.buildConversationThreadSummaries([
       {

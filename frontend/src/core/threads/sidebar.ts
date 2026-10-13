@@ -386,6 +386,17 @@ export function deriveThreadTitle(thread: {
     return truncateThreadTitle(metaTitle);
   }
 
+  // A user rename pins the title (source=user + title_pinned on the record),
+  // so it outranks any title projected from the first message.
+  const pinnedTitle = cleanDisplayText(thread.values?.["title"]);
+  if (
+    pinnedTitle &&
+    (thread.metadata?.["title_pinned"] === true ||
+      thread.metadata?.["title_source"] === "user")
+  ) {
+    return truncateThreadTitle(pinnedTitle);
+  }
+
   const projectedTitle = threadTitleFromContent(
     thread.values?.["sidebar_title_source"],
   );

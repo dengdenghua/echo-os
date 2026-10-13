@@ -504,6 +504,11 @@ export function useRenameThread() {
             if (t.thread_id === threadId) {
               return {
                 ...t,
+                metadata: {
+                  ...t.metadata,
+                  title_source: "user",
+                  title_pinned: true,
+                },
                 values: {
                   ...t.values,
                   title,
@@ -514,6 +519,9 @@ export function useRenameThread() {
           });
         },
       );
+      void queryClient.invalidateQueries({
+        queryKey: ["thread", "identity", actor, threadId],
+      });
     },
   });
 }
