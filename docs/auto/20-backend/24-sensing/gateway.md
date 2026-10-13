@@ -103,6 +103,7 @@
 | `_realtime_turn_idempotency.py` | Durable ``userItemId`` replay helpers for realtime turn startup. |
 | `_realtime_turn_lifecycle_helpers.py` | Shared helpers for the realtime turn lifecycle. |
 | `_realtime_turn_lifecycle_resume.py` | Resume-intent persistence for the realtime turn lifecycle. |
+| `_task_approval_router.py` | One task approval route, with optional consent binding for upgraded clients. |
 | `_team_room_binding.py` | Canonical Team Room thread binding helpers. |
 | `_team_room_creation.py` | Atomic Team Room creation primitives. |
 | `_team_room_delete.py` | Durable, fail-closed Team Room deletion. |

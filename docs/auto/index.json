@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-10-11T00:55:08+00:00",
+  "generated_at": "2026-10-13T15:41:59+00:00",
   "files_analyzed": 27,
   "tree": [
     {
@@ -153,7 +153,7 @@
             },
             {
               "type": "doc",
-              "title": "🐙 Echo",
+              "title": "echo Echo",
               "path": "20-backend/26-agents/general.md"
             }
           ]

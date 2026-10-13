@@ -13,7 +13,7 @@
 - `pillow-heif>=1.7.0,<2.0`
 - `pillow>=12.3.0`
 - `pydantic>=2.12.0`
-- `pypdf>=6.15.0`
+- `pypdf>=6.19.0`
 - `python-multipart>=0.0.31`
 - `pyyaml>=6.0`
 - `starlette>=1.3.1`

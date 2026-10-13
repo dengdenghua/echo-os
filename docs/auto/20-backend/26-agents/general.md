@@ -1,4 +1,4 @@
-# 🐙 Echo · `general`
+# echo Echo · `general`
 
 > 通用助手：写作、规划、调研、总结与问答，也能操作桌面。
 
