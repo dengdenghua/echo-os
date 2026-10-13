@@ -58,7 +58,7 @@ import { useI18n } from "@/core/i18n/hooks";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePromptDialog } from "@/components/ui/prompt-dialog";
 import {
-  detectLocalServices,
+  detectLocalServicesShared,
   type DetectedLocalService,
 } from "@/core/browser/local-services";
 import {
@@ -798,12 +798,12 @@ export function BrowserHome({
   );
   const [scanningLocalServices, setScanningLocalServices] = useState(false);
 
-  const scanLocalServices = useCallback(() => {
+  const scanLocalServices = useCallback((force = false) => {
     const ownPort = Number(window.location.port);
     const excludePorts =
       Number.isFinite(ownPort) && ownPort > 0 ? [ownPort] : [];
     setScanningLocalServices(true);
-    void detectLocalServices({ excludePorts })
+    void detectLocalServicesShared({ excludePorts, force })
       .then(setLocalServices)
       .catch(() => setLocalServices([]))
       .finally(() => setScanningLocalServices(false));
@@ -2087,7 +2087,7 @@ export function BrowserHome({
                 </div>
                 <button
                   type="button"
-                  onClick={scanLocalServices}
+                  onClick={() => scanLocalServices(true)}
                   disabled={scanningLocalServices}
                   className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
                   title={bp.scanLocalServices}
