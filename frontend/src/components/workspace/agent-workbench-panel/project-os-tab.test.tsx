@@ -5,11 +5,21 @@ import { renderWithProviders } from "@/test/harness";
 
 import { AgentWorkbenchPanel } from "../agent-workbench-panel";
 import {
+  boundProjectFromBody,
   boundProjectRefetchInterval,
   normalizeProjectProgress,
   ProjectOsTab,
   type ProjectFullState,
 } from "./project-os-tab";
+
+describe("boundProjectFromBody", () => {
+  it("reads an unbound thread as no project instead of a failed request", () => {
+    // Golden path 2026-10: every workbench thread open logged a 404 here.
+    expect(boundProjectFromBody({ project: null })).toBeNull();
+    expect(boundProjectFromBody(null)).toBeNull();
+    expect(boundProjectFromBody(projectState)).toBe(projectState);
+  });
+});
 
 describe("boundProjectRefetchInterval", () => {
   it("stops polling after the backend confirms that no project is bound", () => {

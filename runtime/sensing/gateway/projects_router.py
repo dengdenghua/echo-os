@@ -553,7 +553,10 @@ def create_projects_router(
         except ValueError as exc:
             raise _bad_request(exc) from exc
         if project is None:
-            raise HTTPException(404, "project not found for thread")
+            # "Not bound to a project" is the normal answer for most threads;
+            # the workbench asks on every thread open. A 404 here logged a
+            # failed request each time, so it is a regular empty state.
+            return {"project": None}
         return _full_state(request, project.id, allow_collaborator_read=True)
 
     @router.get("/api/projects/thread-map")

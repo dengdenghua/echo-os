@@ -394,7 +394,10 @@ def test_get_project_by_thread(tmp_path) -> None:
 
     assert body["project"]["id"] == "P-thread"
     assert body["action_specs"][0]["api"]["path"] == "/api/projects/P-thread/run"
-    assert c.get("/api/projects/by-thread/missing").status_code == 404
+    # An unbound thread is an ordinary empty state, not a failed request.
+    missing = c.get("/api/projects/by-thread/missing")
+    assert missing.status_code == 200
+    assert missing.json() == {"project": None}
 
 
 def test_project_process_timeline_endpoint_persists_run_evidence(tmp_path) -> None:

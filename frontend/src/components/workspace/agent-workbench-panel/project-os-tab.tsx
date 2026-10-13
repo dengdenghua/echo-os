@@ -632,6 +632,12 @@ export function boundProjectRefetchInterval(
   return data === null ? false : 15_000;
 }
 
+/** An unbound thread answers `{"project": null}` (older backends: 404). */
+export function boundProjectFromBody(body: unknown): ProjectFullState | null {
+  const state = body as Partial<ProjectFullState> | null;
+  return state?.project ? (state as ProjectFullState) : null;
+}
+
 export function useBoundProjectState(threadId: string | undefined | null) {
   const actor = currentActorId();
   return useQuery<ProjectFullState | null>({
@@ -643,7 +649,7 @@ export function useBoundProjectState(threadId: string | undefined | null) {
       );
       if (res.status === 404) return null;
       if (!res.ok) throw new Error(`Failed to load project: ${res.status}`);
-      return (await res.json()) as ProjectFullState;
+      return boundProjectFromBody(await res.json());
     },
     enabled: !!threadId,
     retry: false,
