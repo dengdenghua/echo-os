@@ -387,17 +387,9 @@ async def _read_login_body(request: Request) -> CodexLoginBody:
 
 
 def _system_model(stack: Any) -> str | None:
-    config_model = getattr(getattr(getattr(stack, "config", None), "planner", None), "model", None)
-    if isinstance(config_model, str) and config_model.strip():
-        return config_model.strip()
-    planner = getattr(stack, "planner", None)
-    planner_model = getattr(planner, "planner_model", None)
-    if isinstance(planner_model, str) and planner_model.strip():
-        return planner_model.strip()
-    default_model = getattr(getattr(planner, "router", None), "default_model", None)
-    if isinstance(default_model, str) and default_model.strip():
-        return default_model.strip()
-    return None
+    from runtime.execution.codex_backend.model_profile import resolve_system_model
+
+    return resolve_system_model(stack)
 
 
 def _validate_account_model_preference(

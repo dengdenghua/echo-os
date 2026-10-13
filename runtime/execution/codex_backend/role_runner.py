@@ -314,18 +314,10 @@ def _execution_profile(
         custom_models = read_custom_models() or {}
     except (ImportError, OSError, TypeError, ValueError):
         custom_models = {}
-    config_model = getattr(getattr(getattr(stack, "config", None), "planner", None), "model", None)
+    from .model_profile import resolve_system_model
+
     planner = getattr(stack, "planner", None)
-    planner_model = getattr(planner, "planner_model", None)
-    default_model = getattr(getattr(planner, "router", None), "default_model", None)
-    system_model = next(
-        (
-            candidate.strip()
-            for candidate in (config_model, planner_model, default_model)
-            if isinstance(candidate, str) and candidate.strip()
-        ),
-        None,
-    )
+    system_model = resolve_system_model(stack)
     turn_model, turn_effort = _server_model_override(agent, context)
     turn_preference = preference
     parent = _trusted_parent(context)
