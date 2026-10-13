@@ -5,10 +5,10 @@
   "templateId": "echo",
   "templateVersion": "1.0.0",
   "name": "Echo",
-  "icon": "🐙",
+  "icon": "echo",
   "did": "DID-F456DA-2B0D4C",
   "description": "通用助手：写作、规划、调研、总结与问答，也能操作桌面。",
-  "avatar": "avatar.png",
+  "avatar": "avatar.svg",
   "model": {
     "provider": "auto",
     "name": "auto"

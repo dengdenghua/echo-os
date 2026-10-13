@@ -42,9 +42,9 @@ def test_avatar_picks_role_emoji() -> None:
 
 
 def test_avatar_falls_back_to_echo_for_unknown() -> None:
-    assert bridge._avatar_for_role("unknown_role") == "🐙"
-    assert bridge._avatar_for_role("") == "🐙"
-    assert bridge._avatar_for_role(None) == "🐙"  # type: ignore[arg-type]
+    assert bridge._avatar_for_role("unknown_role") == "echo"
+    assert bridge._avatar_for_role("") == "echo"
+    assert bridge._avatar_for_role(None) == "echo"  # type: ignore[arg-type]
 
 
 def test_spawn_event_emitted_before_runner_runs() -> None:
