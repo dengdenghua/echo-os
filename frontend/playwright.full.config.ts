@@ -72,6 +72,13 @@ const backendProcessEnv: NodeJS.ProcessEnv = {
   // Keep the Codex control lease outside the developer account so an
   // unrelated desktop worker cannot make the offline lane nondeterministic.
   ECHO_CODEX_STATE_DIR: join(e2eStateRoot, "codex"),
+  // The lane is offline: no provider key, no developer login, no Codex
+  // runtime. `pnpm e2e:full` puts the `codex` devDependency on PATH, and a
+  // developer may have one installed, so name a Codex executable that does not
+  // exist and an empty login source. Every host then sees the same device: one
+  // without the Codex App Server.
+  ECHO_CODEX_EXECUTABLE: join(e2eStateRoot, "no-codex-runtime", "codex"),
+  ECHO_CODEX_SOURCE_HOME: join(e2eStateRoot, "codex-source-home"),
   // Appliance mode, exactly as the NAS image boots it: the entrypoint
   // provisions the owner from this password and enables local auth.
   ECHO_ADMIN_PASSWORD: ownerPassword,
