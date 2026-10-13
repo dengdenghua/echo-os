@@ -3,6 +3,11 @@ export interface AuthStatus {
   jwt_available: boolean;
   allow_registration: boolean;
   exempt_paths: string[];
+  /**
+   * Whether the status request carried a session credential (cookie or
+   * bearer). Absent on older backends. `false` means signed out for sure.
+   */
+  session_present?: boolean;
 }
 
 export interface LoginRequest {

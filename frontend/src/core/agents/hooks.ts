@@ -27,11 +27,14 @@ export function agentQueryKey(
   return ["agents", actor, name ?? ""] as const;
 }
 
-export function useAgents() {
+export function useAgents({ enabled = true }: { enabled?: boolean } = {}) {
   const actor = currentActorId();
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: agentsQueryKey(actor),
     queryFn: ({ signal }) => listAgents({ signal }),
+    // A shell with its own sign-in screen waits for the session instead of
+    // collecting a 401 on the lock screen.
+    enabled,
     refetchOnWindowFocus: false,
     staleTime: 30_000,
     // A stalled roster used to keep the entire new-chat shell in loading for

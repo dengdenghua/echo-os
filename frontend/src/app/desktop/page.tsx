@@ -460,7 +460,8 @@ export default function DesktopShellPage() {
     applianceAuthed,
     applianceRole,
   );
-  useWorkbenchAvailabilitySync();
+  // Inventory and roster wait for the device session (401 on the lock screen).
+  useWorkbenchAvailabilitySync(applianceAuthed === true);
   const workbenchAvailability = useModuleAvailabilitySnapshot();
   const visibleDesktopApps = useMemo(
     () =>
@@ -495,7 +496,9 @@ export default function DesktopShellPage() {
     decideApproval: decideTaskApproval,
   } = useEchoTaskProjection(applianceAuthed === true);
   // 桌面意图面只用后端的 Agent 名册，不在前端预置 Agent。
-  const { agents: agentRoster } = useAgents();
+  const { agents: agentRoster } = useAgents({
+    enabled: applianceAuthed === true,
+  });
   const desktopAgents = useMemo(
     () =>
       agentRoster.map((agent) => ({

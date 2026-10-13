@@ -685,13 +685,28 @@ def create_meta_router(
     _any_auth_enabled = _oct_enabled or _local_auth_enabled
 
     @router.get("/api/auth/status")
-    def auth_status() -> dict[str, Any]:
+    def auth_status(request: Request) -> dict[str, Any]:
+        from runtime.safety.auth.principal import (
+            LEGACY_SESSION_COOKIE_NAME,
+            SESSION_COOKIE_NAME,
+        )
+
         has_jwt = _oct_enabled or _local_auth_enabled
+        # Whether this request carries a credential at all (not whether it is
+        # valid; /api/auth/me decides that). A browser cannot read its
+        # HttpOnly session cookie, so without this hint every signed-out page
+        # load probed /api/auth/me and logged a 401 on the sign-in screen.
+        session_present = bool(
+            request.headers.get("Authorization")
+            or request.cookies.get(SESSION_COOKIE_NAME)
+            or request.cookies.get(LEGACY_SESSION_COOKIE_NAME)
+        )
         return {
             "enabled": _any_auth_enabled,
             "jwt_available": has_jwt,
             "allow_registration": False,
             "exempt_paths": [],
+            "session_present": session_present,
         }
 
     def auth_me(request: Request) -> dict[str, Any]:

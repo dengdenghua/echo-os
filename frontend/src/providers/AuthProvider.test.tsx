@@ -101,6 +101,45 @@ it("recovers an authenticated actor from the HttpOnly cookie after browser resta
   expect(mocks.getMe).toHaveBeenCalledTimes(1);
 });
 
+it("does not probe the current actor when the backend saw no session credential", async () => {
+  // Golden path 2026-10: the signed-out lock screen logged a 401 from
+  // /api/auth/me on every load.
+  mocks.getAuthStatus.mockResolvedValue({
+    enabled: true,
+    jwt_available: true,
+    allow_registration: false,
+    exempt_paths: [],
+    session_present: false,
+  });
+  renderWithProviders(
+    <AuthProvider>
+      <AuthState />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText("anonymous")).toBeInTheDocument();
+  expect(mocks.getMe).not.toHaveBeenCalled();
+});
+
+it("still asks for the actor when a stored bearer exists without a cookie", async () => {
+  mocks.getToken.mockReturnValue("stored.jwt.token");
+  mocks.getAuthStatus.mockResolvedValue({
+    enabled: true,
+    jwt_available: true,
+    allow_registration: false,
+    exempt_paths: [],
+    session_present: false,
+  });
+  renderWithProviders(
+    <AuthProvider>
+      <AuthState />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText("authenticated")).toBeInTheDocument();
+  expect(mocks.getMe).toHaveBeenCalledTimes(1);
+});
+
 it("drops the in-memory actor when a protected request reports expiry", async () => {
   renderWithProviders(
     <AuthProvider>

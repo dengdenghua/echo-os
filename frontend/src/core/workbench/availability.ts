@@ -137,9 +137,15 @@ export function syncWorkbenchAvailability(
   return request;
 }
 
-export function useWorkbenchAvailabilitySync(): void {
+/**
+ * `enabled` lets a shell that renders its own sign-in screen (the Echo OS
+ * desktop) wait for a session: the inventory endpoints answer 401 before
+ * sign-in, one console error per endpoint on the lock screen.
+ */
+export function useWorkbenchAvailabilitySync(enabled = true): void {
   const actor = currentActorId();
   useEffect(() => {
+    if (!enabled) return;
     void syncWorkbenchAvailability().catch(swallow);
-  }, [actor]);
+  }, [actor, enabled]);
 }

@@ -772,6 +772,28 @@ class TestAuthProviders:
         # password_required reflects whether users dict is non-empty
         assert local["password_required"] is True
 
+    def test_auth_status_reports_whether_a_session_credential_was_sent(
+        self,
+        isolated_cwd: Path,
+    ) -> None:
+        # Golden path 2026-10: without this hint the signed-out lock screen
+        # probed /api/auth/me on every load and logged a 401.
+        from runtime.safety.auth.principal import SESSION_COOKIE_NAME
+
+        class _FakeLocal:
+            enabled = True
+            users = {"alice": "x"}
+            allow_any_username = True
+
+        app = create_app(local_auth_config=_FakeLocal())
+        c = TestClient(app)
+        assert c.get("/api/auth/status").json()["session_present"] is False
+        c.cookies.set(SESSION_COOKIE_NAME, "opaque")
+        assert c.get("/api/auth/status").json()["session_present"] is True
+        c.cookies.clear()
+        bearer = c.get("/api/auth/status", headers={"Authorization": "Bearer x"})
+        assert bearer.json()["session_present"] is True
+
 
 class TestAdminMetaMutations:
     def test_skill_enable_disable_requires_admin(
