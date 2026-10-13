@@ -142,7 +142,7 @@ import { cn } from "@/lib/utils";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import { useQueryClient } from "@tanstack/react-query";
 import { octApi } from "@/core/oct/api";
-import { octLinkQueryKey } from "@/core/oct/hooks";
+import { octAvailabilityQuery, octLinkQueryKey } from "@/core/oct/hooks";
 
 type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
   defaultSection?: SettingsSection;
@@ -324,13 +324,19 @@ export function SettingsDialog(props: SettingsDialogProps) {
       const timerHandle =
         idleHandle === undefined ? window.setTimeout(preload, 500) : undefined;
 
-      // Prefetch the oct account bridge; individual account tabs can fetch
-      // their own optional data when opened.
-      queryClient.prefetchQuery({
-        queryKey: octLinkQueryKey(),
-        queryFn: () => octApi.get().catch(() => null),
-        staleTime: 30_000,
-      });
+      // Prefetch the oct account bridge when the backend mounts it;
+      // individual account tabs can fetch their own optional data when opened.
+      void queryClient
+        .fetchQuery(octAvailabilityQuery)
+        .then((octAvailable) => {
+          if (!octAvailable) return;
+          return queryClient.prefetchQuery({
+            queryKey: octLinkQueryKey(),
+            queryFn: () => octApi.get().catch(() => null),
+            staleTime: 30_000,
+          });
+        })
+        .catch(swallow);
 
       return () => {
         if (idleHandle !== undefined) {

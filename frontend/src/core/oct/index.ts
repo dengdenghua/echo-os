@@ -7,6 +7,7 @@ export {
   useOctGoods,
   useOctLink,
   useRefreshOctCredits,
+  octAvailabilityQuery,
   octLinkQueryKey,
 } from "./hooks";
 export type {
