@@ -18,6 +18,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  PanelLoading,
+  PROGRESS_LINE_DEFAULT_LABEL,
+} from "@/components/ui/progress-line";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -96,7 +100,7 @@ export function StatusBadge({
 export function LoadingState({
   className,
   description,
-  title = "Loading",
+  title = PROGRESS_LINE_DEFAULT_LABEL,
   variant = "spinner",
 }: {
   className?: string;
@@ -117,21 +121,20 @@ export function LoadingState({
     );
   }
 
+  // "spinner" is kept as the variant name for existing callers; it renders
+  // the brand progress line, not a spinning icon.
   return (
-    <Empty
-      className={cn("min-h-[220px] border-0 bg-transparent", className)}
-      aria-busy="true"
+    <PanelLoading
+      label={typeof title === "string" ? title : undefined}
+      caption={title}
+      className={cn("min-h-[220px]", className)}
     >
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <Loader2Icon className="animate-spin" />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        {description ? (
-          <EmptyDescription>{description}</EmptyDescription>
-        ) : null}
-      </EmptyHeader>
-    </Empty>
+      {description ? (
+        <p className="px-4 pt-1 text-center text-caption text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+    </PanelLoading>
   );
 }
 

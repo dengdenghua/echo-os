@@ -41,6 +41,7 @@ import { Select, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   SelectContent,
   SelectGroup,
@@ -420,12 +421,7 @@ export function ArtifactFileDetail({
       </ArtifactHeader>
       <ArtifactContent className="p-0">
         {contentLoading && isCodeFile && !isWriteFile ? (
-          <div
-            role="status"
-            className="flex size-full items-center justify-center text-sm text-muted-foreground"
-          >
-            {t.common.loading}…
-          </div>
+          <PanelLoading label={t.common.loading} className="size-full" />
         ) : contentError && isCodeFile && !isWriteFile ? (
           <ArtifactReadError
             error={contentError}
@@ -452,9 +448,7 @@ export function ArtifactFileDetail({
             {isCodeFile && viewMode === "diff" && isDiffAvailable && (
               <Suspense
                 fallback={
-                  <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-                    Loading diff...
-                  </div>
+                  <PanelLoading label={t.common.loading} className="h-full" />
                 }
               >
                 <DiffViewer
@@ -467,9 +461,7 @@ export function ArtifactFileDetail({
             {isCodeFile && viewMode === "code" && (
               <Suspense
                 fallback={
-                  <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-                    Loading editor...
-                  </div>
+                  <PanelLoading label={t.common.loading} className="h-full" />
                 }
               >
                 <CodeEditor
@@ -752,12 +744,7 @@ export function OfficePreview({
           onRetry={() => setRevision((value) => value + 1)}
         />
       ) : (
-        <div
-          role="status"
-          className="flex size-full items-center justify-center text-sm text-muted-foreground"
-        >
-          {t.common.loading}…
-        </div>
+        <PanelLoading label={t.common.loading} className="size-full" />
       )}
       <div className="pointer-events-none absolute top-2 right-2 z-10 flex items-center gap-1.5">
         {canSelect && structuredMode && previewDocument?.format === "html" && (

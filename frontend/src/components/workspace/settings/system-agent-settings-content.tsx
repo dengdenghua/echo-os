@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 
+import { PanelLoading } from "@/components/ui/progress-line";
+
 import AppearanceSettingsPage from "./appearance-settings-page";
 import type { SettingsSection } from "./settings-sections";
 
@@ -43,19 +45,8 @@ export const OS_AGENT_SETTINGS_ITEMS = [
 export type OsAgentSettingsSection =
   (typeof OS_AGENT_SETTINGS_ITEMS)[number]["id"];
 
-function SettingsContentSkeleton() {
-  return (
-    <div
-      className="animate-pulse space-y-4"
-      role="status"
-      aria-label="正在加载设置"
-    >
-      <div className="h-7 w-44 rounded bg-muted" />
-      <div className="h-4 w-80 max-w-full rounded bg-muted/80" />
-      <div className="h-32 rounded-2xl bg-muted/70" />
-      <div className="h-24 rounded-2xl bg-muted/60" />
-    </div>
-  );
+function SettingsContentLoading() {
+  return <PanelLoading label="正在加载设置" className="min-h-64" />;
 }
 
 export function SystemAgentSettingsContent({
@@ -97,5 +88,5 @@ export function SystemAgentSettingsContent({
       break;
   }
 
-  return <Suspense fallback={<SettingsContentSkeleton />}>{content}</Suspense>;
+  return <Suspense fallback={<SettingsContentLoading />}>{content}</Suspense>;
 }

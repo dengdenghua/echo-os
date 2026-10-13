@@ -2,6 +2,7 @@ import { DownloadIcon, EyeIcon, LoaderIcon, PackageIcon } from "lucide-react";
 import { Suspense, useCallback, lazy, useMemo, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { artifactDisplayPath } from "@/core/artifacts/utils";
 import { useArtifactContent } from "@/core/artifacts/hooks";
 import { useI18n } from "@/core/i18n/hooks";
@@ -223,9 +224,10 @@ function ArtifactInlinePreviewCard({
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 text-xs text-muted-foreground">
-            {t.common.loading}…
-          </div>
+          <PanelLoading
+            label={t.common.loading}
+            className="absolute inset-0 z-10 bg-background/60"
+          />
         )}
         {error && !officeKind ? (
           <ArtifactReadError error={error} onRetry={() => void refetch()} />

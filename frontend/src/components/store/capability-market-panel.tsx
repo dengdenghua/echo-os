@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { RoutedWebLink } from "@/components/ui/routed-web-link";
 import {
   deleteOAuthApp,
@@ -1289,9 +1290,7 @@ function PermissionReviewDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex min-h-28 items-center justify-center text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-          </div>
+          <PanelLoading label="正在读取插件权限" className="min-h-28" />
         ) : plan ? (
           <div className="space-y-3 text-xs">
             <div className="rounded-md border border-border-default bg-muted/25 px-3 py-2 leading-5">
@@ -2134,9 +2133,7 @@ export function CapabilityMarketPanel({
       ) : null}
 
       {loading ? (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
+        <PanelLoading label="正在加载能力市场" className="min-h-[200px]" />
       ) : (
         <div
           className={cn(

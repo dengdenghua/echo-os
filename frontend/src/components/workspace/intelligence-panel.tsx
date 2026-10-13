@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -698,13 +699,11 @@ export function IntelligencePanel() {
 
   if (loading) {
     return (
-      <div
-        role="status"
-        className="flex min-h-64 items-center justify-center gap-2 text-muted-foreground"
-      >
-        <Loader2Icon className="size-5 animate-spin" />
-        <span>{t.common.loading}</span>
-      </div>
+      <PanelLoading
+        label={t.common.loading}
+        caption={t.common.loading}
+        className="min-h-64"
+      />
     );
   }
 

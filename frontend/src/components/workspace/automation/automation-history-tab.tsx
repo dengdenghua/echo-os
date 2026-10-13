@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { getBackendBaseURL } from "@/core/config";
 import { intelligenceReportsQueryKey } from "@/core/intelligence/query-keys";
 import { cn } from "@/lib/utils";
@@ -259,28 +259,7 @@ export function AutomationHistoryTab({
   const loading = reportsQuery.isLoading;
 
   if (loading) {
-    return (
-      <div className="space-y-0">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="relative flex gap-4 pb-6">
-            <div className="relative flex flex-col items-center">
-              <Skeleton className="codex-skeleton relative z-10 size-7 rounded-full" />
-              {i < 3 && (
-                <div className="absolute left-1/2 top-7 bottom-0 w-px -translate-x-1/2 bg-border-default/40" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1 -mt-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <Skeleton className="codex-skeleton h-4 w-40 rounded" />
-                <Skeleton className="codex-skeleton h-4 w-12 rounded" />
-              </div>
-              <Skeleton className="codex-skeleton h-3 w-24 rounded" />
-              <Skeleton className="codex-skeleton h-16 w-full rounded-md" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <PanelLoading label={t.common.loading} className="min-h-48" />;
   }
 
   if (reports.length === 0) {

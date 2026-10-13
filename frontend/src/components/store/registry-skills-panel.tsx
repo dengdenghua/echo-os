@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Download, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   installRegistrySkill,
   listRegistrySkills,
@@ -112,9 +113,7 @@ export function RegistrySkillsPanel() {
       ) : null}
 
       {loading ? (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
+        <PanelLoading label={t.common.loading} className="min-h-[200px]" />
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {filtered.map((skill) => {

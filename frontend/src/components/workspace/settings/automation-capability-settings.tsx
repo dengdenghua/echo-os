@@ -5,13 +5,13 @@ import {
   CircleHelpIcon,
   ExternalLinkIcon,
   Globe2Icon,
-  Loader2Icon,
   MonitorIcon,
   RefreshCwIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -674,13 +674,5 @@ function PermissionButton({
 }
 
 function LoadingState({ label }: { label: string }) {
-  return (
-    <div
-      role="status"
-      className="flex items-center py-8 text-sm text-muted-foreground"
-    >
-      <Loader2Icon className="mr-2 size-4 animate-spin" />
-      {label}
-    </div>
-  );
+  return <PanelLoading label={label} caption={label} className="min-h-40" />;
 }

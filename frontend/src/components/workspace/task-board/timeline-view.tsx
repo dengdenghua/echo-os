@@ -9,10 +9,11 @@
  *   - Zoom in/out on timeline via buttons
  */
 
-import { ClockIcon, Loader2Icon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
+import { ClockIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import type {
   TaskBoardTimelineResponse,
   TimelineTask,
@@ -248,12 +249,7 @@ export function TimelineView({
   );
 
   if (loading) {
-    return (
-      <div role="status" className="flex items-center justify-center py-20">
-        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-        <span className="sr-only">{t.common.loading}</span>
-      </div>
-    );
+    return <PanelLoading label={t.common.loading} className="min-h-40" />;
   }
 
   if (tasks.length === 0 || !layout) {

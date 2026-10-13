@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -346,10 +347,11 @@ export function ArmsEditor({ agentId, initialTab = "arms" }: Props) {
 
   if (armsQuery.isLoading || registryQuery.isLoading || skillsQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-        {t.armsEditor.loading}
-      </div>
+      <PanelLoading
+        label={t.armsEditor.loading}
+        caption={t.armsEditor.loading}
+        className="min-h-40"
+      />
     );
   }
 
@@ -758,10 +760,11 @@ export function ArmsEditor({ agentId, initialTab = "arms" }: Props) {
           </div>
 
           {permissionsQuery.isLoading ? (
-            <div className="flex items-center justify-center rounded-sm border border-border bg-card/50 p-8 text-sm text-muted-foreground">
-              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-              {t.armsEditor.loading}
-            </div>
+            <PanelLoading
+              label={t.armsEditor.loading}
+              caption={t.armsEditor.loading}
+              className="min-h-24 overflow-hidden rounded-sm border border-border bg-card/50"
+            />
           ) : permissionsQuery.error ? (
             <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
               {t.armsEditor.loadFailed(

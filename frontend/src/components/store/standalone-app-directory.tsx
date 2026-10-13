@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2Icon,
   ExternalLinkIcon,
-  Loader2Icon,
   MonitorUpIcon,
 } from "lucide-react";
 
 import { fetchHubCatalog, type HubApp } from "@/appliance/hub";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   APP_PRESENTATION_DESCRIPTIONS,
   APP_PRESENTATION_LABELS,
@@ -88,10 +88,11 @@ export function StandaloneAppDirectory({
       </div>
 
       {loading ? (
-        <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
-          <Loader2Icon className="mr-2 size-4 animate-spin" />
-          正在读取应用目录…
-        </div>
+        <PanelLoading
+          label="正在读取应用目录"
+          caption="正在读取应用目录…"
+          className="min-h-20"
+        />
       ) : (
         <div className="grid gap-x-8 sm:grid-cols-2">
           {visibleApps.map((app) => (

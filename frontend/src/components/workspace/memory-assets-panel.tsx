@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -372,9 +373,7 @@ export function MemoryAssetsPanel() {
         </div>
 
         {assets.isLoading ? (
-          <div className="flex min-h-48 items-center justify-center text-muted-foreground">
-            <Loader2Icon className="size-5 animate-spin" />
-          </div>
+          <PanelLoading label="正在读取记忆资产" className="min-h-48" />
         ) : assets.isError ? (
           <div className="flex min-h-48 flex-col items-center justify-center gap-2 text-center">
             <CircleGaugeIcon className="size-5 text-muted-foreground" />

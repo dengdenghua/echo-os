@@ -44,6 +44,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   WorkspaceBody,
   WorkspaceContainer,
@@ -530,9 +531,7 @@ export default function ProjectsPage() {
           </div>
 
           {projectsQuery.isLoading ? (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              加载中…
-            </div>
+            <PanelLoading label="正在加载项目" className="flex-1" />
           ) : projectsQuery.isError ? (
             <ProjectLoadFailure
               error={projectsQuery.error}
@@ -597,9 +596,7 @@ export default function ProjectsPage() {
               {/* Main PM view */}
               <div className="min-w-0 flex-1 overflow-y-auto">
                 {detailQuery.isLoading ? (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    加载中…
-                  </div>
+                  <PanelLoading label="正在加载项目详情" className="h-full" />
                 ) : detailQuery.isError ? (
                   <ProjectLoadFailure
                     error={detailQuery.error}

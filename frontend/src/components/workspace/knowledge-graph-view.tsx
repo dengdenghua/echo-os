@@ -1,7 +1,6 @@
 import {
   SearchIcon,
   RefreshCwIcon,
-  Loader2Icon,
   NetworkIcon,
   SlidersHorizontalIcon,
   TagsIcon,
@@ -22,6 +21,7 @@ import {
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
+import { ProgressLine } from "@/components/ui/progress-line";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -1269,7 +1269,7 @@ function KnowledgeGraph3DContent() {
       {(loading || webglError) && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--echo-surface-sunken)]/80">
           {loading ? (
-            <Loader2Icon className="size-6 animate-spin text-foreground/80" />
+            <ProgressLine className="absolute inset-x-0 top-0" />
           ) : (
             <div className="max-w-sm rounded-lg border border-destructive/30 bg-destructive/20 px-4 py-3 text-sm text-destructive">
               {webglError}

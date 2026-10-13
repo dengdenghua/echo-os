@@ -45,7 +45,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Suspense, lazy } from "react";
 import { getSettingsUxCopy } from "./settings-ux-copy";
 import AppearanceSettingsPage from "./appearance-settings-page";
@@ -915,12 +915,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 </Empty>
               ) : null}
               {hasSettingsResults && activeSection === "account" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AccountSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "subscription" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <SubscriptionSettingsPage />
                 </Suspense>
               )}
@@ -928,47 +928,47 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 <AppearanceSettingsPage />
               )}
               {hasSettingsResults && activeSection === "conversation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <ConversationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "models" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <ModelSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "memory" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <MemorySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "tools" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <McpSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "automationSecurity" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AutomationSecuritySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "browserAutomation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <BrowserAutomationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "desktopAutomation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <DesktopAutomationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "privacy" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <PrivacySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "notification" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <NotificationSettingsPage />
                 </Suspense>
               )}
@@ -1044,7 +1044,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 </section>
               )}
               {hasSettingsResults && activeSection === "about" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AboutSettingsPage />
                 </Suspense>
               )}
@@ -1134,17 +1134,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
   );
 }
 
-// Skeleton loader for settings pages
-function SettingsPageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-96" />
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    </div>
-  );
+// Loading fallback for lazily loaded settings pages: the brand progress line.
+function SettingsPageLoading() {
+  const { t } = useI18n();
+  return <PanelLoading label={t.common.loading} className="min-h-64" />;
 }

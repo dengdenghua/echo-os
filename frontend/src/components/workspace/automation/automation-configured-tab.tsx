@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Dialog,
   DialogContent,
@@ -286,27 +286,7 @@ export function AutomationConfiguredTab() {
     : null;
 
   if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 rounded-lg border border-border-default/50 bg-card/30 px-3 py-2">
-          <Skeleton className="codex-skeleton size-4 shrink-0 rounded-full" />
-          <Skeleton className="codex-skeleton h-3.5 flex-1 rounded" />
-          <Skeleton className="codex-skeleton h-5 w-9 shrink-0 rounded-full" />
-        </div>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 rounded-lg border border-border-default/50 bg-card/30 px-3 py-2.5"
-          >
-            <Skeleton className="codex-skeleton size-4 shrink-0 rounded-full" />
-            <Skeleton className="codex-skeleton h-4 flex-1 rounded" />
-            <Skeleton className="codex-skeleton h-4 w-10 shrink-0 rounded" />
-            <Skeleton className="codex-skeleton h-3.5 w-20 shrink-0 rounded" />
-            <Skeleton className="codex-skeleton h-5 w-9 shrink-0 rounded-full" />
-          </div>
-        ))}
-      </div>
-    );
+    return <PanelLoading label={t.common.loading} className="min-h-48" />;
   }
 
   return (

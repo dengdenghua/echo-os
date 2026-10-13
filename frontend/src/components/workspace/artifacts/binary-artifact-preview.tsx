@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { PanelLoading } from "@/components/ui/progress-line";
 import { ArtifactLoadError } from "@/core/artifacts/loader";
 import { urlOfArtifact } from "@/core/artifacts/utils";
 import { authHeaders } from "@/core/auth/api";
@@ -60,7 +61,9 @@ export function BinaryArtifactPreview({
       />
     );
   }
-  if (!current?.src) return <div role="status">{t.common.loading}…</div>;
+  if (!current?.src) {
+    return <PanelLoading label={t.common.loading} className="size-full" />;
+  }
   return (
     <iframe
       className="size-full"

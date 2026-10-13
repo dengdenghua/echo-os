@@ -115,7 +115,7 @@ describe("ProjectsPage production error states", () => {
 
     renderWithProviders(<ProjectsPage />, { locale: "zh-CN" });
 
-    expect(screen.getByText("加载中…")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("正在加载项目");
     expect(screen.queryByText(/还没有项目/)).not.toBeInTheDocument();
   });
 

@@ -63,7 +63,6 @@ import {
   Lightbulb,
   LineChart,
   ListTodo,
-  Loader2,
   Lock,
   Mail,
   Medal,
@@ -123,6 +122,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { useI18n } from "@/core/i18n/hooks";
 import { useEnableSkill, useSkills } from "@/core/skills/hooks";
 import { cn } from "@/lib/utils";
@@ -289,10 +289,11 @@ export function LocalSkillDirectoryPanel({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[360px] items-center justify-center text-sm text-muted-foreground">
-        <Loader2 className="mr-2 size-4 animate-spin" />
-        {t.unifiedStore.skills.loading}
-      </div>
+      <PanelLoading
+        label={t.unifiedStore.skills.loading}
+        caption={t.unifiedStore.skills.loading}
+        className="min-h-[360px]"
+      />
     );
   }
 

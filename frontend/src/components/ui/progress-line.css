@@ -1,0 +1,15 @@
+/*
+ * ECHO brand loading line (F37), used by <ProgressLine /> and <PanelLoading />.
+ * The brand rules out spinners, bouncing and shimmer for loading: a short
+ * `core` segment slides across a hairline track instead. The component adds
+ * `motion-reduce:animate-none`, so under prefers-reduced-motion the segment
+ * stays put as a static partial bar.
+ */
+@keyframes echo-progress-line {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}

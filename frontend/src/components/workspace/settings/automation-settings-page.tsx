@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -150,14 +151,11 @@ export default function AutomationSettingsPage() {
 
   if (isLoading) {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="flex items-center py-8 text-sm text-muted-foreground"
-      >
-        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-        {t.settings.automation.loading}
-      </div>
+      <PanelLoading
+        label={t.settings.automation.loading}
+        caption={t.settings.automation.loading}
+        className="min-h-40"
+      />
     );
   }
 
@@ -544,10 +542,10 @@ export function ApprovalRulesSection() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-          {t.settings.automation.rules.loading}
-        </div>
+        <PanelLoading
+          label={t.settings.automation.rules.loading}
+          caption={t.settings.automation.rules.loading}
+        />
       ) : error ? (
         <div
           role="alert"

@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Switch } from "@/components/ui/switch";
 import { RoutedWebLink } from "@/components/ui/routed-web-link";
 import { cn } from "@/lib/utils";
@@ -1652,9 +1653,11 @@ export default function ModelSettingsPage() {
         description={pageCopy.connectionsSubtitle}
       >
         {loading ? (
-          <div role="status" className="text-muted-foreground text-sm">
-            {t.common.loading}
-          </div>
+          <PanelLoading
+            label={t.common.loading}
+            caption={t.common.loading}
+            className="min-h-24"
+          />
         ) : (
           <div className="flex w-full flex-col gap-3">
             {modelsLoadError ? (
@@ -2642,9 +2645,7 @@ function OfficialModelsSection() {
   if (loading) {
     return (
       <SettingsSection title={t.settings.model.officialModels}>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2Icon className="size-4 animate-spin" /> {t.common.loading}
-        </div>
+        <PanelLoading label={t.common.loading} caption={t.common.loading} />
       </SettingsSection>
     );
   }

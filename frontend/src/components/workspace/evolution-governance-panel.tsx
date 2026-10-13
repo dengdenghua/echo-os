@@ -10,6 +10,7 @@ import {
 import { lazy, Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getDualHelixShadowStatus,
@@ -33,13 +34,7 @@ const ReflexMonitorContent = lazy(() =>
 );
 
 function GovernancePanelLoading() {
-  return (
-    <div
-      className="h-72 animate-pulse rounded-xl border bg-muted/25"
-      role="status"
-      aria-label="加载治理模块"
-    />
-  );
+  return <PanelLoading label="正在加载治理模块" className="min-h-72" />;
 }
 
 export function EvolutionGovernancePanel() {

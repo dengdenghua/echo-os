@@ -6,6 +6,7 @@ import { Navigate, Route, useLocation } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   ElectronTitleBar,
   ElectronTitleBarProvider,
@@ -58,48 +59,24 @@ export function PageLoading() {
   }, []);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="flex h-full min-h-[320px] w-full items-start justify-center p-4 sm:p-6"
+    <PanelLoading
+      label={t.common.loading}
+      caption={isSlow ? t.common.loadingWorkspace : undefined}
+      className="h-full min-h-[320px]"
+      data-testid="page-loading"
     >
-      {!isSlow ? <span className="sr-only">{t.common.loading}</span> : null}
-      <div
-        className="w-full max-w-6xl animate-pulse space-y-4"
-        data-testid="page-loading-skeleton"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="h-5 w-32 rounded-md bg-muted" />
-            <div className="h-3 w-56 max-w-[60vw] rounded bg-muted/70" />
-          </div>
-          <div className="h-8 w-24 rounded-lg bg-muted" />
+      {isSlow ? (
+        <div className="flex justify-center pt-3">
+          <button
+            type="button"
+            className="rounded-md border border-border-default px-3 py-1.5 text-caption text-foreground transition hover:bg-muted"
+            onClick={() => window.location.reload()}
+          >
+            {t.conversation.retry}
+          </button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-28 rounded-xl border border-border-subtle bg-muted/35"
-            />
-          ))}
-        </div>
-        {isSlow ? (
-          <div className="flex animate-none flex-col items-center gap-2 pt-2 text-center">
-            <div className="text-sm text-muted-foreground">
-              {t.common.loadingWorkspace}
-            </div>
-            <button
-              type="button"
-              className="rounded-md border border-border-default px-3 py-1.5 text-xs text-foreground transition hover:bg-muted"
-              onClick={() => window.location.reload()}
-            >
-              {t.conversation.retry}
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </div>
+      ) : null}
+    </PanelLoading>
   );
 }
 

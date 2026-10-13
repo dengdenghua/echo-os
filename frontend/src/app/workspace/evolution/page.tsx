@@ -8,6 +8,7 @@ import {
 import { lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DualHelixEvolutionPanel } from "@/components/workspace/dual-helix-evolution-panel";
 import {
@@ -25,12 +26,7 @@ const EvolutionGovernancePanel = lazy(() =>
 );
 
 function SectionLoading() {
-  return (
-    <div className="space-y-3" role="status" aria-label="加载自进化模块">
-      <div className="h-24 animate-pulse border-y bg-muted/30" />
-      <div className="h-72 animate-pulse border-y bg-muted/20" />
-    </div>
-  );
+  return <PanelLoading label="正在加载自进化模块" className="min-h-72" />;
 }
 
 type EvolutionSection =

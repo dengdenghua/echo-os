@@ -10,13 +10,13 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import {
   BrainIcon,
-  Loader2Icon,
   NetworkIcon,
   RefreshCwIcon,
   SearchIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,11 +131,7 @@ export function KnowledgeGraphPanel() {
   }, [entities, trimmedSearchQuery]);
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PanelLoading className="h-64" />;
   }
 
   if (loadError) {

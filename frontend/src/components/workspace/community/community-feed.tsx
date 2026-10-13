@@ -30,6 +30,7 @@ import {
 import { CommunityPostDetail } from "./community-post-detail";
 import { CommunityForkButton } from "./community-fork-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Button } from "@/components/ui/button";
 
 /** 每列最小宽度（px），据此自动计算列数。 */
@@ -305,9 +306,11 @@ export function CommunityFeed({
         <div ref={sentinelRef} className="col-span-full h-4" aria-hidden />
       )}
       {loading && hasMore && (
-        <div className="col-span-full flex justify-center py-3 text-sm text-muted-foreground">
-          加载中…
-        </div>
+        <PanelLoading
+          label="正在加载更多"
+          className="col-span-full py-4"
+          lineClassName="mx-auto max-w-48"
+        />
       )}
 
       {activePost && (
