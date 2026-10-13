@@ -29,6 +29,12 @@ const NO_SYSTEM_CAPABILITIES: SystemActionCapabilities = {
 export function useSystemControls(options?: {
   /** 执行锁屏等动作前关闭浮层的回调（spotlight/launchpad 等）。 */
   closeTransientPanels?: () => void;
+  /**
+   * Ends the browser's device session when there is no native shell. In a
+   * browser the Echo menu otherwise offered 退出登录… greyed out, leaving no
+   * way to sign out short of "sign out every session" in Settings.
+   */
+  webLogout?: () => Promise<void>;
 }) {
   const [systemCapabilities, setSystemCapabilities] =
     useState<SystemActionCapabilities>(NO_SYSTEM_CAPABILITIES);
@@ -98,9 +104,11 @@ export function useSystemControls(options?: {
     [refreshSystemControls],
   );
 
+  const webLogoutAvailable =
+    !systemCapabilities.nativeShell && Boolean(options?.webLogout);
   const availableSystemActions: MacSystemCapabilities = {
     lock: systemCapabilities.lock,
-    logout: systemCapabilities.logout,
+    logout: systemCapabilities.logout || webLogoutAvailable,
     suspend: systemCapabilities.suspend,
     restart: systemCapabilities.restart,
     shutdown: systemCapabilities.shutdown,
@@ -124,12 +132,15 @@ export function useSystemControls(options?: {
 
   const requestSystemAction = useCallback(
     (action: MacSystemAction) => {
-      if (!systemCapabilities[action]) return;
+      const allowed =
+        systemCapabilities[action] ||
+        (action === "logout" && webLogoutAvailable);
+      if (!allowed) return;
       options?.closeTransientPanels?.();
       setSystemActionError(null);
       setPendingSystemAction(action);
     },
-    [systemCapabilities, options],
+    [systemCapabilities, options, webLogoutAvailable],
   );
 
   const cancelSystemAction = useCallback(() => {
@@ -141,6 +152,22 @@ export function useSystemControls(options?: {
   const confirmSystemAction = useCallback(async () => {
     if (!pendingSystemAction || systemActionBusy) return;
     const system = window.echo?.system;
+    const webLogout = options?.webLogout;
+    if (pendingSystemAction === "logout" && !system && webLogout) {
+      setSystemActionBusy(true);
+      setSystemActionError(null);
+      try {
+        await webLogout();
+        setPendingSystemAction(null);
+      } catch (error) {
+        setSystemActionError(
+          error instanceof Error ? error.message : "退出登录失败，请重试",
+        );
+      } finally {
+        setSystemActionBusy(false);
+      }
+      return;
+    }
     if (!system) {
       setSystemActionError("当前不是 ECHO OS 原生系统会话");
       return;
@@ -161,10 +188,11 @@ export function useSystemControls(options?: {
     } finally {
       setSystemActionBusy(false);
     }
-  }, [pendingSystemAction, systemActionBusy]);
+  }, [options, pendingSystemAction, systemActionBusy]);
 
   return {
     systemCapabilities,
+    webSession: !systemCapabilities.nativeShell,
     systemControls,
     availableSystemActions,
     pendingSystemAction,

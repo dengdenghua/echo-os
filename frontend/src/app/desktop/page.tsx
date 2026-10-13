@@ -383,6 +383,7 @@ export default function DesktopShellPage() {
     isLoading: authLoading,
     isBackendStarting,
     retryAuth,
+    logout: logoutSession,
   } = useAuth();
   const {
     spotlightOpen,
@@ -929,7 +930,14 @@ export default function DesktopShellPage() {
     requestSystemAction,
     cancelSystemAction,
     confirmSystemAction,
+    webSession,
   } = useSystemControls({
+    webLogout: async () => {
+      await logoutSession();
+      setApplianceRole(null);
+      setApplianceAuthed(false);
+      toast.success("已退出登录");
+    },
     closeTransientPanels: () => {
       closeTransient();
     },
@@ -1719,6 +1727,7 @@ export default function DesktopShellPage() {
           error={systemActionError}
           onCancel={cancelSystemAction}
           onConfirm={() => void confirmSystemAction()}
+          webSession={webSession}
         />
       </>
     );
@@ -3076,6 +3085,7 @@ export default function DesktopShellPage() {
         error={systemActionError}
         onCancel={cancelSystemAction}
         onConfirm={() => void confirmSystemAction()}
+        webSession={webSession}
       />
 
       <HighRiskApprovalDialog

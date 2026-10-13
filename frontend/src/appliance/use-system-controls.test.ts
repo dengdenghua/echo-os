@@ -197,3 +197,40 @@ it("resets the confirmation error when the user cancels", async () => {
   expect(result.current.pendingSystemAction).toBeNull();
   expect(result.current.systemActionError).toBeNull();
 });
+
+it("offers sign-out in a browser and ends the web session on confirm", async () => {
+  // Golden path 2026-10: in a browser 退出登录… was greyed out, so the owner
+  // could only sign out every session from Settings.
+  const webLogout = vi.fn().mockResolvedValue(undefined);
+  const { result } = renderHook(() => useSystemControls({ webLogout }));
+  expect(result.current.availableSystemActions.logout).toBe(true);
+  expect(result.current.availableSystemActions.restart).toBe(false);
+  expect(result.current.webSession).toBe(true);
+
+  act(() => result.current.requestSystemAction("logout"));
+  expect(result.current.pendingSystemAction).toBe("logout");
+  await act(async () => {
+    await result.current.confirmSystemAction();
+  });
+
+  expect(webLogout).toHaveBeenCalledOnce();
+  expect(result.current.pendingSystemAction).toBeNull();
+  expect(result.current.systemActionError).toBeNull();
+});
+
+it("keeps the native logout path when the shell provides one", async () => {
+  const system = installSystem({});
+  const webLogout = vi.fn();
+  const { result } = renderHook(() => useSystemControls({ webLogout }));
+  await waitFor(() =>
+    expect(result.current.systemCapabilities.nativeShell).toBe(true),
+  );
+
+  act(() => result.current.requestSystemAction("logout"));
+  await act(async () => {
+    await result.current.confirmSystemAction();
+  });
+
+  expect(system.runAction).toHaveBeenCalledWith("logout");
+  expect(webLogout).not.toHaveBeenCalled();
+});

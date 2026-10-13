@@ -2262,22 +2262,36 @@ function useEscapeToClose(active: boolean, onClose: () => void) {
   }, [active, onClose]);
 }
 
+// Signing out of ECHO OS in a browser ends only this browser's session; the
+// device and its tasks keep running.
+const WEB_LOGOUT_COPY = {
+  title: "退出这个浏览器里的 ECHO OS？",
+  detail: "设备上的任务会继续运行。再次使用时需要输入设备密码。",
+  confirm: "退出登录",
+};
+
 export function MacSystemActionDialog({
   action,
   busy,
   error,
   onCancel,
   onConfirm,
+  webSession = false,
 }: {
   action: MacSystemAction | null;
   busy: boolean;
   error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+  /** No native shell: logout ends the browser session only. */
+  webSession?: boolean;
 }) {
   useEscapeToClose(Boolean(action) && !busy, onCancel);
   if (!action) return null;
-  const copy = SYSTEM_ACTION_COPY[action];
+  const copy =
+    action === "logout" && webSession
+      ? WEB_LOGOUT_COPY
+      : SYSTEM_ACTION_COPY[action];
   return (
     <div
       className="mac-system-action-overlay"
