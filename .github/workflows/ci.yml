@@ -545,6 +545,18 @@ jobs:
             python:3.13-slim-trixie@sha256:7e3a6aca9d74f93cca21a91d86a8dad8c34749afd5b4a98ee481c9c47b9f5ed4 \
             /bin/sh /source/deploy/omv/verify-plugin-package-lifecycle.sh \
             "/source/${plugin_package[0]}"
+      # actions/attest expands globs in subject-path but not in sbom-path:
+      # a glob there fails with "SBOM file not found" (os-main run 38170069021).
+      - name: Resolve exact SBOM paths for attestation
+        id: omv-sbom
+        run: |
+          shopt -s nullglob
+          host_sboms=(dist/echo-omv-host-*.spdx.json)
+          plugin_sboms=(dist/openmediavault-echo-os_*_all.spdx.json)
+          test "${#host_sboms[@]}" -eq 1
+          test "${#plugin_sboms[@]}" -eq 1
+          echo "host=${host_sboms[0]}" >> "$GITHUB_OUTPUT"
+          echo "plugin=${plugin_sboms[0]}" >> "$GITHUB_OUTPUT"
       - name: Attest build provenance
         if: >-
           github.event_name == 'push' &&
@@ -559,7 +571,7 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/echo-omv-host-*.tar.gz
-          sbom-path: dist/echo-omv-host-*.spdx.json
+          sbom-path: ${{ steps.omv-sbom.outputs.host }}
       - name: Attest native plugin provenance
         if: >-
           github.event_name == 'push' &&
@@ -574,7 +586,7 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/openmediavault-echo-os_*_all.deb
-          sbom-path: dist/openmediavault-echo-os_*_all.spdx.json
+          sbom-path: ${{ steps.omv-sbom.outputs.plugin }}
       - name: Upload host bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
