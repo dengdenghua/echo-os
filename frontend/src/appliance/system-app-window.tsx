@@ -14,8 +14,10 @@ import {
   useRef,
   type Dispatch,
   type ReactNode,
+  type Ref,
   type SetStateAction,
 } from "react";
+import { XIcon } from "lucide-react";
 
 import type { DesktopWindow } from "./app-window";
 
@@ -109,6 +111,40 @@ export function SystemAppFrame({
 /** 窗口形态下系统红绿灯叠在这里，面板只留出同样大小的位置。 */
 export function SystemAppLightsSpacer() {
   return <span aria-hidden className="block h-3.5 w-11 shrink-0" />;
+}
+
+/**
+ * 单独渲染（不在桌面窗口里）时面板自带的窗口按钮：和桌面窗口同一套单色圆点，
+ * 只有关闭可用，最小化/缩放只占位。
+ */
+export function SystemAppTrafficLights({
+  closeLabel,
+  onClose,
+  disabled = false,
+  closeButtonRef,
+}: {
+  closeLabel: string;
+  onClose: () => void;
+  disabled?: boolean;
+  closeButtonRef?: Ref<HTMLButtonElement>;
+}) {
+  return (
+    <div className="mac-traffic-lights">
+      <button
+        ref={closeButtonRef}
+        type="button"
+        aria-label={closeLabel}
+        title="关闭"
+        disabled={disabled}
+        onClick={onClose}
+        className="mac-traffic-light close"
+      >
+        <XIcon aria-hidden className="mac-traffic-glyph" />
+      </button>
+      <span aria-hidden className="mac-traffic-light minimize is-inert" />
+      <span aria-hidden className="mac-traffic-light zoom is-inert" />
+    </div>
+  );
 }
 
 export type SystemAppId =

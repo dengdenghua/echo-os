@@ -3,6 +3,7 @@ import { SystemSettingsFrame } from "./system-settings-frame";
 import {
   SystemAppLightsSpacer,
   useInSystemAppWindow,
+  SystemAppTrafficLights,
 } from "./system-app-window";
 import {
   BotIcon,
@@ -296,17 +297,11 @@ export function AccountSecurityPanel({
           {inWindow ? (
             <SystemAppLightsSpacer />
           ) : (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="size-3 rounded-full bg-[#ff5f57] ring-1 ring-black/10"
-                aria-label="关闭"
-                disabled={busy}
-                onClick={() => !busy && onClose()}
-              />
-              <span className="size-3 rounded-full bg-[#febc2e] ring-1 ring-black/10" />
-              <span className="size-3 rounded-full bg-[#28c840] ring-1 ring-black/10" />
-            </div>
+            <SystemAppTrafficLights
+              closeLabel="关闭"
+              onClose={onClose}
+              disabled={busy}
+            />
           )}
         </div>
         <div className="mb-4 flex items-center gap-3 rounded-xl bg-card/72 p-2.5 shadow-sm ring-1 ring-border">

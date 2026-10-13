@@ -50,6 +50,7 @@ import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
 import {
   SystemAppFrame,
   useInSystemAppWindow,
+  SystemAppTrafficLights,
 } from "@/appliance/system-app-window";
 import { cn } from "@/lib/utils";
 
@@ -381,16 +382,7 @@ export function DeviceLinkPanel({
             {inWindow ? (
               <span aria-hidden className="block h-3 w-11" />
             ) : (
-              <>
-                <button
-                  type="button"
-                  aria-label="关闭"
-                  onClick={onClose}
-                  className="size-3 rounded-full bg-[#ff5f57] ring-1 ring-black/10"
-                />
-                <span className="size-3 rounded-full bg-[#febc2e] ring-1 ring-black/10" />
-                <span className="size-3 rounded-full bg-[#28c840] ring-1 ring-black/10" />
-              </>
+              <SystemAppTrafficLights closeLabel="关闭" onClose={onClose} />
             )}
           </div>
         </div>

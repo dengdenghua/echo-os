@@ -1350,19 +1350,26 @@
   display: grid;
   width: 14px;
   height: 14px;
+  padding: 0;
   place-items: center;
-  background: #ff5f57;
-  border: 1px solid rgba(190, 30, 30, 0.35);
+  color: #fff;
+  background: color-mix(in srgb, var(--echo-ink-faint) 72%, transparent);
+  border: 1px solid var(--echo-line-strong);
   border-radius: 50%;
 }
-.mac-about-close span {
-  width: 6px;
-  height: 1px;
-  background: rgba(80, 0, 0, 0.55);
+.mac-about-close svg {
+  width: 9px;
+  height: 9px;
+  stroke-width: 3;
   opacity: 0;
-  transform: rotate(45deg);
 }
-.mac-about-close:hover span {
+.mac-about-close:hover,
+.mac-about-close:focus-visible {
+  background: var(--echo-breach);
+  border-color: transparent;
+}
+.mac-about-close:hover svg,
+.mac-about-close:focus-visible svg {
   opacity: 1;
 }
 .mac-about-mark {
@@ -1774,6 +1781,7 @@
 .mac-dock-mini-titlebar .mini-dot {
   width: 3.5px;
   height: 3.5px;
+  background: rgba(255, 255, 255, 0.38);
   border-radius: 50%;
 }
 .mac-dock-mini-body {
@@ -2144,39 +2152,56 @@
   align-items: center;
   gap: 8px;
 }
+/* ECHO window controls: monochrome graphite/snow dots. The colour-only macOS
+   lights told the three apart by hue alone; here every control carries its
+   lucide glyph, shown while the group is hovered or holds keyboard focus. */
 .mac-traffic-light {
   position: relative;
+  display: grid;
   width: 12px;
   height: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
-}
-.mac-traffic-light.close {
-  background: #ff5f57;
-}
-.mac-traffic-light.minimize {
-  background: #febc2e;
-}
-.mac-traffic-light.zoom {
-  background: #28c840;
-}
-.mac-traffic-lights:hover .mac-traffic-light::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
+  padding: 0;
   place-items: center;
-  color: rgba(40, 20, 20, 0.58);
-  content: "×";
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 10px;
+  color: var(--echo-on-action);
+  background: color-mix(in srgb, var(--echo-ink-faint) 72%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  border-radius: 50%;
+  transition:
+    background-color var(--echo-duration-fast, 120ms) ease,
+    border-color var(--echo-duration-fast, 120ms) ease;
 }
-.mac-traffic-lights:hover .mac-traffic-light.minimize::after {
-  content: "−";
+.mac-traffic-light > .mac-traffic-glyph {
+  width: 8px;
+  height: 8px;
+  stroke-width: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--echo-duration-fast, 120ms) ease;
 }
-.mac-traffic-lights:hover .mac-traffic-light.zoom::after {
-  content: "+";
+.mac-traffic-lights:hover .mac-traffic-light,
+.mac-traffic-lights:focus-within .mac-traffic-light {
+  background: var(--echo-ink-muted);
+}
+.mac-traffic-lights:hover .mac-traffic-glyph,
+.mac-traffic-lights:focus-within .mac-traffic-glyph {
+  opacity: 1;
+}
+.mac-traffic-light.close:hover,
+.mac-traffic-light.close:focus-visible {
+  color: #fff;
+  background: var(--echo-breach);
+  border-color: transparent;
+}
+.mac-traffic-light:focus-visible {
+  outline: 2px solid var(--echo-focus);
+  outline-offset: 2px;
+}
+.mac-traffic-light:disabled {
+  opacity: 0.5;
+}
+/* Standalone panels draw the same three dots; only close does anything. */
+.mac-traffic-light.is-inert {
+  opacity: 0.55;
 }
 .mac-window-title {
   overflow: hidden;

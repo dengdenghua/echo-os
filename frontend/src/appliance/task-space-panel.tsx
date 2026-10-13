@@ -31,6 +31,7 @@ import {
   SystemAppFrame,
   SystemAppLightsSpacer,
   useInSystemAppWindow,
+  SystemAppTrafficLights,
 } from "@/appliance/system-app-window";
 import {
   ACTIVE_TASK_STATUSES,
@@ -784,19 +785,11 @@ export function TaskSpacePanel({
           {inWindow ? (
             <SystemAppLightsSpacer />
           ) : (
-            <>
-              <button
-                type="button"
-                ref={closeButtonRef}
-                aria-label="关闭任务空间"
-                onClick={onClose}
-                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-breach"
-              >
-                <XIcon className="size-2.5" />
-              </button>
-              <span className="size-3.5 rounded-full bg-[#febc2e]" />
-              <span className="size-3.5 rounded-full bg-[#28c840]" />
-            </>
+            <SystemAppTrafficLights
+              closeLabel="关闭任务空间"
+              onClose={onClose}
+              closeButtonRef={closeButtonRef}
+            />
           )}
         </div>
         <div

@@ -100,6 +100,7 @@ import {
   SystemAppFrame,
   SystemAppLightsSpacer,
   useInSystemAppWindow,
+  SystemAppTrafficLights,
 } from "@/appliance/system-app-window";
 import { copyTextToClipboard } from "@/core/clipboard";
 import {
@@ -2793,18 +2794,10 @@ export function HubPanel({
             {inWindow ? (
               <SystemAppLightsSpacer />
             ) : (
-              <>
-                <button
-                  type="button"
-                  aria-label="关闭 Echo Hub"
-                  onClick={onClose}
-                  className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-breach"
-                >
-                  <XIcon className="size-2.5" />
-                </button>
-                <span className="size-3.5 rounded-full bg-[#febc2e]" />
-                <span className="size-3.5 rounded-full bg-[#28c840]" />
-              </>
+              <SystemAppTrafficLights
+                closeLabel="关闭 Echo Hub"
+                onClose={onClose}
+              />
             )}
           </div>
           <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-foreground">

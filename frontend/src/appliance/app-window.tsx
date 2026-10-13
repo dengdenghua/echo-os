@@ -21,9 +21,11 @@ import {
   ExternalLinkIcon,
   Maximize2Icon,
   Minimize2Icon,
+  MinusIcon,
   MoonIcon,
   PanelLeftIcon,
   PanelRightIcon,
+  XIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -159,7 +161,13 @@ function ZoomTrafficLight({
         title={maximized ? "恢复" : "缩放 (悬停分屏)"}
         aria-label={maximized ? `恢复${winTitle}` : `缩放${winTitle}`}
         className="mac-traffic-light zoom"
-      />
+      >
+        {maximized ? (
+          <Minimize2Icon aria-hidden className="mac-traffic-glyph" />
+        ) : (
+          <Maximize2Icon aria-hidden className="mac-traffic-glyph" />
+        )}
+      </button>
       {showTileMenu && (
         <div
           data-testid="window-quick-tile-menu"
@@ -917,7 +925,9 @@ export function AppWindow({
                 title="关闭"
                 aria-label={`关闭${win.title}`}
                 className="mac-traffic-light close"
-              />
+              >
+                <XIcon aria-hidden className="mac-traffic-glyph" />
+              </button>
               <button
                 type="button"
                 onPointerDown={(event) => event.stopPropagation()}
@@ -925,7 +935,9 @@ export function AppWindow({
                 title="最小化"
                 aria-label={`最小化${win.title}`}
                 className="mac-traffic-light minimize"
-              />
+              >
+                <MinusIcon aria-hidden className="mac-traffic-glyph" />
+              </button>
               <ZoomTrafficLight
                 maximized={maximized}
                 winTitle={win.title}
@@ -952,7 +964,9 @@ export function AppWindow({
                 title="关闭"
                 aria-label={`关闭${win.title}`}
                 className="mac-traffic-light close"
-              />
+              >
+                <XIcon aria-hidden className="mac-traffic-glyph" />
+              </button>
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
@@ -960,7 +974,9 @@ export function AppWindow({
                 title="最小化"
                 aria-label={`最小化${win.title}`}
                 className="mac-traffic-light minimize"
-              />
+              >
+                <MinusIcon aria-hidden className="mac-traffic-glyph" />
+              </button>
               <ZoomTrafficLight
                 maximized={maximized}
                 winTitle={win.title}

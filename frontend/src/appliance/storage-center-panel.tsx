@@ -16,7 +16,6 @@ import {
   Trash2Icon,
   TriangleAlertIcon,
   UploadCloudIcon,
-  XIcon,
 } from "lucide-react";
 
 import {
@@ -40,6 +39,7 @@ import {
   SystemAppFrame,
   SystemAppLightsSpacer,
   useInSystemAppWindow,
+  SystemAppTrafficLights,
 } from "@/appliance/system-app-window";
 import { cn } from "@/lib/utils";
 
@@ -606,18 +606,10 @@ export function StorageCenterPanel({
           {inWindow ? (
             <SystemAppLightsSpacer />
           ) : (
-            <>
-              <button
-                type="button"
-                aria-label="关闭存储中心"
-                onClick={onClose}
-                className="grid size-3.5 place-items-center rounded-full bg-[#ff5f57] text-transparent hover:text-breach"
-              >
-                <XIcon className="size-2.5" />
-              </button>
-              <span className="size-3.5 rounded-full bg-[#febc2e]" />
-              <span className="size-3.5 rounded-full bg-[#28c840]" />
-            </>
+            <SystemAppTrafficLights
+              closeLabel="关闭存储中心"
+              onClose={onClose}
+            />
           )}
         </div>
         <div className="mt-7 px-2">

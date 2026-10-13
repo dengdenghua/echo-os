@@ -2120,7 +2120,7 @@ export function MacAboutDialog({
           onClick={onClose}
           aria-label="关闭"
         >
-          <span />
+          <XIcon aria-hidden />
         </button>
         <div className="mac-about-mark">
           <EchoMark tone="light" />

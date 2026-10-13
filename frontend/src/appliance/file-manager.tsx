@@ -59,7 +59,10 @@ import { FileOrganizationPanel } from "@/appliance/file-organization-panel";
 import { FileSharePanel } from "@/appliance/file-share-panel";
 import { revealFileRequest } from "@/appliance/desktop-actions";
 import type { DesktopAgentContext } from "./desktop-agent-context";
-import { useInSystemAppWindow } from "@/appliance/system-app-window";
+import {
+  SystemAppTrafficLights,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
 import { cn } from "@/lib/utils";
 import {
   answerStorage,
@@ -424,16 +427,7 @@ export function FileManager({
             </button>
             {/* 窗口形态由系统提供红绿灯。 */}
             {!inWindow && (
-              <>
-                <button
-                  type="button"
-                  className="mac-traffic-light close"
-                  onClick={onClose}
-                  aria-label="关闭"
-                />
-                <span className="mac-traffic-light minimize" />
-                <span className="mac-traffic-light zoom" />
-              </>
+              <SystemAppTrafficLights closeLabel="关闭" onClose={onClose} />
             )}
           </div>
           <div className="mac-finder-navigation">

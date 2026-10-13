@@ -2791,9 +2791,9 @@ export default function DesktopShellPage() {
               >
                 <div className="mac-dock-minimized-window">
                   <div className="mac-dock-mini-titlebar">
-                    <span className="mini-dot bg-[#ff5f56]" />
-                    <span className="mini-dot bg-[#ffbd2e]" />
-                    <span className="mini-dot bg-[#27c93f]" />
+                    <span className="mini-dot" />
+                    <span className="mini-dot" />
+                    <span className="mini-dot" />
                   </div>
                   <div className="mac-dock-mini-body">
                     <span className="text-[8px] font-medium text-slate-200 truncate max-w-[40px] leading-tight select-none">
