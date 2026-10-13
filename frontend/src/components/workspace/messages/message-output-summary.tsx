@@ -35,6 +35,7 @@ import {
   FilesIcon,
   LinkIcon,
   Loader2Icon,
+  SettingsIcon,
   WandSparklesIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -112,7 +113,27 @@ export type FailurePresentation = {
     | "blocked";
   code?: string;
   eventId?: string;
+  /** Engine readiness reason for code "execution_unavailable". */
+  reason?: string;
 };
+
+// Readiness reasons the owner fixes in 系统设置 › 模型与用量 (connect a model,
+// sign in to ChatGPT). The receipt offers that page instead of only 重试.
+const MODEL_SETUP_REASONS = new Set([
+  "model_incompatible",
+  "account_required",
+  "account_unavailable",
+  "configuration_unavailable",
+]);
+
+export function failureNeedsModelSetup(
+  failure: FailurePresentation | null | undefined,
+): boolean {
+  return (
+    failure?.code === "execution_unavailable" &&
+    MODEL_SETUP_REASONS.has(failure.reason ?? "")
+  );
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object"
@@ -734,6 +755,24 @@ export function MessageOutputSummary({
               {t.message.openResult}
             </RoutedWebLink>
           )}
+          {isFailure &&
+            !isResolvedFailure &&
+            failureNeedsModelSetup(failure) && (
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("echo:open-settings", {
+                      detail: { tab: "models" },
+                    }),
+                  )
+                }
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background/70 px-2 text-xs font-medium text-foreground transition-colors hover:border-border hover:bg-muted/55"
+              >
+                <SettingsIcon className="size-3" />
+                {t.message.openModelSettings}
+              </button>
+            )}
           {isFailure && !isResolvedFailure && originalPrompt && (
             <button
               type="button"

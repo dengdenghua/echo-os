@@ -294,6 +294,7 @@ export const jaJP: Translations = {
     makeSimilar: "同じものを作る",
     makeSimilarHint: "同じプロンプトで新規タスクを開始",
     retryTask: "再試行",
+    openModelSettings: "モデルを設定",
     retryTaskHint: "同じプロンプトで新しいタスクを開始",
     taskFailedReason: "失敗理由",
     resultUrl: "結果リンク",

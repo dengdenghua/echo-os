@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import re
 import time
 from typing import TYPE_CHECKING, Any, cast
 
@@ -485,6 +486,23 @@ def _schedule_pending_subagent_reports(
     task.add_done_callback(_complete)
     return task
 
+
+
+_CJK = re.compile(r"[\u4e00-\u9fff]")
+
+
+def _public_driver_error_message(exc: BaseException) -> str:
+    """Chat copy for a crashed turn driver.
+
+    Messages already written for people (Chinese copy such as the engine
+    selection errors) pass through. Internal exception text — a Python
+    ``UnboundLocalError``, a lease diagnostic — stays in the logs and in
+    ``error_info.exception_type``; the owner gets what happened and what to do.
+    """
+    message = str(exc).strip()
+    if message and _CJK.search(message):
+        return message
+    return "任务执行时出错，已停止。可以重试；如果反复出现，请在「终端日志」查看详情。"
 
 async def _start_turn(
     runtime: CerebrumRuntime,
@@ -1254,28 +1272,34 @@ async def _start_turn(
             context = intent.user_context if isinstance(intent.user_context, dict) else {}
             event_backpressure = isinstance(exc, BackpressureError)
             public_error_message = (
-                "Codex event delivery was temporarily overloaded. Completed steps were "
-                "preserved; retry to continue."
+                "Codex 事件过多，暂时无法送达。已完成的步骤已保留，重试即可继续。"
                 if event_backpressure
-                else str(exc) or exc.__class__.__name__
+                else _public_driver_error_message(exc)
             )
-            err = ErrorItem(
-                message=public_error_message,
-                error_info={
-                    "code": (
-                        "execution_unavailable"
-                        if selection_error
-                        else "codex_event_backpressure"
-                        if event_backpressure
-                        else "turn_driver_exception"
-                    ),
-                    "driver": turn_driver,
-                    "exception_type": exc.__class__.__name__,
-                    "failure_kind": "backpressure" if event_backpressure else "",
-                    "cowork_mode": context.get("cowork_mode"),
-                    "topology_id": topology_id or "",
-                },
-            )
+            error_info: dict[str, Any] = {
+                "code": (
+                    "execution_unavailable"
+                    if selection_error
+                    else "codex_event_backpressure"
+                    if event_backpressure
+                    else "turn_driver_exception"
+                ),
+                "driver": turn_driver,
+                "exception_type": exc.__class__.__name__,
+                "failure_kind": "backpressure" if event_backpressure else "",
+                "cowork_mode": context.get("cowork_mode"),
+                "topology_id": topology_id or "",
+            }
+            if selection_error:
+                assert isinstance(exc, EngineSelectionError)
+                # Same facts as ``turn.error``: the client can tell "connect a
+                # model first" (amber, with a settings action) from a crash.
+                error_info.update(
+                    engine=exc.engine.value,
+                    reason=exc.reason,
+                    disposition="blocked_on_user",
+                )
+            err = ErrorItem(message=public_error_message, error_info=error_info)
             turn.items.append(err)
             await runtime._emit_item_started(turn, log, emitter, err)
             await runtime._emit_item_completed(turn, log, emitter, err)

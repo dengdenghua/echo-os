@@ -764,6 +764,8 @@ type StructuredFailure = {
   disposition?: string;
   /** Backend failure classification kind: "environment" | "git_hook" | "". */
   failure_kind?: string;
+  /** Engine readiness reason for code "execution_unavailable" (model_incompatible …). */
+  reason?: string;
 };
 
 function asFailureRecord(value: unknown): Record<string, unknown> | null {
@@ -801,6 +803,9 @@ export function structuredFailureFromMessages(
         : {}),
       ...(disposition ? { disposition } : {}),
       ...(failureKind ? { failure_kind: failureKind } : {}),
+      ...(typeof info?.reason === "string" && info.reason.trim()
+        ? { reason: info.reason.trim() }
+        : {}),
     };
   }
   return null;

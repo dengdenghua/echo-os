@@ -273,6 +273,47 @@ describe("MessageOutputSummary", () => {
     expect(window.location.hash).toBe("");
   });
 
+  it("offers model setup when no model is connected yet", () => {
+    // Golden path 2026-10: a first task on a fresh device stopped with only
+    // 重试; the owner needs the page where a model is connected.
+    const opened = vi.fn();
+    window.addEventListener("echo:open-settings", opened);
+    renderWithProviders(
+      <MessageOutputSummary
+        messages={[{ id: "u", type: "human", content: "整理下载文件夹" }]}
+        failure={{
+          message:
+            "还没有可用的模型。请在「系统设置 › 模型与用量」接入一个模型。",
+          detail: "还没有可用的模型。",
+          kind: "blocked",
+          code: "execution_unavailable",
+          reason: "model_incompatible",
+        }}
+      />,
+      { locale: "zh-CN" },
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "接入模型" }));
+
+    window.removeEventListener("echo:open-settings", opened);
+    expect(opened).toHaveBeenCalledOnce();
+    expect((opened.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      tab: "models",
+    });
+  });
+
+  it("keeps model setup out of unrelated failures", () => {
+    renderWithProviders(
+      <MessageOutputSummary
+        messages={[{ id: "u", type: "human", content: "分析该项目" }]}
+        failure={{ message: "任务失败", kind: "error" }}
+      />,
+      { locale: "zh-CN" },
+    );
+
+    expect(screen.queryByRole("button", { name: "接入模型" })).toBeNull();
+  });
+
   it("retries the original objective when the failed turn is punctuation-only", () => {
     const onRetryTask = vi.fn();
     const original: Message = {

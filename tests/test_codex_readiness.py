@@ -176,8 +176,12 @@ def test_unavailable_codex_selection_explains_itself_in_chinese(monkeypatch) -> 
     message = str(caught.value)
     # The durable reason code stays machine-readable; the message is chat copy.
     assert caught.value.reason == "model_incompatible"
-    assert message.startswith("Codex 引擎暂不可用：当前模型不能安全交给 Codex")
-    assert "Echo 原生引擎" in message
+    # Golden path 2026-10: a fresh device with no model connected must be told
+    # that, and where to fix it, not "the model cannot safely run in Codex".
+    assert message.startswith("还没有可用的模型。")
+    assert "系统设置 › 模型与用量" in message
+    assert "接入一个模型" in message
+    assert "Echo 原生引擎" not in message
     # ``octopus`` is the persisted engine id, never a user-facing name.
     assert "octopus" not in message.lower()
 

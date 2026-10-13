@@ -60,29 +60,48 @@ def is_coding_task(intent: ParsedIntent) -> bool:
 
 
 # User-facing copy for a fail-closed Codex selection. The durable reason code
-# stays in ``EngineSelectionError.reason``; the message is what the chat shows,
-# so it names the engine by its display label ("Echo 原生"), never the
-# ``octopus`` engine id.
-_CODEX_UNAVAILABLE_DETAIL = {
-    "disabled": "当前角色未启用 Codex 执行",
-    "workspace_required": "此任务没有可用的工作区",
-    "principal_unavailable": "无法确认当前账号身份",
-    "model_incompatible": "当前模型不能安全交给 Codex",
-    "configuration_unavailable": "Codex 执行配置暂不可用",
-    "executable_unavailable": "未找到可用的 Codex App Server",
-    "tools_unavailable": "运行时工具尚未装配",
-    "account_required": "尚未登录 Codex 账号",
-    "account_unavailable": "Codex 账号授权不可用",
+# stays in ``EngineSelectionError.reason``; the message is what the chat shows.
+# It says what is missing and where the owner fixes it, in product words: the
+# engine ids (``octopus``) and the "native engine" escape hatch are not things
+# a person on a fresh device can act on.
+_MODEL_SETTINGS = "「系统设置 › 模型与用量」"
+_CODEX_UNAVAILABLE_COPY = {
+    # No Echo route for the selected/system model: on a fresh device this is
+    # "no model has been connected yet".
+    "model_incompatible": (
+        "还没有可用的模型",
+        f"请在{_MODEL_SETTINGS}接入一个模型，或登录 ChatGPT 订阅，然后重试。",
+    ),
+    "account_required": (
+        "还没有登录 ChatGPT 订阅",
+        f"请在{_MODEL_SETTINGS}登录，或改用已接入的模型后重试。",
+    ),
+    "account_unavailable": (
+        "ChatGPT 订阅的登录已失效",
+        f"请在{_MODEL_SETTINGS}重新登录后重试。",
+    ),
+    "disabled": ("当前角色未启用 Codex 执行", "请换一个角色，或请管理员开启后重试。"),
+    "workspace_required": ("此任务没有可用的工作区", "请选择一个工作区后重试。"),
+    "principal_unavailable": ("无法确认当前账号身份", "请重新登录后重试。"),
+    "configuration_unavailable": (
+        "Codex 执行配置暂不可用",
+        f"请在{_MODEL_SETTINGS}检查模型与账号后重试。",
+    ),
+    "executable_unavailable": (
+        "未找到可用的 Codex 执行引擎",
+        "请更新或重新安装 ECHO OS 后重试。",
+    ),
+    "tools_unavailable": ("运行时工具尚未就绪", "请稍等片刻后重试。"),
 }
 
 
 def codex_unavailable_message(reason: str | None) -> str:
     code = reason or "unavailable"
-    detail = _CODEX_UNAVAILABLE_DETAIL.get(code, f"执行条件未满足（{code}）")
-    return (
-        f"Codex 引擎暂不可用：{detail}。"
-        "请在 Codex 执行引擎设置中调整模型或账号，或改用 Echo 原生引擎后重试。"
+    detail, action = _CODEX_UNAVAILABLE_COPY.get(
+        code,
+        (f"执行条件未满足（{code}）", f"请在{_MODEL_SETTINGS}检查模型与账号后重试。"),
     )
+    return f"{detail}。{action}"
 
 
 def codex_readiness_for_turn(runtime: Any, turn: Turn, agent: Any) -> CodexReadiness:

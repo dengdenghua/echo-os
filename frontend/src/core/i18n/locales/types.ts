@@ -231,6 +231,7 @@ export interface Translations {
     makeSimilar: string;
     makeSimilarHint: string;
     retryTask: string;
+    openModelSettings: string;
     retryTaskHint: string;
     taskFailedReason: string;
     resultUrl: string;

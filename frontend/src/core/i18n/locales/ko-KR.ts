@@ -293,6 +293,7 @@ export const koKR: Translations = {
     makeSimilar: "비슷한 것 만들기",
     makeSimilarHint: "같은 프롬프트로 새 작업 시작",
     retryTask: "재시도",
+    openModelSettings: "모델 설정",
     retryTaskHint: "같은 프롬프트로 새 작업 시작",
     taskFailedReason: "실패 사유",
     resultUrl: "결과 링크",

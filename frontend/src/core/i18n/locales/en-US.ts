@@ -298,6 +298,7 @@ export const enUS: Translations = {
     makeSimilar: "Make similar",
     makeSimilarHint: "Start a new task with the same prompt",
     retryTask: "Retry",
+    openModelSettings: "Set up a model",
     retryTaskHint: "Start a new task with the same prompt",
     taskFailedReason: "Failure reason",
     resultUrl: "Result URL",

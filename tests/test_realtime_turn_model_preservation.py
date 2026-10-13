@@ -47,3 +47,18 @@ def test_requested_model_is_bound_unconditionally_before_any_read() -> None:
     )
     assert first_read is not None
     assert function.body[top_level[0]].lineno < first_read
+
+
+def test_a_crashed_driver_shows_chinese_copy_not_the_python_exception() -> None:
+    from runtime.sensing.gateway.realtime_turn_lifecycle import _public_driver_error_message
+
+    unbound = UnboundLocalError(
+        "cannot access local variable 'requested_model_before_routing' where it is not "
+        "associated with a value"
+    )
+    message = _public_driver_error_message(unbound)
+    assert "requested_model_before_routing" not in message
+    assert message.startswith("任务执行时出错")
+
+    written_for_people = RuntimeError("还没有可用的模型。请在「系统设置 › 模型与用量」接入一个模型。")
+    assert _public_driver_error_message(written_for_people) == str(written_for_people)

@@ -32,7 +32,7 @@ export function approvalDecisionErrorMessage(message: string) {
   if (/lease|租约/i.test(message)) return APPROVAL_TASK_INTERRUPTED;
   if (/approval request changed|version/i.test(message))
     return "审批内容已变化，请刷新后重新确认。";
-  if (/[一-鿿]/.test(message)) return message;
+  if (/[\u4e00-\u9fff]/.test(message)) return message;
   return "无法提交审批决定，请刷新后重试。";
 }
 

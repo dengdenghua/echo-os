@@ -287,6 +287,7 @@ export const zhCN: Translations = {
     makeSimilar: "做同款",
     makeSimilarHint: "用相同诉求开启新任务",
     retryTask: "重试",
+    openModelSettings: "接入模型",
     retryTaskHint: "用相同诉求重新发起任务",
     taskFailedReason: "失败原因",
     resultUrl: "结果链接",
