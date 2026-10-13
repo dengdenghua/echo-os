@@ -317,13 +317,14 @@
      Chinese (0.8rem at the 15px root). Register new names in lib/utils.ts
      too, or tailwind-merge drops them as colours. */
   /* text-xs is 0.75rem in Tailwind, 11.25px at this 15px root; lift it to
-     the same 12px floor. Line height keeps the default 1/0.75 ratio. */
-  --text-xs: 0.8rem;
-  --text-micro: 0.8rem;
-  --text-mini: 0.8rem;
-  --text-caption: 0.8rem;
-  --text-2xs: 0.8rem;
-  --text-3xs: 0.8rem;
+     the same 12px floor. Line height keeps the default 1/0.75 ratio. max()
+     holds the floor when the compact density drops the root to 14px. */
+  --text-xs: max(12px, 0.8rem);
+  --text-micro: max(12px, 0.8rem);
+  --text-mini: max(12px, 0.8rem);
+  --text-caption: max(12px, 0.8rem);
+  --text-2xs: max(12px, 0.8rem);
+  --text-3xs: max(12px, 0.8rem);
 
   /* Letter-spacing tiers for Latin uppercase eyebrows (never on Chinese). */
   --tracking-caps: 0.12em;
