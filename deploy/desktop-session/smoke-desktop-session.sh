@@ -311,8 +311,10 @@ ECHO_PID=$!
 
 # On X11, Electron derives WM_CLASS from the app name ("echo os desktop.Echo OS
 # Desktop", from productName) and ignores --class. The Liquid Glass background
-# window shares that class and is excluded by its fixed title.
-for _attempt in $(seq 1 150); do
+# window shares that class and is excluded by its fixed title. The window maps
+# on ready-to-show, which under software rendering on a CI runner can take far
+# longer than on hardware.
+for _attempt in $(seq 1 600); do
   ECHO_WINDOW_ID="$(
     wmctrl -lx 2>/dev/null | awk \
       'tolower($0) ~ /echo-shell|echo-os-desktop|echo os desktop/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
@@ -326,6 +328,18 @@ for _attempt in $(seq 1 150); do
 done
 [[ -n "${ECHO_WINDOW_ID:-}" ]] || {
   echo "packaged Echo Desktop did not register a KWin window" >&2
+  {
+    echo "--- wmctrl -lx"
+    wmctrl -lx 2>&1 || true
+    echo "--- top-level X11 windows (id, map state, WM_CLASS, WM_NAME)"
+    for window_id in $(xwininfo -root -children 2>/dev/null | awk '/^ +0x/ { print $1 }'); do
+      window_class="$(xprop -id "$window_id" WM_CLASS 2>/dev/null || true)"
+      [[ "$window_class" == *"="* ]] || continue
+      echo "$window_id" \
+        "$(xwininfo -id "$window_id" 2>/dev/null | awk -F: '/Map State/ { gsub(/ /, "", $2); print $2 }')" \
+        "${window_class#*= }" "$(xprop -id "$window_id" WM_NAME 2>/dev/null | sed 's/^[^=]*= //')"
+    done
+  } >"$LOG_DIR/x11-windows.log" 2>&1
   exit 1
 }
 echo "✓ packaged Echo Desktop registered as $ECHO_WINDOW_ID"
