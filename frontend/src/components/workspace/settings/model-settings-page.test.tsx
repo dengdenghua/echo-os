@@ -220,6 +220,12 @@ describe("ModelSettingsPage · custom-model list rendering", () => {
       defaultOptions: { queries: { retry: false, gcTime: Infinity } },
     });
     queryClient.setQueryData(["models", "actor-a"], []);
+    queryClient.setQueryData(
+      ["coder", "codex", "unobserved", "model-profile"],
+      {
+        system_model: "claude-haiku-4-5-20251001",
+      },
+    );
 
     renderWithProviders(<ModelSettingsPage />, {
       locale: "zh-CN",
@@ -231,6 +237,15 @@ describe("ModelSettingsPage · custom-model list rendering", () => {
         queryClient.getQueryState(["models", "actor-a"])?.isInvalidated,
       ).toBe(true);
     });
+    // The Codex panel re-reads the system model the connection now provides.
+    expect(
+      queryClient.getQueryState([
+        "coder",
+        "codex",
+        "unobserved",
+        "model-profile",
+      ])?.isInvalidated,
+    ).toBe(true);
   });
 
   it("renders the full models list for an entry with multiple slots", async () => {

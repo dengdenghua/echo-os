@@ -1183,6 +1183,14 @@ export default function ModelSettingsPage() {
       // The composer's model picker caches the catalog for minutes; a
       // connection added, removed or edited here must show up there now.
       void queryClient.invalidateQueries({ queryKey: ["models"] });
+      // The Codex engine's "follow system" model is the system default,
+      // which the first connected model on a keyless device becomes at once.
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "coder" &&
+          query.queryKey[1] === "codex" &&
+          query.queryKey[3] === "model-profile",
+      });
       setModelsLoadError(false);
       setGatewayStatus("connected");
       void fetchCompatDiagnostics();
