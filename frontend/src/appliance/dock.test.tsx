@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Dock, DockItem } from "./dock";
+import { Dock, DockItem, dockTrackOverflow } from "./dock";
 
 describe("Dock", () => {
   it("keeps icon geometry untouched during pointer movement", () => {
@@ -67,5 +67,36 @@ describe("Dock", () => {
 
     fireEvent.pointerUp(item);
     expect(item).not.toHaveAttribute("data-dock-pressed");
+  });
+});
+
+describe("Dock at phone width", () => {
+  it("keeps every item in one track the phone layout can scroll", () => {
+    render(
+      <Dock className="mac-dock">
+        <DockItem title="文件">文件</DockItem>
+        <DockItem title="系统设置">系统设置</DockItem>
+        <DockItem title="废纸篓">废纸篓</DockItem>
+      </Dock>,
+    );
+    const nav = screen.getByRole("navigation", { name: "程序坞" });
+    const track = nav.querySelector<HTMLElement>(":scope > .mac-dock-track");
+
+    expect(track).not.toBeNull();
+    expect(track).toHaveAttribute("data-overflow", "none");
+    expect(
+      Array.from(track?.children ?? []).map((item) =>
+        item.getAttribute("aria-label"),
+      ),
+    ).toEqual(["文件", "系统设置", "废纸篓"]);
+  });
+
+  it.each([
+    [{ scrollLeft: 0, scrollWidth: 500, clientWidth: 500 }, "none"],
+    [{ scrollLeft: 0, scrollWidth: 500, clientWidth: 358 }, "end"],
+    [{ scrollLeft: 60, scrollWidth: 500, clientWidth: 358 }, "both"],
+    [{ scrollLeft: 142, scrollWidth: 500, clientWidth: 358 }, "start"],
+  ] as const)("marks the hidden ends of %o as %s", (track, expected) => {
+    expect(dockTrackOverflow(track)).toBe(expected);
   });
 });

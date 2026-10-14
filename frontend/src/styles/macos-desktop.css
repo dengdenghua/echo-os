@@ -1718,6 +1718,11 @@
   display: none;
 }
 
+/* The items' track: invisible on a wide screen, the scroller on a phone. */
+.mac-dock-track {
+  display: contents;
+}
+
 /* 覆盖层：globals.css 的 .dock-item 是基础定义（170ms 曲线，供寄生/非 mac-dock
    场景用），这里是 macOS 桌面专用的更紧致版本（145ms + place-items: end center）。
    改缩放曲线时两处都要动，否则两种形态手感不一致。 */
@@ -3182,6 +3187,48 @@
     bottom: -4px;
     width: 3px;
     height: 3px;
+  }
+  /* Every Dock item stays reachable: the track scrolls inside the glass and
+     fades the end that hides more items. */
+  .mac-dock-track {
+    display: flex;
+    min-width: 0;
+    flex: 0 1 auto;
+    align-items: flex-end;
+    gap: inherit;
+    margin-bottom: -5px;
+    padding-bottom: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .mac-dock-track::-webkit-scrollbar {
+    display: none;
+  }
+  .mac-dock-track > * {
+    scroll-snap-align: start;
+  }
+  .mac-dock-track[data-overflow="end"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .mac-dock-track[data-overflow="start"] {
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+  }
+  .mac-dock-track[data-overflow="both"] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent
+    );
+  }
+  /* Hover labels would be clipped by the scroller; items keep their title. */
+  .macos-desktop-root .mac-dock .dock-item:hover::before,
+  .macos-desktop-root.mac-liquid-crystal .mac-dock .dock-item:hover::before {
+    display: none;
   }
   .mac-finder-window {
     inset: 34px 5px 74px;
