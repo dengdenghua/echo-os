@@ -65,6 +65,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 unset ECHO_SMOKE ECHO_NATIVE_APP_SMOKE_ID \
   ECHO_NATIVE_APP_IPC_READY_FILE
 

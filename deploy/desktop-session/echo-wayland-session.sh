@@ -23,6 +23,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 
 [[ -x "$KWIN_WRAPPER" && -x "$KWIN_CONFIG_TOOL" && \
    -x "$KWIN_BRIDGE_SERVICE" && -x "$SESSION_WORKER" ]] || {

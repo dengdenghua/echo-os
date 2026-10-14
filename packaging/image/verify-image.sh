@@ -1512,6 +1512,7 @@ for accessibility_session in \
   echo-wayland-session.sh \
   echo-wayland-shell-session.sh; do
   require_pattern "$REPO_ROOT/deploy/desktop-session/$accessibility_session" '^export QT_ACCESSIBILITY=1$' "$accessibility_session enables the Qt AT-SPI bridge"
+  require_pattern "$REPO_ROOT/deploy/desktop-session/$accessibility_session" '^export ACCESSIBILITY_ENABLED=1$' "$accessibility_session lets the Chromium shell publish its AT-SPI tree"
 done
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" '^ACCESSIBILITY_BUS=/usr/libexec/at-spi-bus-launcher$' "X11 accessibility bus executable is fixed"
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-wayland-shell-session.sh" '^ACCESSIBILITY_BUS=/usr/libexec/at-spi-bus-launcher$' "Wayland accessibility bus executable is fixed"
