@@ -422,9 +422,11 @@ SHELL_PID=$!
 
 # Keep the interactive shell below native applications. Electron also marks it
 # skip-taskbar; EWMH here makes the session behavior explicit at the WM layer.
+# Electron's X11 WM_CLASS comes from the app name ("echo os desktop.Echo OS
+# Desktop"), not --class; the Liquid Glass background window is excluded by title.
 for _attempt in $(seq 1 100); do
   SHELL_WINDOW_ID="$(
-    wmctrl -lx | awk 'tolower($0) ~ /echo-shell|echo-os-desktop/ { print $1; exit }'
+    wmctrl -lx | awk 'tolower($0) ~ /echo-shell|echo-os-desktop|echo os desktop/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
   )"
   if [[ -n "$SHELL_WINDOW_ID" ]]; then
     wmctrl -ir "$SHELL_WINDOW_ID" -b remove,above,fullscreen || true

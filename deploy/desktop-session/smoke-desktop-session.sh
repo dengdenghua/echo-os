@@ -309,10 +309,13 @@ ECHO_NATIVE_APP_IPC_READY_FILE="$NATIVE_APP_IPC_READY_FILE" \
 "$PACKAGED_BIN" "${ECHO_ARGUMENTS[@]}" >"$LOG_DIR/echo-desktop.log" 2>&1 &
 ECHO_PID=$!
 
+# On X11, Electron derives WM_CLASS from the app name ("echo os desktop.Echo OS
+# Desktop", from productName) and ignores --class. The Liquid Glass background
+# window shares that class and is excluded by its fixed title.
 for _attempt in $(seq 1 150); do
   ECHO_WINDOW_ID="$(
     wmctrl -lx 2>/dev/null | awk \
-      'tolower($0) ~ /echo-shell|echo-os-desktop|echo desktop/ { print $1; exit }'
+      'tolower($0) ~ /echo-shell|echo-os-desktop|echo os desktop/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
   )"
   [[ -n "$ECHO_WINDOW_ID" ]] && break
   kill -0 "$ECHO_PID" 2>/dev/null || {

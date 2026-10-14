@@ -1571,6 +1571,12 @@ require_pattern "$REPO_ROOT/frontend/electron/native-windows.cjs" 'method: "acti
 forbid_pattern "$REPO_ROOT/frontend/electron/native-windows.cjs" 'exec\(|spawn\(|/bin/sh|sh -c' "window providers never evaluate renderer command text"
 require_pattern "$REPO_ROOT/deploy/desktop-session/smoke-desktop-session.sh" 'KWin script published compositor-owned UUID window state' "isolated KWin smoke waits for real script state"
 require_pattern "$REPO_ROOT/deploy/desktop-session/smoke-desktop-session.sh" '--request close' "isolated KWin smoke exercises a compositor-owned UUID action"
+# Electron ignores --class on X11 and derives WM_CLASS from the app name, which
+# cannot change without moving userData and the os_crypt keyring entry.
+require_pattern "$REPO_ROOT/frontend/package.json" '"productName": "Echo OS Desktop",' "X11 WM_CLASS of the shell comes from the packaged product name"
+require_pattern "$REPO_ROOT/deploy/desktop-session/kwin-window-bridge/contents/code/main.js" 'identity === "echo os desktop"' "KWin bridge recognizes the shell's X11 WM_CLASS"
+require_pattern "$REPO_ROOT/deploy/desktop-session/kwin-liquid-glass-effect/src/echo_liquid_glass_effect.cpp" 'QStringLiteral\("echo os desktop"\)' "native glass effect recognizes the shell's X11 WM_CLASS"
+require_pattern "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" 'echo-shell\|echo-os-desktop\|echo os desktop/' "X11 session finds the shell by its real WM_CLASS"
 require_pattern "$REPO_ROOT/deploy/desktop-session/smoke-wayland-session.sh" '^  --output-count 2 \\$' "Wayland smoke creates two compositor outputs"
 require_pattern "$REPO_ROOT/deploy/desktop-session/smoke-wayland-session.sh" '^  --scale 1\.25 \\$' "Wayland smoke exercises fractional HiDPI"
 require_pattern "$REPO_ROOT/deploy/desktop-session/smoke-wayland-session.sh" 'org\.echoos\.liquidglassEnabled true' "Wayland smoke explicitly enables the native effect under software rendering"

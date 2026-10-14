@@ -152,7 +152,7 @@ else
   fail "当前 DISPLAY 的窗口管理器不是 KWin"
 fi
 
-if wmctrl -lx 2>/dev/null | grep -Eqi 'echo-shell|echo-os-desktop|Echo Desktop'; then
+if wmctrl -lx 2>/dev/null | grep -Eqi 'echo-shell|echo-os-desktop|echo os desktop'; then
   pass "Echo Shell 窗口已注册到 KWin"
 else
   fail "KWin 窗口列表中找不到 Echo Shell"
