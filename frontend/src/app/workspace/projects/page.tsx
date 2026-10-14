@@ -498,17 +498,21 @@ export default function ProjectsPage() {
         <div className="flex h-full w-full min-h-0 flex-col items-stretch">
           {/* Header */}
           <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b px-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
+            {/* At phone width the subtitle squeezed the title into one
+                character per line; it gives way below sm. */}
+            <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
               <FolderKanbanIcon
                 aria-hidden="true"
-                className="size-4 text-muted-foreground"
+                className="size-4 shrink-0 text-muted-foreground"
               />
-              <h1>{t.sidebar.navProjects}</h1>
-              <span className="text-xs font-normal text-muted-foreground">
+              <h1 className="shrink-0 whitespace-nowrap">
+                {t.sidebar.navProjects}
+              </h1>
+              <span className="min-w-0 truncate text-xs font-normal text-muted-foreground max-sm:hidden">
                 里程碑健康度 · 风险 · 下一步 · 复盘 —— 真实 PM 视角
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"

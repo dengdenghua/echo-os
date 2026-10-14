@@ -61,6 +61,11 @@ function useSidebar() {
   return context;
 }
 
+/** The enclosing SidebarProvider's state, or null outside one. */
+function useOptionalSidebar() {
+  return React.useContext(SidebarContext);
+}
+
 /**
  * Close the phone-width sheet when `key` changes. Pass the current route so
  * choosing a destination in the sheet reveals it instead of leaving the
@@ -832,5 +837,6 @@ export {
   SidebarTrigger,
   sidebarShortcutLabel,
   useCloseMobileSidebarOnChange,
+  useOptionalSidebar,
   useSidebar,
 };

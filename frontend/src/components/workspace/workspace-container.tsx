@@ -1,3 +1,4 @@
+import { SidebarTrigger, useOptionalSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useWorkbenchSurface } from "@/core/workbench/workbench-surface";
 import { useEchoDesktopWindowChrome } from "./embedded-window-bridge";
@@ -15,6 +16,7 @@ export function WorkspaceContainer({
   const surface = useWorkbenchSurface();
   const embeddedInWindow = useEchoDesktopWindowChrome();
   const embedded = surface === "browser" || embeddedInWindow;
+  const sidebar = useOptionalSidebar();
   // Nested workspaces inherit their host's height, including title-bar space.
   // Viewport units here would push page controls below a resized desktop window.
   return (
@@ -37,6 +39,16 @@ export function WorkspaceContainer({
           className="pointer-events-none fixed left-0 right-0 top-0 z-50 h-9"
           style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
         />
+      )}
+      {embeddedInWindow && sidebar && (
+        // In a narrow Echo OS window the sidebar collapses into a sheet and
+        // the window's controls cover the top-left 64px. Without this bar the
+        // page had no way to open the navigation and its title sat under the
+        // controls (知识库, 项目管理 … at phone width). Same row as HUB's.
+        // Plain row, no negative margin: some pages zero the container padding.
+        <div className="flex h-12 shrink-0 items-center pl-16 md:hidden">
+          <SidebarTrigger className="size-9 shrink-0 opacity-100" />
+        </div>
       )}
       {children}
     </div>
