@@ -526,6 +526,45 @@ describe("CoderEngineControl", () => {
 });
 
 describe("CoderEngineSettings", () => {
+  it.each([
+    [{ source: "follow_system", compatible: true }, "使用系统模型"],
+    [{ source: "follow_system", compatible: false }, "未连接"],
+    [{ source: "codex_account", compatible: true }, "未连接"],
+  ])(
+    "states whether Codex can run without an account (%o)",
+    async (profile, label) => {
+      fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+        const url = urlOf(input);
+        if (url.includes("/model-profile")) {
+          return jsonResponse({
+            ...systemProfile,
+            model_source: "system",
+            execution_available: true,
+            ...profile,
+          });
+        }
+        if (url.includes("/account")) {
+          return jsonResponse({
+            account: null,
+            requires_openai_auth: false,
+            login_pending: false,
+            login_id: null,
+            login_error: null,
+          });
+        }
+        return jsonResponse(models);
+      });
+
+      renderWithProviders(<CoderEngineSettings />, { locale: "zh-CN" });
+
+      await waitFor(() =>
+        expect(screen.getByTestId("coder-engine-status")).toHaveTextContent(
+          label,
+        ),
+      );
+    },
+  );
+
   it("does not ask a device without the Codex runtime for its account", async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = urlOf(input);

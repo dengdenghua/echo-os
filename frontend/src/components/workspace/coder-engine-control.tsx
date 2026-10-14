@@ -116,6 +116,7 @@ const COPY = {
     reasoningShort: "推理等级",
     reasoningAdaptive: "当前模型自动控制",
     connected: "已连接",
+    readyWithSystemModel: "使用系统模型",
     notConnected: "未连接",
     pending: "等待授权",
     connectChatGPT: "登录 ChatGPT",
@@ -209,6 +210,7 @@ const COPY = {
     reasoningShort: "Reasoning effort",
     reasoningAdaptive: "Controlled automatically by this model",
     connected: "Connected",
+    readyWithSystemModel: "Using the system model",
     notConnected: "Not connected",
     pending: "Authorization pending",
     connectChatGPT: "Sign in with ChatGPT",
@@ -1402,6 +1404,13 @@ export function CoderEngineSettings() {
   const reasoningOptions = currentModel?.reasoning_efforts ?? [];
   const busy = saveProfile.isPending || loginBusy !== null;
   const loginPending = Boolean(accountQuery.data?.login_pending || activeLogin);
+  // Following a compatible system model needs no Codex account: the engine
+  // runs it already, so 未连接 beside 可由 Codex 引擎运行 read as a fault.
+  const readyWithSystemModel =
+    !account &&
+    profile?.source === "follow_system" &&
+    profile.compatible &&
+    profile.execution_available !== false;
 
   return (
     <section
@@ -1413,9 +1422,10 @@ export function CoderEngineSettings() {
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-semibold">{copy.title}</h2>
             <span
+              data-testid="coder-engine-status"
               className={cn(
                 "rounded-md px-2 py-0.5 text-xs font-medium",
-                account
+                account || readyWithSystemModel
                   ? "bg-success/10 text-success"
                   : loginPending
                     ? "bg-info/10 text-info"
@@ -1426,7 +1436,9 @@ export function CoderEngineSettings() {
                 ? copy.connected
                 : loginPending
                   ? copy.pending
-                  : copy.notConnected}
+                  : readyWithSystemModel
+                    ? copy.readyWithSystemModel
+                    : copy.notConnected}
             </span>
           </div>
           <p className="mt-0.5 max-w-3xl text-xs leading-5 text-muted-foreground">
