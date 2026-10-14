@@ -140,9 +140,30 @@ else
   echo "  ✓ KWin discovered the Liquid Glass effect and kept it unloaded on its QPainter compositor (no DRM device)"
 fi
 
-COMPOSITOR_STATE="$(
-  "$BRIDGE" --socket "$BRIDGE_SOCKET" --request list
-)"
+# KWin 6.3 sizes each virtual output by --scale (1600x1000 pixels), but its
+# output configuration store then assigns scale 1.0 to every output that
+# reports no physical size (chooseScale in outputconfigurationstore.cpp).
+# Apply the fractional scale the way System Settings does, over
+# kde_output_management_v2, and lay the two 1280x800 logical outputs side by
+# side; the bridge must then observe the change.
+KSCREEN_BACKEND=KWayland KSCREEN_BACKEND_INPROCESS=1 timeout 30s kscreen-doctor \
+  output.Virtual-0.scale.1.25 output.Virtual-0.position.0,0 \
+  output.Virtual-1.scale.1.25 output.Virtual-1.position.1280,0 \
+  >"$LOG_DIR/kscreen-doctor.log" 2>&1 || {
+  echo "kscreen-doctor could not apply the 1.25x output scale" >&2
+  exit 1
+}
+for _attempt in $(seq 1 100); do
+  COMPOSITOR_STATE="$(
+    "$BRIDGE" --socket "$BRIDGE_SOCKET" --request list
+  )"
+  python3 -c '
+import json, math, sys
+outputs = json.loads(sys.argv[1]).get("outputs", [])
+raise SystemExit(0 if outputs and all(math.isclose(o.get("scale", 0), 1.25) for o in outputs) else 1)
+' "$COMPOSITOR_STATE" && break
+  sleep 0.1
+done
 python3 -c '
 import json
 import math

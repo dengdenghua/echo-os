@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CLIENT_SCRIPT="$REPO_ROOT/deploy/desktop-session/smoke-wayland-session-client.sh"
 BRIDGE=/usr/lib/echo-os/echo-kwin-window-bridge
 
-for command_name in dbus-run-session gdbus kwin_wayland kwriteconfig6 wayland-info node python3 timeout; do
+for command_name in dbus-run-session gdbus kwin_wayland kwriteconfig6 kscreen-doctor wayland-info node python3 timeout; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "Wayland smoke dependency missing: $command_name" >&2
     exit 1
