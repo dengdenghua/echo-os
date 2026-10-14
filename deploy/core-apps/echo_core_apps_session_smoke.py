@@ -337,7 +337,8 @@ def parse_x11_windows(output: str) -> list[dict[str, Any]]:
             continue
         if len(windows) >= 4096:
             raise SessionSmokeError("X11 window list is too large")
-        window_id, _desktop, pid, _host, wm_class, title = match.groups()
+        # wmctrl -l -x -p prints: id, desktop, pid, WM_CLASS, host, title.
+        window_id, _desktop, pid, wm_class, _host, title = match.groups()
         windows.append(
             {
                 "id": window_id.lower(),

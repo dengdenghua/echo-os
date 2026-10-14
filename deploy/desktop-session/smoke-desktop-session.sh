@@ -60,6 +60,14 @@ if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "${XDG_RUNTIME_DIR:-}" ]]; then
   chmod 0700 "$XDG_RUNTIME_DIR"
   export XDG_RUNTIME_DIR
 fi
+# GitHub job containers run as root with HOME=/github/home owned by the runner
+# user; Firefox (the http core-app case) refuses to run as root in another
+# user's home. Give the session a private home when HOME is not ours.
+if [[ ! -O "${HOME:-/nonexistent}" ]]; then
+  export HOME="$LOG_DIR/home"
+  mkdir -p "$HOME"
+  chmod 0700 "$HOME"
+fi
 
 cleanup() {
   local status="$1"
@@ -341,7 +349,7 @@ export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
 NATIVE_APP_IPC_READY_FILE="$XDG_RUNTIME_DIR/echo-os/native-app-ipc-ready"
 NATIVE_APP_IPC_BASELINE_IDS="$(
   wmctrl -l -x -p 2>/dev/null | \
-    awk 'tolower($5) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
+    awk 'tolower($4) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
 )"
 rm -f -- "$NATIVE_APP_IPC_READY_FILE"
 
@@ -437,9 +445,9 @@ for _attempt in $(seq 1 300); do
       -v baseline="$NATIVE_APP_IPC_BASELINE_IDS" '
         BEGIN {
           count = split(baseline, ids, "\n")
-          for (index = 1; index <= count; index++) seen[tolower(ids[index])] = 1
+          for (i = 1; i <= count; i++) seen[tolower(ids[i])] = 1
         }
-        tolower($5) ~ /(^|[.])kcalc([.]|$)/ &&
+        tolower($4) ~ /(^|[.])kcalc([.]|$)/ &&
         $3 ~ /^[1-9][0-9]*$/ && !seen[tolower($1)] { print tolower($1) }
       '
   )"

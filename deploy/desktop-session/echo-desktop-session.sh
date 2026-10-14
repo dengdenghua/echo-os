@@ -384,7 +384,7 @@ if [[ -n "${CREDENTIALS_DIRECTORY:-}" && \
   NATIVE_APP_IPC_TEST=1
   NATIVE_APP_IPC_BASELINE_IDS="$(
     wmctrl -l -x -p 2>/dev/null | \
-      awk 'tolower($5) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
+      awk 'tolower($4) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
   )"
   rm -f -- "$NATIVE_APP_IPC_READY_FILE"
   export ECHO_NATIVE_APP_SMOKE_ID=org.kde.kcalc
@@ -491,9 +491,9 @@ if [[ -n "${CREDENTIALS_DIRECTORY:-}" && \
         -v baseline="$NATIVE_APP_IPC_BASELINE_IDS" '
           BEGIN {
             count = split(baseline, ids, "\n")
-            for (index = 1; index <= count; index++) seen[tolower(ids[index])] = 1
+            for (i = 1; i <= count; i++) seen[tolower(ids[i])] = 1
           }
-          tolower($5) ~ /(^|[.])kcalc([.]|$)/ &&
+          tolower($4) ~ /(^|[.])kcalc([.]|$)/ &&
           $3 ~ /^[1-9][0-9]*$/ && !seen[tolower($1)] { print tolower($1) }
         '
     )"
