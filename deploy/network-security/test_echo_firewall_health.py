@@ -12,6 +12,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 HEALTH = HERE / "echo-firewall-health"
+# Desktop CI runs this file by path in a bare Debian container, where Python puts
+# deploy/network-security (not the checkout root) at sys.path[0]. The vendor-zone
+# test imports the appliance firewall model from this checkout.
+REPO_ROOT = HERE.parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 class EchoFirewallHealthTests(unittest.TestCase):
