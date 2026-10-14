@@ -12,6 +12,11 @@ make test        # 或 python -m pytest tests/ -q
 
 目标：**测试全绿 · lint 0 error**。
 
+提交钩子：`uv tool install pre-commit` 后运行 `uv run python tools/hooks/install_hooks.py`
+（不要用 `pre-commit install`：它在运行钩子时会暂存整个工作区的未提交改动，多个会话共用同一检出时不安全）。
+提交时检查与 CI 相同范围的 ruff / ruff format、`docs/auto` 新鲜度和前端 Prettier / ESLint；
+推送前再跑 `tools/lint` 的基线棘轮。
+
 ## 提交前硬性要求
 
 - [ ] `python -m pytest tests/` 全绿

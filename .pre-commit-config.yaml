@@ -1,30 +1,99 @@
+# Commit hooks for Echo OS. Install them with `python tools/hooks/install_hooks.py`
+# (not plain `pre-commit install`; see that script for why).
+#
+# The local hooks mirror the CI gates that most often drifted: ruff and ruff
+# format (same locked ruff and same path scope as .github/workflows/ci.yml),
+# docs/auto freshness, the frontend Prettier/ESLint gates and, before a push,
+# the tools/lint baseline ratchets that the CI full suite enforces.
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+# Generated or vendored outputs are owned by their generators.
+exclude: |
+  (?x)^(
+    docs/auto/|
+    docs/openapi-snapshot\.json$|
+    frontend/src/core/api/openapi-types\.ts$|
+    frontend/pnpm-lock\.yaml$|
+    uv\.lock$|
+    extensions/|
+    packaging/image/mkosi\.agent-runtime/|
+    deploy/appliance/agent-(resources|dist|codex)/
+  )
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^mkdocs\.yml$ # uses !!python/name tags
       - id: check-toml
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: check-json
+        # JSONC (tsconfig) and recorded audit/state dumps, not strict JSON.
+        exclude: |
+          (?x)^(
+            .*tsconfig[^/]*\.json$|
+            frontend/audit-orphan(-exports)?\.json$|
+            runtime/execution/all_skills/[^/]+/test_state\.json$
+          )
       - id: debug-statements
       - id: no-commit-to-branch
         args: [--branch, main]
 
-  # Ruff (lint + format)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.7
+  - repo: local
     hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
+      - id: ruff-check-ci-scope
+        name: ruff check (locked ruff, CI scope)
+        entry: uv run --frozen --no-sync python tools/hooks/ci_ruff.py check
+        language: system
+        types: [python]
+        require_serial: true
 
-  # Bandit (security lint) — only scan appliance/
-  - repo: https://github.com/PyCQA/bandit
-    rev: "1.7.9"
-    hooks:
-      - id: bandit
-        args: [-ll, -ii, -r]
-        files: ^appliance/
+      - id: ruff-format-ci-scope
+        name: ruff format (locked ruff, CI scope)
+        entry: uv run --frozen --no-sync python tools/hooks/ci_ruff.py format
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: bandit-ci
+        name: bandit (locked, CI severity)
+        entry: uv run --frozen --no-sync bandit -q -ll -ii
+        language: system
+        types: [python]
+        files: ^(appliance|runtime)/
+
+      - id: docs-auto-fresh
+        name: docs/auto matches the staged tree
+        entry: uv run --frozen --no-sync python tools/hooks/docs_auto_fresh.py
+        language: system
+        pass_filenames: false
+        always_run: true # the script decides; deletions also change counts
+
+      - id: frontend-prettier
+        name: frontend prettier --check
+        entry: uv run --frozen --no-sync python tools/hooks/frontend_check.py prettier
+        language: system
+        files: ^frontend/
+        require_serial: true
+
+      - id: frontend-eslint
+        name: frontend eslint (max-warnings 0)
+        entry: uv run --frozen --no-sync python tools/hooks/frontend_check.py eslint
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        require_serial: true
+
+      - id: lint-ratchets
+        name: tools/lint ratchets (CI full suite)
+        entry: uv run --frozen --no-sync python tools/hooks/lint_ratchets.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
