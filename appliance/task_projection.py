@@ -44,6 +44,10 @@ _TERMINAL = {"cancelled", "disconnected", "failed", "completed"}
 _RERUN_KINDS = {"realtime_objective", "realtime_codex"}
 _RERUN_MAX_PROMPT_CHARS = 8000
 _AGENT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+# In-process calls into the public Agent routes still pass the appliance
+# browser boundary, which only accepts loopback/LAN Host headers: a made-up
+# "echo-agent.internal" host was refused as "untrusted Host header" (400).
+_AGENT_INTERNAL_BASE_URL = "http://127.0.0.1"
 
 
 class TaskTakeoverRequest(BaseModel):
@@ -767,7 +771,7 @@ def create_task_projection_router(
         try:
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=request.app),
-                base_url="http://echo-agent.internal",
+                base_url=_AGENT_INTERNAL_BASE_URL,
                 timeout=10.0,
             ) as client:
                 response = await client.post(
@@ -909,7 +913,7 @@ def create_task_projection_router(
         try:
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=request.app),
-                base_url="http://echo-agent.internal",
+                base_url=_AGENT_INTERNAL_BASE_URL,
                 timeout=30.0,
             ) as client:
                 response = await client.post("/api/task-runs/start", json=payload, headers=headers)

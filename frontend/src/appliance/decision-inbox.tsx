@@ -231,7 +231,8 @@ export function DecisionInbox({
                     approval: {
                       required: false,
                       tool: task.approvalExpired?.tool ?? null,
-                      action: task.approvalExpired?.action ?? null,
+                      // The request no longer waits: name the operation only.
+                      action: null,
                       reason: task.approvalExpired?.reason ?? null,
                     },
                   })}

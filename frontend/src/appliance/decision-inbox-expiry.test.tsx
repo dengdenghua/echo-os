@@ -101,6 +101,8 @@ describe("approvals that ran out with the task's time limit", () => {
 
     expect(screen.getByText("任务已超时，审批已失效")).toBeInTheDocument();
     expect(screen.getByText("写入 hello.txt")).toBeInTheDocument();
+    // Only the operation: the request no longer "needs confirmation".
+    expect(screen.getByText("写文件")).toBeInTheDocument();
     expect(screen.getByText(/这次操作没有执行/)).toBeInTheDocument();
     expect(screen.queryByText("当前没有等待确认的操作")).toBeNull();
     expect(screen.queryByRole("button", { name: "批准操作" })).toBeNull();

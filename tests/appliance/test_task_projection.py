@@ -928,3 +928,36 @@ def test_rerun_refuses_active_tasks_and_other_owners(tmp_path):
     assert (
         _client(app, "local:bob").post(f"/api/appliance/tasks/{task_id}/rerun").status_code == 404
     )
+
+
+def test_rerun_and_resume_hand_off_through_the_appliance_browser_boundary(tmp_path):
+    """The in-process Agent call must carry a Host the web boundary accepts."""
+
+    from appliance.web_security import ApplianceWebSecurityMiddleware
+
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(task_id, TaskRunStatus.FAILED, reason="codex_timeout")
+    seen: dict = {}
+    app = FastAPI()
+
+    @app.post("/api/task-runs/start", status_code=202)
+    async def _agent_start(request: Request) -> dict:
+        seen["host"] = request.headers.get("host")
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": "turn_started",
+            "thread_id": "tnew",
+            "turn_id": None,
+            "user_item_id": "itm_user_1",
+            "approval_delivery": "server_hold",
+        }
+
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+    app.add_middleware(ApplianceWebSecurityMiddleware, trusted_hosts=(), trusted_origins=())
+
+    response = _client(app).post(f"/api/appliance/tasks/{task_id}/rerun", json={})
+
+    assert response.status_code == 200, response.text
+    assert seen["host"] == "127.0.0.1"
