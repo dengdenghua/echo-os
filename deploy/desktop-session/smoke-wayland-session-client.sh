@@ -388,11 +388,15 @@ done
 }
 export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
 
+# --disable-gpu as in the X11 smoke: CI runners have no GPU, and Chromium's GPU
+# process crash-looped (exit 133) under Wayland once the real desktop started
+# its WebGL layer, stalling the shell past the IPC wait.
 WAYLAND_ECHO_ARGUMENTS=(
   --class=echo-shell
   --ozone-platform=wayland
   --force-renderer-accessibility
   --enable-features=UseOzonePlatform
+  --disable-gpu
 )
 if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
   KWIN_GLASS_SYNC="$(gdbus call --session \
@@ -428,7 +432,9 @@ QT_QPA_PLATFORM=wayland \
   >"$LOG_DIR/echo-desktop-wayland.log" 2>&1 &
 ECHO_PID=$!
 
-for _attempt in $(seq 1 300); do
+# The shell itself waits up to 75 s for its backend before running the IPC
+# smoke; 30 s was shorter than a loaded runner needs for the real desktop.
+for _attempt in $(seq 1 900); do
   [[ -f "$NATIVE_APP_IPC_READY_FILE" && -f "$RENDERER_READY_FILE" ]] && break
   kill -0 "$ECHO_PID" 2>/dev/null || {
     echo "packaged Echo Desktop exited before completing its Wayland IPC smoke" >&2
