@@ -2715,8 +2715,17 @@ function RealtimePageContent({
   const hasEstablishedMessage = thread.messages.some(
     (message) => !isLocallyQueuedMessage(message),
   );
+  // Set when the fallback below (not onStart) ends the draft while the first
+  // turn is still running: the server records the thread only when that turn
+  // settles, so outputs/cowork/collab reads must keep waiting until then.
+  const fallbackStartedThreadIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (isNewThread && hasEstablishedMessage) {
+      if (thread.isLoading) {
+        fallbackStartedThreadIdRef.current = threadId;
+        localStartedThreadIdRef.current = threadId;
+        onLocalThreadStart(threadId);
+      }
       setIsNewThread(false);
       const targetPath = threadRouteFor(threadId);
       // Same deferred route commit as onStart. This fallback can run before
@@ -2739,12 +2748,25 @@ function RealtimePageContent({
     commitThreadRoute,
     hasEstablishedMessage,
     isNewThread,
+    onLocalThreadStart,
     thread.isLoading,
     setIsNewThread,
     stageThreadRoute,
     threadId,
     threadRouteFor,
   ]);
+  // onFinish clears the marker when the stream reports the terminal edge; a
+  // turn that ended without it still releases the reads once loading stops.
+  useEffect(() => {
+    if (thread.isLoading || fallbackStartedThreadIdRef.current === null) return;
+    if (
+      localStartedThreadIdRef.current === fallbackStartedThreadIdRef.current
+    ) {
+      localStartedThreadIdRef.current = null;
+    }
+    fallbackStartedThreadIdRef.current = null;
+    onLocalThreadStart(null);
+  }, [onLocalThreadStart, thread.isLoading]);
 
   useRegenerateHandler(thread, sendMessage, threadId);
   usePlanActionHandler(sendMessage, threadId);
