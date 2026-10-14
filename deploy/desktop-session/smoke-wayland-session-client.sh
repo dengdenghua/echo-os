@@ -358,6 +358,7 @@ ANSWERS = {
 }
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # keep-alive: fewer sockets under load
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         body = ANSWERS.get(path, b"{}")
