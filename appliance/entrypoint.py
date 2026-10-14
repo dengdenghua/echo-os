@@ -301,11 +301,11 @@ def main(argv: list[str] | None = None) -> int:
                     f"Echo OS appliance admin password generated for username={ADMIN_USERNAME} "
                     "but not printed (ECHO_PRINT_GENERATED_PASSWORD is off). Only its bcrypt "
                     f"hash is kept in {auth_store_path()}; the plaintext cannot be recovered "
-                    "and later restarts will not print it. To set a known password: stop "
-                    f"Echo, remove {auth_store_path()} (this also removes other Echo logins "
-                    "and signs out all sessions), then start again with ECHO_ADMIN_PASSWORD "
-                    "set, or with ECHO_PRINT_GENERATED_PASSWORD=1 to print a new generated "
-                    "one once; rotate it immediately after signing in.",
+                    "and later restarts will not print it. Choose the owner password in a "
+                    "browser on the same network instead: ECHO OS prints a one-time "
+                    "first-boot setup code in this log when the service starts, and the "
+                    "setup page asks for it. (Alternatively stop Echo, remove "
+                    f"{auth_store_path()} and start again with ECHO_ADMIN_PASSWORD set.)",
                     file=sys.stderr,
                     flush=True,
                 )

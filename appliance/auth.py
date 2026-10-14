@@ -4,7 +4,9 @@
 appliance 形态特有的"首启设密码"环节,不自写任何 crypto:
 
 - 首次启动:从环境变量 ECHO_ADMIN_PASSWORD 取管理员密码;未提供则随机
-  生成并在日志中醒目打印(类似 NAS 面板首启给出初始密码)。
+  生成(类似 NAS 面板首启给出初始密码)，并把存储标记为"等待所有者设置"：
+  设备所有者随后在局域网浏览器里凭设备控制台显示的一次性设置码设定自己的
+  密码(见 appliance/owner_setup.py)。
 - 把密码哈希与随机 jwt_secret 持久化到 data 目录(0600),据此构造
   adapters LocalAuthConfig(admin + 已开通的家庭成员 + 长会话),交给现成的
   create_local_auth_router 执行登录/签发 JWT。
@@ -40,9 +42,19 @@ LOGIN_RATE_LIMIT_MAX_ENTRIES = 10_000
 SESSION_NOT_BEFORE_KEY = "session_not_before"
 ACCOUNT_SESSION_NOT_BEFORE_KEY = "account_session_not_before"
 ACCOUNTS_KEY = "accounts"
+# Set only when the first administrator password was generated rather than
+# chosen. While it is true the owner may set the password once through the
+# first-boot web flow; choosing a password by any path clears it.
+OWNER_SETUP_PENDING_KEY = "owner_setup_pending"
 MAX_LOCAL_ACCOUNTS = 32
 _ACCOUNT_USERNAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 _ACCOUNT_ROLES = {"admin", "member"}
+
+
+def owner_setup_pending(payload: dict[str, Any]) -> bool:
+    """Whether the stored administrator password is still the generated one."""
+
+    return payload.get(OWNER_SETUP_PENDING_KEY) is True
 
 
 def _admin_account(password_hash: str) -> dict[str, Any]:
@@ -365,6 +377,8 @@ def load_or_bootstrap_auth() -> tuple[Any, str | None]:
         ACCOUNT_SESSION_NOT_BEFORE_KEY: {},
         AUTH_SCHEMA_VERSION_KEY: CURRENT_SCHEMA_VERSION,
     }
+    if generated is not None:
+        payload[OWNER_SETUP_PENDING_KEY] = True
     payload[ACCOUNTS_KEY] = normalized_accounts(payload)
     write_auth_store(payload, path)
 
@@ -377,10 +391,12 @@ __all__ = [
     "ACCOUNTS_KEY",
     "ACCOUNT_SESSION_NOT_BEFORE_KEY",
     "MAX_LOCAL_ACCOUNTS",
+    "OWNER_SETUP_PENDING_KEY",
     "SESSION_NOT_BEFORE_KEY",
     "auth_store_path",
     "load_or_bootstrap_auth",
     "normalized_accounts",
+    "owner_setup_pending",
     "payload_with_normalized_accounts",
     "read_auth_store",
     "write_auth_store",

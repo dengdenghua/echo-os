@@ -2534,6 +2534,112 @@
   width: 11px;
   height: 11px;
 }
+.mac-login-form > .mac-login-notice {
+  margin-top: 8px;
+  color: var(--echo-ink);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+
+/* First-boot owner setup: the lock-screen card, one step wider. */
+.mac-owner-setup {
+  width: min(92vw, 320px);
+  margin-top: 0;
+}
+.mac-owner-setup .mac-login-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+}
+.mac-owner-setup .mac-login-avatar svg {
+  width: 38px;
+  height: 38px;
+}
+.mac-owner-setup > p {
+  max-width: 300px;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.mac-owner-setup-field {
+  width: min(92vw, 268px);
+  height: 36px;
+  margin-top: 10px;
+}
+.mac-owner-setup-field:first-of-type {
+  margin-top: 16px;
+}
+.mac-owner-setup-code {
+  font-family: var(--echo-font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mac-owner-setup-code::placeholder {
+  font-family: var(--echo-font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mac-owner-setup-rules {
+  display: flex;
+  width: min(92vw, 268px);
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  text-align: left;
+}
+.mac-owner-setup-rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+.mac-owner-setup-rules li[data-met="true"] {
+  color: var(--echo-ink);
+}
+.mac-owner-setup-rule-mark {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  place-items: center;
+  border: 1px solid var(--echo-line-strong);
+  border-radius: 999px;
+}
+.mac-owner-setup-rules li[data-met="true"] .mac-owner-setup-rule-mark {
+  color: var(--echo-on-core);
+  background: var(--echo-core);
+  border-color: var(--echo-core);
+}
+.mac-owner-setup-rule-mark svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.5;
+}
+.mac-owner-setup-submit {
+  width: min(92vw, 268px);
+  height: 36px;
+  margin-top: 14px;
+  color: var(--echo-on-action);
+  background: var(--echo-action);
+  border-radius: var(--echo-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity var(--echo-duration-fast) var(--echo-ease);
+}
+.mac-owner-setup-submit:focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 2px;
+}
+.mac-owner-setup-submit:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+.mac-owner-setup > small {
+  max-width: 268px;
+  line-height: 1.5;
+}
 
 /* Finder */
 .mac-finder-window {

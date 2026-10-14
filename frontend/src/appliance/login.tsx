@@ -20,6 +20,11 @@ import {
   applianceLogin,
 } from "@/appliance/auth";
 import { EchoMark } from "@/components/brand/echo-mark";
+import { OwnerSetupForm } from "@/appliance/owner-setup-form";
+import {
+  fetchOwnerSetupStatus,
+  type OwnerSetupStatus,
+} from "@/appliance/owner-setup";
 import type {
   MacSystemAction,
   MacSystemCapabilities,
@@ -42,11 +47,29 @@ export function ApplianceLogin({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  // undefined while the first-boot check runs; null when it is unavailable.
+  const [setupStatus, setSetupStatus] = useState<
+    OwnerSetupStatus | null | undefined
+  >(undefined);
+  const [ownerNotice, setOwnerNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchOwnerSetupStatus().then((status) => {
+      if (!cancelled) setSetupStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ownerSetup =
+    setupStatus?.ownerSetupRequired === true ? setupStatus : null;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,106 +125,135 @@ export function ApplianceLogin({
         <span className="desktop-wallpaper-fold desktop-wallpaper-fold-c" />
       </div>
       <div className="mac-login-vignette" />
-      <time className="mac-login-clock">
-        <span>
-          {now.toLocaleTimeString("zh-CN", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          })}
-        </span>
-        <small>
-          {now.getMonth() + 1}月{now.getDate()}日 周
-          {"日一二三四五六"[now.getDay()]}
-        </small>
-      </time>
-      <form onSubmit={submit} className="mac-login-form">
-        <div className="mac-login-avatar">
-          <EchoMark tone="light" />
+      {ownerSetup ? null : (
+        <time className="mac-login-clock">
+          <span>
+            {now.toLocaleTimeString("zh-CN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })}
+          </span>
+          <small>
+            {now.getMonth() + 1}月{now.getDate()}日 周
+            {"日一二三四五六"[now.getDay()]}
+          </small>
+        </time>
+      )}
+      {ownerSetup ? (
+        <OwnerSetupForm
+          username={ownerSetup.username}
+          reachable={ownerSetup.reachable}
+          onSuccess={onSuccess}
+          onOwnerExists={(message) => {
+            setOwnerNotice(message);
+            setSetupStatus(null);
+          }}
+        />
+      ) : setupStatus === undefined ? (
+        <div className="mac-login-form" aria-busy="true">
+          <div className="mac-login-avatar">
+            <EchoMark tone="light" />
+          </div>
+          <h1>ECHO</h1>
         </div>
-        <h1>ECHO</h1>
-        <p>{username.trim() === "admin" ? "设备管理员" : "家庭成员"}</p>
+      ) : (
+        <form onSubmit={submit} className="mac-login-form">
+          <div className="mac-login-avatar">
+            <EchoMark tone="light" />
+          </div>
+          <h1>ECHO</h1>
+          <p>{username.trim() === "admin" ? "设备管理员" : "家庭成员"}</p>
 
-        <label className="mac-login-username">
-          <input
-            name="username"
-            type="text"
-            autoFocus
-            autoComplete="username"
-            required
-            spellCheck={false}
-            value={username}
-            onChange={(event) => {
-              setUsername(event.target.value);
-              setSecondFactorRequired(false);
-              setSecondFactor("");
-              if (error) setError(null);
-            }}
-            placeholder="用户名"
-            aria-label="用户名"
-          />
-        </label>
-
-        {secondFactorRequired && (
-          <label className="mac-login-password">
+          <label className="mac-login-username">
             <input
-              name="secondFactor"
+              name="username"
               type="text"
-              inputMode="numeric"
               autoFocus
-              autoComplete="one-time-code"
+              autoComplete="username"
               required
               spellCheck={false}
-              value={secondFactor}
+              value={username}
               onChange={(event) => {
-                setSecondFactor(event.target.value);
+                setUsername(event.target.value);
+                setSecondFactorRequired(false);
+                setSecondFactor("");
                 if (error) setError(null);
               }}
-              placeholder="动态验证码或恢复码"
-              aria-label="动态验证码或恢复码"
+              placeholder="用户名"
+              aria-label="用户名"
             />
-            <button
-              type="submit"
-              disabled={submitting}
-              aria-label="验证并进入桌面"
-            >
-              {submitting ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <ArrowRightIcon />
-              )}
-            </button>
           </label>
-        )}
 
-        <label className="mac-login-password">
-          <input
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              if (error) setError(null);
-            }}
-            placeholder="输入密码"
-            aria-label="密码"
-          />
-          {!secondFactorRequired && (
-            <button type="submit" disabled={submitting} aria-label="进入桌面">
-              {submitting ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <ArrowRightIcon />
-              )}
-            </button>
+          {secondFactorRequired && (
+            <label className="mac-login-password">
+              <input
+                name="secondFactor"
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                autoComplete="one-time-code"
+                required
+                spellCheck={false}
+                value={secondFactor}
+                onChange={(event) => {
+                  setSecondFactor(event.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="动态验证码或恢复码"
+                aria-label="动态验证码或恢复码"
+              />
+              <button
+                type="submit"
+                disabled={submitting}
+                aria-label="验证并进入桌面"
+              >
+                {submitting ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <ArrowRightIcon />
+                )}
+              </button>
+            </label>
           )}
-        </label>
 
-        {error && <p className="mac-login-error">{error}</p>}
-        <small>使用 Echo 家庭账号登录</small>
-      </form>
+          <label className="mac-login-password">
+            <input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="输入密码"
+              aria-label="密码"
+            />
+            {!secondFactorRequired && (
+              <button type="submit" disabled={submitting} aria-label="进入桌面">
+                {submitting ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <ArrowRightIcon />
+                )}
+              </button>
+            )}
+          </label>
+
+          {error ? (
+            <p className="mac-login-error" role="alert">
+              {error}
+            </p>
+          ) : ownerNotice ? (
+            <p className="mac-login-notice" role="status">
+              {ownerNotice}
+            </p>
+          ) : null}
+          <small>使用 Echo 家庭账号登录</small>
+        </form>
+      )}
 
       <div className="mac-login-system-actions">
         <button
@@ -244,7 +296,11 @@ export function ApplianceLogin({
           <WifiIcon />
           ECHO Home
         </span>
-        <span>首次启动密码可在设备控制台中查看</span>
+        <span>
+          {ownerSetup
+            ? "设置码显示在设备控制台和服务日志中"
+            : "密码由设备所有者设置"}
+        </span>
       </footer>
     </main>
   );

@@ -182,6 +182,17 @@ def register_app(app: Any, context: Any) -> None:
             authenticator=authenticator,
         )
     )
+    # First-boot owner setup: only while the administrator password is still
+    # the generated one. The development passwordless gate keeps its own flow.
+    from appliance.owner_setup import OwnerSetupService, create_owner_setup_router
+
+    owner_setup = OwnerSetupService(
+        account_security=account_security,
+        audit=audit,
+        enabled=os.environ.get("ECHO_APPLIANCE_DEV_PASSWORDLESS") != "1",
+    )
+    app.state.echo_appliance_owner_setup = owner_setup
+    app.include_router(create_owner_setup_router(owner_setup))
 
     # System-owned phone/device entry.  Development or NAS configurations may
     # already have Agent's Tentacle coordinator, in which case Echo projects it

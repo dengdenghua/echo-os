@@ -38,9 +38,11 @@ from appliance.auth import (
     ACCOUNT_SESSION_NOT_BEFORE_KEY,
     ACCOUNTS_KEY,
     ADMIN_USERNAME,
+    OWNER_SETUP_PENDING_KEY,
     SESSION_NOT_BEFORE_KEY,
     auth_store_path,
     normalized_accounts,
+    owner_setup_pending,
     read_auth_store,
     write_auth_store,
 )
@@ -50,6 +52,33 @@ from appliance.totp import AdministratorTotp
 AUTH_HASH_ENV = "ECHO_APPLIANCE_ADMIN_PASSWORD_HASH"
 MIN_PASSWORD_CHARACTERS = 12
 MAX_PASSWORD_BYTES = 72  # bcrypt's portable input limit
+OWNER_PASSWORD_MIN_CHARACTER_KINDS = 3
+OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS = 6
+
+
+def owner_password_problem(password: str) -> str | None:
+    """Return why a first owner password is too weak, or ``None``.
+
+    The rule mirrors the first-boot form: at least 12 characters, at most 72
+    UTF-8 bytes (bcrypt), at least three of lowercase / uppercase / digits /
+    other characters, and no long runs of the same few characters.
+    """
+
+    if len(password) < MIN_PASSWORD_CHARACTERS:
+        return "password_too_short"
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return "password_too_long"
+    kinds = (
+        any(char.islower() for char in password),
+        any(char.isupper() for char in password),
+        any(char.isdigit() for char in password),
+        any(not char.isalnum() or not char.isascii() for char in password),
+    )
+    if sum(kinds) < OWNER_PASSWORD_MIN_CHARACTER_KINDS:
+        return "password_too_simple"
+    if len(set(password.casefold())) < OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS:
+        return "password_too_repetitive"
+    return None
 
 
 class AccountSecurityError(RuntimeError):
@@ -121,6 +150,7 @@ class ApplianceAccountSecurity:
             for username, account in normalized_accounts(payload).items()
             if account["active"]
         }
+        self._owner_setup_pending = owner_setup_pending(payload)
 
     def _validated_account_floors(self, payload: dict[str, Any]) -> dict[str, int]:
         raw = payload.get(ACCOUNT_SESSION_NOT_BEFORE_KEY, {})
@@ -308,6 +338,9 @@ class ApplianceAccountSecurity:
         payload = read_auth_store(self._path)
         payload[SESSION_NOT_BEFORE_KEY] = floor
         if password_hash is not None:
+            # A password the owner chose (rotation or first-boot setup) ends
+            # the generated-password state and closes the first-boot flow.
+            payload.pop(OWNER_SETUP_PENDING_KEY, None)
             payload["password_hash"] = password_hash
             accounts = payload.get(ACCOUNTS_KEY)
             if isinstance(accounts, dict) and isinstance(accounts.get(ADMIN_USERNAME), dict):
@@ -351,7 +384,45 @@ class ApplianceAccountSecurity:
             os.environ[AUTH_HASH_ENV] = new_hash
             self._session_not_before = floor
             self._approval.update_password_hash(new_hash)
+            self._owner_setup_pending = False
             self._record(actor=actor, action="credentials.rotate", outcome="succeeded")
+            return floor
+
+    @property
+    def owner_setup_pending(self) -> bool:
+        """True while the administrator password is still the generated one."""
+
+        with self._lock:
+            return self._owner_setup_pending
+
+    def establish_owner_password(self, *, actor: str, new_password: str) -> int:
+        """Set the first owner password exactly once, then close the setup flow.
+
+        Every session minted with the generated password is revoked; the live
+        login config and step-up approvals switch to the new hash at once.
+        """
+
+        problem = owner_password_problem(new_password)
+        if problem is not None:
+            raise AccountSecurityError(422, problem)
+        with self._lock:
+            payload = read_auth_store(self._path)
+            if not self._owner_setup_pending or not owner_setup_pending(payload):
+                self._owner_setup_pending = False
+                raise AccountSecurityError(409, "owner_already_set")
+            new_hash = hash_password(new_password)
+            self._record(actor=actor, action="owner.setup", outcome="attempted")
+            floor = self._next_floor()
+            write_auth_store(
+                self._updated_payload(floor=floor, password_hash=new_hash),
+                self._path,
+            )
+            self._config.users[ADMIN_USERNAME] = new_hash
+            os.environ[AUTH_HASH_ENV] = new_hash
+            self._session_not_before = floor
+            self._approval.update_password_hash(new_hash)
+            self._owner_setup_pending = False
+            self._record(actor=actor, action="owner.setup", outcome="succeeded")
             return floor
 
 
