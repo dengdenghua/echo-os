@@ -107,7 +107,8 @@ def test_main_ci_runs_the_complete_frontend_quality_gate_on_pull_requests() -> N
     job = workflow["jobs"]["frontend"]
 
     assert job["runs-on"] == "ubuntu-24.04"
-    assert job["timeout-minutes"] == 20
+    # 25 minutes: the job also launches the Electron desktop smoke on the built dist.
+    assert job["timeout-minutes"] == 25
     assert "if" not in job
     steps = job["steps"]
     install = next(step for step in steps if step.get("name") == "Install dependencies")
@@ -116,12 +117,16 @@ def test_main_ci_runs_the_complete_frontend_quality_gate_on_pull_requests() -> N
         step for step in steps if step.get("name") == "Run frontend and Electron contracts"
     )
     build = next(step for step in steps if step.get("name") == "Build production frontend")
+    electron = next(step for step in steps if step.get("name") == "Run the Electron desktop smoke")
 
     assert install["working-directory"] == "frontend"
     assert install["run"] == "pnpm install --frozen-lockfile"
     assert str(quality["run"]).split() == ["pnpm", "format", "pnpm", "lint", "pnpm", "typecheck"]
     assert tests["run"] == "pnpm test"
     assert build["run"] == "pnpm build"
+    # The smoke runs after the build, against that dist.
+    assert steps.index(electron) > steps.index(build)
+    assert "playwright.electron.config.ts" in str(electron["run"])
 
 
 def test_public_source_test_runner_rejects_unreviewed_cli_arguments(
