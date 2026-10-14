@@ -460,15 +460,37 @@ class WindowProvider:
 
 
 def _wait_for_window(
-    provider: WindowProvider, baseline_ids: set[str], case: AppCase
+    provider: WindowProvider,
+    baseline_ids: set[str],
+    case: AppCase,
+    log_path: Path | None = None,
 ) -> dict[str, Any]:
     deadline = time.monotonic() + WINDOW_TIMEOUT_SECONDS
+    windows: list[dict[str, Any]] = []
     while time.monotonic() < deadline:
-        window = case_window(provider.list(), baseline_ids, case)
+        windows = provider.list()
+        window = case_window(windows, baseline_ids, case)
         if window is not None:
             return window
         time.sleep(POLL_SECONDS)
-    raise SessionSmokeError(f"{case.name} fixture did not open in its native application")
+    # Only windows that appeared after the baseline, i.e. ones this smoke
+    # launched, and the launcher's own output: enough to tell "never started"
+    # from "started under another identity or title".
+    new_windows = [
+        f"{window['wmClass']}|{str(window.get('title') or '')[:80]}"
+        for window in windows
+        if str(window.get("id")) not in baseline_ids
+    ]
+    launcher_tail = ""
+    if log_path is not None:
+        with contextlib.suppress(OSError):
+            launcher_tail = " ".join(
+                log_path.read_bytes()[-600:].decode("utf-8", errors="replace").split()
+            )
+    raise SessionSmokeError(
+        f"{case.name} fixture did not open in its native application"
+        f" (new windows: {new_windows or 'none'}; launcher: {launcher_tail or 'no output'})"
+    )
 
 
 def _wait_closed(provider: WindowProvider, window_id: str) -> None:
@@ -589,7 +611,7 @@ def main() -> int:
                         f"xdg-open could not launch the {case.name} fixture"
                     ) from error
             launchers.append(launcher)
-            window = _wait_for_window(provider, baseline_ids, case)
+            window = _wait_for_window(provider, baseline_ids, case, log_path)
             window_id = str(window["id"])
             opened_window_ids.add(window_id)
             provider.close(window_id)
