@@ -20,6 +20,15 @@ export function taskStatusView(task: EchoTaskProjection): {
   if (task.leaseHealth?.recoveryNeeded) {
     return { label: "需要恢复", tone: "attention" };
   }
+  // A task that ended because its approval ran out with the time limit did
+  // not fail or get cancelled by anyone: it waits for a re-run.
+  if (
+    task.approvalExpired &&
+    task.displayStatus !== "waiting_approval" &&
+    !ACTIVE_TASK_STATUSES.includes(task.displayStatus)
+  ) {
+    return { label: "审批已失效", tone: "attention" };
+  }
   switch (task.displayStatus) {
     case "waiting_approval":
       return { label: "待你批准", tone: "attention" };

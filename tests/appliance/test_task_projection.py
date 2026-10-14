@@ -264,6 +264,8 @@ def test_projection_joins_agent_task_and_capability_audit(tmp_path) -> None:
         "tool": "apps.start",
         "action": "app.start",
         "reason": "需要管理员确认",
+        # A record without a stored hold deadline (older runtime) has none.
+        "expiresAt": None,
     }
     assert len(waiting["approval"]["version"]) == 64
     assert waiting["capabilityDecisions"][0]["capabilityId"] == "apps.start"
@@ -791,3 +793,138 @@ def test_resume_execution_fails_closed_before_agent_handoff_when_audit_is_unavai
     task = supervisor.store.get(task_id)
     assert task is not None
     assert task.status == TaskRunStatus.PAUSED
+
+
+def _expired_codex_task(supervisor: TaskSupervisor, *, owner: str = "local:admin") -> str:
+    task_id = "6f7b0e8c-1d1a-4c39-9b8f-6f0b8a2f3c11"
+    supervisor.start_task(
+        task_id=task_id,
+        kind="realtime_codex",
+        owner_id=owner,
+        thread_id="thread-expired-approval",
+        title="写入 hello.txt",
+        goal="在个人空间里创建 hello.txt，内容写 hello echo" + "。" * 900,
+        metadata={"agent_id": "general"},
+    )
+    supervisor.transition(
+        task_id,
+        TaskRunStatus.WAITING_APPROVAL,
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "write_text_file",
+            "approval_action": "ask",
+            "approval_reason": "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+            "approval_delivery": "server_hold",
+            "approval_hold": {"tool_call_id": "call-1", "expires_at": "2026-10-14T03:30:00Z"},
+        },
+    )
+    return task_id
+
+
+def test_a_waiting_approval_projects_when_it_expires(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    _expired_codex_task(supervisor)
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["approval"]["expiresAt"] == "2026-10-14T03:30:00Z"
+    assert task["approvalExpired"] is None
+    assert task["canRerun"] is False
+
+
+def test_an_approval_that_ran_out_with_the_task_is_projected_as_expired(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(
+        task_id,
+        TaskRunStatus.RUNNING,
+        metadata_patch={
+            "approval_required": False,
+            "approval_hold": None,
+            "approval_hold_outcome": "timeout",
+            "approval_expired_at": "2026-10-14T03:30:00Z",
+        },
+    )
+    supervisor.transition(task_id, TaskRunStatus.CANCELLED, reason="codex_timeout")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["approval"] is None
+    assert task["approvalExpired"] == {
+        "tool": "write_text_file",
+        "action": "ask",
+        "reason": "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+        "expiredAt": "2026-10-14T03:30:00Z",
+    }
+    assert task["canRerun"] is True
+
+
+def test_rerun_starts_the_full_goal_as_a_new_task_and_audits_it(tmp_path):
+    audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(
+        task_id, TaskRunStatus.RUNNING, metadata_patch={"approval_hold_outcome": "timeout"}
+    )
+    supervisor.transition(task_id, TaskRunStatus.FAILED, reason="codex_timeout")
+    observed: dict = {}
+    app = FastAPI()
+
+    @app.post("/api/task-runs/start", status_code=202)
+    async def _agent_start(request: Request) -> dict:
+        observed["authorization"] = request.headers.get("authorization")
+        observed["body"] = await request.json()
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": "turn_started",
+            "thread_id": "tnewthread",
+            "turn_id": "trn-new",
+            "user_item_id": "itm_user_1",
+            "approval_delivery": "server_hold",
+        }
+
+    app.include_router(
+        create_task_projection_router(supervisor=supervisor, audit=audit, jwt_secret=JWT_SECRET)
+    )
+
+    response = _client(app).post(f"/api/appliance/tasks/{task_id}/rerun", json={})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["action"] == "rerun"
+    assert body["threadId"] == "tnewthread"
+    assert body["threadPath"] == "/workspace/realtime/tnewthread"
+    # The full stored goal, not the 800-character projection summary.
+    assert observed["body"]["prompt"].startswith("在个人空间里创建 hello.txt")
+    assert len(observed["body"]["prompt"]) > 800
+    assert observed["body"]["agentId"] == "general"
+    assert observed["authorization"].startswith("Bearer ")
+    events = [
+        entry["payload"] for entry in audit.recent(30) if entry["payload"]["action"] == "task.rerun"
+    ]
+    assert [event["outcome"] for event in events] == ["attempted", "accepted"]
+    assert events[0]["metadata"]["approvalExpired"] is True
+    assert events[-1]["metadata"]["threadId"] == "tnewthread"
+    # The original task is left exactly as it ended.
+    original = supervisor.store.get(task_id)
+    assert original is not None and original.status == TaskRunStatus.FAILED
+
+
+def test_rerun_refuses_active_tasks_and_other_owners(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor, owner="local:alice")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    assert (
+        _client(app, "local:alice").post(f"/api/appliance/tasks/{task_id}/rerun").status_code == 409
+    )
+    supervisor.transition(task_id, TaskRunStatus.CANCELLED, reason="user_cancelled")
+    assert (
+        _client(app, "local:bob").post(f"/api/appliance/tasks/{task_id}/rerun").status_code == 404
+    )

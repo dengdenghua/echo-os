@@ -166,6 +166,34 @@ describe("desktop task selection", () => {
       tone: "attention",
     });
   });
+
+  it("labels a task whose approval ran out instead of calling it cancelled", () => {
+    const approvalExpired = {
+      tool: "write_text_file",
+      action: "ask",
+      reason: null,
+      expiredAt: "2026-10-14T03:00:00Z",
+    };
+    expect(
+      taskStatusView(
+        makeTask({
+          status: "cancelled",
+          displayStatus: "cancelled",
+          approvalExpired,
+        }),
+      ),
+    ).toEqual({ label: "审批已失效", tone: "attention" });
+    // Still wrapping up: the live status stays.
+    expect(
+      taskStatusView(
+        makeTask({
+          status: "running",
+          displayStatus: "running",
+          approvalExpired,
+        }),
+      ).label,
+    ).toBe("执行中");
+  });
 });
 
 describe("IntentDesktopSurface", () => {

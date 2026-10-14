@@ -613,6 +613,53 @@ describe("Echo task space", () => {
     expect(screen.queryByText("准备中")).not.toBeInTheDocument();
   });
 
+  it("says an approval ran out with the task and re-runs it", async () => {
+    const user = userEvent.setup();
+    const expired = {
+      ...projection.tasks[0]!,
+      id: "task-expired",
+      title: "写入 hello.txt",
+      status: "cancelled",
+      displayStatus: "cancelled",
+      approval: null,
+      approvalExpired: {
+        tool: "write_text_file",
+        action: "ask",
+        reason: "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+        expiredAt: "2026-10-14T03:00:00Z",
+      },
+      canRerun: true,
+    };
+    const onRerun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskSpacePanel
+        open
+        focusTaskRequest={{ taskId: "task-expired" }}
+        projection={{
+          ...projection,
+          counts: { ...projection.counts, total: 1, waitingApproval: 0 },
+          tasks: [expired],
+        }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+        onApprovalDecision={vi.fn()}
+        onRerun={onRerun}
+      />,
+    );
+
+    const detail = screen.getByRole("complementary", { name: "任务详情" });
+    expect(detail).toHaveTextContent("任务已超时，审批已失效");
+    expect(detail).toHaveTextContent("这次操作没有执行");
+    await user.click(screen.getByRole("button", { name: "重新运行" }));
+    expect(onRerun).toHaveBeenCalledWith(expired);
+    expect(detail).toHaveTextContent("已重新运行");
+  });
+
   it("confirms checkpoint execution and then opens the original task", async () => {
     const user = userEvent.setup();
     const onResumeExecution = vi.fn().mockResolvedValue(undefined);

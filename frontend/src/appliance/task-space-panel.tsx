@@ -5,12 +5,14 @@ import {
   BotIcon,
   CheckCircle2Icon,
   CirclePauseIcon,
+  ClockAlertIcon,
   Clock3Icon,
   GitBranchIcon,
   Loader2Icon,
   MessageSquareTextIcon,
   PlayIcon,
   RefreshCwIcon,
+  RotateCcwIcon,
   ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
@@ -19,13 +21,18 @@ import { cn } from "@/lib/utils";
 import { TaskApprovalDialog } from "./task-approval-dialog";
 import { TaskChangesPanel } from "./task-changes-panel";
 import {
+  APPROVAL_EXPIRED,
+  APPROVAL_EXPIRED_DETAIL,
   APPROVAL_SESSION_CHANGED,
   APPROVAL_SESSION_CHANGED_AFTER_SUBMIT,
   APPROVAL_UNVERIFIABLE,
+  approvalDeadlineText,
+  approvalDecisionErrorMessage,
   type ApprovalConsent,
   assertApprovalConsent,
   approvalConsentSessionCurrent,
   captureApprovalConsent,
+  isExpiredApproval,
 } from "./task-approval-consent";
 import {
   SystemAppFrame,
@@ -232,6 +239,20 @@ function TaskCard({
         </div>
       )}
 
+      {isExpiredApproval(task) && (
+        <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <div className="flex items-center gap-1.5 font-medium">
+            <ClockAlertIcon className="size-3.5" />
+            {APPROVAL_EXPIRED}
+          </div>
+          <p className="mt-1 text-[12px] text-warning">
+            {task.canRerun
+              ? "操作没有执行。打开详情可以重新运行。"
+              : "操作没有执行，任务正在收尾。"}
+          </p>
+        </div>
+      )}
+
       {task.leaseHealth?.recoveryNeeded && (
         <div className="mt-3 rounded-xl border border-breach/30 bg-breach/10 px-3 py-2 text-xs text-breach">
           <div className="flex items-center gap-1.5 font-medium">
@@ -287,6 +308,7 @@ function TaskDetailDrawer({
   onRequestTakeover,
   onRequestResume,
   onRequestApproval,
+  onRequestRerun,
 }: {
   task: EchoTaskProjection;
   busy: boolean;
@@ -297,6 +319,7 @@ function TaskDetailDrawer({
   onRequestTakeover: () => void;
   onRequestResume: () => void;
   onRequestApproval: (approved: boolean) => void;
+  onRequestRerun?: () => void;
 }) {
   const visibleStatus = task.displayStatus || task.status;
   const meta = statusMeta(visibleStatus);
@@ -468,6 +491,28 @@ function TaskDetailDrawer({
                 {task.approval.reason ||
                   "该任务需要在原任务中完成确认。涉及系统能力时仍必须经过设备密码与能力策略，任务空间不会旁路批准。"}
               </p>
+              {approvalDeadlineText(task.approval.expiresAt) && (
+                <p className="mt-1.5 text-[12px] font-medium text-warning">
+                  {approvalDeadlineText(task.approval.expiresAt)}
+                </p>
+              )}
+            </section>
+          )}
+
+          {isExpiredApproval(task) && (
+            <section className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">
+                <ClockAlertIcon className="size-3.5" />
+                {APPROVAL_EXPIRED}
+              </div>
+              <p className="mt-1.5 text-[12px] leading-5 text-warning">
+                {APPROVAL_EXPIRED_DETAIL}
+              </p>
+              {task.approvalExpired?.reason && (
+                <p className="mt-1.5 text-[12px] leading-5 text-muted-foreground">
+                  {task.approvalExpired.reason}
+                </p>
+              )}
             </section>
           )}
 
@@ -591,6 +636,17 @@ function TaskDetailDrawer({
               接管任务租约…
             </button>
           )}
+          {task.canRerun && onRequestRerun && (
+            <button
+              type="button"
+              onClick={onRequestRerun}
+              disabled={busy}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-semibold text-foreground transition hover:bg-muted disabled:cursor-wait disabled:opacity-60"
+            >
+              <RotateCcwIcon className="size-4" />
+              重新运行
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onOpenWorkspace()}
@@ -616,6 +672,7 @@ export function TaskSpacePanel({
   onTakeover,
   onResumeExecution,
   onApprovalDecision,
+  onRerun,
   focusTaskRequest,
 }: {
   open: boolean;
@@ -633,6 +690,8 @@ export function TaskSpacePanel({
     reason: string,
     expectedApprovalVersion?: string,
   ) => Promise<unknown>;
+  /** 以原任务目标重新运行；成功后由它负责刷新任务投影。 */
+  onRerun?: (task: EchoTaskProjection) => Promise<unknown>;
   /** 从桌面任务卡片跳转过来时要展开的任务；每次请求是一个新对象。 */
   focusTaskRequest?: { taskId: string } | null;
 }) {
@@ -762,11 +821,28 @@ export function TaskSpacePanel({
         !approvalConsentSessionCurrent(approvalCandidate)
           ? APPROVAL_SESSION_CHANGED
           : reason instanceof Error
-            ? reason.message
+            ? approvalDecisionErrorMessage(reason.message)
             : "无法提交审批决定",
       );
     } finally {
       setApprovalCandidate(null);
+      setActionBusy(false);
+    }
+  };
+
+  const rerunTask = async (task: EchoTaskProjection) => {
+    if (!onRerun || actionBusy) return;
+    setActionBusy(true);
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      await onRerun(task);
+      setActionMessage("已重新运行。新的任务已开始，会出现在列表顶部。");
+    } catch (reason) {
+      setActionError(
+        reason instanceof Error ? reason.message : "无法重新运行这个任务",
+      );
+    } finally {
       setActionBusy(false);
     }
   };
@@ -956,6 +1032,9 @@ export function TaskSpacePanel({
           onRequestResume={() => setResumeCandidate(selectedTask)}
           onRequestApproval={(approved) =>
             setApprovalCandidate(captureApprovalConsent(selectedTask, approved))
+          }
+          onRequestRerun={
+            onRerun ? () => void rerunTask(selectedTask) : undefined
           }
         />
       )}

@@ -161,6 +161,54 @@ def test_deadline_denies_as_timeout_without_leaving_the_task_parked(tmp_path):
     assert record.metadata["approval_hold_outcome"] == "timeout"
 
 
+def test_the_hold_stores_its_wall_clock_expiry_for_the_inbox(tmp_path):
+    supervisor, _guard, session = _setup(tmp_path)
+    provider = _provider(max_wait_s=300.0, wall_clock=lambda: 1_800_000_000.0)
+    worker, result = _ask_in_thread(session, provider, _request())
+    _wait_for(lambda: _status(supervisor) == TaskRunStatus.WAITING_APPROVAL)
+
+    record = supervisor.store.get("task-1")
+    assert record is not None
+    # 1_800_000_000 + 300 s, as UTC ISO-8601.
+    assert record.metadata["approval_hold"]["expires_at"] == "2027-01-15T08:05:00Z"
+    supervisor.record_approval_decision("task-1", approved=True, reason="ok")
+    worker.join(timeout=5)
+    assert result["decision"].approved is True
+    record = supervisor.store.get("task-1")
+    assert record is not None
+    assert record.metadata["approval_expired_at"] is None
+
+
+def test_a_timeout_records_when_the_approval_expired(tmp_path):
+    supervisor, _guard, session = _setup(tmp_path)
+    ticks = iter([0.0, 0.0, 10.0, 10.0])
+    provider = _provider(
+        max_wait_s=5.0,
+        clock=lambda: next(ticks, 10.0),
+        sleep=lambda _s: None,
+        wall_clock=lambda: 1_800_000_000.0,
+    )
+    worker, _result = _ask_in_thread(session, provider, _request(tool="write_text_file"))
+    worker.join(timeout=5)
+
+    record = supervisor.store.get("task-1")
+    assert record is not None
+    assert record.metadata["approval_hold_outcome"] == "timeout"
+    assert record.metadata["approval_expired_at"] == "2027-01-15T08:00:00Z"
+    # What expired stays readable after the hold is released.
+    assert record.metadata["approval_tool_name"] == "write_text_file"
+
+
+def test_every_engine_shares_one_default_approval_window(monkeypatch):
+    from runtime.sensing.gateway.realtime_approval import _server_hold_max_seconds
+
+    monkeypatch.delenv("ECHO_SERVER_HOLD_APPROVAL_MAX_S", raising=False)
+    # Same as the Codex turn limit (ECHO_CODEX_APP_SERVER_TIMEOUT default).
+    from runtime.execution.codex_backend.timeouts import DEFAULT_TIMEOUT_S
+
+    assert _server_hold_max_seconds() == 1800.0 == DEFAULT_TIMEOUT_S
+
+
 def test_interruption_releases_the_hold(tmp_path):
     supervisor, _guard, session = _setup(tmp_path)
     cancellation = CancellationSource()

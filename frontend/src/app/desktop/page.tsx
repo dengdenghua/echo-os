@@ -495,6 +495,7 @@ export default function DesktopShellPage() {
     takeover: takeoverTaskProjection,
     resumeExecution: resumeTaskProjection,
     decideApproval: decideTaskApproval,
+    rerun: rerunTaskProjection,
   } = useEchoTaskProjection(applianceAuthed === true);
   // 桌面意图面只用后端的 Agent 名册，不在前端预置 Agent。
   const { agents: agentRoster } = useAgents({
@@ -1986,6 +1987,7 @@ export default function DesktopShellPage() {
             onTakeover={takeoverTaskProjection}
             onResumeExecution={resumeTaskProjection}
             onApprovalDecision={decideTaskApproval}
+            onRerun={(task) => rerunTaskProjection(task.id)}
             onOpenWorkspace={(task, artifact) => {
               setTaskSpaceOpen(false);
               if (task?.threadId) {
@@ -2012,6 +2014,7 @@ export default function DesktopShellPage() {
             onClose={() => setDecisionInboxOpen(false)}
             onRefresh={refreshTaskProjection}
             onDecision={decideTaskApproval}
+            onRerun={(task) => rerunTaskProjection(task.id)}
             onOpenTask={(task) => openTaskSpace(task.id)}
           />
         );

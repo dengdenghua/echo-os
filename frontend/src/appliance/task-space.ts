@@ -74,7 +74,18 @@ export type EchoTaskProjection = {
     tool: string | null;
     action: string | null;
     reason: string | null;
+    /** ISO time the task stops waiting (its time limit); absent on older runtimes. */
+    expiresAt?: string | null;
   } | null;
+  /** The last approval ran out with the task's time limit (not a rejection). */
+  approvalExpired?: {
+    tool: string | null;
+    action: string | null;
+    reason: string | null;
+    expiredAt: string | null;
+  } | null;
+  /** The task ended and its goal can start again as a new task. */
+  canRerun?: boolean;
   activity: EchoTaskActivity[];
   startedAt: string | null;
   updatedAt: string | null;
@@ -302,6 +313,52 @@ export async function decideEchoTaskApproval(
   return result;
 }
 
+export type EchoTaskRerunResponse = {
+  schema: "echo.task_action.v1";
+  action: "rerun";
+  previousTaskId: string;
+  state: string;
+  threadId: string;
+  turnId: string | null;
+  threadPath: string;
+};
+
+/** 用原任务的完整目标重新启动一个后台任务；原任务和审计记录保持不变。 */
+export async function rerunEchoTask(
+  taskId: string,
+): Promise<EchoTaskRerunResponse> {
+  const response = await fetch(
+    `/api/appliance/tasks/${encodeURIComponent(taskId)}/rerun`,
+    {
+      method: "POST",
+      headers: { ...authHeader(), "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  if (!response.ok) {
+    const detail = await response
+      .json()
+      .then((body) => body?.detail)
+      .catch(() => null);
+    if (response.status === 401) throw new Error("登录已失效，请重新登录");
+    if (response.status === 404) throw new Error("任务已不存在");
+    throw new Error(
+      typeof detail === "string" && /[\u4e00-\u9fff]/.test(detail)
+        ? detail
+        : "无法重新运行这个任务，请稍后再试",
+    );
+  }
+  const result = (await response.json()) as EchoTaskRerunResponse;
+  if (
+    result.schema !== "echo.task_action.v1" ||
+    result.action !== "rerun" ||
+    !result.threadId
+  ) {
+    throw new Error("任务服务返回了不兼容的结果");
+  }
+  return result;
+}
+
 export type EchoTaskStartResponse = {
   schema: "echo.task_run_start.v1";
   accepted: boolean;
@@ -478,6 +535,12 @@ export function useEchoTaskProjection(enabled = true) {
     [],
   );
 
+  const rerun = useCallback(async (taskId: string) => {
+    const result = await rerunEchoTask(taskId);
+    setRevision((value) => value + 1);
+    return result;
+  }, []);
+
   useEffect(() => {
     const actorChanged = actorRef.current !== actor;
     actorRef.current = actor;
@@ -565,5 +628,6 @@ export function useEchoTaskProjection(enabled = true) {
     takeover,
     resumeExecution,
     decideApproval,
+    rerun,
   };
 }

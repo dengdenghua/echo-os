@@ -7,6 +7,7 @@ stable contract ``capability intentId == Agent task_id``.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -34,9 +35,26 @@ TASK_PROJECTION_SCHEMA = "echo.task_projection.v1"
 _ACTIVE = {"pending", "running", "verifying", "repairing"}
 _FAILED = {"failed", "disconnected", "cancelled"}
 _TERMINAL = {"cancelled", "disconnected", "failed", "completed"}
+# Agent turns a new run can repeat from the stored goal; host-provider tasks
+# (file organisation) have their own plan/apply flow instead.
+_RERUN_KINDS = {"realtime_objective", "realtime_codex"}
+_RERUN_MAX_PROMPT_CHARS = 8000
+_AGENT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
 class TaskTakeoverRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    reason: str | None = None
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _normalize_reason(cls, value: Any) -> str | None:
+        text = str(value or "").strip()
+        return text[:300] or None
+
+
+class TaskRerunRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     reason: str | None = None
@@ -304,6 +322,34 @@ def _execution_recovery(task: Any, realtime_gateway: Any) -> dict[str, Any]:
     return base
 
 
+def _approval_expiry(metadata: dict[str, Any]) -> str | None:
+    hold = metadata.get("approval_hold")
+    if not isinstance(hold, dict):
+        return None
+    return _optional_text(hold.get("expires_at"), limit=64)
+
+
+def _approval_expired(metadata: dict[str, Any], status: str) -> dict[str, Any] | None:
+    """The last approval ran out with the task's time, not by the owner's choice."""
+
+    if status == "waiting_approval" or metadata.get("approval_hold_outcome") != "timeout":
+        return None
+    return {
+        "tool": _optional_text(metadata.get("approval_tool_name"), limit=128),
+        "action": _optional_text(metadata.get("approval_action"), limit=128),
+        "reason": _optional_text(metadata.get("approval_reason"), limit=300),
+        "expiredAt": _optional_text(metadata.get("approval_expired_at"), limit=64),
+    }
+
+
+def _can_rerun(task: Any, status: str) -> bool:
+    return (
+        status in _TERMINAL
+        and getattr(task, "kind", None) in _RERUN_KINDS
+        and bool(str(getattr(task, "goal", "") or "").strip())
+    )
+
+
 def _project_task(
     task: Any,
     activity: list[dict[str, Any]],
@@ -332,6 +378,9 @@ def _project_task(
                 metadata.get("approval_reason") or getattr(task, "terminal_reason", ""),
                 limit=300,
             ),
+            # When the task stops waiting: the hold window, bounded by the
+            # task's own time limit. Absent on records from older runtimes.
+            "expiresAt": _approval_expiry(metadata),
         }
     capability_decisions = [item for item in activity if item["kind"] == "capability-decision"]
     # The task view must expose the concrete execution identity that was
@@ -373,6 +422,8 @@ def _project_task(
         "runtimeCapabilityGroups": _runtime_groups(task),
         "capabilityDecisions": capability_decisions[-20:],
         "approval": approval,
+        "approvalExpired": _approval_expired(metadata, status),
+        "canRerun": _can_rerun(task, status),
         "activity": activity[-30:],
         "startedAt": _optional_text(getattr(task, "started_at", None), limit=64),
         "updatedAt": _optional_text(getattr(task, "updated_at", None), limit=64),
@@ -792,11 +843,134 @@ def create_task_projection_router(
             ),
         }
 
+    @router.post("/{task_id}/rerun")
+    async def rerun_task(
+        task_id: str,
+        request: Request,
+        body: TaskRerunRequest | None = None,
+        actor: str = Depends(require_auth),
+    ) -> dict[str, Any]:
+        """Start the same goal again as a new background task.
+
+        Offered when a task ended, typically because its approval ran out
+        with the task's time limit. The new run gets a fresh thread and its
+        own approval window; the old task and its audit trail stay as they are.
+        """
+
+        task = _require_task(supervisor, task_id, actor=actor)
+        if actor != "local:admin" and getattr(task, "owner_id", None) != actor:
+            raise HTTPException(status_code=404, detail="task not found")
+        status = _text(getattr(task, "status", ""), limit=32)
+        if not _can_rerun(task, status):
+            raise HTTPException(status_code=409, detail="这个任务当前不能重新运行")
+        metadata = getattr(task, "metadata", {})
+        if not isinstance(metadata, dict):
+            metadata = {}
+        goal = str(getattr(task, "goal", "") or "").strip()[:_RERUN_MAX_PROMPT_CHARS]
+        raw_agent = str(metadata.get("agent_id") or "").strip()
+        agent_id = raw_agent if _AGENT_ID.fullmatch(raw_agent) else None
+        reason = (body.reason if body else None) or "设备管理员从 Echo 重新运行任务"
+        action_metadata = {
+            "previousStatus": status,
+            "approvalExpired": metadata.get("approval_hold_outcome") == "timeout",
+            "agentId": agent_id,
+            "reason": reason,
+        }
+        _record_task_action(
+            audit,
+            actor=actor,
+            task_id=task_id,
+            action="task.rerun",
+            outcome="attempted",
+            metadata=action_metadata,
+        )
+
+        from appliance.security import request_token
+
+        token = request_token(request)
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        payload: dict[str, Any] = {"prompt": goal}
+        if agent_id:
+            payload["agentId"] = agent_id
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=request.app),
+                base_url="http://echo-agent.internal",
+                timeout=30.0,
+            ) as client:
+                response = await client.post("/api/task-runs/start", json=payload, headers=headers)
+        except httpx.HTTPError as exc:
+            _record_task_action(
+                audit,
+                actor=actor,
+                task_id=task_id,
+                action="task.rerun",
+                outcome="failed",
+                metadata={**action_metadata, "error": "agent_unreachable"},
+            )
+            raise HTTPException(status_code=503, detail="Agent 暂时不可用，请稍后再试") from exc
+
+        try:
+            agent_result = response.json()
+        except ValueError:
+            agent_result = {}
+        if response.status_code >= 400 or not isinstance(agent_result, dict):
+            detail = (
+                _text(agent_result.get("detail"), limit=300)
+                if isinstance(agent_result, dict)
+                else ""
+            )
+            _record_task_action(
+                audit,
+                actor=actor,
+                task_id=task_id,
+                action="task.rerun",
+                outcome="rejected" if response.status_code == 409 else "failed",
+                metadata={
+                    **action_metadata,
+                    "agentStatus": response.status_code,
+                    "error": detail or "agent_rejected",
+                },
+            )
+            if response.status_code == 401:
+                raise HTTPException(status_code=401, detail="authentication required")
+            if response.status_code == 409:
+                raise HTTPException(status_code=409, detail=detail or "Agent 拒绝了这次运行")
+            raise HTTPException(status_code=503, detail="Agent 暂时不可用，请稍后再试")
+        new_thread_id = _optional_text(agent_result.get("thread_id"), limit=128)
+        if agent_result.get("schema") != "echo.task_run_start.v1" or not new_thread_id:
+            raise HTTPException(status_code=503, detail="Agent returned an incompatible response")
+
+        _record_task_action(
+            audit,
+            actor=actor,
+            task_id=task_id,
+            action="task.rerun",
+            outcome="accepted",
+            metadata={
+                **action_metadata,
+                "threadId": new_thread_id,
+                "turnId": _optional_text(agent_result.get("turn_id"), limit=128),
+            },
+        )
+        _activity, audit_integrity = _audit_activity(audit)
+        return {
+            "schema": "echo.task_action.v1",
+            "action": "rerun",
+            "previousTaskId": task_id,
+            "state": _text(agent_result.get("state"), limit=32),
+            "threadId": new_thread_id,
+            "turnId": _optional_text(agent_result.get("turn_id"), limit=128),
+            "threadPath": f"/workspace/realtime/{new_thread_id}",
+            "auditIntegrity": audit_integrity,
+        }
+
     return router
 
 
 __all__ = [
     "TASK_PROJECTION_SCHEMA",
+    "TaskRerunRequest",
     "TaskResumeExecutionRequest",
     "TaskTakeoverRequest",
     "create_task_projection_router",

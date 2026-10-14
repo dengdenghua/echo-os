@@ -1,24 +1,52 @@
 import { useEffect, useRef, useState } from "react";
-import { InboxIcon, RefreshCwIcon, ShieldCheckIcon } from "lucide-react";
+import {
+  ClockAlertIcon,
+  InboxIcon,
+  RefreshCwIcon,
+  ShieldCheckIcon,
+} from "lucide-react";
 import { SystemAppFrame, SystemAppLightsSpacer } from "./system-app-window";
 import {
   APPROVAL_SESSION_CHANGED,
   APPROVAL_SESSION_CHANGED_AFTER_SUBMIT,
+  APPROVAL_EXPIRED,
+  APPROVAL_EXPIRED_DETAIL,
   APPROVAL_TASK_INTERRUPTED,
   APPROVAL_UNVERIFIABLE,
+  approvalDeadlineText,
   approvalDecisionErrorMessage,
   type ApprovalConsent,
   assertApprovalConsent,
   approvalConsentSessionCurrent,
   captureApprovalConsent,
+  dismissExpiredApproval,
   isDecidableApproval,
+  isExpiredApproval,
   isInterruptedApproval,
+  readDismissedExpiredApprovals,
 } from "./task-approval-consent";
 import { TaskApprovalDialog, approvalOperation } from "./task-approval-dialog";
 import type {
   EchoTaskProjection,
   EchoTaskProjectionResponse,
 } from "./task-space";
+
+const RECENT_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+/** 近 24 小时内因任务时限失效、且没被移除的审批。 */
+export function recentExpiredApprovals(
+  tasks: readonly EchoTaskProjection[],
+  dismissed: readonly string[],
+  now = Date.now(),
+): EchoTaskProjection[] {
+  return tasks.filter((task) => {
+    if (!isExpiredApproval(task) || dismissed.includes(task.id)) return false;
+    const at = Date.parse(
+      task.approvalExpired?.expiredAt ?? task.updatedAt ?? "",
+    );
+    return !Number.isFinite(at) || now - at <= RECENT_EXPIRY_MS;
+  });
+}
 
 export function DecisionInbox({
   projection,
@@ -28,6 +56,7 @@ export function DecisionInbox({
   onRefresh,
   onOpenTask,
   onDecision,
+  onRerun,
 }: {
   projection: EchoTaskProjectionResponse | null;
   loading: boolean;
@@ -42,6 +71,8 @@ export function DecisionInbox({
     reason: string,
     version?: string,
   ) => Promise<unknown>;
+  /** 以原任务目标启动一次新的运行；成功后由它负责刷新任务投影。 */
+  onRerun?: (task: EchoTaskProjection) => Promise<unknown>;
 }) {
   const [consent, setConsent] = useState<ApprovalConsent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,6 +87,43 @@ export function DecisionInbox({
     };
   }, []);
   const waiting = (projection?.tasks ?? []).filter(isDecidableApproval);
+  const [dismissed, setDismissed] = useState<string[]>(
+    readDismissedExpiredApprovals,
+  );
+  const expired = recentExpiredApprovals(projection?.tasks ?? [], dismissed);
+  const [, setClock] = useState(0);
+  useEffect(() => {
+    // Keep "还剩 N 分钟" honest while the inbox stays open.
+    const timer = window.setInterval(
+      () => setClock((tick) => tick + 1),
+      30_000,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+  const rerun = async (task: EchoTaskProjection) => {
+    if (!onRerun || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setActionError(null);
+    setMessage(null);
+    try {
+      await onRerun(task);
+      if (!alive.current) return;
+      setDismissed(dismissExpiredApproval(task.id));
+      setMessage("已重新运行，新的任务会出现在任务空间");
+    } catch (reason) {
+      if (alive.current)
+        setActionError(
+          reason instanceof Error ? reason.message : "无法重新运行这个任务",
+        );
+    } finally {
+      busyRef.current = false;
+      if (alive.current) setBusy(false);
+    }
+  };
+  const dismiss = (task: EchoTaskProjection) => {
+    setDismissed(dismissExpiredApproval(task.id));
+  };
   const confirm = async () => {
     if (!consent || busyRef.current) return;
     busyRef.current = true;
@@ -131,7 +199,7 @@ export function DecisionInbox({
           <p role="status" className="text-sm text-muted-foreground">
             {loading ? "正在读取审批…" : "任务服务暂时不可用"}
           </p>
-        ) : waiting.length === 0 ? (
+        ) : waiting.length === 0 && expired.length === 0 ? (
           <div className="grid place-items-center py-16 text-center">
             <InboxIcon
               aria-hidden
@@ -147,6 +215,60 @@ export function DecisionInbox({
           </div>
         ) : (
           <ul className="space-y-3">
+            {expired.map((task) => (
+              <li
+                key={`expired:${task.id}`}
+                className="rounded-xl border border-border bg-card p-4"
+              >
+                <p className="flex items-center gap-1.5 text-xs font-medium text-warning">
+                  <ClockAlertIcon aria-hidden className="size-3.5" />
+                  {APPROVAL_EXPIRED}
+                </p>
+                <h2 className="mt-1.5 text-sm font-semibold">{task.title}</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {approvalOperation({
+                    ...task,
+                    approval: {
+                      required: false,
+                      tool: task.approvalExpired?.tool ?? null,
+                      action: task.approvalExpired?.action ?? null,
+                      reason: task.approvalExpired?.reason ?? null,
+                    },
+                  })}
+                </p>
+                <p className="mt-2 text-sm">{APPROVAL_EXPIRED_DETAIL}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onOpenTask(task)}
+                    className="mr-auto text-xs text-core"
+                  >
+                    打开原任务
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dismiss(task)}
+                    disabled={busy}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs disabled:opacity-40"
+                  >
+                    不再显示
+                  </button>
+                  {onRerun && (
+                    <button
+                      type="button"
+                      onClick={() => void rerun(task)}
+                      disabled={busy || !task.canRerun}
+                      title={
+                        task.canRerun ? undefined : "任务收尾后可以重新运行"
+                      }
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-40"
+                    >
+                      重新运行
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
             {waiting.map((task) => (
               <li
                 key={task.id}
@@ -159,6 +281,11 @@ export function DecisionInbox({
                 <p className="mt-2 text-sm">
                   {task.approval?.reason || "任务需要人工确认"}
                 </p>
+                {approvalDeadlineText(task.approval?.expiresAt) && (
+                  <p className="mt-2 text-xs text-warning">
+                    {approvalDeadlineText(task.approval?.expiresAt)}
+                  </p>
+                )}
                 {!task.approval?.version && (
                   <p className="mt-2 text-xs text-warning">
                     {APPROVAL_UNVERIFIABLE}

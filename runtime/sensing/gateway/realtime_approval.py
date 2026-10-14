@@ -35,12 +35,22 @@ _logger = logging.getLogger(__name__)
 #: whether one is required.
 SERVER_HOLD_APPROVAL = "server_hold"
 _SERVER_HOLD_POLL_S = 0.5
-_SERVER_HOLD_DEFAULT_MAX_S = 3600.0
+# One default approval window for every engine: the Codex turn limit
+# (ECHO_CODEX_APP_SERVER_TIMEOUT, 30 minutes) already ends a Codex hold here,
+# so a native task waits the same 30 minutes instead of a full hour. The
+# effective deadline is stored on the task as ``approval_hold.expires_at``.
+_SERVER_HOLD_DEFAULT_MAX_S = 1800.0
 _SERVER_HOLD_MIN_S = 30.0
 _SERVER_HOLD_MAX_S = 24 * 3600.0
 # Time a held approval leaves the turn to act on the answer (a declined call
 # still needs a model step and the turn's own wrap-up) before its deadline.
 _SERVER_HOLD_DEADLINE_MARGIN_S = 60.0
+
+
+def _utc_iso(epoch_seconds: float) -> str:
+    from datetime import UTC, datetime
+
+    return datetime.fromtimestamp(epoch_seconds, UTC).isoformat().replace("+00:00", "Z")
 
 
 def _server_hold_max_seconds() -> float:
@@ -192,6 +202,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         poll_interval_s: float = _SERVER_HOLD_POLL_S,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        wall_clock: Callable[[], float] = time.time,
     ) -> None:
         self._interactive = interactive
         self._thread_id = thread_id
@@ -201,6 +212,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         self._poll_interval_s = poll_interval_s
         self._sleep = sleep
         self._clock = clock
+        self._wall_clock = wall_clock
         self._lock = threading.Lock()
 
     def request(self, req: ApprovalRequest, *, timeout: float = 120.0) -> ApprovalDecision:
@@ -218,6 +230,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         from runtime.platform.observability.redactor import redact_text
         from runtime.platform.process.task_supervisor import LostTaskLease, TaskRunStatus
 
+        hold_window_s = self._hold_window_s()
         try:
             record = guard.assert_held()
             seen = len(record.metadata.get("approval_decisions") or [])
@@ -239,6 +252,8 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                         "turn_id": self._turn_id,
                         "risk": getattr(risk, "level", None),
                         "args_preview": redact_text(req.args_preview or "")[:300],
+                        # Wall-clock deadline for the inbox ("请在 … 前确认").
+                        "expires_at": _utc_iso(self._wall_clock() + hold_window_s),
                     },
                 },
             )
@@ -252,7 +267,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                 label="error",
             )
 
-        deadline = self._clock() + self._hold_window_s()
+        deadline = self._clock() + hold_window_s
         cancellation = current_cancellation_token()
         while True:
             if cancellation.is_cancelled:
@@ -355,15 +370,22 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                         or (label == "rejected" and status == TaskRunStatus.PAUSED)
                     ):
                         status = TaskRunStatus.RUNNING
+                    metadata_patch: dict[str, Any] = {
+                        "approval_required": False,
+                        "approval_hold": None,
+                        "approval_hold_outcome": label,
+                        # Kept after the task ends so the inbox can say the
+                        # approval expired with the task instead of showing
+                        # nothing (a timeout is not the owner's rejection).
+                        "approval_expired_at": (
+                            _utc_iso(self._wall_clock()) if label == "timeout" else None
+                        ),
+                    }
                     guard.transition(
                         status,
                         require_open=True,
                         reason="" if status == TaskRunStatus.RUNNING else record.terminal_reason,
-                        metadata_patch={
-                            "approval_required": False,
-                            "approval_hold": None,
-                            "approval_hold_outcome": label,
-                        },
+                        metadata_patch=metadata_patch,
                     )
             except Exception:  # noqa: BLE001 — the loop's own lease checks report a lost task
                 _logger.debug("server-hold approval: could not resume task", exc_info=True)

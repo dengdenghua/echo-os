@@ -26,6 +26,7 @@ const mock = vi.hoisted(() => ({
   takeover: vi.fn(),
   resumeExecution: vi.fn(),
   refresh: vi.fn(),
+  rerun: vi.fn(),
 }));
 vi.mock("@/appliance/task-space", () => ({
   useEchoTaskProjection: () => ({ projection: { tasks: mock.tasks }, ...mock }),
@@ -68,6 +69,7 @@ beforeEach(() => {
   auth.token = "session-a";
   auth.revision = 0;
   mock.tasks = [waitingTask()];
+  window.localStorage.clear();
 });
 
 it("submits the approval version the user reviewed", async () => {
@@ -207,4 +209,59 @@ it("does not show another thread's approval", () => {
   expect(
     screen.queryByRole("region", { name: "任务审批" }),
   ).not.toBeInTheDocument();
+});
+
+function expiredTask(canRerun = true): EchoTaskProjection {
+  return {
+    ...waitingTask(),
+    status: canRerun ? "cancelled" : "running",
+    displayStatus: canRerun ? "cancelled" : "running",
+    approval: null,
+    approvalExpired: {
+      tool: "shell",
+      action: "confirm",
+      reason: "启动本机服务",
+      expiredAt: "2026-10-14T03:00:00Z",
+    },
+    canRerun,
+  };
+}
+
+it("says an approval that outlived the task expired, with a re-run", async () => {
+  mock.tasks = [expiredTask()];
+  mock.rerun.mockResolvedValue({ threadId: "t-new" });
+  render(<TaskApprovalBanner threadId="thread-1" />);
+  const user = userEvent.setup();
+
+  expect(screen.getByText(/任务已超时，审批已失效/)).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "批准", exact: true }),
+  ).toBeNull();
+  await user.click(screen.getByRole("button", { name: "重新运行" }));
+
+  expect(mock.rerun).toHaveBeenCalledExactlyOnceWith("task-1");
+  expect(screen.getByRole("status")).toHaveTextContent("已重新运行");
+});
+
+it("offers the re-run only once the expired task has wrapped up", async () => {
+  mock.tasks = [expiredTask(false)];
+  render(<TaskApprovalBanner threadId="thread-1" />);
+  const user = userEvent.setup();
+
+  expect(screen.getByRole("button", { name: "重新运行" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "知道了" }));
+  expect(
+    screen.queryByRole("region", { name: "任务审批" }),
+  ).not.toBeInTheDocument();
+});
+
+it("explains a late answer to an approval that already ended", async () => {
+  mock.decideApproval.mockRejectedValue(
+    new Error("task is not waiting for approval"),
+  );
+  render(<TaskApprovalBanner threadId="thread-1" />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "批准", exact: true }));
+  await user.click(screen.getByRole("button", { name: "确认批准本次操作" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("这个审批已经结束");
 });
