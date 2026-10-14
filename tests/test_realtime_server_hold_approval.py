@@ -129,6 +129,21 @@ def test_parks_the_task_and_runs_the_held_call_once_approved(tmp_path):
     assert interactive.calls == []
 
 
+
+def test_the_inbox_reason_is_only_what_the_agent_said(tmp_path):
+    supervisor, _guard, session = _setup(tmp_path)
+    bare = ApprovalRequest(thread_id="thread-1", tool_name="exec_shell", tool_call_id="call-1")
+    worker, result = _ask_in_thread(session, _provider(), bare)
+
+    _wait_for(lambda: _status(supervisor) == TaskRunStatus.WAITING_APPROVAL)
+    parked = supervisor.store.get("task-1")
+    assert parked is not None
+    # No English fallback for the Chinese inbox; the UI words a bare request.
+    assert parked.metadata["approval_reason"] == ""
+    supervisor.record_approval_decision("task-1", approved=True, decided_by="alice")
+    worker.join(timeout=5)
+    assert result["decision"].approved is True
+
 def test_rejection_reaches_the_agent_and_hands_the_turn_back_running(tmp_path):
     supervisor, _guard, session = _setup(tmp_path)
     worker, result = _ask_in_thread(session, _provider(), _request())

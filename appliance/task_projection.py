@@ -382,8 +382,14 @@ def _project_task(
             "version": approval_request_version(task),
             "tool": _optional_text(metadata.get("approval_tool_name"), limit=128),
             "action": _optional_text(metadata.get("approval_action"), limit=128),
+            # A stored approval reason is what the agent said, even when that
+            # is nothing: the status reason then holds the runtime's English
+            # fallback, which the UI words better itself. Older records never
+            # stored one and keep the status reason.
             "reason": _optional_text(
-                metadata.get("approval_reason") or getattr(task, "terminal_reason", ""),
+                metadata["approval_reason"]
+                if "approval_reason" in metadata
+                else getattr(task, "terminal_reason", ""),
                 limit=300,
             ),
             # When the task stops waiting: the hold window, bounded by the

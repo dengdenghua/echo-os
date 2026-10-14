@@ -245,7 +245,9 @@ class ServerHoldApprovalProvider(ApprovalProvider):
                     "approval_denied": False,
                     "approval_tool_name": req.tool_name,
                     "approval_action": getattr(action, "value", str(action)),
-                    "approval_reason": reason,
+                    # User-facing: only what the agent said. The status reason
+                    # above keeps the internal fallback for logs and identity.
+                    "approval_reason": req.detail,
                     "approval_delivery": SERVER_HOLD_APPROVAL,
                     "approval_hold": {
                         "tool_call_id": req.tool_call_id,

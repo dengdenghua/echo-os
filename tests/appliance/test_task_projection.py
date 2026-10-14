@@ -834,6 +834,39 @@ def test_a_waiting_approval_projects_when_it_expires(tmp_path):
     assert task["canRerun"] is False
 
 
+def test_a_bare_approval_request_projects_no_reason_instead_of_the_status_text(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(task_id="bare", kind="realtime_codex", owner_id="local:admin", title="ls")
+    supervisor.transition(
+        "bare",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="exec_shell requires your approval",
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "exec_shell",
+            "approval_action": "ask",
+            "approval_reason": "",
+            "approval_delivery": "server_hold",
+        },
+    )
+    supervisor.start_task(
+        task_id="legacy", kind="realtime_codex", owner_id="local:admin", title="old"
+    )
+    supervisor.transition(
+        "legacy",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="旧记录的等待原因",
+        metadata_patch={"approval_required": True, "approval_tool_name": "exec_shell"},
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    tasks = {task["id"]: task for task in _client(app).get("/api/appliance/tasks").json()["tasks"]}
+
+    assert tasks["bare"]["approval"]["reason"] is None
+    assert tasks["legacy"]["approval"]["reason"] == "旧记录的等待原因"
+
+
 def test_an_approval_that_ran_out_with_the_task_is_projected_as_expired(tmp_path):
     supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
     task_id = _expired_codex_task(supervisor)
