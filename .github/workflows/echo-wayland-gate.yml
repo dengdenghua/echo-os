@@ -65,7 +65,7 @@ jobs:
             libxrandr2 libxcomposite1 libxdamage1 libatk-bridge2.0-0t64 \
             libatspi2.0-0t64 libcups2t64 fonts-dejavu-core \
             dolphin konsole firefox-esr kate okular gwenview ark haruna kcalc \
-            xdg-utils desktop-file-utils shared-mime-info 7zip bzip2 unar unzip zip
+            xdg-utils desktop-file-utils shared-mime-info 7zip bzip2 unar unzip zip file
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

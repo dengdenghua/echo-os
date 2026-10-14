@@ -208,6 +208,14 @@ def _run(
             text=True,
             timeout=timeout,
         )
+    except subprocess.CalledProcessError as error:
+        # The commands are fixed and run on generated fixtures, so a bounded
+        # stderr tail carries no user data and says why the tool failed.
+        detail = " ".join(str(error.stderr or "").split())[-300:]
+        raise SessionSmokeError(
+            f"fixed diagnostic command failed: {executable.name} "
+            f"(exit {error.returncode}){': ' + detail if detail else ''}"
+        ) from error
     except (OSError, subprocess.SubprocessError) as error:
         raise SessionSmokeError(f"fixed diagnostic command failed: {executable.name}") from error
     encoded = completed.stdout.encode("utf-8", errors="replace")

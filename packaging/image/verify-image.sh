@@ -1318,6 +1318,11 @@ require_pattern "$REPO_ROOT/.github/workflows/ab-update-smoke.yml" 'test_echo_co
 require_pattern "$REPO_ROOT/.github/workflows/ab-update-smoke.yml" 'test_echo_core_apps_session_smoke\.py' "A/B CI tests the functional core-app session diagnostic"
 require_pattern "$REPO_ROOT/.github/workflows/desktop-session-smoke.yml" 'dolphin konsole firefox-esr kate okular gwenview ark haruna kde-spectacle kcalc' "desktop CI installs the real offline application set"
 require_pattern "$REPO_ROOT/.github/workflows/desktop-session-smoke.yml" 'xdg-utils desktop-file-utils shared-mime-info 7zip bzip2 unar unzip zip' "desktop CI installs XDG resolution and Ark format backends"
+# xdg-utils 1.2.1 matches XDG_CURRENT_DESKTOP against "KDE" exactly, so the Echo
+# session ("Echo:KDE") takes the generic path, whose filetype query needs file(1).
+require_pattern "$IMAGE_DIR/mkosi.conf" '^        file$' "image ships file(1) for xdg-mime/xdg-open in the Echo:KDE session"
+require_pattern "$REPO_ROOT/.github/workflows/desktop-session-smoke.yml" 'shared-mime-info 7zip bzip2 unar unzip zip file' "desktop CI installs file(1) for xdg-mime"
+require_pattern "$REPO_ROOT/.github/workflows/echo-wayland-gate.yml" 'shared-mime-info 7zip bzip2 unar unzip zip file$' "Wayland CI installs file(1) for xdg-mime"
 require_pattern "$REPO_ROOT/.github/workflows/desktop-session-smoke.yml" 'dbus-daemon dbus-x11' "desktop CI can publish compositor variables to activated core applications"
 require_pattern "$REPO_ROOT/deploy/core-apps/mimeapps.list" '^audio/vnd\.wave=org\.kde\.haruna\.desktop;$' "the standard WAV alias opens in the native media player"
 require_pattern "$REPO_ROOT/deploy/core-apps/echo_core_apps_session_smoke.py" '^SOURCE_TEST_SENTINEL = "USE-EPHEMERAL-RUNTIME"$' "functional core-app launch requires an explicit CI sentinel"
