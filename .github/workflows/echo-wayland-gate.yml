@@ -38,6 +38,10 @@ jobs:
     timeout-minutes: 60
     container:
       image: debian:trixie-slim
+      # Debian ships kwin_wayland with file capability cap_sys_nice=ep (realtime
+      # compositor thread). Docker's default bounding set lacks SYS_NICE, so
+      # execve fails with EPERM; grant exactly that capability, as on a device.
+      options: --cap-add=SYS_NICE
 
     env:
       CI: "true"
