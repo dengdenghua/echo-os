@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
+  BookOpenIcon,
   BotIcon,
   BrainIcon,
   DatabaseIcon,
@@ -13,6 +14,7 @@ import {
   PencilIcon,
   SearchIcon,
   SettingsIcon,
+  SquareKanbanIcon,
   UserRoundPenIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -47,6 +49,7 @@ import { activeWorkspaceThreadIdFromPathname } from "@/core/threads/sidebar";
 import { isAbsolutePath } from "@/lib/path-utils";
 import { cn } from "@/lib/utils";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
+import { moduleById } from "@/core/modules/catalog";
 import { ThreadRenameDialog } from "./thread-rename-dialog";
 
 const DRAWER_WIDTH = "min(320px, 86vw)";
@@ -189,6 +192,26 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
       ),
       icon: DatabaseIcon,
       active: pathname.startsWith("/workspace/storage"),
+    },
+    // The desktop sidebar shows these by default; on a phone this drawer is
+    // the only workbench navigation, so they were unreachable there.
+    {
+      label: t.sidebar.navProjects,
+      to: preserveWorkbenchPresentation(
+        moduleById("projects")?.to ?? "/workspace/projects",
+        search,
+      ),
+      icon: SquareKanbanIcon,
+      active: pathname.startsWith("/workspace/projects"),
+    },
+    {
+      label: t.sidebar.navKnowledgeGraph,
+      to: preserveWorkbenchPresentation(
+        moduleById("knowledge")?.to ?? "/workspace/knowledge?surface=chat",
+        search,
+      ),
+      icon: BookOpenIcon,
+      active: pathname.startsWith("/workspace/knowledge"),
     },
   ];
 

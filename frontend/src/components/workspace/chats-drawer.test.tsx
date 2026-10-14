@@ -98,6 +98,15 @@ describe("ChatsDrawer", () => {
       "/workspace/storage?surface=company&library=docs",
     );
 
+    expect(screen.getByRole("link", { name: "项目管理" })).toHaveAttribute(
+      "href",
+      "/workspace/projects",
+    );
+    expect(screen.getByRole("link", { name: "知识库" })).toHaveAttribute(
+      "href",
+      "/workspace/knowledge?surface=chat",
+    );
+
     await user.click(screen.getByRole("link", { name: "本地数据库" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
