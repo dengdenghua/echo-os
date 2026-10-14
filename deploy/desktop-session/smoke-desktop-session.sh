@@ -314,17 +314,26 @@ echo "✓ Klipper preserved the X11 clipboard after its source process exited wi
 # In smoke mode the shell reports "SMOKE OK" only once its backend answers
 # /readyz (waitForSmokeBackendReady in frontend/electron/main.cjs). On a device
 # the Agent service answers it; this smoke covers the shell and KWin, not the
-# Agent, so a loopback responder stands in. Every other API path returns 404.
+# Agent, so a loopback responder stands in. It also reports authentication
+# disabled at /api/auth/status, as an Agent configured without auth does, so
+# the real desktop (and its "ECHO OS 桌面" AT-SPI landmark) renders instead of
+# the "system service unavailable" gate. Every other API path returns 404; the
+# appliance auth probe reads that as a non-appliance host.
 READYZ_PORT_FILE="$LOG_DIR/readyz-stub.port"
 rm -f -- "$READYZ_PORT_FILE"
 python3 -c '
 import http.server, os, sys
 
+ANSWERS = {
+    "/readyz": b"{\"status\":\"ready\"}",
+    "/api/auth/status": b"{\"enabled\":false,\"jwt_available\":false,\"allow_registration\":false,\"exempt_paths\":[],\"session_present\":false}",
+}
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        ready = self.path.split("?", 1)[0] == "/readyz"
-        body = b"{\"status\":\"ready\"}" if ready else b"{}"
-        self.send_response(200 if ready else 404)
+        path = self.path.split("?", 1)[0]
+        body = ANSWERS.get(path, b"{}")
+        self.send_response(200 if path in ANSWERS else 404)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
