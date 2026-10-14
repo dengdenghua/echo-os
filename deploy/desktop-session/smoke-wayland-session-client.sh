@@ -388,15 +388,11 @@ done
 }
 export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
 
-# --disable-gpu as in the X11 smoke: CI runners have no GPU, and Chromium's GPU
-# process crash-looped (exit 133) under Wayland once the real desktop started
-# its WebGL layer, stalling the shell past the IPC wait.
 WAYLAND_ECHO_ARGUMENTS=(
   --class=echo-shell
   --ozone-platform=wayland
   --force-renderer-accessibility
   --enable-features=UseOzonePlatform
-  --disable-gpu
 )
 if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
   KWIN_GLASS_SYNC="$(gdbus call --session \
