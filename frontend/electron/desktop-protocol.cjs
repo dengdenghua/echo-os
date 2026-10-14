@@ -209,11 +209,20 @@ function rewriteBackendRedirect(response, backendOrigin) {
   });
 }
 
+function isTransientFetchError(error) {
+  return /ERR_INSUFFICIENT_RESOURCES/.test(String(error && error.message));
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 function createDesktopProtocolHandler({
   distRoot,
   backendBaseURL,
   fetchImpl,
   onProxyError,
+  retryDelayMs = 150,
 }) {
   const trustedBackendOrigin = normalizeLoopbackBackendBaseURL(backendBaseURL);
   if (typeof fetchImpl !== "function") {
@@ -238,15 +247,26 @@ function createDesktopProtocolHandler({
         init.body = request.body;
         init.duplex = "half";
       }
-      try {
-        const response = await fetchImpl(
-          buildBackendTargetURL(appURL, trustedBackendOrigin),
-          init,
-        );
-        return rewriteBackendRedirect(response, trustedBackendOrigin);
-      } catch (error) {
-        onProxyError?.(error);
-        return backendStartingResponse();
+      // Chromium briefly refuses requests with ERR_INSUFFICIENT_RESOURCES when
+      // the browser process has too many outstanding (a cold start serves every
+      // asset through net.fetch too). Retry idempotent requests a few times
+      // before reporting the backend as unavailable; bodies cannot be replayed.
+      const attempts = method === "GET" || method === "HEAD" ? 4 : 1;
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          const response = await fetchImpl(
+            buildBackendTargetURL(appURL, trustedBackendOrigin),
+            init,
+          );
+          return rewriteBackendRedirect(response, trustedBackendOrigin);
+        } catch (error) {
+          if (attempt < attempts && isTransientFetchError(error)) {
+            await delay(retryDelayMs * attempt);
+            continue;
+          }
+          onProxyError?.(error);
+          return backendStartingResponse();
+        }
       }
     }
 

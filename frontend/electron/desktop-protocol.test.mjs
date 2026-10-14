@@ -178,6 +178,42 @@ describe("desktop protocol handler", () => {
     });
   });
 
+  it("retries idempotent requests that Chromium refused for lack of resources", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockResolvedValue(Response.json({ enabled: false }));
+    const onProxyError = vi.fn();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl,
+      onProxyError,
+      retryDelayMs: 1,
+    });
+
+    const response = await handler(
+      new Request("echo-app://app/api/auth/status"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(onProxyError).not.toHaveBeenCalled();
+
+    const post = vi.fn(async () => {
+      throw new TypeError("net::ERR_INSUFFICIENT_RESOURCES");
+    });
+    const postResponse = await desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: post,
+      retryDelayMs: 1,
+    })(new Request("echo-app://app/api/tasks", { method: "POST", body: "{}" }));
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(postResponse.status).toBe(503);
+  });
+
   it("does not mistake lookalike paths or foreign hosts for backend routes", async () => {
     const fetchImpl = vi.fn(async () => new Response("unexpected"));
     const handler = makeHandler(fetchImpl);
