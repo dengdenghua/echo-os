@@ -75,10 +75,13 @@ def _norm(path: str) -> str:
 def _display(path: str, workspace: str | None) -> tuple[str, bool]:
     if workspace:
         try:
-            relative = os.path.relpath(_norm(path), _norm(workspace))
+            # Compare case-insensitively where the OS does, but show the
+            # path's own spelling.
+            inside = not os.path.relpath(_norm(path), _norm(workspace)).startswith("..")
+            relative = os.path.relpath(os.path.normpath(path), os.path.normpath(workspace))
         except ValueError:  # different drive on Windows
-            relative = ""
-        if relative and relative != "." and not relative.startswith(".."):
+            inside, relative = False, ""
+        if inside and relative and relative != ".":
             return PurePath(relative).as_posix(), True
     return path, False
 

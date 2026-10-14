@@ -242,3 +242,13 @@ def test_without_a_runtime_the_route_says_so(tmp_path):
     body = _client(app).get("/api/appliance/tasks/task-native/file-changes").json()
     assert body["available"] is False
     assert body["reason"] == "runtime_unavailable"
+
+
+def test_paths_keep_their_own_spelling(scene):
+    folder = scene.workspace / ".echo-work" / "tAbCdEf"
+    folder.mkdir(parents=True)
+    _write(scene, folder / "Hello.TXT", "hello echo", action="create")
+
+    body = _client(scene.app).get("/api/appliance/tasks/task-codex/file-changes").json()
+
+    assert body["changes"][0]["displayPath"] == ".echo-work/tAbCdEf/Hello.TXT"
