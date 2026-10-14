@@ -239,23 +239,38 @@ gdbus call --session \
 }
 
 CLIPBOARD_SENTINEL='echo-os-x11-clipboard-persistence-smoke'
+# The source keeps serving until Klipper has captured the sentinel and is then
+# terminated, like an application that copies and quits. (xclip -loops 1 cannot
+# model this on X11: Qt's clipboard reader first asks for TARGETS, which uses up
+# the single request before Klipper can fetch the text.) -quiet keeps xclip in
+# the foreground; by default it forks, so $! would not be the selection owner.
 printf '%s' "$CLIPBOARD_SENTINEL" | \
-  xclip -selection clipboard -in -loops 1 \
+  xclip -quiet -selection clipboard -in \
     >"$LOG_DIR/clipboard-source-x11.log" 2>&1 &
 CLIPBOARD_SOURCE_PID=$!
+CLIPBOARD_CAPTURED=0
 for _attempt in $(seq 1 100); do
-  if ! kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then break; fi
   kill -0 "$CLIPBOARD_HOST_PID" 2>/dev/null || {
     echo "Klipper host exited while capturing the X11 clipboard" >&2
     exit 1
   }
+  if [[ "$(gdbus call --session \
+         --dest org.kde.klipper \
+         --object-path /klipper \
+         --method org.kde.klipper.klipper.getClipboardContents \
+         2>/dev/null || true)" == "('$CLIPBOARD_SENTINEL',)" ]]; then
+    CLIPBOARD_CAPTURED=1
+    break
+  fi
   sleep 0.1
 done
-if kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then
+[[ "$CLIPBOARD_CAPTURED" -eq 1 ]] || {
   echo "Klipper never captured the X11 clipboard from its source owner" >&2
   exit 1
-fi
-wait "$CLIPBOARD_SOURCE_PID"
+}
+unset CLIPBOARD_CAPTURED
+kill "$CLIPBOARD_SOURCE_PID"
+wait "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
 unset CLIPBOARD_SOURCE_PID
 CLIPBOARD_VALUE=''
 for _attempt in $(seq 1 100); do
