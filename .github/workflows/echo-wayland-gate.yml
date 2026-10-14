@@ -147,19 +147,3 @@ jobs:
           path: ${{ runner.temp }}/echo-wayland-gate
           if-no-files-found: warn
           retention-days: 7
-
-  # TEMPORARY (to be removed in the next commit): can a hosted runner provide
-  # the DRM device KWin's virtual backend needs for OpenGL compositing?
-  drm-probe-host:
-    name: Runner DRM probe (temporary)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Probe vgem and vkms on the runner kernel
-        run: |
-          uname -r
-          ls -l /dev/dri 2>&1 || true
-          find "/lib/modules/$(uname -r)" \( -name 'vgem*' -o -name 'vkms*' \) 2>/dev/null | head
-          apt-cache policy "linux-modules-extra-$(uname -r)" | head -4 || true
-          if sudo modprobe vgem; then ls -l /dev/dri; else echo "vgem: modprobe failed"; fi
-          if sudo modprobe vkms; then ls -l /dev/dri; else echo "vkms: modprobe failed"; fi
