@@ -54,6 +54,9 @@ from runtime.platform.ui.app import create_app
 
 SNAPSHOT_PATH = Path(__file__).resolve().parent.parent / "docs" / "openapi-snapshot.json"
 
+# Cap the deep-diff report so a broad drift doesn't flood the failure log.
+_DIFF_LIMIT = 20
+
 
 def _current_schema() -> dict:
     """Fetch the live OpenAPI schema from a freshly built app.
@@ -129,9 +132,8 @@ def test_openapi_snapshot_matches() -> None:
             "Run with ECHO_OPENAPI_WRITE=1 if intentional."
         )
 
-    # Per-path method + schema-ref check. Full dict equality would be
-    # noisy (operationId name changes, etc); we compare just the
-    # method set + 200-response $ref per path.
+    # Per-path method check — keep the high-signal message before the
+    # deep diff below.
     for p in sorted(cur_paths):
         cur_methods = set(current["paths"][p].keys())
         snap_methods = set(snapshot["paths"][p].keys())
@@ -156,6 +158,67 @@ def test_openapi_snapshot_matches() -> None:
             f"{sorted(removed_components)}. Run with "
             "ECHO_OPENAPI_WRITE=1 if intentional."
         )
+
+    # Deep diff of the full normalized schema. Path/method/component-name
+    # drift is already reported above with targeted messages; this catches
+    # everything else — a field added to or removed from a response model,
+    # a renamed $ref, a changed enum or required list, a request-body
+    # schema swap. Previously only paths/methods/component NAMES were
+    # compared, so in-model field changes passed silently (see
+    # CLAUDE.md "OpenAPI" section — that caveat is fixed here).
+    differences = _deep_diff(current, snapshot)
+    if differences:
+        shown = differences[:20]
+        more = len(differences) - len(shown)
+        pytest.fail(
+            "OpenAPI schema content drifted from the snapshot.\n"
+            + "\n".join(f"  {d}" for d in shown)
+            + (f"\n  ... and {more} more" if more > 0 else "")
+            + "\nRun with ECHO_OPENAPI_WRITE=1 if intentional."
+        )
+
+
+def _deep_diff(current: object, snapshot: object, path: str = "$") -> list[str]:
+    """Collect JSON-pointer-style differences between live and snapshot.
+
+    ``current`` is the freshly generated schema; ``snapshot`` is the
+    committed expectation. Messages read as "snapshot says X, current says Y".
+    """
+    out: list[str] = []
+    _deep_diff_into(current, snapshot, path, out)
+    return out
+
+
+def _deep_diff_into(current: object, snapshot: object, path: str, out: list[str]) -> None:
+    if len(out) >= _DIFF_LIMIT:
+        return
+    if type(current) is not type(snapshot):
+        out.append(
+            f"{path}: type changed · snapshot={type(snapshot).__name__} "
+            f"current={type(current).__name__}"
+        )
+        return
+    if isinstance(current, dict):
+        for key in sorted(set(current) | set(snapshot)):
+            child = f"{path}.{key}"
+            if key not in snapshot:
+                out.append(f"{child}: added in current, missing in snapshot")
+            elif key not in current:
+                out.append(f"{child}: removed in current, present in snapshot")
+            else:
+                _deep_diff_into(current[key], snapshot[key], child, out)
+            if len(out) >= _DIFF_LIMIT:
+                return
+    elif isinstance(current, list):
+        if len(current) != len(snapshot):
+            out.append(f"{path}: list length changed · snapshot={len(snapshot)} current={len(current)}")
+            return
+        for i, (cur_item, snap_item) in enumerate(zip(current, snapshot, strict=True)):
+            _deep_diff_into(cur_item, snap_item, f"{path}[{i}]", out)
+            if len(out) >= _DIFF_LIMIT:
+                return
+    elif current != snapshot:
+        out.append(f"{path}: snapshot={snapshot!r} current={current!r}")
 
 
 def test_openapi_response_models_on_config_endpoints() -> None:
