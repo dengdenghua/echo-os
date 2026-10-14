@@ -145,6 +145,31 @@ function errorResponse(status, code) {
   });
 }
 
+// When the system Agent cannot be reached (at boot before it listens, or a
+// transient proxy failure), answer exactly like the appliance nginx does for
+// 502/504 (deploy/provision/base/echo-nginx.conf) and the dev server's proxy:
+// 503 appliance_starting with Retry-After. The desktop then shows "系统服务正在
+// 启动" and reconnects by itself; a bare 502 parked the shell on "暂时无法连接
+// 系统服务" until someone pressed retry.
+function backendStartingResponse() {
+  return new Response(
+    JSON.stringify({
+      detail: {
+        code: "appliance_starting",
+        message: "ECHO OS 正在启动，请稍后重试",
+      },
+    }),
+    {
+      status: 503,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json; charset=utf-8",
+        "Retry-After": "3",
+      },
+    },
+  );
+}
+
 function proxyHeaders(requestHeaders) {
   const headers = new Headers(requestHeaders);
   for (const name of FORBIDDEN_PROXY_HEADERS) {
@@ -221,7 +246,7 @@ function createDesktopProtocolHandler({
         return rewriteBackendRedirect(response, trustedBackendOrigin);
       } catch (error) {
         onProxyError?.(error);
-        return errorResponse(502, "desktop_backend_unavailable");
+        return backendStartingResponse();
       }
     }
 

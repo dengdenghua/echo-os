@@ -152,6 +152,32 @@ describe("desktop protocol handler", () => {
     expect(response.headers.has("access-control-allow-origin")).toBe(false);
   });
 
+  it("answers an unreachable backend like the appliance nginx: 503 appliance_starting", async () => {
+    const onProxyError = vi.fn();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: vi.fn(async () => {
+        throw new TypeError("net::ERR_CONNECTION_REFUSED");
+      }),
+      onProxyError,
+    });
+
+    const response = await handler(
+      new Request("echo-app://app/api/auth/status"),
+    );
+
+    expect(onProxyError).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe("3");
+    expect(await response.json()).toEqual({
+      detail: {
+        code: "appliance_starting",
+        message: "ECHO OS 正在启动，请稍后重试",
+      },
+    });
+  });
+
   it("does not mistake lookalike paths or foreign hosts for backend routes", async () => {
     const fetchImpl = vi.fn(async () => new Response("unexpected"));
     const handler = makeHandler(fetchImpl);
