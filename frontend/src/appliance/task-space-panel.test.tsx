@@ -234,6 +234,33 @@ describe("Echo task space", () => {
     );
   });
 
+  it("words a bare approval by its tool on the card", () => {
+    const bare = {
+      ...projection.tasks[0]!,
+      approval: {
+        ...projection.tasks[0]!.approval!,
+        tool: "exec_shell",
+        reason: null,
+      },
+    };
+    render(
+      <TaskSpacePanel
+        open
+        projection={{ ...projection, tasks: [bare] }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText("Agent 请求运行命令，需要你授权"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("exec_shell")).not.toBeInTheDocument();
+  });
+
   it("opens a completed result from the task projection in the original thread", async () => {
     const user = userEvent.setup();
     const onOpenWorkspace = vi.fn();

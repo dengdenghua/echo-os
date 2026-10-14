@@ -72,6 +72,25 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+it("words a request without a reason by its tool, not its internal id", () => {
+  mock.tasks = [
+    {
+      ...waitingTask(),
+      approval: {
+        ...waitingTask().approval!,
+        tool: "exec_shell",
+        reason: null,
+      },
+    },
+  ];
+  render(<TaskApprovalBanner threadId="thread-1" />);
+
+  expect(
+    screen.getByText("Agent 请求运行命令，需要你授权"),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("exec_shell")).not.toBeInTheDocument();
+});
+
 it("submits the approval version the user reviewed", async () => {
   render(<TaskApprovalBanner threadId="thread-1" />);
   const user = userEvent.setup();

@@ -18,6 +18,7 @@ import {
   isExpiredApproval,
   readDismissedExpiredApprovals,
 } from "@/appliance/task-approval-consent";
+import { approvalText } from "@/appliance/task-presentation";
 import {
   useEchoTaskProjection,
   type EchoTaskProjection,
@@ -155,7 +156,7 @@ export function TaskApprovalBanner({ threadId }: { threadId: string }) {
       <p className="mt-1 break-words text-muted-foreground">
         {recover
           ? "原来的等待已中断。恢复保存的进度后，操作会重新经过审批。"
-          : task.approval?.reason || task.approval?.tool || "请确认本次操作。"}
+          : approvalText(task)}
       </p>
       {!recover && approvalDeadlineText(task.approval?.expiresAt) && (
         <p className="mt-1 text-warning">

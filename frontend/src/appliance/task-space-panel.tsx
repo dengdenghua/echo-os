@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { TaskApprovalDialog } from "./task-approval-dialog";
 import { AgentFileChangesPanel } from "./agent-file-changes-panel";
 import { TaskChangesPanel } from "./task-changes-panel";
+import { approvalText } from "./task-presentation";
 import {
   APPROVAL_EXPIRED,
   APPROVAL_EXPIRED_DETAIL,
@@ -250,11 +251,7 @@ function TaskCard({
             <ShieldCheckIcon className="size-3.5" />
             需要管理员确认
           </div>
-          <p className="mt-1 text-[12px] text-warning">
-            {task.approval.reason ||
-              task.approval.tool ||
-              "高风险系统操作正在等待确认"}
-          </p>
+          <p className="mt-1 text-[12px] text-warning">{approvalText(task)}</p>
         </div>
       )}
 
