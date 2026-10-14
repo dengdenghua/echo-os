@@ -441,9 +441,11 @@ export function threadHref(thread: {
 export function activeWorkspaceThreadIdFromPathname(
   pathname: string,
 ): string | null {
-  const match = /^\/workspace\/(?:realtime|team)\/([^/?#]+)/.exec(pathname);
-  const value = match?.[1];
+  const match = /^\/workspace\/(realtime|team)\/([^/?#]+)/.exec(pathname);
+  const value = match?.[2];
   if (!value || value === "new") return null;
+  // /workspace/team/join is the invitation page, not a team room.
+  if (match?.[1] === "team" && value === "join") return null;
   try {
     return decodeURIComponent(value);
   } catch {

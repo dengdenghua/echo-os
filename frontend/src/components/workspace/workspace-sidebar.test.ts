@@ -193,6 +193,13 @@ describe("workspace sidebar project grouping", () => {
     expect(__testing.activeTeamTaskRoomId("/workspace/team/room-2", null)).toBe(
       "room-2",
     );
+    // The invitation page is not a room: no ?room_id=join task query.
+    expect(
+      __testing.activeTeamTaskRoomId("/workspace/team/join?token=x", null),
+    ).toBeNull();
+    expect(
+      __testing.activeTeamTaskRoomId("/workspace/team/join", teamThread),
+    ).toBeNull();
   });
 
   test("keeps team history out of chat recents and under projects", () => {
