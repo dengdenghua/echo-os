@@ -514,6 +514,7 @@ timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$ECHO_PID" \
   --required-name "ECHO OS 桌面" \
   --timeout-seconds 15 \
+  --report-on-failure \
   >"$LOG_DIR/accessibility-tree-echo-wayland.log"
 grep -Fxq 'ECHO_ACCESSIBILITY_TREE_READY provider=at-spi2 application=echo' \
   "$LOG_DIR/accessibility-tree-echo-wayland.log"

@@ -128,12 +128,46 @@ def marker_belongs_to_process(
     return False
 
 
+# Structural roles whose names are fixed UI labels, reported only on failure and
+# only when a smoke asks for it (--report-on-failure): enough to tell the
+# desktop from a session gate without serializing any other node.
+REPORTED_ROLES = frozenset({"alert", "document web", "frame", "heading", "landmark", "status"})
+
+
+def _safe_role(accessible: object) -> str:
+    try:
+        return str(accessible.getRoleName() or "")
+    except Exception:
+        return ""
+
+
+def describe_process_landmarks(
+    desktop: object,
+    root_pid: int,
+    proc_root: Path = Path("/proc"),
+    limit: int = 12,
+) -> list[str]:
+    described: list[str] = []
+    for accessible in walk_accessibles(desktop):
+        role = _safe_role(accessible)
+        if role not in REPORTED_ROLES:
+            continue
+        process_id = _application_pid(accessible)
+        if process_id is None or not process_belongs_to(process_id, root_pid, proc_root):
+            continue
+        described.append(f"{role}:{_safe_name(accessible)[:60]}")
+        if len(described) >= limit:
+            break
+    return described
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root-pid", required=True, type=_positive_pid)
     parser.add_argument("--required-name", required=True)
     parser.add_argument("--timeout-seconds", type=float, default=15.0)
     parser.add_argument("--poll-interval", type=float, default=0.2)
+    parser.add_argument("--report-on-failure", action="store_true")
     args = parser.parse_args(argv)
     if not args.required_name or len(args.required_name) > 256:
         parser.error("required name must contain 1-256 characters")
@@ -169,6 +203,15 @@ def main(argv: list[str] | None = None) -> int:
         time.sleep(args.poll_interval)
 
     print("Echo application did not expose its fixed AT-SPI marker", file=sys.stderr)
+    if args.report_on_failure:
+        try:
+            landmarks = describe_process_landmarks(pyatspi.Registry.getDesktop(0), args.root_pid)
+        except Exception:
+            landmarks = []
+        print(
+            "Echo AT-SPI structure: " + ("; ".join(landmarks) or "none"),
+            file=sys.stderr,
+        )
     return 1
 
 
