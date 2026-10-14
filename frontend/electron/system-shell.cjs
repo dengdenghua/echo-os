@@ -15,10 +15,55 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { execFile } = require("child_process");
+const { spawn } = require("child_process");
 
 const LAUNCH_TIMEOUT_MS = 10_000;
 const LAUNCH_MAX_BUFFER_BYTES = 64 * 1024;
+
+/**
+ * execFile-shaped runner for the gio launcher that completes on gio's own exit.
+ *
+ * The launched application inherits gio's stdio. With execFile's pipes, the
+ * callback waited until the application closed them, i.e. until the timeout
+ * tore them down underneath it: every launch reported success only after
+ * LAUNCH_TIMEOUT_MS, and the application was left writing to a destroyed pipe
+ * (EPIPE/SIGPIPE on its next log line). gio therefore gets no pipes at all.
+ */
+function runLauncher(command, args, options, callback) {
+  let settled = false;
+  let timer = null;
+  const finish = (error) => {
+    if (settled) return;
+    settled = true;
+    if (timer !== null) clearTimeout(timer);
+    callback(error, "", "");
+  };
+  const child = spawn(command, args, {
+    stdio: "ignore",
+    windowsHide: options.windowsHide === true,
+  });
+  timer = setTimeout(() => {
+    const error = new Error("launcher timed out");
+    error.killed = true;
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      // The launcher may already have exited.
+    }
+    finish(error);
+  }, options.timeout);
+  child.once("error", (error) => finish(error));
+  child.once("exit", (code, signal) => {
+    if (code === 0) {
+      finish(null);
+      return;
+    }
+    const error = new Error(`launcher exited ${code ?? signal}`);
+    error.code = code;
+    error.signal = signal;
+    finish(error);
+  });
+}
 
 // ── XDG 应用目录(freedesktop)──────────────────────────────────
 function appDirs() {
@@ -212,7 +257,7 @@ function launchErrorMessage(error, stderr) {
     : "application launch failed";
 }
 
-function launchDesktopFile(desktopFile, execFileImpl = execFile) {
+function launchDesktopFile(desktopFile, execFileImpl = runLauncher) {
   if (!path.isAbsolute(desktopFile) || !desktopFile.endsWith(".desktop")) {
     return Promise.resolve({ ok: false, error: "invalid desktop file" });
   }
@@ -256,7 +301,7 @@ async function launchApplicationById(appId, options = {}) {
     options.iconRoots || iconThemeRoots(),
   ).find((candidate) => candidate.id === id);
   if (!app) return { ok: false, error: "native application not found" };
-  return launchDesktopFile(app.desktopFile, options.execFile || execFile);
+  return launchDesktopFile(app.desktopFile, options.execFile || runLauncher);
 }
 
 /** 注册 IPC:渲染进程经 window.echo.apps.* 调用。 */
@@ -280,4 +325,5 @@ module.exports = {
   launchDesktopFile,
   launchApplicationById,
   registerSystemShellIpc,
+  runLauncher,
 };
