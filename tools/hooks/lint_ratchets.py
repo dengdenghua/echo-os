@@ -18,12 +18,38 @@ uncommitted changes they run on an incrementally synced mirror of ``HEAD``
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from snapshot import REPO_ROOT, mirror, tree_blobs
+
+
+def bash_executable() -> str:
+    """The bash that runs the image contract.
+
+    On Windows a bare "bash" passed to CreateProcess resolves through System32
+    before PATH, i.e. to the WSL launcher, which silently ran the contract
+    inside WSL and failed whenever WSL could not start. Use Git for Windows'
+    bash, found next to git, instead.
+    """
+    if sys.platform != "win32":
+        return "bash"
+    git = shutil.which("git")
+    if git:
+        directory = Path(git).resolve().parent
+        for _ in range(4):
+            candidate = directory / "usr" / "bin" / "bash.exe"
+            if candidate.is_file():
+                return str(candidate)
+            directory = directory.parent
+    found = shutil.which("bash")
+    if found and "system32" not in found.lower():
+        return found
+    return "bash"
+
 
 CHECKED = (
     "runtime",
@@ -47,7 +73,7 @@ CHECKS = (
     ("orphan modules", [PYTHON, "tools/lint/orphan_module_check.py", "--strict"]),
     ("feature flags", [PYTHON, "tools/lint/feature_flag_consumption_check.py", "--strict"]),
     ("runtime invariants", [PYTHON, "tools/lint/invariant_check.py", "runtime"]),
-    ("image source contract", ["bash", "packaging/image/verify-image.sh", "--static"]),
+    ("image source contract", [bash_executable(), "packaging/image/verify-image.sh", "--static"]),
 )
 
 
