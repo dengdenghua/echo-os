@@ -191,6 +191,7 @@ cleanup_client() {
   [[ -n "${CLIPBOARD_SOURCE_PID:-}" ]] && kill "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
   [[ -n "${CLIPBOARD_HOST_PID:-}" ]] && kill "$CLIPBOARD_HOST_PID" 2>/dev/null || true
   [[ -n "${ACCESSIBILITY_BUS_PID:-}" ]] && kill "$ACCESSIBILITY_BUS_PID" 2>/dev/null || true
+  [[ -n "${READYZ_STUB_PID:-}" ]] && kill "$READYZ_STUB_PID" 2>/dev/null || true
   rm -f -- "${NATIVE_APP_IPC_READY_FILE:-}" "${RENDERER_READY_FILE:-}"
 }
 trap cleanup_client EXIT
@@ -339,6 +340,45 @@ NATIVE_APP_IPC_BASELINE_IDS="$(
     python3 "$WAYLAND_IPC_WINDOW_HELPER" baseline
 )"
 rm -f -- "$NATIVE_APP_IPC_READY_FILE" "$RENDERER_READY_FILE"
+
+# In smoke mode the shell runs its IPC smoke and reports success only once its
+# backend answers /readyz (waitForSmokeBackendReady in frontend/electron/main.cjs).
+# On a device the Agent service answers it; this gate covers the shell and KWin,
+# not the Agent, so a loopback responder stands in. Other API paths return 404.
+READYZ_PORT_FILE="$LOG_DIR/readyz-stub.port"
+rm -f -- "$READYZ_PORT_FILE"
+python3 -c '
+import http.server, os, sys
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        ready = self.path.split("?", 1)[0] == "/readyz"
+        body = b"{\"status\":\"ready\"}" if ready else b"{}"
+        self.send_response(200 if ready else 404)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args):
+        pass
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+with open(sys.argv[1] + ".tmp", "w", encoding="ascii") as stream:
+    stream.write(str(server.server_address[1]))
+os.replace(sys.argv[1] + ".tmp", sys.argv[1])
+server.serve_forever()
+' "$READYZ_PORT_FILE" >"$LOG_DIR/readyz-stub.log" 2>&1 &
+READYZ_STUB_PID=$!
+for _attempt in $(seq 1 50); do
+  [[ -s "$READYZ_PORT_FILE" ]] && break
+  sleep 0.1
+done
+[[ -s "$READYZ_PORT_FILE" ]] || {
+  echo "loopback readiness responder did not start" >&2
+  exit 1
+}
+export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
 
 WAYLAND_ECHO_ARGUMENTS=(
   --class=echo-shell
