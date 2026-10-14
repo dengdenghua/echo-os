@@ -35,6 +35,14 @@ export XDG_RUNTIME_DIR="$LOG_DIR/runtime"
 export XDG_CONFIG_HOME="$LOG_DIR/config"
 mkdir -p "$XDG_RUNTIME_DIR/echo-os" "$XDG_CONFIG_HOME"
 chmod 0700 "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR/echo-os"
+# GitHub job containers run as root with HOME=/github/home owned by the runner
+# user; Firefox (the http core-app case) refuses to run as root in another
+# user's home. Give the session a private home when HOME is not ours.
+if [[ ! -O "${HOME:-/nonexistent}" ]]; then
+  export HOME="$LOG_DIR/home"
+  mkdir -p "$HOME"
+  chmod 0700 "$HOME"
+fi
 
 kwriteconfig6 --file kwinrc --group Plugins \
   --key org.echoos.liquidglassEnabled true
