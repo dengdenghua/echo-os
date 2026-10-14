@@ -79,9 +79,10 @@ test.describe("Desktop system apps", () => {
     await expect(details).toBeVisible();
     await expect(details.getByRole("heading", { name: goal })).toBeVisible();
     await expect(details.getByText("任务目标")).toBeVisible();
+    // Every Agent task lists its recorded file changes; this one wrote none.
     await expect(
-      details.getByText("本任务尚无可核验的文件变更记录。"),
-    ).toBeVisible();
+      details.getByRole("region", { name: "文件改动" }),
+    ).toContainText("这个任务没有记录到文件改动。", { timeout: 15_000 });
 
     // The original conversation opens in its own task window.
     await details.getByRole("button", { name: "打开原任务" }).click();

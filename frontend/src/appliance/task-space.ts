@@ -101,7 +101,7 @@ export type EchoTaskProjection = {
     modified: number;
   }>;
   /** Concrete host provider; absence is not evidence of no side effects. */
-  changeProvider?: "echo-os.files" | null;
+  changeProvider?: "echo-os.files" | "echo-agent.files" | null;
   executionRecovery?: {
     checkpointAvailable: boolean;
     canStart: boolean;

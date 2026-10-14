@@ -29,6 +29,10 @@ from appliance.agent_api.tasks import (
 from appliance.audit import ApplianceAudit, AuditIntegrityError
 from appliance.security import ApplianceAuthenticator, resolve_authenticator
 from appliance.task_changes import register_task_changes_routes
+from appliance.task_file_changes import (
+    AGENT_FILE_TASK_KINDS,
+    register_task_file_changes_routes,
+)
 from echo_runtime.resource_identity import workspace_file_resource_id
 
 TASK_PROJECTION_SCHEMA = "echo.task_projection.v1"
@@ -436,6 +440,10 @@ def _project_task(
             "echo-os.files"
             if getattr(task, "kind", None) == "file_organization"
             and metadata.get("provider") == "echo-os.files"
+            # Agent turns (Echo or Codex engine): journal file_op records and
+            # thread fileChange items, served by /file-changes.
+            else "echo-agent.files"
+            if getattr(task, "kind", None) in AGENT_FILE_TASK_KINDS
             else None
         ),
     }
@@ -554,6 +562,12 @@ def create_task_projection_router(
         get_task=lambda task_id, actor: _require_task(supervisor, task_id, actor=actor),
         organization_service=organization_service,
         verify_audit=lambda: _audit_activity(audit),
+    )
+    register_task_file_changes_routes(
+        router,
+        require_auth=require_auth,
+        get_task=lambda task_id, actor: _require_task(supervisor, task_id, actor=actor),
+        realtime_gateway=realtime_gateway,
     )
 
     @router.get("")

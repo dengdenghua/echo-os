@@ -304,3 +304,31 @@ async def test_codex_lifecycle_revokes_and_drains_broker_even_on_close_failure(
         await lifecycle()
     assert order == ["revoke", "session", "drain"]
     assert broker._interrupted()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("shared", [False, True])
+async def test_engine_file_writes_are_journaled_against_the_conversation(
+    tmp_path, monkeypatch, shared
+):
+    """Task Space reads a task's file changes from file_op records of its thread."""
+
+    target = tmp_path / "hello.txt"
+    broker = make_broker(tmp_path, monkeypatch, shared=shared)
+    written = await broker.invoke(
+        "write_text_file",
+        {"path": str(target), "content": "hello echo"},
+        call_id="write",
+    )
+    assert written["success"], written
+    await broker.aclose()
+
+    journal = broker._stack.executor.journal
+    file_ops = journal.read_by_type("file_op")
+    assert [event.path for event in file_ops] == [str(target)]
+    assert file_ops[0].conversation_id == "thread"
+    assert file_ops[0].owner_actor_id == "actor"
+    assert file_ops[0].action in {"create", "write"}
+    assert file_ops[0].rollback and file_ops[0].rollback.get("after_sha256")
+    # Each call keeps its own executor task id (effect receipts stay per call).
+    assert file_ops[0].task_id is not None

@@ -19,6 +19,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { TaskApprovalDialog } from "./task-approval-dialog";
+import { AgentFileChangesPanel } from "./agent-file-changes-panel";
 import { TaskChangesPanel } from "./task-changes-panel";
 import {
   APPROVAL_EXPIRED,
@@ -518,8 +519,10 @@ function TaskDetailDrawer({
 
           {task.changeProvider === "echo-os.files" ? (
             <TaskChangesPanel key={task.id} taskId={task.id} />
+          ) : task.changeProvider === "echo-agent.files" ? (
+            <AgentFileChangesPanel key={task.id} taskId={task.id} />
           ) : (
-            <p className="text-[12px] text-slate-500">
+            <p className="text-[12px] text-muted-foreground">
               本任务尚无可核验的文件变更记录。
             </p>
           )}

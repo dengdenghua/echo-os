@@ -37,6 +37,12 @@ from runtime.execution.tool_engine.effect_receipts import should_refresh_read_re
 from runtime.execution.tool_engine.native_tool_execution import execute_native_tool_call
 from runtime.execution.tool_engine.session_metadata import project_tool_session_metadata
 from runtime.execution.tool_spec_builder import build_anthropic_tool_specs
+from runtime.memory.journal.journal_context import (
+    current_agent_id,
+    current_owner_actor_id,
+    current_tenant_id,
+    journal_context,
+)
 from runtime.platform.process.session import (
     Session,
     current_session,
@@ -884,7 +890,18 @@ class HostToolBroker:
         approval_handled: bool,
     ) -> tuple[str, bool, str]:
         session = self._execution_session(auto_approve=approval_handled)
-        with session_scope(session), parent_tool_use_scope(call_id):
+        # Attribute journal records (file_op with its diff and rollback
+        # hashes) to this conversation, as the native ReAct turn does, so the
+        # task's file changes are reviewable in 任务空间. Only the attribution
+        # changes: the executor still gets a fresh task id per call, so the
+        # effect-receipt idempotency keys stay per call.
+        journal_scope = journal_context(
+            agent_id=current_agent_id(),
+            conversation_id=self._outer_thread_id,
+            tenant_id=current_tenant_id(),
+            owner_actor_id=current_owner_actor_id() or self._principal_id,
+        )
+        with session_scope(session), parent_tool_use_scope(call_id), journal_scope:
             if self._taint in _TAINT_ORDER:
                 mark_injection_taint(self._taint)
             set_injection_gate_handled(approval_handled)
