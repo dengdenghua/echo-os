@@ -41,7 +41,10 @@ jobs:
       # Debian ships kwin_wayland with file capability cap_sys_nice=ep (realtime
       # compositor thread). Docker's default bounding set lacks SYS_NICE, so
       # execve fails with EPERM; grant exactly that capability, as on a device.
-      options: --cap-add=SYS_NICE
+      # Docker's default 64 MB /dev/shm is too small for Chromium next to KWin
+      # and the core applications: shared-memory allocation failed
+      # (AllocateRingBuffer, net::ERR_INSUFFICIENT_RESOURCES) late in the lane.
+      options: --cap-add=SYS_NICE --shm-size=2g
 
     env:
       CI: "true"
