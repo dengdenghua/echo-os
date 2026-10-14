@@ -30,7 +30,9 @@ from typing import Any
 
 SOURCE_TEST_SENTINEL = "USE-EPHEMERAL-RUNTIME"
 MAX_COMMAND_OUTPUT_BYTES = 1024 * 1024
-WINDOW_TIMEOUT_SECONDS = 30.0
+# Software-rendered Qt Quick applications (Haruna/mpv in particular) can take
+# well over 30 s to map their first window on a loaded two-core CI runner.
+WINDOW_TIMEOUT_SECONDS = 60.0
 POLL_SECONDS = 0.1
 HTTP_FIXTURE_NAME = "echo-core-browser.html"
 HTTP_FIXTURE_BODY = (
