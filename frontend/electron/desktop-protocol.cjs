@@ -222,6 +222,7 @@ function createDesktopProtocolHandler({
   backendBaseURL,
   fetchImpl,
   onProxyError,
+  onAssetError,
   retryDelayMs = 150,
 }) {
   const trustedBackendOrigin = normalizeLoopbackBackendBaseURL(backendBaseURL);
@@ -277,13 +278,23 @@ function createDesktopProtocolHandler({
     if (!assetPath) {
       return errorResponse(404, "desktop_asset_not_found");
     }
-    try {
-      return await fetchImpl(pathToFileURL(assetPath).toString(), {
-        method: request.method,
-        bypassCustomProtocolHandlers: true,
-      });
-    } catch {
-      return errorResponse(404, "desktop_asset_not_found");
+    // A cold start requests every renderer chunk at once; one asset refused
+    // with ERR_INSUFFICIENT_RESOURCES used to surface as a 404 and broke the
+    // lazily imported desktop for good. Assets are read-only, so retry.
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await fetchImpl(pathToFileURL(assetPath).toString(), {
+          method: request.method,
+          bypassCustomProtocolHandlers: true,
+        });
+      } catch (error) {
+        if (attempt < 4 && isTransientFetchError(error)) {
+          await delay(retryDelayMs * attempt);
+          continue;
+        }
+        onAssetError?.(error);
+        return errorResponse(404, "desktop_asset_not_found");
+      }
     }
   };
 }

@@ -163,6 +163,8 @@ function installDesktopRendererProtocol() {
     fetchImpl: (url, init) => net.fetch(url, init),
     onProxyError: (error) =>
       console.warn("[echo] desktop backend proxy unavailable:", error.message),
+    onAssetError: (error) =>
+      console.warn("[echo] desktop asset unavailable:", error.message),
   });
   protocol.handle(desktopProtocol.DESKTOP_APP_SCHEME, handler);
 }

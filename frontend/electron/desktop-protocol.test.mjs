@@ -214,6 +214,36 @@ describe("desktop protocol handler", () => {
     expect(postResponse.status).toBe(503);
   });
 
+  it("retries a renderer asset Chromium refused for lack of resources", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockResolvedValue(new Response("<main>Echo</main>"));
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl,
+      retryDelayMs: 1,
+    });
+
+    const response = await handler(new Request("echo-app://app/index.html"));
+
+    expect(response.status).toBe(200);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    const missing = vi.fn(async () => {
+      throw new TypeError("net::ERR_FILE_NOT_FOUND");
+    });
+    const notFound = await desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: missing,
+      retryDelayMs: 1,
+    })(new Request("echo-app://app/index.html"));
+    expect(missing).toHaveBeenCalledTimes(1);
+    expect(notFound.status).toBe(404);
+  });
+
   it("does not mistake lookalike paths or foreign hosts for backend routes", async () => {
     const fetchImpl = vi.fn(async () => new Response("unexpected"));
     const handler = makeHandler(fetchImpl);
