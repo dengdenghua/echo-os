@@ -161,6 +161,31 @@ def describe_process_landmarks(
     return described
 
 
+def describe_process_outline(
+    desktop: object,
+    root_pid: int,
+    proc_root: Path = Path("/proc"),
+    limit: int = 30,
+) -> list[str]:
+    """First nodes of the process's application subtree: depth, role, children, name."""
+    for application in _safe_children(desktop):
+        process_id = _application_pid(application)
+        if process_id is None or not process_belongs_to(process_id, root_pid, proc_root):
+            continue
+        outline: list[str] = []
+        stack: list[tuple[object, int]] = [(application, 0)]
+        while stack and len(outline) < limit:
+            accessible, depth = stack.pop()
+            children = list(_safe_children(accessible))
+            outline.append(
+                f"{depth}:{_safe_role(accessible)}[{len(children)}]:{_safe_name(accessible)[:40]}"
+            )
+            if depth < 12:
+                stack.extend((child, depth + 1) for child in reversed(children))
+        return outline
+    return []
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root-pid", required=True, type=_positive_pid)
@@ -205,13 +230,16 @@ def main(argv: list[str] | None = None) -> int:
     print("Echo application did not expose its fixed AT-SPI marker", file=sys.stderr)
     if args.report_on_failure:
         try:
-            landmarks = describe_process_landmarks(pyatspi.Registry.getDesktop(0), args.root_pid)
+            desktop = pyatspi.Registry.getDesktop(0)
+            landmarks = describe_process_landmarks(desktop, args.root_pid)
+            outline = describe_process_outline(desktop, args.root_pid)
         except Exception:
-            landmarks = []
+            landmarks, outline = [], []
         print(
             "Echo AT-SPI structure: " + ("; ".join(landmarks) or "none"),
             file=sys.stderr,
         )
+        print("Echo AT-SPI outline: " + (" | ".join(outline) or "none"), file=sys.stderr)
     return 1
 
 
