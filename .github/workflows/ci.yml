@@ -203,6 +203,23 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
+      # scripts/dev-instance.test.mjs and scripts/dev-with-agent.test.mjs drive
+      # the real development launcher against the checkout's .venv (runtime
+      # import probe plus fastapi/uvicorn/yaml/pydantic), so this job provisions
+      # the same locked development environment a developer checkout has.
+      - name: Setup Python for the development launcher contracts
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12.11"
+
+      - name: Setup pinned uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v6.6.1
+        with:
+          version: "0.11.25"
+
+      - name: Install the locked development Python environment
+        run: uv sync --locked --python 3.12.11 --extra dev --extra serve
+
       - name: Install dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
