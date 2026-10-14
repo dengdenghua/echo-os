@@ -14,6 +14,7 @@
 import { test, expect, _electron as electron } from "@playwright/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -21,6 +22,15 @@ import path from "node:path";
 const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = path.resolve(THIS_DIR, "..", "..", "electron");
 const REPO_ROOT = path.resolve(THIS_DIR, "..", "..", "..");
+
+/** A port nothing listens on now; the spawned backend binds it next. */
+async function freeLoopbackPort(): Promise<number> {
+  const server = createServer();
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as AddressInfo;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  return port;
+}
 
 test("desktop shell boots: window, preload bridge, workbench root", async () => {
   const userDataDir = await mkdtemp(
@@ -154,7 +164,10 @@ test("desktop shell boots: window, preload bridge, workbench root", async () => 
 });
 
 test("desktop backend spawns and the renderer reaches it", async () => {
-  const backendPort = 18000;
+  // A fixed port answered from whatever already listened there (a dev
+  // backend on 18000 has auth off), so the contract below tested the wrong
+  // process. The spawn port follows ECHO_BACKEND_URL.
+  const backendPort = await freeLoopbackPort();
   const backendUrl = `http://127.0.0.1:${backendPort}`;
   const userDataDir = await mkdtemp(
     path.join(tmpdir(), "echo-electron-backend-"),
