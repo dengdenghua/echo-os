@@ -163,8 +163,6 @@ def main() -> int:
 
     try:
         from PyQt6.QtCore import QByteArray, QCoreApplication, QTimer, QUrl
-        from PyQt6.QtDBus import QDBusConnection, QDBusInterface
-        from PyQt6.QtGui import QClipboard
         from PyQt6.QtQml import QQmlApplicationEngine
         from PyQt6.QtWidgets import QApplication
     except ImportError as exc:
@@ -193,39 +191,6 @@ def main() -> int:
         fail("Klipper did not create a private runtime database")
     if stat.S_IMODE(info.st_mode) & 0o077:
         fail("Klipper runtime database is readable outside the session user")
-
-    # Plasma 6.3's Klipper notices when the clipboard owner exits, but on Debian
-    # 13 (plasma-workspace 6.3.6) the item it re-offers carries only its
-    # application/x-kde-onlyReplaceEmpty marker and no text, so the copied text
-    # is gone as soon as the source application quits. When the clipboard is
-    # still empty shortly after such a loss, re-offer Klipper's newest history
-    # text through Klipper's own D-Bus API. Nothing is logged or persisted here;
-    # Klipper's runtime-only history remains the single store.
-    klipper = QDBusInterface(
-        DBUS_NAME, "/klipper", "org.kde.klipper.klipper", QDBusConnection.sessionBus()
-    )
-    clipboard = app.clipboard()
-    empty_marker = "application/x-kde-onlyReplaceEmpty"
-
-    def clipboard_is_empty() -> bool:
-        data = clipboard.mimeData(QClipboard.Mode.Clipboard)
-        return data is None or not [name for name in data.formats() if name != empty_marker]
-
-    def restore_newest_text() -> None:
-        if not clipboard_is_empty():
-            return
-        reply = klipper.call("getClipboardContents")
-        values = reply.arguments()
-        text = values[0] if values and isinstance(values[0], str) else ""
-        if text:
-            klipper.call("setClipboardContents", text)
-
-    def clipboard_changed(mode: QClipboard.Mode) -> None:
-        if mode == QClipboard.Mode.Clipboard and clipboard_is_empty():
-            # Give Klipper's own empty-clipboard handling the first chance.
-            QTimer.singleShot(300, restore_newest_text)
-
-    clipboard.changed.connect(clipboard_changed)
 
     print(
         "ECHO_CLIPBOARD_HOST_READY "
