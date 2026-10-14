@@ -1,46 +1,62 @@
 #!/usr/bin/env python3
-"""Run the tools/lint ratchets that the CI full suite enforces, before a push.
+"""Run the whole-tree CI gates that are too slow for every commit, before a push.
 
-``tests/test_lint.py``, ``test_async_blocking_check.py``,
-``test_async_lock_check.py``, ``test_orphan_module_check.py`` and
-``test_feature_flag_consumption_check.py`` fail CI when a baseline no longer
-matches the tree (a new violation, or a fixed one still listed). Each scan
-parses the whole tree, which is too slow for every commit, so this runs at
-pre-push and runs the scans in parallel.
+- The tools/lint ratchets that the CI full suite enforces (``tests/test_lint.py``,
+  ``test_async_blocking_check.py``, ``test_async_lock_check.py``,
+  ``test_orphan_module_check.py``, ``test_feature_flag_consumption_check.py``):
+  they fail when a baseline no longer matches the tree.
+- The static image source contract (``packaging/image/verify-image.sh
+  --static``), run by the Image and A/B source-contract workflows on every PR
+  that touches deploy/, packaging/, appliance/ or frontend/; it greps those
+  trees for fixed product invariants.
 
-It checks ``HEAD`` (what is being pushed). This checkout is shared by several
-sessions, so when the scanned paths have uncommitted changes the ``HEAD`` copy
-is exported to a temporary directory and scanned there.
+The checks run in parallel against ``HEAD`` (what is being pushed). This
+checkout is shared by several sessions, so when the checked paths have
+uncommitted changes they run on an incrementally synced mirror of ``HEAD``
+(see ``snapshot.py``) instead of the working tree.
 """
 
 from __future__ import annotations
 
-import io
 import subprocess
 import sys
-import tarfile
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-SCANNED = ("runtime", "tests", "demos", "benchmarks", "tools", "scripts", "pyproject.toml")
+from snapshot import REPO_ROOT, mirror, tree_blobs
+
+CHECKED = (
+    "runtime",
+    "tests",
+    "demos",
+    "benchmarks",
+    "tools",
+    "scripts",
+    "pyproject.toml",
+    ".github",
+    "packaging",
+    "deploy",
+    "frontend",
+    "appliance",
+)
+PYTHON = sys.executable
 CHECKS = (
-    ("import direction", ["tools/lint/import_direction_check.py", "--strict"]),
-    ("async blocking", ["tools/lint/async_blocking_check.py", "--strict"]),
-    ("async lock", ["tools/lint/async_lock_check.py", "--strict"]),
-    ("orphan modules", ["tools/lint/orphan_module_check.py", "--strict"]),
-    ("feature flags", ["tools/lint/feature_flag_consumption_check.py", "--strict"]),
-    ("runtime invariants", ["tools/lint/invariant_check.py", "runtime"]),
+    ("import direction", [PYTHON, "tools/lint/import_direction_check.py", "--strict"]),
+    ("async blocking", [PYTHON, "tools/lint/async_blocking_check.py", "--strict"]),
+    ("async lock", [PYTHON, "tools/lint/async_lock_check.py", "--strict"]),
+    ("orphan modules", [PYTHON, "tools/lint/orphan_module_check.py", "--strict"]),
+    ("feature flags", [PYTHON, "tools/lint/feature_flag_consumption_check.py", "--strict"]),
+    ("runtime invariants", [PYTHON, "tools/lint/invariant_check.py", "runtime"]),
+    ("image source contract", ["bash", "packaging/image/verify-image.sh", "--static"]),
 )
 
 
 def head_matches_working_tree() -> bool:
     changed = subprocess.run(
-        ["git", "diff", "--quiet", "HEAD", "--", *SCANNED], cwd=REPO_ROOT, check=False
+        ["git", "diff", "--quiet", "HEAD", "--", *CHECKED], cwd=REPO_ROOT, check=False
     )
     untracked = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard", "--", *SCANNED],
+        ["git", "ls-files", "--others", "--exclude-standard", "--", *CHECKED],
         cwd=REPO_ROOT,
         check=True,
         capture_output=True,
@@ -49,49 +65,38 @@ def head_matches_working_tree() -> bool:
     return changed.returncode == 0 and not untracked.strip()
 
 
-def export_head(destination: Path) -> None:
-    archive = subprocess.run(
-        ["git", "archive", "--format=tar", "HEAD", "--", *SCANNED],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-    ).stdout
-    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        tar.extractall(destination, filter="data")
-
-
-def run_check(root: Path, label: str, args: list[str]) -> tuple[str, int, str]:
+def run_check(root: Path, label: str, command: list[str]) -> tuple[str, int, str]:
     result = subprocess.run(
-        [sys.executable, *args], cwd=root, check=False, capture_output=True, text=True
-    )
-    return label, result.returncode, (result.stdout + result.stderr).strip()
-
-
-def scratch_parent() -> Path:
-    """Scratch space next to the repository (the system temp drive may be full)."""
-    path = subprocess.run(
-        ["git", "rev-parse", "--git-path", "echo-hook-cache"],
-        cwd=REPO_ROOT,
-        check=True,
+        command,
+        cwd=root,
+        check=False,
         capture_output=True,
-        text=True,
-    ).stdout.strip()
-    parent = (REPO_ROOT / path).resolve()
-    parent.mkdir(parents=True, exist_ok=True)
-    return parent
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = (result.stdout + result.stderr).strip()
+    if label == "image source contract":
+        # Report only the failed assertions, not the ~2,400 passing ones.
+        failed = [line for line in output.splitlines() if "✗" in line]
+        output = "\n".join(failed) or output
+    return label, result.returncode, output
+
+
+def run_all(root: Path) -> list[tuple[str, int, str]]:
+    with ThreadPoolExecutor(max_workers=len(CHECKS)) as pool:
+        return list(pool.map(lambda check: run_check(root, *check), CHECKS))
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="lint-ratchets-", dir=scratch_parent()) as temporary:
-        root = REPO_ROOT
-        if not head_matches_working_tree():
-            root = Path(temporary)
-            export_head(root)
-        with ThreadPoolExecutor(max_workers=len(CHECKS)) as pool:
-            results = list(pool.map(lambda check: run_check(root, *check), CHECKS))
+    if head_matches_working_tree():
+        results = run_all(REPO_ROOT)
+    else:
+        # Tracked symlinks and gitlinks are not mirrored; none of the checks read them.
+        with mirror("pre-push", tree_blobs("HEAD", *CHECKED)) as root:
+            results = run_all(root)
     failed = [result for result in results if result[1] != 0]
     for label, _code, output in failed:
-        print(f"--- {label} ratchet failed:\n{output}\n", file=sys.stderr)
+        print(f"--- {label} failed:\n{output}\n", file=sys.stderr)
     return 1 if failed else 0
 
 

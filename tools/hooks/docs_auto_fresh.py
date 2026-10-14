@@ -19,15 +19,13 @@ and fails, so the regenerated pages can be added to the commit.
 
 from __future__ import annotations
 
-import json
-import os
-import shutil
 import subprocess
 import sys
-import tempfile
-import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+
+from snapshot import PLACEHOLDER, git, index_blobs, mirror
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = "scripts/gen_wiki.py"
@@ -45,14 +43,6 @@ CONTENT_INPUTS = (
 )
 # Files gen_wiki only counts: their presence matters, their content does not.
 COUNTED_INPUTS = (":(glob)tests/**/test_*.py", ":(glob)frontend/src/**/*.tsx")
-PLACEHOLDER = "-"
-MANIFEST = "manifest.json"
-
-
-def git(*args: str, data: bytes | None = None) -> bytes:
-    return subprocess.run(
-        ["git", *args], cwd=REPO_ROOT, check=True, capture_output=True, input=data
-    ).stdout
 
 
 def staged_changes() -> list[tuple[str, str]]:
@@ -83,93 +73,17 @@ def working_tree_matches_index() -> bool:
     return unstaged.returncode == 0 and not untracked.strip()
 
 
-def index_entries() -> dict[str, str]:
-    """{path: blob id} for content inputs, {path: PLACEHOLDER} for counted ones."""
-    entries: dict[str, str] = {}
-    for record in git("ls-files", "-s", "-z", "--", *CONTENT_INPUTS).split(b"\0"):
-        if record:
-            meta, path = record.decode("utf-8").split("\t", 1)
-            entries[path] = meta.split()[1]
-    for raw in git("ls-files", "-z", "--", *COUNTED_INPUTS).split(b"\0"):
-        if raw:
-            entries.setdefault(raw.decode("utf-8"), PLACEHOLDER)
-    return entries
-
-
-def sync_mirror(mirror: Path) -> None:
-    """Make ``mirror`` hold exactly the staged inputs, rewriting only changes."""
-    manifest_path = mirror / MANIFEST
-    try:
-        previous = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        previous = {}
-    # docs/auto is small and the generator rewrites it in place: always restore
-    # it from the index so pages added by an earlier regeneration cannot linger.
-    shutil.rmtree(mirror / OUTPUT, ignore_errors=True)
-    previous = {path: blob for path, blob in previous.items() if not path.startswith(f"{OUTPUT}/")}
-    wanted = index_entries()
-    for path in set(previous) - set(wanted):
-        (mirror / path).unlink(missing_ok=True)
-    changed = [path for path, blob in wanted.items() if previous.get(path) != blob]
-    blobs = [path for path in changed if wanted[path] != PLACEHOLDER]
-    if blobs:
-        request = "".join(f"{wanted[path]}\n" for path in blobs).encode()
-        stream = git("cat-file", "--batch", data=request)
-        offset = 0
-        for path in blobs:
-            header_end = stream.index(b"\n", offset)
-            size = int(stream[offset:header_end].split()[2])
-            content = stream[header_end + 1 : header_end + 1 + size]
-            offset = header_end + 1 + size + 1
-            target = mirror / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(content)
-    for path in changed:
-        if wanted[path] == PLACEHOLDER:
-            target = mirror / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(b"")
-    manifest_path.write_text(json.dumps(wanted, sort_keys=True), encoding="utf-8")
-
-
 @contextmanager
-def snapshot_root():
+def snapshot_root() -> Iterator[Path]:
     """Yield a directory holding the staged inputs (the repo itself if clean)."""
     if working_tree_matches_index():
         yield REPO_ROOT
         return
-    cache = Path(git("rev-parse", "--git-path", "echo-hook-cache").decode().strip())
-    mirror = (REPO_ROOT / cache / "docs-auto").resolve()
-    lock = mirror.with_name("docs-auto.lock")
-    mirror.mkdir(parents=True, exist_ok=True)
-    descriptor = None
-    for _ in range(600):
-        try:
-            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            break
-        except FileExistsError:
-            try:
-                if time.time() - lock.stat().st_mtime > 600:
-                    lock.unlink(missing_ok=True)  # stale lock from a killed commit
-            except FileNotFoundError:
-                pass
-            time.sleep(0.1)
-    if descriptor is None:
-        # Another commit holds the mirror; fall back to a private copy.
-        with tempfile.TemporaryDirectory(prefix="docs-auto-", dir=mirror.parent) as temporary:
-            sync_mirror(Path(temporary))
-            yield Path(temporary)
-        return
-    os.close(descriptor)
-    try:
-        try:
-            sync_mirror(mirror)
-        except Exception:
-            (mirror / MANIFEST).unlink(missing_ok=True)  # rebuild from scratch next time
-            raise
-        yield mirror
-    finally:
-        lock.unlink(missing_ok=True)
+    wanted = index_blobs(*CONTENT_INPUTS)
+    for path in index_blobs(*COUNTED_INPUTS):
+        wanted.setdefault(path, PLACEHOLDER)
+    with mirror("docs-auto", wanted, always_fresh=(OUTPUT,)) as root:
+        yield root
 
 
 def _normalized(path: Path) -> bytes:

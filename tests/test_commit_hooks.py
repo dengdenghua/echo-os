@@ -8,6 +8,7 @@ would silently select nothing; these tests make that a CI failure instead.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,8 @@ HOOKS = REPO_ROOT / "tools" / "hooks"
 
 
 def _load(name: str):
+    if str(HOOKS) not in sys.path:
+        sys.path.insert(0, str(HOOKS))  # the hooks import their shared snapshot module
     spec = importlib.util.spec_from_file_location(f"echo_hook_{name}", HOOKS / f"{name}.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
