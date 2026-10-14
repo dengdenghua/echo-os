@@ -269,6 +269,19 @@ done
   exit 1
 }
 unset CLIPBOARD_CAPTURED
+# Klipper records the item text at once but writes the item's data file, which
+# it re-offers once the owner quits, asynchronously through KIO. Quit the source
+# only after that file exists, as a user would a moment after copying. Only the
+# file's presence is checked, never its content.
+CLIPBOARD_ITEM_DATA="${CLIPBOARD_DATABASE%/*}/data"
+for _attempt in $(seq 1 100); do
+  find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q . && break
+  sleep 0.1
+done
+find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q . || {
+  echo "Klipper never wrote the captured X11 item's data file" >&2
+  exit 1
+}
 kill "$CLIPBOARD_SOURCE_PID"
 wait "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
 unset CLIPBOARD_SOURCE_PID

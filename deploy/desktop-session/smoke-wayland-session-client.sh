@@ -145,8 +145,12 @@ fi
 # reports no physical size (chooseScale in outputconfigurationstore.cpp).
 # Apply the fractional scale the way System Settings does, over
 # kde_output_management_v2, and lay the two 1280x800 logical outputs side by
-# side; the bridge must then observe the change.
-KSCREEN_BACKEND=KWayland KSCREEN_BACKEND_INPROCESS=1 timeout 30s kscreen-doctor \
+# side; the bridge must then observe the change. kscreen-doctor talks to the
+# D-Bus-activated kscreen_backend_launcher (an in-process backend failed with
+# "Cannot find output with id 1"), which needs the session's runtime dir and
+# Wayland display in the activation environment.
+/usr/bin/dbus-update-activation-environment XDG_RUNTIME_DIR WAYLAND_DISPLAY
+QT_LOGGING_RULES='kscreen.*.debug=true' timeout 30s kscreen-doctor \
   output.Virtual-0.scale.1.25 output.Virtual-0.position.0,0 \
   output.Virtual-1.scale.1.25 output.Virtual-1.position.1280,0 \
   >"$LOG_DIR/kscreen-doctor.log" 2>&1 || {
@@ -267,23 +271,40 @@ gdbus call --session \
 }
 
 CLIPBOARD_SENTINEL='echo-os-wayland-clipboard-persistence-smoke'
+# The source serves until Klipper has captured the sentinel and written the
+# item's data file, then quits like an application that copies and exits.
+# (--paste-once would exit the instant Klipper read the text, racing Klipper's
+# asynchronous KIO write of the data it re-offers.) Only the data file's
+# presence is checked, never its content.
 printf '%s' "$CLIPBOARD_SENTINEL" | \
-  wl-copy --foreground --paste-once \
+  wl-copy --foreground \
     >"$LOG_DIR/clipboard-source-wayland.log" 2>&1 &
 CLIPBOARD_SOURCE_PID=$!
+CLIPBOARD_ITEM_DATA="${CLIPBOARD_DATABASE%/*}/data"
+CLIPBOARD_CAPTURED=0
 for _attempt in $(seq 1 150); do
-  if ! kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then break; fi
   kill -0 "$CLIPBOARD_HOST_PID" 2>/dev/null || {
     echo "Klipper host exited while capturing the Wayland clipboard" >&2
     exit 1
   }
+  if [[ "$(gdbus call --session \
+         --dest org.kde.klipper \
+         --object-path /klipper \
+         --method org.kde.klipper.klipper.getClipboardContents \
+         2>/dev/null || true)" == "('$CLIPBOARD_SENTINEL',)" ]] && \
+     find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q .; then
+    CLIPBOARD_CAPTURED=1
+    break
+  fi
   sleep 0.1
 done
-if kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then
-  echo "Klipper never captured the Wayland clipboard from its source owner" >&2
+[[ "$CLIPBOARD_CAPTURED" -eq 1 ]] || {
+  echo "Klipper never captured and stored the Wayland clipboard from its source owner" >&2
   exit 1
-fi
-wait "$CLIPBOARD_SOURCE_PID"
+}
+unset CLIPBOARD_CAPTURED
+kill "$CLIPBOARD_SOURCE_PID"
+wait "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
 unset CLIPBOARD_SOURCE_PID
 CLIPBOARD_VALUE=''
 for _attempt in $(seq 1 150); do
