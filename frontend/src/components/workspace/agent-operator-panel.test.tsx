@@ -1626,6 +1626,11 @@ describe("<AgentOperatorPanel />", () => {
     renderWithProviders(<AgentOperatorPanel />);
 
     const button = await screen.findByRole("button", { name: /Queue review/ });
+    // The button renders disabled until the task runs load and one is
+    // selected; a click before that is a no-op (seen under CI load).
+    await waitFor(() => {
+      expect(button).toBeEnabled();
+    });
     fireEvent.click(button);
 
     await waitFor(() => {
