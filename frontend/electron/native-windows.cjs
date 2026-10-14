@@ -22,6 +22,24 @@ const { execFile } = require("child_process");
 
 const WMCTRL_PATHS = ["/usr/bin/wmctrl", "/bin/wmctrl"];
 const XPROP_PATHS = ["/usr/bin/xprop", "/bin/xprop"];
+const PYTHON3_PATHS = ["/usr/bin/python3"];
+// KWin ignores client requests to set _NET_WM_STATE_HIDDEN ("clients are not
+// allowed to change this directly", kwin netinfo.cpp), so `wmctrl -b
+// add,hidden` never minimized anything. Iconify the ICCCM way instead: a
+// WM_CHANGE_STATE client message with IconicState, sent to the root window.
+// Fixed code; the only argument is the validated window id. python3-xlib ships
+// in the image.
+const X11_ICONIFY_SCRIPT = [
+  "import sys",
+  "from Xlib import X, display",
+  "from Xlib.protocol import event",
+  "d = display.Display()",
+  "window = d.create_resource_object('window', int(sys.argv[1], 16))",
+  "message = event.ClientMessage(window=window, client_type=d.intern_atom('WM_CHANGE_STATE'), data=(32, [3, 0, 0, 0, 0]))",
+  "d.screen().root.send_event(message, event_mask=X.SubstructureRedirectMask | X.SubstructureNotifyMask)",
+  "d.sync()",
+  "d.close()",
+].join("\n");
 const WINDOW_ID = /^0x[0-9a-f]+$/i;
 const KWIN_WINDOW_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -102,12 +120,12 @@ function parseWmctrlWindowList(output, activeWindowId = null) {
     .map((line) => line.trim())
     .filter(Boolean)
     .flatMap((line) => {
-      // id desktop pid host wmClass title (title may contain arbitrary spaces)
+      // id desktop pid wmClass host title (title may contain arbitrary spaces)
       const match = line.match(
         /^(0x[0-9a-f]+)\s+(-?\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s*(.*)$/i,
       );
       if (!match) return [];
-      const [, rawId, rawDesktop, rawPid, host, wmClass, title] = match;
+      const [, rawId, rawDesktop, rawPid, wmClass, host, title] = match;
       const id = normalizeWindowId(rawId);
       return [
         {
@@ -224,6 +242,10 @@ function resolveRuntime(options = {}) {
     options.xpropPath === undefined
       ? firstExecutable(XPROP_PATHS, options.exists)
       : options.xpropPath;
+  const python3Path =
+    options.python3Path === undefined
+      ? firstExecutable(PYTHON3_PATHS, options.exists)
+      : options.python3Path;
   const runtimeDirectory =
     options.runtimeDirectory === undefined
       ? process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid?.() || 0}`
@@ -240,6 +262,7 @@ function resolveRuntime(options = {}) {
     display,
     wmctrlPath,
     xpropPath,
+    python3Path,
     waylandBridgePath,
     waylandBridgeReady:
       options.waylandBridgeReady === undefined
@@ -435,20 +458,29 @@ async function runNativeWindowAction(action, windowId, options = {}) {
     }
   }
 
-  const argsByAction = {
+  const commandsByAction = {
     focus: [
-      ["-ir", id, "-b", "remove,hidden"],
-      ["-ia", id],
+      [runtime.wmctrlPath, ["-ir", id, "-b", "remove,hidden"]],
+      [runtime.wmctrlPath, ["-ia", id]],
     ],
-    minimize: [["-ir", id, "-b", "add,hidden"]],
-    close: [["-ic", id]],
+    minimize: [[runtime.python3Path, ["-I", "-c", X11_ICONIFY_SCRIPT, id]]],
+    close: [[runtime.wmctrlPath, ["-ic", id]]],
   };
-  const commands = argsByAction[action];
+  const commands = commandsByAction[action];
   if (!commands) return { ok: false, action, error: "unknown window action" };
+  if (action === "minimize" && !runtime.python3Path) {
+    return {
+      ok: false,
+      action,
+      windowId: id,
+      provider: "ewmh-x11",
+      error: "python3 is not installed",
+    };
+  }
 
   try {
-    for (const args of commands) {
-      await runFile(runtime.wmctrlPath, args, runtime);
+    for (const [file, args] of commands) {
+      await runFile(file, args, runtime);
     }
     return { ok: true, action, windowId: id, provider: "ewmh-x11" };
   } catch (error) {
@@ -487,4 +519,5 @@ module.exports = {
   listNativeWindows,
   runNativeWindowAction,
   registerNativeWindowsIpc,
+  X11_ICONIFY_SCRIPT,
 };
