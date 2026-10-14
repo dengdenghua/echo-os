@@ -402,6 +402,9 @@ def create_config_router(
     # before the sub-router sees it — without that wrap mirrors
     # reject the alias as an unknown model.
 
+    # Live wrapper per configured entry, kept for the keyless fallback below.
+    registered_wrappers: dict[str, Any] = {}
+
     def _dispatcher() -> Any:
         return getattr(
             getattr(stack, "planner", None) if stack else None,
@@ -615,6 +618,7 @@ def create_config_router(
         )
         for route_id in _entry_route_ids(entry, model_id):
             dispatcher.register(route_id, wrapper)
+        registered_wrappers[model_id] = wrapper
         return {"ok": True, "model_id": model_id}
 
     def _unregister(model_id: str) -> bool:
@@ -622,6 +626,54 @@ def create_config_router(
             custom_models_state.get(model_id),
             fallback_id=model_id,
         )
+
+    def _refresh_custom_fallback() -> None:
+        """Keep a keyless device's system default on a connected model.
+
+        Without a provider key the boot-time fallback is the first
+        self-configured model, or an "unconfigured" router when there was
+        none. Connecting the first model at runtime left that unconfigured
+        fallback in place until a restart: the system default stayed the
+        template's planner model, so "follow system" Codex turns and desktop
+        tasks answered 还没有可用的模型 right after a model was connected.
+        Only an unconfigured or custom-model fallback is ever replaced.
+        """
+
+        from runtime.platform.models.custom_model_flags import entry_matches_model
+        from runtime.sensing.model_router.models import UnconfiguredModelRouter
+
+        dispatcher = _dispatcher()
+        if dispatcher is None or not callable(getattr(dispatcher, "set_fallback", None)):
+            return
+        current = getattr(dispatcher, "_fallback", None)
+        replaceable = isinstance(current, UnconfiguredModelRouter) or bool(
+            getattr(current, "echo_custom_models_fallback", False)
+        )
+        if not replaceable:
+            return
+        planner_model = str(
+            getattr(getattr(getattr(stack, "config", None), "planner", None), "model", "") or ""
+        )
+        live = [
+            (model_id, registered_wrappers[model_id])
+            for model_id in custom_models_state
+            if model_id in registered_wrappers
+        ]
+        chosen = next(
+            (
+                wrapper
+                for model_id, wrapper in live
+                if planner_model and entry_matches_model(custom_models_state[model_id], planner_model)
+            ),
+            live[0][1] if live else None,
+        )
+        if chosen is None:
+            if not isinstance(current, UnconfiguredModelRouter):
+                dispatcher.set_fallback(UnconfiguredModelRouter())
+            return
+        if chosen is not current:
+            chosen.echo_custom_models_fallback = True
+            dispatcher.set_fallback(chosen)
 
     def _rebuild_routes() -> dict[str, dict[str, Any]]:
         """Re-register all live entries in stable insertion order.
@@ -632,7 +684,10 @@ def create_config_router(
         the last still-configured owner while row-level selection ids stay
         unambiguous.
         """
-        return {model_id: _register(entry) for model_id, entry in custom_models_state.items()}
+        registered_wrappers.clear()
+        status = {model_id: _register(entry) for model_id, entry in custom_models_state.items()}
+        _refresh_custom_fallback()
+        return status
 
     from runtime.platform.models.model_provider_plugin import (
         ModelProviderPluginManager,

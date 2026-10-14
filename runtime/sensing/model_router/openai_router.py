@@ -821,6 +821,15 @@ class OpenAIModelRouter(Provider, ModelRouter):
 
 
 def build_fallback_router_from_custom_models(prefer: str | None = None) -> Any:
+    router = _build_fallback_router_from_custom_models(prefer)
+    if router is not None:
+        # Lets the live config router swap it for the current entry when the
+        # owner edits or deletes models (config_router._refresh_custom_fallback).
+        router.echo_custom_models_fallback = True
+    return router
+
+
+def _build_fallback_router_from_custom_models(prefer: str | None = None) -> Any:
     """Build a ModelRouter from the user's custom_models.json — a self-configured
     upstream usable as the dispatch *fallback*.
 
