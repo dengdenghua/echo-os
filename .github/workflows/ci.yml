@@ -188,7 +188,7 @@ jobs:
   frontend:
     name: Frontend quality and production build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -242,6 +242,25 @@ jobs:
       - name: Build production frontend
         working-directory: frontend
         run: pnpm build
+
+      # Electron desktop smoke: launch the unpackaged shell against the
+      # dist/ built above (shell boot, preload bridge, browser-profile
+      # download contract). The backend-spawn contract test is excluded:
+      # it asserts /api/auth/status enabled=true, which depends on
+      # checkout-local auth config a fresh CI checkout does not have, so
+      # it stays a developer-machine lane for now.
+      - name: Install Electron runtime system dependencies
+        working-directory: frontend
+        run: |
+          pnpm exec playwright install-deps electron
+          sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: Run the Electron desktop smoke
+        working-directory: frontend
+        run: >
+          xvfb-run --auto-servernum
+          pnpm exec playwright test -c playwright.electron.config.ts
+          --grep-invert "desktop backend spawns"
 
   lint-and-test:
     name: Lint + Test (Python ${{ matrix.python-version }})
