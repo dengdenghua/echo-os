@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import sys
@@ -10,9 +11,17 @@ import tempfile
 import threading
 from pathlib import Path
 
-import appliance.native_storage_broker as broker_module
-from appliance.native_storage_broker import (
+# CI runs this file by path inside a bare Debian container with no Echo package
+# installed, so Python puts deploy/agent (not the checkout root) at sys.path[0].
+# Import the appliance layer from this checkout, exactly as the image ships it.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+import appliance.native_storage_broker as broker_module  # noqa: E402
+from appliance.native_storage_broker import (  # noqa: E402
     HEALTH_SCHEMA,
+    MAX_MESSAGE_BYTES,
     OPERATION_TARGETS,
     NativeStorageBrokerClient,
     NativeStorageBrokerError,
@@ -99,12 +108,29 @@ def main() -> int:
 
         denied, denied_thread = _start_server(socket_path, allowed_uids=frozenset())
         try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as peer:
+                peer.settimeout(2.0)
+                peer.connect(str(socket_path))
+                with peer.makefile("rb") as stream:
+                    rejection = json.loads(stream.readline(MAX_MESSAGE_BYTES + 1))
+            error = rejection.get("error") if isinstance(rejection, dict) else None
+            if (
+                not isinstance(error, dict)
+                or rejection.get("ok") is not False
+                or error.get("type") != "permission-denied"
+                or "not authorized" not in str(error.get("message"))
+            ):
+                raise RuntimeError("native storage broker returned the wrong peer denial")
+            # Unauthorized peers are rejected before their request is read, so
+            # the denial cannot echo the request ID. The client must reject that
+            # uncorrelated response instead of accepting its payload
+            # (tests/appliance/test_native_storage_broker.py pins the same rule).
             try:
                 NativeStorageBrokerClient(socket_path, timeout=2.0).probe()
             except NativeStorageBrokerError as exc:
-                if "not authorized" not in str(exc):
+                if "response identity is invalid" not in str(exc):
                     raise RuntimeError(
-                        "native storage broker returned the wrong peer denial"
+                        "native storage broker client accepted an uncorrelated denial"
                     ) from exc
             else:
                 raise RuntimeError("native storage broker accepted a denied peer")
