@@ -12,10 +12,14 @@ const sheet = readFileSync(
 );
 
 describe("desktop chrome around portalled sheets", () => {
-  it("starts side sheets below the menu bar on the desktop", () => {
+  it("fits side sheets between the menu bar and the Dock on the desktop", () => {
     expect(sheet).toContain("data-side={side}");
     expect(css).toMatch(
-      /body:has\(\.macos-desktop-root \.mac-menu-bar\)\s*\[data-slot="sheet-content"\]:is\(\[data-side="left"\], \[data-side="right"\]\)\s*\{\s*top:\s*25px;\s*height:\s*auto;/,
+      /body:has\(\.macos-desktop-root \.mac-menu-bar\)\s*\[data-slot="sheet-content"\]:is\(\[data-side="left"\], \[data-side="right"\]\)\s*\{\s*top:\s*25px;\s*bottom:\s*80px;\s*height:\s*auto;/,
+    );
+    // At phone width the Dock is 49px tall, 6px above the edge.
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)\s*\{\s*body:has\(\.macos-desktop-root \.mac-menu-bar\)\s*\[data-slot="sheet-content"\]:is\(\[data-side="left"\], \[data-side="right"\]\)\s*\{\s*bottom:\s*61px;/,
     );
   });
 });

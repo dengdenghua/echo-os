@@ -345,13 +345,22 @@
 /* Menu bar - Base styling */
 .mac-menu-bar,
 /* Side sheets (the workbench's navigation drawer at phone width) portal to
-   <body>, outside the desktop root, and span the viewport from its top edge.
-   The menu bar (z-index 100) then covered their title and close button. On
-   the desktop they start below it. */
+   <body>, outside the desktop root, and span the whole viewport height. The
+   menu bar (z-index 100) covered their title and close button, and the Dock
+   (z-index 90) their footer, where 设置 sits. On the desktop they fit between
+   the two; raising them above the Dock instead would bury the menus and
+   confirmations they open (z-index 50). */
 body:has(.macos-desktop-root .mac-menu-bar)
   [data-slot="sheet-content"]:is([data-side="left"], [data-side="right"]) {
   top: 25px;
+  bottom: 80px;
   height: auto;
+}
+@media (max-width: 640px) {
+  body:has(.macos-desktop-root .mac-menu-bar)
+    [data-slot="sheet-content"]:is([data-side="left"], [data-side="right"]) {
+    bottom: 61px;
+  }
 }
 
 .macos-desktop-root .mac-menu-bar {
