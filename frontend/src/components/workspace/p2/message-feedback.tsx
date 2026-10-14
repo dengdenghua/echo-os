@@ -123,8 +123,7 @@ export function MessageFeedback({
         className={cn(
           "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
           "rounded-md p-1.5 disabled:opacity-50",
-          existingFeedback?.feedback_type === "thumbs_up" &&
-            "text-green-600 dark:text-green-400",
+          existingFeedback?.feedback_type === "thumbs_up" && "text-core",
           compact && "p-1",
         )}
         title="Thumbs up (right-click for details)"
@@ -144,8 +143,7 @@ export function MessageFeedback({
         className={cn(
           "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
           "rounded-md p-1.5 disabled:opacity-50",
-          existingFeedback?.feedback_type === "thumbs_down" &&
-            "text-red-600 dark:text-red-400",
+          existingFeedback?.feedback_type === "thumbs_down" && "text-breach",
           compact && "p-1",
         )}
         title="Thumbs down (right-click for details)"
@@ -163,13 +161,15 @@ export function MessageFeedback({
             className={cn(
               "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
               "rounded-md p-1.5 disabled:opacity-50",
-              existingFeedback?.comment && "text-blue-600 dark:text-blue-400",
+              existingFeedback?.comment && "text-core",
               compact && "p-1",
             )}
             title="Add comment"
             aria-label="Add feedback comment"
           >
-            <MessageCircleIcon className={cn("size-4", compact && "size-3.5")} />
+            <MessageCircleIcon
+              className={cn("size-4", compact && "size-3.5")}
+            />
           </button>
         </DialogTrigger>
 
@@ -238,16 +238,18 @@ export function MessageFeedback({
       </Dialog>
 
       {/* Existing feedback indicator */}
-      {existingFeedback && (existingFeedback.tags.length > 0 || existingFeedback.comment) && (
-        <span className="text-muted-foreground text-xs">
-          {existingFeedback.tags.length > 0 && (
-            <span className="inline-flex items-center gap-1">
-              {existingFeedback.tags.slice(0, 2).join(", ")}
-              {existingFeedback.tags.length > 2 && ` +${existingFeedback.tags.length - 2}`}
-            </span>
-          )}
-        </span>
-      )}
+      {existingFeedback &&
+        (existingFeedback.tags.length > 0 || existingFeedback.comment) && (
+          <span className="text-muted-foreground text-xs">
+            {existingFeedback.tags.length > 0 && (
+              <span className="inline-flex items-center gap-1">
+                {existingFeedback.tags.slice(0, 2).join(", ")}
+                {existingFeedback.tags.length > 2 &&
+                  ` +${existingFeedback.tags.length - 2}`}
+              </span>
+            )}
+          </span>
+        )}
     </div>
   );
 }

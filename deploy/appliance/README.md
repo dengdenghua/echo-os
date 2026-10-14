@@ -81,6 +81,13 @@ appliance 必须匹配不可变 OCI 摘要。只有全部一致
 `echo-delivery-release-candidate-<标签>`，其中包含来源报告、run/attestation 报告、统一索引、
 离线验证器和总 SHA-256。
 
+统一索引中的 `nasRuntimeProfile` 是发布边界，不是展示文案：当前值固定说明 NAS 产品是运行在
+Debian 13 + OpenMediaVault 8 宿主上的 OCI Compose appliance；同候选中的 `packaging/image`
+原生 Echo OS 镜像是独立桌面产物。现场实验器、最终验收器和产品目录清单都会复核并输出这个
+profile，缺失、扩展或把原生镜像错标成 NAS 宿主都会失败关闭。原生镜像虽已接入完整认证控制面、
+核心协议/监控包和共享生命周期防火墙，仍须完成受限容器数据面与 raw OpenZFS 内核装配，并让六项
+真机门直接验证冻结制品，才可以变更这项合同。
+
 下载候选 artifact 后，联网时先验证总校验清单自身的 GitHub OIDC 来源；之后整份目录可以带到
 隔离网络，由随包脚本重新执行 raw/A-B GPG、OMV 包字节、appliance 摘要和统一索引回放：
 
@@ -543,6 +550,10 @@ G3 还必须生成固定名称、只读的 `protocol-interoperability-lifecycle.
 把候选包内同一字节的执行器和计划带到客户端，分别执行 `windows-smb`、`macos-smb`、`linux-smb`、
 `macos-nfs`、`linux-nfs` 五个角色。每个角色都要求对应的原生 SMB2/SMB3、CIFS、smbfs、NFS 或
 NFSv4 挂载来自计划中的服务器，然后真实写入并 `fsync` 8 MiB、读回摘要、重命名、再次读回和删除。
+Windows 角色还会在四秒窗口内向 IPv4 WSD 组播地址发送带唯一 MessageID 的 `wsdp:Device
+pub:Computer` Probe；只有计划服务器解析出的 LAN 地址返回关联同一 MessageID、声明 Computer 类型且
+`XAddrs` 与响应源地址一致的 `ProbeMatches`，才继续 SMB I/O。直接输入 UNC 路径能够挂载但收不到该
+响应时，不能算资源管理器自动发现通过。
 例如 Linux SMB 客户端：
 
 ```bash
@@ -554,9 +565,9 @@ NFSv4 挂载来自计划中的服务器，然后真实写入并 `fsync` 8 MiB、
   --output /root/protocol-linux-smb.log
 ```
 
-Windows 角色读取 `Get-SmbConnection` 的真实 SMB2/SMB3 连接；macOS 读取系统挂载表；Linux 读取
-`findmnt`。输出只保留原生证据摘要、哈希后的客户端身份和 I/O 结果，不保留主机名、共享口令或用户
-凭据。把五份固定名称日志原样收回计划中的证据目录。
+Windows 角色先验证 UDP/3702 WSD 响应，再读取 `Get-SmbConnection` 的真实 SMB2/SMB3 连接；macOS
+读取系统挂载表；Linux 读取 `findmnt`。输出只保留 WSD/挂载原生响应摘要、哈希后的客户端身份和 I/O
+结果，不保留 IP、主机名、共享口令或用户凭据。把五份固定名称日志原样收回计划中的证据目录。
 
 随后在 Linux 客户端执行三个政策阶段：`permissions` 必须在 SMB/NFS 的允许身份上成功写入，同时在
 两种协议的拒绝身份上得到 `EACCES`、`EPERM` 或只读拒绝；`quota` 会在专用配额身份上经 SMB 连续写入
@@ -589,6 +600,98 @@ G2 还必须生成固定名称、只读的 `storage-recovery-lifecycle.json`。�
 `schemaVersion:1`、`kind:"echo.storage-recovery-lab-authorization"`、`disposable:true`、当前候选
 `candidateIndexId`、精确阵列设备、精确挂载点和 UUIDv4 `labVolumeId`。不要让工具替你创建授权标记：
 现场负责人应先核对设备拓扑和数据副本，再把审查过的标记安装进空测试卷。
+
+如果 G2 实验机从两块空白整盘开始，先用同一运维包内的
+`storage_provisioning_lab.py` 验证“原生 API 建阵列、格式化、持久挂载、真实重启”这一段。它只接受
+两块 4--64 GiB、具有不同稳定身份且仍由候选接口判定为空白的整盘；计划只保存稳定身份摘要，不保存
+序列号/WWN。`provision` 会真实调用 md RAID1 与 EXT4 的 plan、一次性审批和 apply 接口，随后校验
+`mdadm`/`blkid`/`findmnt` 并写入 1 MiB fsync 探针。`reboot-verify` 必须在新的 kernel boot ID 下再次
+验证阵列、UUID 挂载和探针摘要。工具不会自动拆阵列或擦盘，成功后的卷应直接交给下方 G2 恢复实验；
+只能在可丢弃专用 VM/物理机上使用。
+
+```bash
+export ECHO_ADMIN_PASSWORD='仅在当前 root shell 中设置，不要写入计划或日志'
+sudo -E ./storage_provisioning_lab.py plan \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --device /dev/vdb --device /dev/vdc \
+  --array-name labarray --volume-name labvolume \
+  --evidence-directory "$PWD/physical-evidence/storage-provisioning" \
+  --base-url http://127.0.0.1:8000 \
+  --output /root/echo-storage-provisioning-lab-plan.json
+
+sudo -E ./storage_provisioning_lab.py run \
+  --plan /root/echo-storage-provisioning-lab-plan.json \
+  --phase provision \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --confirm 'RUN ECHO STORAGE PROVISIONING LAB provision <64位planId>'
+
+# 真实重启同一台实验机后：
+sudo -E ./storage_provisioning_lab.py run \
+  --plan /root/echo-storage-provisioning-lab-plan.json \
+  --phase reboot-verify \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --confirm 'RUN ECHO STORAGE PROVISIONING LAB reboot-verify <64位planId>'
+```
+
+双盘 Btrfs RAID1 使用独立的 `btrfs_provisioning_lab.py`，避免把 mdadm + EXT4 证据混入
+Btrfs 结论。它同样绑定发布候选、运维包、Debian/OMV 平台、两块 4--64 GiB 空白整盘身份和
+API plan；`provision` 经 `omv.btrfs-raid1.create` 单次审批创建卷，随后在宿主机核对两块成员共享
+同一文件系统 UUID、data/metadata 都是 RAID1、恰好两个活动成员、读写挂载，并写入 1 MiB fsync
+探针。`reboot-verify` 只在 kernel boot ID 已改变后复核 UUID 持久挂载、双 RAID1 profile 与探针。
+工具不会自动卸载或擦除成功卷，须在专用可丢弃双盘 VM/物理机上运行并由现场负责人手工清理。
+
+```bash
+sudo -E ./btrfs_provisioning_lab.py plan \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --device /dev/vdb --device /dev/vdc \
+  --volume-name btrfslab \
+  --evidence-directory "$PWD/physical-evidence/btrfs-provisioning" \
+  --base-url http://127.0.0.1:8000 \
+  --output /root/echo-btrfs-provisioning-lab-plan.json
+
+sudo -E ./btrfs_provisioning_lab.py run \
+  --plan /root/echo-btrfs-provisioning-lab-plan.json \
+  --phase provision \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --confirm 'RUN ECHO BTRFS PROVISIONING LAB provision <64位planId>'
+
+# 真实重启同一台实验机后：
+sudo -E ./btrfs_provisioning_lab.py run \
+  --plan /root/echo-btrfs-provisioning-lab-plan.json \
+  --phase reboot-verify \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --confirm 'RUN ECHO BTRFS PROVISIONING LAB reboot-verify <64位planId>'
+```
+
+要单独验收“坏盘换成第三块新盘”的原生控制面，在上述两阶段均完成后使用
+`mdraid_replacement_lab.py`。计划同时绑定原 provisioning plan、三块整盘身份、候选与运维包；
+`repair` 会真实 fail/remove 指定牺牲盘，再经 Echo HTTP 候选、plan、密码审批和 apply 换入第三块
+空盘；`rebuild` 必须等到双成员健康且探针未变；最后真实重启并执行 `reboot-verify`。三盘都必须是
+4--64 GiB 的专用可丢弃实验盘，不能用于生产阵列。
+
+```bash
+sudo -E ./mdraid_replacement_lab.py plan \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --provisioning-plan /root/echo-storage-provisioning-lab-plan.json \
+  --sacrificial-device /dev/vdb --replacement-device /dev/vdd \
+  --evidence-directory "$PWD/physical-evidence/mdraid-replacement" \
+  --output /root/echo-mdraid-replacement-lab-plan.json
+
+sudo -E ./mdraid_replacement_lab.py run \
+  --plan /root/echo-mdraid-replacement-lab-plan.json --phase repair \
+  --candidate-index /root/echo-candidate/echo-delivery-release-evidence-index.json \
+  --bundle-root "$PWD" \
+  --confirm 'RUN ECHO MDRAID REPLACEMENT LAB repair <64位planId>'
+
+# recovery 完成后执行 rebuild；真实重启后执行 reboot-verify。两阶段均使用计划输出的精确确认串。
+```
 
 ```bash
 sudo install -o root -g root -m 0444 reviewed-storage-lab-marker.json \
@@ -949,7 +1052,7 @@ cd ../..
 SSL_CERT_FILE=/secure/export/echo-ca.pem \
 ECHO_ADMIN_PASSWORD='从安全输入注入，不写入命令历史' \
 uv run python deploy/appliance/verify-running-appliance.py \
-  --base-url https://echo.home.example
+  --base-url https://echo.home.example --require-zfs-runtime
 ```
 
 不要把示例密码原样用于 shell；正式验收应由秘密管理器向环境注入。私钥和证书路径已在
@@ -981,7 +1084,9 @@ Echo 环境、API、审计或输出。首次授权后 Tailscale 状态持久化�
 避免每次重启重复登录；一次性 key 用毕即会在控制面失效，仍应保留受限文件直至完成恢复演练。
 
 “设备连接 → 远程访问”会显示私网健康与精确 HTTPS 地址。overlay 只开放 Echo 的认证 HTTPS
-表面，因此远程网页与已挂载的设备文件/照片备份 API 可用；Tentacle 8765 仍限局域网。设备必须先
+表面，因此远程网页与已挂载的设备文件/照片备份 API 可用。开启 Device Link 后，同一 HTTPS
+入口的 `/api/appliance/device-link/ws` 提供使用每设备配对凭据的 WSS 通道，邀请会优先采用此地址。
+Tentacle 8765 仍限局域网，不需要额外向公网开放。设备必须先
 使用一机一凭据配对，再由管理员按设备、按照片/文件分别授权。网页、设备控制和两类备份继续作为
 独立 feature 展示，不能用私网健康冒充未挂载的能力。
 
@@ -996,45 +1101,46 @@ appliance 运行配置中被强制关闭，实际监听器只有管理员在桌�
 
 ## 配置项(环境变量,均可选)
 
-| 变量                                                                             | 默认                             | 说明                                                                               |
-| -------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- |
-| `PORT`                                                                           | `8000`                           | 对外端口                                                                           |
-| `ECHO_DEVICE_LINK_PORT`                                                       | `8765`                           | 手机 Tentacle 端口；容器内外同号，只有管理员批准 Device Link 后才监听              |
-| `ECHO_DEVICE_LINK_BIND_ADDRESS`                                               | `0.0.0.0`                        | Tentacle 宿主绑定地址；只应绑定可信局域网接口                                       |
-| `ECHO_DEVICE_LINK_HOST`                                                       | 空                               | 可选的手机可达 RFC1918 IP、单标签 LAN 名或 `*.local`；复杂反代/远程打开桌面时设置   |
-| `ECHO_DEVICE_SYNC_PORT`                                                       | `8000`                           | 写入手机配对深链的局域网备份端口；非默认宿主映射时应与手机实际访问端口一致         |
-| `ECHO_BIND_ADDRESS`                                                           | `0.0.0.0`                        | 后端宿主绑定地址；`start-tls.sh` 固定为 `127.0.0.1`，防止绕过 TLS 网关             |
-| `PUID` / `PGID`                                                                  | `1000`                           | 拥有宿主 data 与 NAS 共享目录的用户/组数字 ID；主进程启动后降为此身份              |
-| `ECHO_ADMIN_PASSWORD`                                                         | 空                               | 管理员登录密码(用户名固定 `admin`);**不设则首启随机生成并打印到容器日志**          |
-| `ECHO_APPLIANCE_TRUSTED_HOSTS`                                                | 空                               | 反代/FQDN 主机名白名单，逗号分隔；私网 IP、localhost、`*.local`、单标签 LAN 名免配 |
-| `ECHO_APPLIANCE_TRUSTED_ORIGINS`                                              | 空                               | 反代后的公开 HTTP(S) origin 白名单，逗号分隔且必须精确到 scheme/port               |
-| `ECHO_APPLIANCE_FRAME_ORIGINS`                                                | 空                               | 允许嵌入 Echo OS 窗口的额外 HTTP(S) origin；默认只允许同源，不接受路径或 `*`       |
-| `ECHO_APPLIANCE_CONNECT_ORIGINS`                                              | 空                               | 浏览器可直连的额外 HTTP(S)/WS(S) origin；默认只允许同源与本机同源 WebSocket        |
-| `ECHO_TRUSTED_PROXY_IPS`                                                      | `127.0.0.1`                      | 可发送可信 `X-Forwarded-*` 的直连代理 IP/CIDR；不要设为 `*`                        |
-| `ECHO_TLS_HOST`                                                                  | 无                               | TLS 证书 SAN 覆盖的精确 DNS 名或 IPv4；使用 `start-tls.sh` 时必填                  |
-| `ECHO_TLS_HTTP_PORT` / `ECHO_TLS_HTTPS_PORT`                                     | `80` / `443`                     | TLS overlay 发布的跳转端口和 HTTPS 端口                                            |
-| `ECHO_TLS_PROXY_IP` / `ECHO_TLS_SUBNET`                                          | `172.30.90.2` / `172.30.90.0/24` | 固定可信代理 IP 与专用应用网络；冲突时成对调整                                     |
-| `ECHO_TAILSCALE_DNS_NAME`                                                        | 无                               | Tailscale Serve 的精确 `*.ts.net` MagicDNS 名；远程 overlay 必填                   |
-| `ECHO_TAILSCALE_AUTHKEY_FILE`                                                    | 无                               | 0400/0600 一次性 auth-key 文件绝对路径；启动脚本由首个参数设置                     |
-| `ECHO_TAILSCALE_HOSTNAME`                                                        | `echo-os`                        | Tailnet 内申请的设备短名                                                           |
-| `ECHO_TAILSCALE_PROXY_IP` / `ECHO_TAILSCALE_SUBNET`                              | `172.30.91.2` / `172.30.91.0/24` | 远程侧车的固定可信代理 IP 与专用网络；冲突时成对调整                               |
-| `NAS_STORAGE`                                                                    | `./storage`                      | 挂进桌面文件区的宿主共享目录(如 `/DATA` / `/volume1`)                              |
-| `ECHO_NAS_OMV_SHARED_FOLDER_REF`                                              | 空                               | `NAS_STORAGE` 直接绑定单个 OMV 共享目录时填写其 UUID；绑定文件系统根时留空          |
-| `ECHO_UPLOAD_RESERVE_BYTES`                                                   | `536870912`                      | 上传不得侵占的磁盘保留空间（默认 512 MiB）                                         |
-| `ECHO_UPLOAD_MAX_BYTES`                                                       | `53687091200`                    | 单文件上传硬上限（默认 50 GiB；multipart 终态仍受下述边界限制）                    |
-| `ECHO_UPLOAD_STALE_SECONDS`                                                   | `86400`                          | 崩溃遗留上传临时文件的最短清理年龄（默认 24 小时）                                 |
-| `ECHO_UPLOAD_MAX_SESSIONS`                                                    | `64`                             | 同时保留的可恢复上传会话上限；前端多文件队列默认逐个传输                           |
-| `ECHO_SHARE_QUOTAS_JSON`                                                      | 空                               | Echo 文件入口的共享目录逻辑字节配额，例如 `{"family":536870912000}`；空值表示关闭  |
-| `ECHO_OMV_SOCKET`                                                             | 空                               | 可选 OMV 宿主受限桥 Unix socket；OMV 部署请使用 `deploy/omv` override              |
-| `ECHO_OMV_ADMIN_URL`                                                          | 空                               | OMV 官方管理页 HTTP(S) origin；只用于“在 OMV 中管理”链接，不接收其密码             |
-| `ECHO_OMV_HEALTH_INTERVAL_SECONDS`                                            | `300`                            | OMV 持续健康轮询周期；仅 OMV override 使用，允许 60–86400 秒                       |
+| 变量                                                                       | 默认                             | 说明                                                                               |
+| -------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------- |
+| `PORT`                                                                     | `8000`                           | 对外端口                                                                           |
+| `ECHO_DEVICE_LINK_PORT`                                                    | `8765`                           | 手机 Tentacle 端口；容器内外同号，只有管理员批准 Device Link 后才监听              |
+| `ECHO_DEVICE_PEER_GRANTS` | 空（默认拒绝跨设备调用） | JSON 格式的源设备 → 目标设备 → 工具名数组；只允许明确列出的 `device/call`，重启服务生效。见 `docs/device-interconnect.md`。 |
+| `ECHO_DEVICE_LINK_BIND_ADDRESS`                                            | `0.0.0.0`                        | Tentacle 宿主绑定地址；只应绑定可信局域网接口                                      |
+| `ECHO_DEVICE_LINK_HOST`                                                    | 空                               | 可选的手机可达 RFC1918 IP、单标签 LAN 名或 `*.local`；复杂反代/远程打开桌面时设置  |
+| `ECHO_DEVICE_SYNC_PORT`                                                    | `8000`                           | 写入手机配对深链的局域网备份端口；非默认宿主映射时应与手机实际访问端口一致         |
+| `ECHO_BIND_ADDRESS`                                                        | `0.0.0.0`                        | 后端宿主绑定地址；`start-tls.sh` 固定为 `127.0.0.1`，防止绕过 TLS 网关             |
+| `PUID` / `PGID`                                                            | `1000`                           | 拥有宿主 data 与 NAS 共享目录的用户/组数字 ID；主进程启动后降为此身份              |
+| `ECHO_ADMIN_PASSWORD`                                                      | 空                               | 管理员登录密码(用户名固定 `admin`);**不设则首启随机生成并打印到容器日志**          |
+| `ECHO_APPLIANCE_TRUSTED_HOSTS`                                             | 空                               | 反代/FQDN 主机名白名单，逗号分隔；私网 IP、localhost、`*.local`、单标签 LAN 名免配 |
+| `ECHO_APPLIANCE_TRUSTED_ORIGINS`                                           | 空                               | 反代后的公开 HTTP(S) origin 白名单，逗号分隔且必须精确到 scheme/port               |
+| `ECHO_APPLIANCE_FRAME_ORIGINS`                                             | 空                               | 允许嵌入 Echo OS 窗口的额外 HTTP(S) origin；默认只允许同源，不接受路径或 `*`       |
+| `ECHO_APPLIANCE_CONNECT_ORIGINS`                                           | 空                               | 浏览器可直连的额外 HTTP(S)/WS(S) origin；默认只允许同源与本机同源 WebSocket        |
+| `ECHO_TRUSTED_PROXY_IPS`                                                   | `127.0.0.1`                      | 可发送可信 `X-Forwarded-*` 的直连代理 IP/CIDR；不要设为 `*`                        |
+| `ECHO_TLS_HOST`                                                            | 无                               | TLS 证书 SAN 覆盖的精确 DNS 名或 IPv4；使用 `start-tls.sh` 时必填                  |
+| `ECHO_TLS_HTTP_PORT` / `ECHO_TLS_HTTPS_PORT`                               | `80` / `443`                     | TLS overlay 发布的跳转端口和 HTTPS 端口                                            |
+| `ECHO_TLS_PROXY_IP` / `ECHO_TLS_SUBNET`                                    | `172.30.90.2` / `172.30.90.0/24` | 固定可信代理 IP 与专用应用网络；冲突时成对调整                                     |
+| `ECHO_TAILSCALE_DNS_NAME`                                                  | 无                               | Tailscale Serve 的精确 `*.ts.net` MagicDNS 名；远程 overlay 必填                   |
+| `ECHO_TAILSCALE_AUTHKEY_FILE`                                              | 无                               | 0400/0600 一次性 auth-key 文件绝对路径；启动脚本由首个参数设置                     |
+| `ECHO_TAILSCALE_HOSTNAME`                                                  | `echo-os`                        | Tailnet 内申请的设备短名                                                           |
+| `ECHO_TAILSCALE_PROXY_IP` / `ECHO_TAILSCALE_SUBNET`                        | `172.30.91.2` / `172.30.91.0/24` | 远程侧车的固定可信代理 IP 与专用网络；冲突时成对调整                               |
+| `NAS_STORAGE`                                                              | `./storage`                      | 挂进桌面文件区的宿主共享目录(如 `/DATA` / `/volume1`)                              |
+| `ECHO_NAS_OMV_SHARED_FOLDER_REF`                                           | 空                               | `NAS_STORAGE` 直接绑定单个 OMV 共享目录时填写其 UUID；绑定文件系统根时留空         |
+| `ECHO_UPLOAD_RESERVE_BYTES`                                                | `536870912`                      | 上传不得侵占的磁盘保留空间（默认 512 MiB）                                         |
+| `ECHO_UPLOAD_MAX_BYTES`                                                    | `53687091200`                    | 单文件上传硬上限（默认 50 GiB；multipart 终态仍受下述边界限制）                    |
+| `ECHO_UPLOAD_STALE_SECONDS`                                                | `86400`                          | 崩溃遗留上传临时文件的最短清理年龄（默认 24 小时）                                 |
+| `ECHO_UPLOAD_MAX_SESSIONS`                                                 | `64`                             | 同时保留的可恢复上传会话上限；前端多文件队列默认逐个传输                           |
+| `ECHO_SHARE_QUOTAS_JSON`                                                   | 空                               | Echo 文件入口的共享目录逻辑字节配额，例如 `{"family":536870912000}`；空值表示关闭  |
+| `ECHO_OMV_SOCKET`                                                          | 空                               | 可选 OMV 宿主受限桥 Unix socket；OMV 部署请使用 `deploy/omv` override              |
+| `ECHO_OMV_ADMIN_URL`                                                       | 空                               | OMV 官方管理页 HTTP(S) origin；只用于“在 OMV 中管理”链接，不接收其密码             |
+| `ECHO_OMV_HEALTH_INTERVAL_SECONDS`                                         | `300`                            | OMV 持续健康轮询周期；仅 OMV override 使用，允许 60–86400 秒                       |
 | `ECHO_OMV_TEMP_WARNING_C` / `ECHO_OMV_TEMP_CRITICAL_C`                     | `50` / `60`                      | 磁盘温度提醒/严重阈值                                                              |
 | `ECHO_OMV_CAPACITY_WARNING_PERCENT` / `ECHO_OMV_CAPACITY_CRITICAL_PERCENT` | `90` / `95`                      | 卷容量提醒/严重阈值                                                                |
-| `ANTHROPIC_API_KEY`                                                              | 空                               | 配上才有对话 Agent;桌面/启动器/文件不需要                                          |
-| `ECHO_PM_URL`                                                                 | 空                               | 企业版地址。配上后 Agent 获得 PM 工具(列项目/建任务),能在企业版里操作项目管理      |
-| `ECHO_PM_TOKEN`                                                               | 空                               | 企业版登录 JWT(`Authorization: Bearer`)                                            |
-| `ECHO_PM_TENANT`                                                              | 空                               | 企业版租户 ID(`X-Tenant-ID`;单租户可留空)                                          |
-| `ECHO_LOG_LEVEL`                                                              | `INFO`                           | 日志级别                                                                           |
+| `ANTHROPIC_API_KEY`                                                        | 空                               | 配上才有对话 Agent;桌面/启动器/文件不需要                                          |
+| `ECHO_PM_URL`                                                              | 空                               | 企业版地址。配上后 Agent 获得 PM 工具(列项目/建任务),能在企业版里操作项目管理      |
+| `ECHO_PM_TOKEN`                                                            | 空                               | 企业版登录 JWT(`Authorization: Bearer`)                                            |
+| `ECHO_PM_TENANT`                                                           | 空                               | 企业版租户 ID(`X-Tenant-ID`;单租户可留空)                                          |
+| `ECHO_LOG_LEVEL`                                                           | `INFO`                           | 日志级别                                                                           |
 
 ### 共享目录配额（可选）
 
@@ -1085,7 +1191,24 @@ SMB/NFS、普通用户/组和共享权限，并可在预览、密码审批、审
 和复杂规则仍跳转 OMV 官方管理页。这个接入没有新 TCP 端口，不把 OMV 管理密码、原始 RPC socket、
 宿主 `/dev` 或 root shell 交给 Echo；未安装时只显示“尚未接入”，其余功能不受影响。
 Echo 默认每 5 分钟持续检测 SMART、温度、容量和阵列状态，并在设备状态目录中以 0600 文件保留
-活跃告警及最近变化；邮件或推送接收人仍由 OMV 官方通知设置管理。
+活跃告警及最近变化。同一次有界探测还会只读查询固定白名单内的 systemd 服务；未安装或显式禁用
+的可选 unit 不算故障，已启用服务的 failed/inactive 及 `start-limit-hit` 会生成稳定错误码并进入同一
+告警流。`echo-appliance.service` 本身限制为 5 分钟内最多 5 次启动，避免无限重启掩盖持续故障。
+管理员可在 **系统设置 → 通知与锁屏** 独立启用公网 HTTPS Webhook 和 SMTP 邮件告警；两者分别
+加密保存目标、凭据、去重游标和退避状态，均需密码单次审批。SMTP 只允许全部解析为公网地址的
+DNS 名称及 465 TLS/587 STARTTLS，并在 TLS 建立前不发送认证凭据。支持诊断包只记录服务数量、
+状态计数和固定告警码，不收集 journal、环境、路径或原始 systemctl 输出。主后端触发启动限制后，
+`OnFailure` 会立即调用独立的 `echo-appliance-deadman.service`；另有五分钟持久化 timer 补偿漏触发。
+deadman 只有取得 `/data` 独占状态锁后才读取固定服务健康和已有加密通道配置，因此不会与在线后端、
+备份或恢复流程并发；它复用同一告警 ID、Webhook/SMTP 去重游标和退避状态。正式部署仍应先发送
+测试通知。本地 Debian 13 QEMU 已实测在线锁抑制、5 次重启后的 `OnFailure`、主服务恢复和 timer
+自然触发，且确认沙箱属性生效；证据为 `_vmtest/deadman_systemd_result.json`（SHA-256
+`f7fe8367a6bdd939d76a96e7bc11be8c537a1be07918ebfb88b09988b5c1779d`）。实验同时修复了原生 unit
+未要求 appliance 扩展、以及 wheel 漏装四个备份运行引擎的问题。仍需在冻结候选和真实公网环境验证
+收件、断网恢复、DNS 变化、UPS/RAID/SMART 故障和物理断电重启。候选运行验收器现会直接请求受
+认证保护的 `/api/appliance/capabilities`，校验完整能力列表并要求 `apps.list`、`hub.catalog.list`、
+`storage.health.read`；设备耐久和裸机恢复证据会显式携带该结果，因此“通用 Agent 健康但 NAS 扩展
+未挂载”的退化不能再通过正式物理门。
 
 ### 首次登录与家庭账号
 
@@ -1260,22 +1383,150 @@ NAS 用户文件不在上述设备状态包里，使用独立的 `nas_data_backu
 `external_storage.py` 验证的异机或可移除挂载上。口令优先从 systemd credential
 `echo-nas-backup-password` 读取，传给 restic 时只存在于匿名内存文件中：
 
+原生裸机安装必须显式传入 `--state-root /data --nas-root /data/nas`；容器 Compose 部署才可沿用
+`--deployment-root` 下的默认 `data` 与 `NAS_STORAGE`。两个显式路径同样经过无符号链接、活动挂载
+和设备号隔离检查，不能用来绕过异机/可移除介质要求。
+
 ```bash
 cd deploy/appliance
 sudo ./nas_data_backup.py init \
   --repository /mnt/off-device/echo-nas-data \
   --repository-mount /mnt/off-device \
-  --deployment-root "$PWD" --appliance-env appliance.env
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
 sudo ./nas_data_backup.py backup \
   --repository /mnt/off-device/echo-nas-data \
   --repository-mount /mnt/off-device \
   --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas \
   --source-snapshot /srv/echo-nas-snapshots/2026-08-27
 sudo ./nas_data_backup.py check \
   --repository /mnt/off-device/echo-nas-data \
   --repository-mount /mnt/off-device \
-  --deployment-root "$PWD" --appliance-env appliance.env
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
+sudo ./nas_data_backup.py list --limit 50 \
+  --repository /mnt/off-device/echo-nas-data \
+  --repository-mount /mnt/off-device \
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
 ```
+
+`list` 只返回经仓库认证的快照 ID 和规范化 UTC 时间，默认最多 50 项、上限 200 项；不会把
+只读快照的宿主绝对路径暴露给后续管理界面。它验证的是加密仓库索引，不替代 `check` 的全数据读取。
+
+原生多卷不能把任意一个共享快照传给上面的单根 `backup`。在多卷备份实现消费数据前，先由受信
+快照编排器生成 mode-0600、root 所有的 `echo.nas-backup-set.v1` 私有 manifest；每个成员必须绑定
+`sharedFolderRef`、真实 Btrfs 文件系统 UUID、受管 `snapshotId`、私有快照路径、原共享目标和
+`btrfsSubvolume` 类型。以下命令只做两阶段预检，不读取仓库口令、也不开始备份：
+
+```bash
+sudo ./nas_data_backup.py plan-set \
+  --manifest /var/lib/echo-os/backup-sets/pending.json \
+  --repository /mnt/off-device/echo-nas-data \
+  --repository-mount /mnt/off-device \
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
+```
+
+预检会从内核回读每个源和目标的 Btrfs UUID、文件系统 UUID及 `ro` 属性，要求源是目标的只读子
+快照，并把这些运行时身份及仓库挂载身份写入确定性 `planId`。公开结果仅含共享/文件系统/快照/
+subvolume UUID，不含宿主路径。核对计划后可用同一私有 manifest 和精确 plan ID 开始备份：
+
+```bash
+sudo ./nas_data_backup.py backup-set \
+  --manifest /var/lib/echo-os/backup-sets/pending.json \
+  --plan-id '<plan-set 返回的 64 位 planId>' \
+  --repository /mnt/off-device/echo-nas-data \
+  --repository-mount /mnt/off-device \
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
+```
+
+`backup-set` 把每个成员的公开身份和私有源路径摘要写入 restic 的加密认证索引，传输后执行全仓库
+读取校验，并再次回读 Btrfs lineage；相同 `setId` 和同一 manifest 重试时返回原快照，不重复备份，
+同 ID 不同内容则失败关闭。`list-sets --limit 50` 可列出经认证的集合/成员公开身份，默认 50、上限
+200，同样不返回源路径或其摘要。多卷恢复仍要求所有受管目标是同文件系统 UUID 下重新创建的空
+Btrfs subvolume，先生成与精确集合、仓库和目标身份绑定的计划：
+
+```bash
+sudo ./nas_data_backup.py plan-restore-set \
+  --manifest /var/lib/echo-os/backup-sets/pending.json --snapshot '<setId>' \
+  --repository /mnt/off-device/echo-nas-data --repository-mount /mnt/off-device \
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
+
+sudo ./nas_data_backup.py restore-set \
+  --manifest /var/lib/echo-os/backup-sets/pending.json --snapshot '<setId>' \
+  --plan-id '<plan-restore-set 返回的 64 位 planId>' \
+  --confirm '<plan-restore-set 返回的完整确认语>' \
+  --repository /mnt/off-device/echo-nas-data --repository-mount /mnt/off-device \
+  --deployment-root "$PWD" --appliance-env appliance.env \
+  --state-root /data --nas-root /data/nas
+```
+
+每个成员先在其目标卷创建新的可写 Btrfs staging subvolume，restic 只恢复对应认证路径；全部成员
+完成内容哈希与第二次全仓库读取校验后，再逐成员 `RENAME_EXCHANGE`。mode-0600 事务收据在每一步
+fsync；若断电发生在交换与记账之间，重入会通过原目标/新 staging 的 subvolume UUID 对调关系判断
+实际提交状态并前向完成，不会重复覆盖。已验证的非空目标只允许凭匹配收据复核，不能启动新恢复。
+当前集合链路只覆盖具备原生只读快照的 Btrfs 共享；普通 EXT4/XFS 目录仍需要停写/快照方案。
+
+原生安装还包含一个默认不启用的每日 03:30 本地时间备份 timer。它只读取 mode-0600、root 所有的
+`/etc/echo-os/nas-data-backup-schedule.json`，并复用已获批准的 Btrfs 自动快照共享清单。正常情况下
+选择 26 小时内所有共享共同拥有的最新自动快照；若共同批次不存在，则先运行现有快照调度器补齐
+同一批次，任何共享失败都会在读取仓库口令前终止。集合 ID 由批次和有序共享身份确定，相同批次的
+timer 重试命中 restic 幂等路径。最小配置如下，仓库须先通过下述一次性向导初始化或连接，并满足
+上述异盘验证：
+
+```json
+{
+  "schema": "echo.nas-data-backup-schedule.v1",
+  "enabled": true,
+  "repository": "/mnt/off-device/echo-nas-data",
+  "repositoryMount": "/mnt/off-device"
+}
+```
+
+设备管理员可在 **存储中心 → 磁盘健康 → 异机 NAS 数据备份** 选择“初始化空仓库”或“连接已有仓库”，
+输入仓库口令并预览后，以管理员密码完成单次高风险审批。初始化模式只接受经验证异机挂载上的空私有
+目录，执行真实 `restic init` 和全数据读取校验；连接模式只接受非空目录，必须以输入口令读出同一
+Restic 仓库身份并通过仓库检查。两种模式都要求当前设备尚无该凭据：口令只作为请求秘密进入进程和
+`systemd-creds` 标准输入，不写浏览器存储、不进入计划、响应或审计；系统先加密并反向解密恒定时间
+核对，再以 root、mode-0600 且不可覆盖的原子创建方式写入
+`/etc/credstore.encrypted/echo-nas-backup-password`。已有凭据不会被盲目替换。备份 timer
+停用时，同一管理面会显示安全轮换入口：计划同时绑定旧/新口令、仓库挂载身份、
+现有凭据和 Restic/systemd-creds 运行时；应用时先用旧口令验证仓库，新增并验证新
+Restic 密钥，再原子切换本机加密凭据，最后逐一撤销所有仍可被旧口令解锁的密钥。
+口令只通过匿名 memfd 传给 Restic，不进入 argv、环境、计划或审计。新密钥验证前失败会撤销它并
+保留旧凭据；凭据切换后如撤销被中断，则保留已验证的新凭据/新密钥以避免仓库锁死，并显式
+报错。每次写仓库密钥前还会先 fsync 一份 root/mode-0600 的私有恢复收据；它只保存主机绑定的
+旧加密凭据和身份摘要，不保存明文口令。下次管理面状态读取会持有备份操作锁，按当前凭据身份
+自动回滚“密钥已新、凭据仍旧”或前向完成“凭据已新、旧密钥仍在”；仓库盘不在线时保留收据并
+锁住新的轮换/备份策略变更，不猜测或删除密钥。受信 root 运维仍可直接使用
+`systemd-creds encrypt --name=echo-nas-backup-password` 预置同名凭据。
+
+凭据就绪后再显式执行 `systemctl enable --now echo-nas-data-backup.timer`，或使用下述管理面启用。
+安装过程故意不自动启用该 timer，避免在仓库、加密凭据和自动快照共享尚未由管理员配置时产生误导性失败。服务输出仅含集合/仓库/快照公开身份和
+验证状态，不记录源路径、目标路径、仓库路径或口令。每次 disabled、失败或成功结果还会原子追加到
+mode-0600、root 所有的 `/var/lib/echo-os/nas-data-backup-history.json`，最多保留最近 32 条且同样完全
+脱敏。设备管理员现可在 **存储中心 → 磁盘健康 → 异机 NAS 数据备份** 查看调度器、加密凭据、
+定时器和最近 32 次脱敏结果，填写外部挂载点与仓库后先预览，再以管理员密码单次审批启用或停用。
+对应的认证接口为 `POST /api/appliance/storage/backups/credential/plan`、
+`POST /api/appliance/storage/backups/credential/apply`、
+`POST /api/appliance/storage/backups/credential/rotation/plan`、
+`POST /api/appliance/storage/backups/credential/rotation/apply`、
+`GET /api/appliance/storage/backups/schedule`、
+`POST /api/appliance/storage/backups/schedule/plan` 和
+`POST /api/appliance/storage/backups/schedule/apply`；计划绑定配置、仓库挂载身份、unit/credential
+身份与 timer 状态，写入失败会恢复原配置和 timer。多卷恢复管理面另提供
+`POST /api/appliance/storage/backups/restore/sets`、`GET /restore/targets`、`POST /restore/plan` 与
+`POST /restore/apply`：外部盘和仓库路径
+只在 POST 请求体中出现，不进入 URL、返回或审计；集合索引由 systemd 加密凭据认证，私有 manifest
+从 Restic 认证标签和已恢复的原共享目录注册元数据重建并核对摘要。v2 要求把每个备份来源显式一对一
+映射到当前受管 Btrfs subvolume，因而可恢复到新硬盘/新文件系统；新事务要求目标为空，收据续跑允许
+已晋级的非空目标。每日备份、目标自动快照与 SMB/NFS/Time Machine 发布必须全部停用。apply 会重新
+生成计划，绑定目标文件系统、subvolume、inode 及脱敏路径摘要，核对完整确认句并消费
+`storage.nas-backup.restore` 管理员单次审批，再复用全仓读取校验、逐卷原子交换和持久收据续跑。
 
 裸机恢复时先创建与 `NAS_STORAGE` 完全一致的空目录。`restore` 会全仓库读校验并解析认证快照索引；
 只有逐字输入 `RESTORE ECHO NAS <完整64位snapshot-id> TO <NAS_STORAGE绝对路径>` 才会写暂存区。
@@ -1536,7 +1787,7 @@ CasaOS 会用 `x-casaos` 里的标题/图标/描述生成应用卡片,装完点�
   OMV 用户/组文件系统硬配额控制，但路径独立硬限制仍需 project/dataset 等底层能力。包含活动
   上传的目录不能被整体移动或移入回收站；复制目录会排除内部上传
   临时文件。真实 1 GiB/多架构/断电恢复压力证据尚未完成。
-- `verify-running-appliance.py --nas-transfer-test-bytes 1073741824` 可先零写预览，再用与字节数、
+- `verify-running-appliance.py --require-zfs-runtime --nas-transfer-test-bytes 1073741824` 可先零写预览，再用与字节数、
   NAS 相对目录和设备 origin 绑定的 `confirmationRequired` 加 `--require-nas-transfer` 执行真机
   分块/恢复/摘要/完整下载/Range/取消门；加 `--nas-transfer-restart-main` 后确认语还绑定主容器
   名，并在首块后短暂重启服务、等待健康门再续传。测试产物只移入回收站且不会调用全量清空；执行后仍

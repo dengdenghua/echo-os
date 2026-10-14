@@ -12,7 +12,14 @@ list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs6)
 
-find_package(Qt6 6.6 REQUIRED COMPONENTS Core DBus Gui)
+# KDECMakeSettings turns BUILD_SHARED_LIBS on and drops the "lib" module
+# prefix. Without it kcoreaddons_add_plugin() emits a static archive (or a
+# liborg.echoos.liquidglass.so), and KWin loads neither as the effect.
+include(KDECMakeSettings)
+
+# KWin 6.3 exports Qt6::Widgets in KWin::kwin's link interface without a
+# matching find_dependency (Debian 13 KWinConfig.cmake), so resolve it here.
+find_package(Qt6 6.6 REQUIRED COMPONENTS Core DBus Gui Widgets)
 find_package(KF6 6.3 REQUIRED COMPONENTS CoreAddons)
 find_package(KWin 6.3 REQUIRED)
 

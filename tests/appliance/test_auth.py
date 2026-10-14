@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import stat
 
 import pytest
@@ -198,8 +199,14 @@ class TestBootstrap:
         store = json.loads((tmp_path / "appliance-auth.json").read_text())
         assert store["username"] == "admin" and "password_hash" in store
         assert store["session_not_before"] == 0
-        assert stat.S_IMODE(tmp_path.stat().st_mode) == 0o700
-        assert stat.S_IMODE((tmp_path / "appliance-auth.json").stat().st_mode) == 0o600
+        if os.name == "nt":
+            from tests.appliance.windows_acl_assertions import assert_private_windows_acl
+
+            assert_private_windows_acl(tmp_path)
+            assert_private_windows_acl(tmp_path / "appliance-auth.json")
+        else:
+            assert stat.S_IMODE(tmp_path.stat().st_mode) == 0o700
+            assert stat.S_IMODE((tmp_path / "appliance-auth.json").stat().st_mode) == 0o600
 
         # 二次加载读取既有存储,密码哈希与 jwt_secret 不变。
         config2, generated2 = load_or_bootstrap_auth()
@@ -228,11 +235,35 @@ class TestBootstrap:
         monkeypatch.setenv("ECHO_DATA_DIR", str(tmp_path))
         monkeypatch.delenv("ECHO_ADMIN_PASSWORD", raising=False)
         monkeypatch.delenv("ECHO_LOCAL_JWT_SECRET", raising=False)
+        monkeypatch.delenv("ECHO_APPLIANCE_REQUIRE_PROVISIONED_AUTH", raising=False)
         from appliance.auth import load_or_bootstrap_auth
 
         config, generated = load_or_bootstrap_auth()
         assert generated and len(generated) >= 12
         assert verify_password(generated, config.users["admin"])
+
+    def test_production_requires_oem_provisioned_auth(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ECHO_DATA_DIR", str(tmp_path))
+        monkeypatch.setenv("ECHO_APPLIANCE_REQUIRE_PROVISIONED_AUTH", "1")
+        monkeypatch.delenv("ECHO_ADMIN_PASSWORD", raising=False)
+        from appliance.auth import load_or_bootstrap_auth
+
+        with pytest.raises(RuntimeError, match="must be provisioned"):
+            load_or_bootstrap_auth()
+        assert not (tmp_path / "appliance-auth.json").exists()
+
+    def test_production_accepts_existing_provisioned_auth(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("ECHO_DATA_DIR", str(tmp_path))
+        monkeypatch.setenv("ECHO_ADMIN_PASSWORD", "provision-before-native-start")
+        from appliance.auth import load_or_bootstrap_auth
+
+        first, _generated = load_or_bootstrap_auth()
+        monkeypatch.setenv("ECHO_APPLIANCE_REQUIRE_PROVISIONED_AUTH", "1")
+        second, generated = load_or_bootstrap_auth()
+
+        assert generated is None
+        assert second.users == first.users
+        assert second.jwt_secret == first.jwt_secret
 
     def test_bootstrap_reuses_runtime_jwt_secret(self, tmp_path, monkeypatch):
         shared_secret = "Echo-Dev-Shared-Secret-1234567890!"

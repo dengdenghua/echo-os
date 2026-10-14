@@ -15,7 +15,8 @@
  */
 
 import { swallow } from "@/core/utils/log";
-import { withAgentAvatarVersion } from "@/core/agents/avatar";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
+import { isEchoAgentId, withAgentAvatarVersion } from "@/core/agents/avatar";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
 import {
@@ -57,6 +58,8 @@ export interface MentionItem {
   icon: string;
   /** Real avatar image (group members) — rendered instead of the icon. */
   avatarUrl?: string;
+  /** Agent id of a group member; the default Echo agent shows the ECHO mark. */
+  agentId?: string;
 }
 
 export type MentionCategory =
@@ -91,21 +94,9 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   session: HistoryIcon,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  file: "text-info",
-  symbol: "text-chart-1",
-  folder: "text-warning",
-  git: "text-chart-7",
-  docs: "text-success",
-  web: "text-info",
-  terminal: "text-muted-foreground",
-  agent: "text-chart-6",
-  plugin: "text-chart-3",
-  skill: "text-warning",
-  pack: "text-chart-5",
-  database: "text-success",
-  session: "text-chart-2",
-};
+// Mention kinds are told apart by icon shape, never by colour (ECHO brand:
+// state colours are reserved for states).
+const CATEGORY_ICON_CLASS = "text-muted-foreground";
 
 // Echo Native mention encoding — canonical ``echo-session:`` URI of the
 // session id (base64url of ASCII-escaped JSON), mirrored from
@@ -291,6 +282,7 @@ function withMemberMentions(
         value: m.mention_value?.trim() || label,
         description: m.description || "群成员",
         icon: m.icon?.trim() || "bot",
+        agentId: m.name,
         avatarUrl: resolveMentionAvatar(
           rawAvatar ? withAgentAvatarVersion(rawAvatar) : null,
         ),
@@ -845,8 +837,7 @@ export function MentionAutocompletePopup({
               CATEGORY_ICONS[item.icon] ||
               CATEGORY_ICONS[item.type] ||
               FileIcon;
-            const colorClass =
-              CATEGORY_COLORS[item.type] || "text-muted-foreground";
+            const colorClass = CATEGORY_ICON_CLASS;
             const isSelected = index === selectedIndex;
 
             return (
@@ -871,7 +862,12 @@ export function MentionAutocompletePopup({
                     isSelected ? "bg-accent-foreground/10" : "bg-muted",
                   )}
                 >
-                  {item.avatarUrl ? (
+                  {isEchoAgentId(item.agentId) ? (
+                    <AgentAvatarTile
+                      agentId="echo"
+                      className="size-full rounded"
+                    />
+                  ) : item.avatarUrl ? (
                     <img
                       src={item.avatarUrl}
                       alt={item.label}
@@ -942,7 +938,7 @@ export function MentionBadge({
 }: MentionBadgeProps) {
   const IconComponent =
     CATEGORY_ICONS[type] || CATEGORY_ICONS[type] || FileIcon;
-  const colorClass = CATEGORY_COLORS[type] || "text-muted-foreground";
+  const colorClass = CATEGORY_ICON_CLASS;
 
   return (
     <span

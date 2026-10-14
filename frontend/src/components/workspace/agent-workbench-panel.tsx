@@ -24,7 +24,6 @@ import { useI18n } from "@/core/i18n/hooks";
 import {
   artifactDisplayPath,
   normalizeWorkspaceArtifactRef,
-  urlOfArtifact,
 } from "@/core/artifacts/utils";
 import { useArtifactContent } from "@/core/artifacts/hooks";
 import type { OutlineRound } from "@/core/threads/progress-outline";
@@ -37,6 +36,8 @@ import {
   OfficePreview,
 } from "@/components/workspace/artifacts/artifact-file-detail";
 import { officeArtifactKind } from "@/components/workspace/artifacts/office-edit";
+import { ArtifactDownloadLink } from "@/components/workspace/artifacts/artifact-download-link";
+import { ArtifactReadError } from "@/components/workspace/artifacts/artifact-load-error";
 import { ArtifactLink } from "@/components/workspace/citations/artifact-link";
 import { checkCodeFile, getFileIcon, getFileName } from "@/core/utils/files";
 import { useStreamdownPlugins } from "@/core/streamdown";
@@ -58,6 +59,7 @@ import { useAgentWorkbenchSnapshot } from "./agent-workbench-snapshot";
 import { deriveAgentPhases, type AgentPhase } from "./agent-phases";
 import { type AgentRunState, workbenchRunState } from "./agent-run-status";
 import { MachineScopeRail } from "./agent-workbench-panel/machine-scope-rail";
+import { TaskApprovalBanner } from "./agent-workbench-panel/task-approval-banner";
 import { EmptyShellView } from "./agent-workbench-panel/empty-shell-view";
 import {
   WorkbenchTabHeader,
@@ -817,6 +819,10 @@ function AgentWorkbenchPanelImpl({
         mainRunStatusLabel={mainRunStatus.label}
       />
 
+      {threadId ? (
+        <TaskApprovalBanner key={threadId} threadId={threadId} />
+      ) : null}
+
       {threadId &&
       effectiveActiveTab !== "project" &&
       effectiveActiveTab !== "workspace" ? (
@@ -1007,7 +1013,7 @@ function FileListRow({
         {name}
       </span>
       {isCurrentTurn && (
-        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
           <SparklesIcon className="size-2.5" />
           本轮
         </span>
@@ -1032,17 +1038,17 @@ export function PreviewPane({
   const { t } = useI18n();
   const displayPath = artifactDisplayPath(filepath);
   const isWriteFile = filepath.startsWith("write-file:");
-  const { content, url, isLoading, refetch } = useArtifactContent({
+  const officeKind = officeArtifactKind(displayPath);
+  const { content, url, isLoading, error, refetch } = useArtifactContent({
     filepath,
     threadId,
-    enabled: !isWriteFile,
+    enabled: !isWriteFile && !officeKind,
   });
   const effectiveContent = isWriteFile ? "" : (content ?? "");
 
   const lang = checkCodeFile(displayPath).language;
   const isHtml = lang === "html";
   const isMarkdown = lang === "markdown";
-  const officeKind = officeArtifactKind(displayPath);
 
   return (
     <div className="flex min-h-0 size-full flex-col">
@@ -1067,15 +1073,14 @@ export function PreviewPane({
             {lang}
           </span>
         )}
-        <a
-          href={urlOfArtifact({ filepath, threadId, download: true })}
-          target="_blank"
-          rel="noopener noreferrer"
+        <ArtifactDownloadLink
+          filepath={filepath}
+          threadId={threadId}
           className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label={t.common.download}
         >
           <DownloadIcon className="size-3" />
-        </a>
+        </ArtifactDownloadLink>
       </div>
 
       {/* Content */}
@@ -1085,7 +1090,9 @@ export function PreviewPane({
             {t.common.loading}…
           </div>
         )}
-        {officeKind ? (
+        {error && !officeKind ? (
+          <ArtifactReadError error={error} onRetry={() => void refetch()} />
+        ) : officeKind ? (
           <OfficePreview
             displayPath={displayPath}
             filepath={filepath}

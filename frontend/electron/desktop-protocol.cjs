@@ -145,6 +145,31 @@ function errorResponse(status, code) {
   });
 }
 
+// When the system Agent cannot be reached (at boot before it listens, or a
+// transient proxy failure), answer exactly like the appliance nginx does for
+// 502/504 (deploy/provision/base/echo-nginx.conf) and the dev server's proxy:
+// 503 appliance_starting with Retry-After. The desktop then shows "系统服务正在
+// 启动" and reconnects by itself; a bare 502 parked the shell on "暂时无法连接
+// 系统服务" until someone pressed retry.
+function backendStartingResponse() {
+  return new Response(
+    JSON.stringify({
+      detail: {
+        code: "appliance_starting",
+        message: "ECHO OS 正在启动，请稍后重试",
+      },
+    }),
+    {
+      status: 503,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json; charset=utf-8",
+        "Retry-After": "3",
+      },
+    },
+  );
+}
+
 function proxyHeaders(requestHeaders) {
   const headers = new Headers(requestHeaders);
   for (const name of FORBIDDEN_PROXY_HEADERS) {
@@ -184,11 +209,21 @@ function rewriteBackendRedirect(response, backendOrigin) {
   });
 }
 
+function isTransientFetchError(error) {
+  return /ERR_INSUFFICIENT_RESOURCES/.test(String(error && error.message));
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 function createDesktopProtocolHandler({
   distRoot,
   backendBaseURL,
   fetchImpl,
   onProxyError,
+  onAssetError,
+  retryDelayMs = 150,
 }) {
   const trustedBackendOrigin = normalizeLoopbackBackendBaseURL(backendBaseURL);
   if (typeof fetchImpl !== "function") {
@@ -213,15 +248,26 @@ function createDesktopProtocolHandler({
         init.body = request.body;
         init.duplex = "half";
       }
-      try {
-        const response = await fetchImpl(
-          buildBackendTargetURL(appURL, trustedBackendOrigin),
-          init,
-        );
-        return rewriteBackendRedirect(response, trustedBackendOrigin);
-      } catch (error) {
-        onProxyError?.(error);
-        return errorResponse(502, "desktop_backend_unavailable");
+      // Chromium briefly refuses requests with ERR_INSUFFICIENT_RESOURCES when
+      // the browser process has too many outstanding (a cold start serves every
+      // asset through net.fetch too). Retry idempotent requests a few times
+      // before reporting the backend as unavailable; bodies cannot be replayed.
+      const attempts = method === "GET" || method === "HEAD" ? 4 : 1;
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          const response = await fetchImpl(
+            buildBackendTargetURL(appURL, trustedBackendOrigin),
+            init,
+          );
+          return rewriteBackendRedirect(response, trustedBackendOrigin);
+        } catch (error) {
+          if (attempt < attempts && isTransientFetchError(error)) {
+            await delay(retryDelayMs * attempt);
+            continue;
+          }
+          onProxyError?.(error);
+          return backendStartingResponse();
+        }
       }
     }
 
@@ -232,13 +278,23 @@ function createDesktopProtocolHandler({
     if (!assetPath) {
       return errorResponse(404, "desktop_asset_not_found");
     }
-    try {
-      return await fetchImpl(pathToFileURL(assetPath).toString(), {
-        method: request.method,
-        bypassCustomProtocolHandlers: true,
-      });
-    } catch {
-      return errorResponse(404, "desktop_asset_not_found");
+    // A cold start requests every renderer chunk at once; one asset refused
+    // with ERR_INSUFFICIENT_RESOURCES used to surface as a 404 and broke the
+    // lazily imported desktop for good. Assets are read-only, so retry.
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await fetchImpl(pathToFileURL(assetPath).toString(), {
+          method: request.method,
+          bypassCustomProtocolHandlers: true,
+        });
+      } catch (error) {
+        if (attempt < 4 && isTransientFetchError(error)) {
+          await delay(retryDelayMs * attempt);
+          continue;
+        }
+        onAssetError?.(error);
+        return errorResponse(404, "desktop_asset_not_found");
+      }
     }
   };
 }

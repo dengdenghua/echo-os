@@ -180,7 +180,7 @@ export function ModelRouterIndicator({
             )}
           >
             <RotateCcwIcon size={12} className="shrink-0 opacity-60" />
-            <span className="truncate max-w-[var(--text-truncate-md)]">
+            <span className="truncate max-w-[var(--text-truncate-md,140px)]">
               {isAutoRouted ? t.modelRouter.auto : t.modelRouter.manual}:{" "}
               <span className="font-medium">{displayModel}</span>
             </span>
@@ -275,10 +275,7 @@ export function ModelRouterIndicator({
               </h5>
               <div className="space-y-0.5">
                 {sortedScores.map(([model, score]) => (
-                  <div
-                    key={model}
-                    className="flex items-center gap-2 text-xs"
-                  >
+                  <div key={model} className="flex items-center gap-2 text-xs">
                     <span
                       className={cn(
                         "flex-1 truncate",

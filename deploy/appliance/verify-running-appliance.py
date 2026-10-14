@@ -36,6 +36,9 @@ _MIN_NAS_TRANSFER_TEST_BYTES = 16 * 1024 * 1024
 _MAX_NAS_TRANSFER_TEST_BYTES = 10 * 1024**3
 _NAS_TRANSFER_PATTERN = hashlib.sha256(b"Echo OS NAS transfer verification v1").digest()
 _MAX_FAMILY_FIXTURE_BYTES = 32 * 1024
+_KERNEL_RELEASE = re.compile(r"^[0-9A-Za-z][0-9A-Za-z._+~-]{0,127}$")
+_SYSTEM_CAPABILITY_ID = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$")
+_REQUIRED_SYSTEM_CAPABILITIES = frozenset({"apps.list", "hub.catalog.list", "storage.health.read"})
 
 
 class VerificationError(RuntimeError):
@@ -478,6 +481,57 @@ def _assert_runtime_architecture(container: str, expected: str | None) -> str:
     if expected is not None and container_arch != expected:
         raise VerificationError(f"appliance architecture is {container_arch}, expected {expected}")
     return container_arch
+
+
+def _assert_zfs_kernel_runtime(
+    *,
+    module_path: Path = Path("/sys/module/zfs"),
+    uname_path: Path = Path("/usr/bin/uname"),
+    modinfo_path: Path = Path("/usr/sbin/modinfo"),
+    systemctl_path: Path = Path("/usr/bin/systemctl"),
+    zpool_path: Path = Path("/usr/sbin/zpool"),
+    command_runner: Callable[[list[str]], subprocess.CompletedProcess[str]] | None = None,
+) -> dict[str, Any]:
+    """Fail closed unless userspace and the running kernel can both use ZFS."""
+
+    runner = command_runner or (
+        lambda command: subprocess.run(  # nosec B603
+            command,
+            check=False,
+            text=True,
+            capture_output=True,
+            timeout=15,
+        )
+    )
+
+    kernel_result = runner([str(uname_path), "-r"])
+    kernel_release = kernel_result.stdout.strip() if isinstance(kernel_result.stdout, str) else ""
+    if kernel_result.returncode != 0 or _KERNEL_RELEASE.fullmatch(kernel_release) is None:
+        raise VerificationError("running kernel release could not be determined safely")
+
+    module_result = runner([str(modinfo_path), "-k", kernel_release, "zfs"])
+    if module_result.returncode != 0:
+        raise VerificationError(
+            f"ZFS kernel module is unavailable for running kernel {kernel_release}"
+        )
+    if not module_path.is_dir():
+        raise VerificationError("ZFS kernel module is installed but not loaded")
+
+    service_result = runner([str(systemctl_path), "is-active", "zfs-load-module.service"])
+    service_state = service_result.stdout.strip() if isinstance(service_result.stdout, str) else ""
+    if service_result.returncode != 0 or service_state != "active":
+        raise VerificationError("zfs-load-module.service is not active")
+
+    zpool_result = runner([str(zpool_path), "list", "-H", "-o", "name"])
+    if zpool_result.returncode != 0:
+        raise VerificationError("ZFS userspace cannot communicate with the running kernel")
+    return {
+        "kernelRelease": kernel_release,
+        "moduleInstalled": True,
+        "moduleLoaded": True,
+        "loadServiceActive": True,
+        "kernelInterfaceReady": True,
+    }
 
 
 def _assert_permanent_privilege_drop(
@@ -1212,6 +1266,91 @@ def _assert_web_surfaces(base_url: str) -> None:
         or config.get("agent_workspace_url") is not None
     ):
         raise VerificationError("retired Agent WebUI surface is still exposed")
+
+
+def _assert_system_capabilities_contract(base_url: str, token: str) -> dict[str, Any]:
+    endpoint = f"{base_url}/api/appliance/capabilities"
+    anonymous, _body, _headers = _http("GET", endpoint)
+    if anonymous != 401:
+        raise VerificationError(
+            f"unauthenticated system capabilities endpoint returned {anonymous}"
+        )
+    status, body, _headers = _http("GET", endpoint, token=token)
+    payload = _json_body(body, "system capabilities")
+    capabilities = payload.get("capabilities") if isinstance(payload, dict) else None
+    count = payload.get("count") if isinstance(payload, dict) else None
+    if (
+        status != 200
+        or not isinstance(payload, dict)
+        or set(payload) != {"apiVersion", "kind", "count", "capabilities"}
+        or payload.get("apiVersion") != "echo.ai/v1alpha1"
+        or payload.get("kind") != "CapabilityList"
+        or not isinstance(count, int)
+        or isinstance(count, bool)
+        or not isinstance(capabilities, list)
+        or not 1 <= count <= 128
+        or count != len(capabilities)
+    ):
+        raise VerificationError("system capabilities endpoint contract is invalid")
+
+    capability_ids: set[str] = set()
+    expected_keys = {
+        "apiVersion",
+        "kind",
+        "metadata",
+        "provider",
+        "requestSchema",
+        "effect",
+        "scope",
+        "authorization",
+        "audit",
+    }
+    for capability in capabilities:
+        metadata = capability.get("metadata") if isinstance(capability, dict) else None
+        provider = capability.get("provider") if isinstance(capability, dict) else None
+        operation = provider.get("operation") if isinstance(provider, dict) else None
+        capability_id = metadata.get("id") if isinstance(metadata, dict) else None
+        if (
+            not isinstance(capability, dict)
+            or set(capability) != expected_keys
+            or capability.get("apiVersion") != "echo.ai/v1alpha1"
+            or capability.get("kind") != "Capability"
+            or not isinstance(metadata, dict)
+            or set(metadata) != {"id", "version", "title", "description"}
+            or not isinstance(capability_id, str)
+            or _SYSTEM_CAPABILITY_ID.fullmatch(capability_id) is None
+            or not isinstance(metadata.get("version"), int)
+            or isinstance(metadata.get("version"), bool)
+            or metadata["version"] < 1
+            or not isinstance(provider, dict)
+            or set(provider) != {"id", "transport", "operation"}
+            or not isinstance(operation, dict)
+            or set(operation) != {"method", "path"}
+            or operation.get("method") not in {"GET", "POST", "PUT", "PATCH", "DELETE"}
+            or not isinstance(operation.get("path"), str)
+            or not operation["path"].startswith("/api/appliance/")
+            or not isinstance(capability.get("requestSchema"), dict)
+            or not isinstance(capability.get("effect"), dict)
+            or not isinstance(capability.get("scope"), dict)
+            or not isinstance(capability.get("authorization"), dict)
+            or not isinstance(capability.get("audit"), dict)
+            or capability_id in capability_ids
+        ):
+            raise VerificationError("system capabilities endpoint returned an invalid capability")
+        capability_ids.add(capability_id)
+
+    missing = sorted(_REQUIRED_SYSTEM_CAPABILITIES - capability_ids)
+    if missing:
+        raise VerificationError(
+            "system capabilities endpoint omitted required appliance capabilities: "
+            + ", ".join(missing)
+        )
+    return {
+        "apiVersion": payload["apiVersion"],
+        "count": count,
+        "requiredCapabilities": sorted(_REQUIRED_SYSTEM_CAPABILITIES),
+        "unique": True,
+    }
 
 
 def _assert_agent_assets_contract(base_url: str, token: str) -> dict[str, Any]:
@@ -3722,6 +3861,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     if status != 200 or apps.get("available") is not True:
         raise VerificationError(f"Docker-backed apps endpoint is unavailable: {apps}")
     _assert_web_surfaces(base_url)
+    system_capabilities_result = _assert_system_capabilities_contract(base_url, token)
     agent_assets_result = _assert_agent_assets_contract(base_url, token)
     agent_capabilities_result = _assert_agent_capabilities_contract(base_url, token)
     hub_resource_preflight = _assert_hub_resource_preflight(base_url, token)
@@ -3783,6 +3923,9 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
     _assert_runtime_identity(args.main_container, args.expected_uid, args.expected_gid)
     _assert_nonroot_runtime_identity(args.proxy_container)
     runtime_arch = _assert_runtime_architecture(args.main_container, args.expected_arch)
+    zfs_runtime_result = (
+        _assert_zfs_kernel_runtime() if bool(getattr(args, "require_zfs_runtime", False)) else None
+    )
     _assert_state_owner(args.main_container, args.expected_uid, args.expected_gid)
     _assert_runtime_secret_indirection(args.main_container)
     _assert_internal_proxy_policy(args.main_container, main_id)
@@ -3926,6 +4069,7 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         "apps_available": True,
         "desktop": 200,
         "workbench": 200,
+        "system_capabilities": system_capabilities_result,
         "agent_assets": agent_assets_result,
         "agent_capabilities": agent_capabilities_result,
         "hub_resource_preflight": hub_resource_preflight,
@@ -3957,6 +4101,8 @@ def verify(args: argparse.Namespace) -> dict[str, Any]:
         result["nas_transfer"] = nas_transfer_result
     if family_isolation_result is not None:
         result["family_isolation"] = family_isolation_result
+    if zfs_runtime_result is not None:
+        result["zfs_runtime"] = zfs_runtime_result
     return result
 
 
@@ -3971,6 +4117,14 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--expected-arch", choices=("amd64", "arm64"))
     parser.add_argument("--wait-seconds", type=float, default=180)
     parser.add_argument("--require-clean-bundle", action="store_true")
+    parser.add_argument(
+        "--require-zfs-runtime",
+        action="store_true",
+        help=(
+            "fail unless the running kernel has a loaded matching ZFS module, the "
+            "load service is active, and zpool can use the kernel interface"
+        ),
+    )
     parser.add_argument(
         "--nas-transfer-test-bytes",
         type=int,

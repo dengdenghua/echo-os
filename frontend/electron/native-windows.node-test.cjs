@@ -11,6 +11,7 @@ const {
   parseWmctrlWindowList,
   listNativeWindows,
   runNativeWindowAction,
+  X11_ICONIFY_SCRIPT,
 } = require("./native-windows.cjs");
 
 let passed = 0;
@@ -24,8 +25,8 @@ void (async () => {
   await test("解析 EWMH 窗口列表、标题空格和活动窗口", () => {
     const windows = parseWmctrlWindowList(
       [
-        "0x04600007  0 2314 echo-host org.gnome.Nautilus Files — Home",
-        "0x04a0000a -1 8821 echo-host code.Code Visual Studio Code",
+        "0x04600007  0 2314 org.gnome.Nautilus echo-host Files — Home",
+        "0x04a0000a -1 8821 code.Code echo-host Visual Studio Code",
       ].join("\n"),
       "0x04a0000a",
     );
@@ -93,7 +94,7 @@ void (async () => {
         null,
         file.endsWith("xprop")
           ? "_NET_ACTIVE_WINDOW(WINDOW): window id # 0x1000001"
-          : "0x01000001  0 42 host app.App A window",
+          : "0x01000001  0 42 app.App host A window",
         "",
       );
     };
@@ -240,6 +241,7 @@ void (async () => {
       display: ":0",
       wmctrlPath: "/usr/bin/wmctrl",
       xpropPath: null,
+      python3Path: "/usr/bin/python3",
       execFileImpl,
     };
     assert.strictEqual(
@@ -254,15 +256,22 @@ void (async () => {
       (await runNativeWindowAction("close", "0xABC", options)).ok,
       true,
     );
-    assert.deepStrictEqual(
-      calls.map((call) => call[1]),
-      [
-        ["-ir", "0xabc", "-b", "remove,hidden"],
-        ["-ia", "0xabc"],
-        ["-ir", "0xabc", "-b", "add,hidden"],
-        ["-ic", "0xabc"],
-      ],
-    );
+    // KWin ignores client-set _NET_WM_STATE_HIDDEN; minimize iconifies via
+    // ICCCM WM_CHANGE_STATE instead of wmctrl -b add,hidden.
+    assert.deepStrictEqual(calls, [
+      ["/usr/bin/wmctrl", ["-ir", "0xabc", "-b", "remove,hidden"]],
+      ["/usr/bin/wmctrl", ["-ia", "0xabc"]],
+      ["/usr/bin/python3", ["-I", "-c", X11_ICONIFY_SCRIPT, "0xabc"]],
+      ["/usr/bin/wmctrl", ["-ic", "0xabc"]],
+    ]);
+    assert.match(X11_ICONIFY_SCRIPT, /WM_CHANGE_STATE/);
+    assert.match(X11_ICONIFY_SCRIPT, /\[3, 0, 0, 0, 0\]/);
+    const withoutPython = await runNativeWindowAction("minimize", "0xABC", {
+      ...options,
+      python3Path: null,
+    });
+    assert.strictEqual(withoutPython.ok, false);
+    assert.strictEqual(withoutPython.error, "python3 is not installed");
   });
 
   console.log(`\n原生窗口桥测试: ${passed} passed`);

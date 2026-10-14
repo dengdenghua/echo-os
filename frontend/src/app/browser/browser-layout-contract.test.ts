@@ -76,7 +76,7 @@ describe("AI browser layout hierarchy", () => {
   });
 
   it("surfaces detected localhost previews beside recent visits", () => {
-    expect(homeSource).toContain("detectLocalServices({ excludePorts })");
+    expect(homeSource).toContain("detectLocalServicesShared({ excludePorts");
     expect(homeSource).toContain("{bp.localServices}");
     expect(homeSource).toContain("localServices.slice(0, 6).map");
     expect(homeSource).toContain("onClick={() => onOpen(service.url)}");

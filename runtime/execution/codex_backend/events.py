@@ -120,9 +120,12 @@ def _tool_name(item: dict[str, Any]) -> str:
         tool = str(item.get("tool") or "tool").strip().replace("/", "_")
         return f"mcp__{server}__{tool}"
     if item_type == "dynamicToolCall":
-        namespace = str(item.get("namespace") or "dynamic").strip().replace("/", "_")
         tool = str(item.get("tool") or "tool").strip().replace("/", "_")
-        return f"{namespace}__{tool}"
+        namespace = str(item.get("namespace") or "").strip().replace("/", "_")
+        # Echo's own dynamic tools have no namespace: they are the same Echo
+        # tools a native turn runs, so they keep their own names. The UI
+        # labels write_text_file as 写文件, not "dynamic__write_text_file".
+        return f"{namespace}__{tool}" if namespace else tool
     if item_type in {"collabAgentToolCall", "subAgentActivity"}:
         return "call_subagent"
     return {
@@ -148,7 +151,13 @@ def _tool_input(item: dict[str, Any]) -> dict[str, Any]:
         return {
             "changes": item.get("changes") if isinstance(item.get("changes"), list) else [],
         }
-    if item_type in {"mcpToolCall", "dynamicToolCall"}:
+    if item_type == "dynamicToolCall":
+        # Echo tools take flat arguments (path, content …); expose them the
+        # way a native turn does so targets such as the written file show.
+        arguments = item.get("arguments")
+        flat = dict(arguments) if isinstance(arguments, dict) else {}
+        return {"arguments": arguments, "tool": item.get("tool"), **flat}
+    if item_type == "mcpToolCall":
         return {
             "arguments": item.get("arguments"),
             "server": item.get("server"),

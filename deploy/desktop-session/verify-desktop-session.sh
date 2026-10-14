@@ -98,7 +98,7 @@ if grep -q '^export QT_ACCESSIBILITY=1$' \
      "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" && \
    grep -q -- '--force-renderer-accessibility' \
      "$REPO_ROOT/deploy/desktop-session/echo-wayland-shell-session.sh" && \
-   grep -q 'required-name "Echo OS 桌面"' \
+   grep -q 'required-name "ECHO OS 桌面"' \
      "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" && \
    grep -q '^Exec=/usr/bin/orca$' \
      "$REPO_ROOT/deploy/desktop-session/echo-screen-reader.desktop"; then
@@ -152,7 +152,7 @@ else
   fail "当前 DISPLAY 的窗口管理器不是 KWin"
 fi
 
-if wmctrl -lx 2>/dev/null | grep -Eqi 'echo-shell|echo-os-desktop|Echo Desktop'; then
+if wmctrl -lx 2>/dev/null | grep -Eqi 'echo-shell|echo-os-desktop|echo-frontend'; then
   pass "Echo Shell 窗口已注册到 KWin"
 else
   fail "KWin 窗口列表中找不到 Echo Shell"

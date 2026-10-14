@@ -47,16 +47,22 @@ function SheetContent({
   className,
   children,
   side = "right",
+  container,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
+  /** Portal target; defaults to document.body. */
+  container?: HTMLElement | null;
+  overlayClassName?: string;
 }) {
   const { t } = useI18n();
   return (
-    <SheetPortal>
-      <SheetOverlay />
+    <SheetPortal container={container}>
+      <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        data-side={side}
         className={cn(
           "bg-card text-card-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-[var(--shadow-modal)] transition ease-in-out",
           side === "right" &&

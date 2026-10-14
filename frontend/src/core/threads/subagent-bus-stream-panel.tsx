@@ -76,7 +76,7 @@ export function SubAgentBusStreamPanel({
 const STATUS_BADGE: Record<SubAgentBusStatus, string> = {
   idle: "bg-muted text-muted-foreground",
   connecting: "bg-amber-500/15 text-amber-600",
-  live: "bg-emerald-500/15 text-emerald-600",
+  live: "bg-core/15 text-core",
   error: "bg-red-500/15 text-red-600",
 };
 

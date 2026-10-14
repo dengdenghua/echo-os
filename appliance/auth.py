@@ -4,7 +4,9 @@
 appliance 形态特有的"首启设密码"环节,不自写任何 crypto:
 
 - 首次启动:从环境变量 ECHO_ADMIN_PASSWORD 取管理员密码;未提供则随机
-  生成并在日志中醒目打印(类似 NAS 面板首启给出初始密码)。
+  生成(类似 NAS 面板首启给出初始密码)，并把存储标记为"等待所有者设置"：
+  设备所有者随后在局域网浏览器里凭设备控制台显示的一次性设置码设定自己的
+  密码(见 appliance/owner_setup.py)。
 - 把密码哈希与随机 jwt_secret 持久化到 data 目录(0600),据此构造
   adapters LocalAuthConfig(admin + 已开通的家庭成员 + 长会话),交给现成的
   create_local_auth_router 执行登录/签发 JWT。
@@ -40,9 +42,19 @@ LOGIN_RATE_LIMIT_MAX_ENTRIES = 10_000
 SESSION_NOT_BEFORE_KEY = "session_not_before"
 ACCOUNT_SESSION_NOT_BEFORE_KEY = "account_session_not_before"
 ACCOUNTS_KEY = "accounts"
+# Set only when the first administrator password was generated rather than
+# chosen. While it is true the owner may set the password once through the
+# first-boot web flow; choosing a password by any path clears it.
+OWNER_SETUP_PENDING_KEY = "owner_setup_pending"
 MAX_LOCAL_ACCOUNTS = 32
 _ACCOUNT_USERNAME = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 _ACCOUNT_ROLES = {"admin", "member"}
+
+
+def owner_setup_pending(payload: dict[str, Any]) -> bool:
+    """Whether the stored administrator password is still the generated one."""
+
+    return payload.get(OWNER_SETUP_PENDING_KEY) is True
 
 
 def _admin_account(password_hash: str) -> dict[str, Any]:
@@ -149,6 +161,19 @@ def payload_with_normalized_accounts(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _validate_auth_store_path(target: Path, *, create_parent: bool = False) -> None:
+    if os.name == "nt":
+        from appliance.windows_state import open_private_file, private_state_directory
+
+        _reject_auth_store_symlinks(target)
+        with private_state_directory(
+            target.parent, create=create_parent, protect=target.parent != Path(".")
+        ):
+            try:
+                descriptor = open_private_file(target)
+            except FileNotFoundError:
+                return
+            os.close(descriptor)
+        return
     parent = target.parent
     if parent.is_symlink():
         raise ValueError("appliance auth directory must not be a symlink")
@@ -159,7 +184,8 @@ def _validate_auth_store_path(target: Path, *, create_parent: bool = False) -> N
     # The implicit local-development path is the checkout's current directory;
     # never change its permissions. Explicit data directories are private state.
     if parent != Path("."):
-        parent.chmod(0o700)
+        if stat.S_IMODE(parent.stat().st_mode) != 0o700:
+            parent.chmod(0o700)
         if stat.S_IMODE(parent.stat().st_mode) != 0o700:
             raise OSError("appliance auth directory permissions are not private")
     if target.is_symlink():
@@ -167,7 +193,8 @@ def _validate_auth_store_path(target: Path, *, create_parent: bool = False) -> N
     if target.exists():
         if not target.is_file():
             raise ValueError("appliance auth store must be a regular file")
-        target.chmod(0o600)
+        if stat.S_IMODE(target.stat().st_mode) != 0o600:
+            target.chmod(0o600)
         if stat.S_IMODE(target.stat().st_mode) != 0o600:
             raise OSError("appliance auth store permissions are not private")
 
@@ -179,10 +206,20 @@ def auth_store_path() -> Path:
 
 def read_auth_store(path: Path | None = None) -> dict[str, Any]:
     target = path or auth_store_path()
-    _validate_auth_store_path(target)
-    if not target.is_file():
-        raise ValueError("appliance auth store must be a regular file")
-    payload = json.loads(target.read_text(encoding="utf-8"))
+    if os.name == "nt":
+        from appliance.windows_state import open_private_file, private_state_directory
+
+        _reject_auth_store_symlinks(target)
+        with (
+            private_state_directory(target.parent, protect=target.parent != Path(".")),
+            os.fdopen(open_private_file(target), "r", encoding="utf-8") as handle,
+        ):
+            payload = json.load(handle)
+    else:
+        _validate_auth_store_path(target)
+        if not target.is_file():
+            raise ValueError("appliance auth store must be a regular file")
+        payload = json.loads(target.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("appliance auth store must be a JSON object")
     return payload
@@ -192,6 +229,9 @@ def write_auth_store(payload: dict[str, Any], path: Path | None = None) -> None:
     """Atomically replace the private credential store and durably flush it."""
 
     target = path or auth_store_path()
+    if os.name == "nt":
+        _write_windows_auth_store(payload, target)
+        return
     _validate_auth_store_path(target, create_parent=True)
     temporary = target.with_name(f".{target.name}.{secrets.token_hex(8)}.tmp")
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -212,6 +252,47 @@ def write_auth_store(payload: dict[str, Any], path: Path | None = None) -> None:
     finally:
         with contextlib.suppress(FileNotFoundError):
             temporary.unlink()
+
+
+def _write_windows_auth_store(payload: dict[str, Any], target: Path) -> None:
+    from appliance.windows_state import open_private_file, private_state_directory
+
+    _reject_auth_store_symlinks(target)
+    with private_state_directory(
+        target.parent, create=True, protect=target.parent != Path(".")
+    ) as parent:
+        target = parent / target.name
+        try:
+            descriptor = open_private_file(target)
+        except FileNotFoundError:
+            pass
+        else:
+            os.close(descriptor)
+        temporary = target.with_name(f".{target.name}.{secrets.token_hex(8)}.tmp")
+        try:
+            descriptor = open_private_file(temporary, create_new=True)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, sort_keys=True, separators=(",", ":"))
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, target)
+            # ACLs belong to the newly published object. Verify them after
+            # replace as well; a filesystem unable to preserve them fails closed.
+            descriptor = open_private_file(target)
+            os.close(descriptor)
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                temporary.unlink()
+
+
+def _reject_auth_store_symlinks(target: Path) -> None:
+    # Preserve the public validation errors. The native open still checks every
+    # component's reparse attribute through pinned handles, closing races and
+    # rejecting junction ancestors which Path.is_symlink() does not detect.
+    if target.parent.is_symlink():
+        raise ValueError("appliance auth directory must not be a symlink")
+    if target.is_symlink():
+        raise ValueError("appliance auth store must not be a symlink")
 
 
 def _auth_config(config_type: Any, data: dict[str, Any]) -> Any:
@@ -267,6 +348,8 @@ def load_or_bootstrap_auth() -> tuple[Any, str | None]:
         # bcrypt 静默截断 72B，必须在入口处拒绝，避免“强口令实际弱化”
         if len(password.encode("utf-8")) > 72:
             raise ValueError("ECHO_ADMIN_PASSWORD must be at most 72 UTF-8 bytes (bcrypt limit)")
+    elif os.environ.get("ECHO_APPLIANCE_REQUIRE_PROVISIONED_AUTH") == "1":
+        raise RuntimeError("appliance authentication must be provisioned before production startup")
     else:
         password = secrets.token_urlsafe(12)
         generated = password
@@ -294,6 +377,8 @@ def load_or_bootstrap_auth() -> tuple[Any, str | None]:
         ACCOUNT_SESSION_NOT_BEFORE_KEY: {},
         AUTH_SCHEMA_VERSION_KEY: CURRENT_SCHEMA_VERSION,
     }
+    if generated is not None:
+        payload[OWNER_SETUP_PENDING_KEY] = True
     payload[ACCOUNTS_KEY] = normalized_accounts(payload)
     write_auth_store(payload, path)
 
@@ -306,10 +391,12 @@ __all__ = [
     "ACCOUNTS_KEY",
     "ACCOUNT_SESSION_NOT_BEFORE_KEY",
     "MAX_LOCAL_ACCOUNTS",
+    "OWNER_SETUP_PENDING_KEY",
     "SESSION_NOT_BEFORE_KEY",
     "auth_store_path",
     "load_or_bootstrap_auth",
     "normalized_accounts",
+    "owner_setup_pending",
     "payload_with_normalized_accounts",
     "read_auth_store",
     "write_auth_store",

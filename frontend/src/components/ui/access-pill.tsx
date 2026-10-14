@@ -24,8 +24,7 @@ export interface AccessPillProps {
 const TONE: Record<AccessTone, { icon: ReactNode; styles: string }> = {
   safe: {
     icon: <ShieldCheckIcon className="size-3.5" />,
-    styles:
-      "border-emerald-500/25 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10",
+    styles: "border-core/25 text-core hover:bg-core/10",
   },
   warn: {
     icon: <ShieldIcon className="size-3.5" />,
@@ -53,7 +52,7 @@ export function AccessPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full border bg-transparent px-2 text-[11px] font-medium leading-none",
+        "inline-flex h-6 items-center gap-1 rounded-full border bg-transparent px-2 text-xs font-medium leading-none",
         "transition-[background-color,border-color] duration-150",
         t.styles,
         className,

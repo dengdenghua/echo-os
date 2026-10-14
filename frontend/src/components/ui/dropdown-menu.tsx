@@ -29,13 +29,32 @@ function DropdownMenuTrigger({
   );
 }
 
+type DropdownMenuContentProps = React.ComponentProps<
+  typeof DropdownMenuPrimitive.Content
+> & {
+  /** Optional host for menus that belong to a themed application shell. */
+  portalContainer?: HTMLElement | null;
+};
+
+/**
+ * The host the root menu was portalled into. Submenus portal into the same
+ * host so they keep the menu's theme scope instead of rendering inside the
+ * parent menu, whose glass backdrop-filter would make it their containing
+ * block and clip them.
+ */
+const DropdownMenuPortalContainerContext = React.createContext<
+  HTMLElement | null | undefined
+>(undefined);
+
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  portalContainer,
+  children,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: DropdownMenuContentProps) {
   return (
-    <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Portal container={portalContainer ?? undefined}>
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
@@ -44,7 +63,11 @@ function DropdownMenuContent({
           className,
         )}
         {...props}
-      />
+      >
+        <DropdownMenuPortalContainerContext.Provider value={portalContainer}>
+          {children}
+        </DropdownMenuPortalContainerContext.Provider>
+      </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   );
 }
@@ -222,17 +245,28 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
+  portalContainer,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & {
+  /** Overrides the host inherited from the root menu. */
+  portalContainer?: HTMLElement | null;
+}) {
+  const inheritedContainer = React.useContext(
+    DropdownMenuPortalContainerContext,
+  );
   return (
-    <DropdownMenuPrimitive.SubContent
-      data-slot="dropdown-menu-sub-content"
-      className={cn(
-        "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-xl border border-border-default p-1 shadow-[var(--shadow-floating)]",
-        className,
-      )}
-      {...props}
-    />
+    <DropdownMenuPrimitive.Portal
+      container={portalContainer ?? inheritedContainer ?? undefined}
+    >
+      <DropdownMenuPrimitive.SubContent
+        data-slot="dropdown-menu-sub-content"
+        className={cn(
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-xl border border-border-default p-1 shadow-[var(--shadow-floating)]",
+          className,
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
   );
 }
 

@@ -1,124 +1,92 @@
 # Golden Path
 
-This is the 10-minute path for a new user. It avoids internal architecture and
-proves one thing first: Echo can run an agent task and show you what happened.
+The shortest path from a fresh checkout to the product loop: **first boot →
+login → first task → approval → result**. It runs the browser desktop with the
+embedded Agent from source; installers and the NAS appliance are at the end.
 
-## Goal
+## 0. Prerequisites
 
-By the end, you should have:
-
-- installed the local runtime;
-- run one deterministic agent demo;
-- opened the UI;
-- inspected the journal or task result.
+- Git, [uv](https://docs.astral.sh/uv/) `0.11.25` (pinned by `pyproject.toml`).
+  uv provisions Python 3.11+ itself; you never call `pip` or a bare `python`.
+- Node.js 20 or newer with corepack. pnpm comes from `frontend/package.json`
+  (`packageManager`), so run it as `corepack pnpm` if `pnpm` is not on `PATH`.
 
 ## 1. Install
 
 From the repository root:
 
 ```bash
-pip install -e ".[dev]"
+git submodule update --init          # connector catalogue (extensions/workbuddy-connectors)
+uv sync --locked --extra dev --extra serve --extra tracing --extra web --extra local-auth
+cd frontend
+corepack pnpm install --frozen-lockfile
 ```
 
-If you only want the smallest backend demo:
+The environment lives in `.venv/` (`.venv/Scripts/python.exe` on Windows,
+`.venv/bin/python` elsewhere). Use `uv run <command>` to run anything in it.
+
+## 2. First boot
 
 ```bash
-pip install -e ".[minimal]"
+cd frontend
+corepack pnpm dev:check        # preflight: config file, interpreter, free ports
+corepack pnpm dev:with-agent   # Agent backend + desktop
 ```
 
-## 2. Check The Runtime
+This starts the Agent backend on `127.0.0.1:8000` and the desktop on
+`http://localhost:3000/#/desktop`. Configuration is chosen in this order:
+`ECHO_AGENT_CONFIG`, an existing `config.local.yaml`, then
+`config.example.yaml`. Copy the example to `config.local.yaml` to customise it.
+`corepack pnpm dev:status` reports whether both services are ready.
 
-```bash
-python -m runtime status
-```
+## 3. Log in
 
-You should see a capability summary for FastAPI, MCP, Playwright, model
-providers, and related optional integrations. Missing optional integrations are
-fine for the first run.
+The source-development entry binds to loopback only and keeps the admin login
+passwordless (`ECHO_APPLIANCE_DEV_PASSWORDLESS=1`). Production entry points
+never set that flag: a NAS appliance takes its first admin password from
+`ECHO_ADMIN_PASSWORD` (or prints a random one once in the log), and the packaged
+desktop app signs in to its own local account store under the app's user data.
 
-## 3. Run A Real Demo
+## 4. First task
 
-Use the deterministic bugfix demo first. It does not need an LLM key.
+A model is required for real tasks. Either set the provider key that your
+config names (for example `ANTHROPIC_API_KEY` for `config.example.yaml`), or
+deploy a local model from **系统设置 → 模型与 Codex** (see
+[LOCAL_MODEL_SETUP.md](LOCAL_MODEL_SETUP.md)).
 
-```bash
-python -m runtime bugfix-demo
-```
+Type a goal into the desktop intent box and press Enter, or open the Agent
+workbench (工作台) from the Dock. The task runs as a durable background task.
 
-What to look for:
+## 5. Approval and result
 
-- the agent reads files;
-- runs tests;
-- edits code;
-- verifies the fix;
-- records the process.
+When a step needs permission (file changes, network access, high-risk tools),
+the task pauses and appears in **Task Space** with an approval card. Approve or
+reject it there; the same turn then continues. The finished task keeps its
+result, the verified file changes and the tool trace in Task Space.
 
-This is the first "aha": Echo is not only a chat box. It supervises work.
+## Other ways to run it
 
-## 4. Open The Workspace
+| Goal | Command |
+| --- | --- |
+| Desktop window (Electron) against the dev stack | `cd frontend && corepack pnpm electron:dev` |
+| Backend only | `uv run python -m runtime serve --config config.local.yaml --port 8000` |
+| Windows installer from source | `cd frontend && corepack pnpm electron:build:win` (needs the PyInstaller backend: `extras/desktop` → `pnpm backend:build:win` with the locked Python 3.11.9 `.venv`) |
+| NAS appliance (Docker) | [deploy/appliance/README.md](../deploy/appliance/README.md) |
+| Released installers | `Echo-Setup-*` assets on the GitHub Releases page of `dengdenghua/echo-os`, once a `v*` release is published |
 
-Start the local UI:
-
-```bash
-python -m runtime ui --port 8000
-```
-
-Then open:
-
-```text
-http://127.0.0.1:8000
-```
-
-Useful first pages:
-
-| Page | What to inspect |
-|---|---|
-| `/` | Legacy dashboard and runtime status |
-| `/ui/` | React workspace if `frontend/dist` exists |
-| `/docs` | FastAPI routes |
-| `/api/health` | Health probe |
-| `/api/status` | Capability probe |
-| `/api/journal` | Recent events |
-
-## 5. Run A Simple Goal
-
-```bash
-python -m runtime run "list files in the current directory"
-```
-
-Then inspect:
-
-```bash
-python -m runtime reflect --from-journal data/events.jsonl
-```
-
-If your run used an in-memory journal or a different journal path, use that path
-instead.
-
-## 6. Understand The Result
-
-Read the output in this order:
-
-1. Did the task complete?
-2. Which skills/tools were used?
-3. Were any limits or safety checks triggered?
-4. What was written to the journal?
-5. Did reflection propose anything useful?
-
-Do not start by reading the biomimetic architecture. Start with the work trace.
-
-## Common First Problems
+## Common first problems
 
 | Symptom | Try |
-|---|---|
-| `fastapi` missing | `pip install -e ".[dev]"` |
-| UI starts but `/ui/` is empty | run `cd frontend && corepack enable && pnpm install --frozen-lockfile && pnpm build` |
-| model call fails | run deterministic demos first, then configure provider keys |
-| browser automation unavailable | install Playwright or use the browser relay path |
-| journal looks empty | pass an explicit `--journal-file` or `--journal` path |
+| --- | --- |
+| `python` does nothing on Windows | It is the Microsoft Store stub; use `uv run …` or `.venv\Scripts\python.exe` |
+| `pnpm` not found | `corepack pnpm …`, or `corepack enable` once |
+| `dev:check` reports a missing dependency | Re-run the `uv sync` line from step 1 |
+| Connectors list is empty | `git submodule update --init` |
+| A task fails at the first model call | Configure a provider key or a local model (step 4) |
 
-## What To Read After This
+## What to read next
 
 - Plain concepts: [CONCEPTS.md](CONCEPTS.md)
-- Setup details: [getting-started.md](getting-started.md)
-- Architecture: [architecture.md](architecture.md)
-- Naming rules: [naming.md](naming.md)
+- Current architecture: [CURRENT_ARCHITECTURE.md](CURRENT_ARCHITECTURE.md)
+- Embedded workbench setup in depth: [ECHO_AGENT_INTEGRATION.md](ECHO_AGENT_INTEGRATION.md)
+- NAS delivery gates: [NAS_DELIVERY_STATUS.md](NAS_DELIVERY_STATUS.md)

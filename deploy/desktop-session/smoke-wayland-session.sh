@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CLIENT_SCRIPT="$REPO_ROOT/deploy/desktop-session/smoke-wayland-session-client.sh"
 BRIDGE=/usr/lib/echo-os/echo-kwin-window-bridge
 
-for command_name in dbus-run-session gdbus kwin_wayland kwriteconfig6 wayland-info node python3 timeout; do
+for command_name in dbus-run-session gdbus kwin_wayland kwriteconfig6 kscreen-doctor wayland-info node python3 timeout; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "Wayland smoke dependency missing: $command_name" >&2
     exit 1
@@ -35,6 +35,14 @@ export XDG_RUNTIME_DIR="$LOG_DIR/runtime"
 export XDG_CONFIG_HOME="$LOG_DIR/config"
 mkdir -p "$XDG_RUNTIME_DIR/echo-os" "$XDG_CONFIG_HOME"
 chmod 0700 "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR/echo-os"
+# GitHub job containers run as root with HOME=/github/home owned by the runner
+# user; Firefox (the http core-app case) refuses to run as root in another
+# user's home. Give the session a private home when HOME is not ours.
+if [[ ! -O "${HOME:-/nonexistent}" ]]; then
+  export HOME="$LOG_DIR/home"
+  mkdir -p "$HOME"
+  chmod 0700 "$HOME"
+fi
 
 kwriteconfig6 --file kwinrc --group Plugins \
   --key org.echoos.liquidglassEnabled true
@@ -85,6 +93,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 unset DISPLAY WAYLAND_DISPLAY QT_QPA_PLATFORM
 
 timeout --signal=TERM 480s kwin_wayland \

@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 # Linux PyInstaller spec. Mirrors packaging/macos/echo-backend.spec.
 # Differences from the macOS spec:
-#   - entry script is the same platform-neutral `runtime.cli.main` entry
+#   - shared entry dispatches the fixed document worker before the normal CLI
 #   - UPX is kept disabled for consistency with the macOS backend (the Linux
 #     backend is a glibc ELF bundle consumed inside Electron; enabling UPX here
 #     is a size optimization that can be revisited without affecting packaging
@@ -24,6 +24,13 @@ hiddenimports = [
     for module in collect_submodules("runtime")
     if not module.startswith(remote_plugin_prefixes)
 ] + [
+    "runtime.execution.misc.document_extraction",
+    "runtime.execution.misc.document_worker",
+    "runtime.execution.misc.document_process_limits",
+    "runtime.execution.misc.document_text_extractor",
+    "runtime.execution.misc.notebook_extractor",
+    "pypdf",
+    "defusedxml",
     "uvicorn.logging",
     "uvicorn.loops",
     "uvicorn.loops.auto",
@@ -36,6 +43,17 @@ hiddenimports = [
     "uvicorn.lifespan.on",
     "multipart",
     "python_multipart",
+    # Electron starts the packaged backend with
+    # ECHO_APP_EXTENSIONS=appliance.native_extension and requires it
+    # (frontend/electron/backend-runtime.cjs). It is imported by name at
+    # runtime, so PyInstaller cannot discover it from the entry script.
+    "appliance.native_extension",
+    "appliance.agent_api.contract",
+    "appliance.agent_api.storage",
+    "appliance.agent_ui",
+    "appliance.files",
+    "appliance.security",
+    "appliance.task_projection",
 ]
 
 datas = [
@@ -118,4 +136,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-

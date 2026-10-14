@@ -16,11 +16,15 @@ from deploy.appliance import storage_recovery_lab as lab
 REPOSITORY = Path(__file__).resolve().parents[2]
 OPERATIONS_ARTIFACT_ID = "9" * 16
 IMAGE_REFERENCE = f"ghcr.io/echo-os/echo-os@sha256:{'7' * 64}"
+pytestmark = pytest.mark.skipif(
+    os.name != "posix",
+    reason="storage recovery lab safety checks require POSIX ownership and path semantics",
+)
 
 
 def _candidate_index(tmp_path: Path) -> Path:
     value: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
             "repository": "dengdenghua/echo-os",
@@ -31,6 +35,12 @@ def _candidate_index(tmp_path: Path) -> Path:
         },
         "evidence": {
             "candidatePreflight": {"reportId": "4" * 64},
+            "nasRuntimeProfile": {
+                "product": "echo-nas-appliance",
+                "host": "debian-13-openmediavault-8",
+                "deployment": "oci-compose",
+                "echoOsImageRole": "separate-native-desktop-artifact",
+            },
             "appliance": {
                 "manifestSha256": "5" * 64,
                 "immutableReference": IMAGE_REFERENCE,
@@ -176,6 +186,13 @@ class StorageHarness:
             return subprocess.CompletedProcess(command, 0, "", "")
         if name == "python3":
             result = {
+                "zfs_runtime": {
+                    "kernelRelease": "6.12.94+deb13-amd64",
+                    "moduleInstalled": True,
+                    "moduleLoaded": True,
+                    "loadServiceActive": True,
+                    "kernelInterfaceReady": True,
+                },
                 "nas_transfer": {
                     "writeExecuted": True,
                     "size": lab.NAS_TRANSFER_BYTES,
@@ -183,7 +200,7 @@ class StorageHarness:
                     "physicallyDeleted": False,
                     "sha256": "c" * 64,
                     "restoredSha256": "c" * 64,
-                }
+                },
             }
             return subprocess.CompletedProcess(command, 0, json.dumps(result), "")
         return subprocess.CompletedProcess(command, 0, "", "")

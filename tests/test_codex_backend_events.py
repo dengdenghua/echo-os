@@ -359,3 +359,43 @@ def test_retryable_error_is_status_only_but_terminal_error_fails() -> None:
         }
     ]
 
+
+
+def test_echo_dynamic_tool_keeps_its_own_name_and_flat_arguments() -> None:
+    # Golden path 2026-10: the chat summary read "dynamic__todo_write ·
+    # dynamic__write_text_file" and never named the written file.
+    state = CodexEventState()
+    events = translate_notification(
+        _notification(
+            "item/started",
+            threadId="thread-1",
+            turnId="turn-1",
+            item={
+                "id": "dyn-1",
+                "type": "dynamicToolCall",
+                "tool": "write_text_file",
+                "arguments": {"path": "hello.txt", "content": "hello echo"},
+            },
+        ),
+        state,
+    )
+    assert events[0]["type"] == "tool_start"
+    assert events[0]["tool_name"] == "write_text_file"
+    assert events[0]["input_preview"]["path"] == "hello.txt"
+
+    namespaced = translate_notification(
+        _notification(
+            "item/started",
+            threadId="thread-1",
+            turnId="turn-1",
+            item={
+                "id": "dyn-2",
+                "type": "dynamicToolCall",
+                "namespace": "acme",
+                "tool": "lookup",
+                "arguments": {},
+            },
+        ),
+        state,
+    )
+    assert namespaced[0]["tool_name"] == "acme__lookup"

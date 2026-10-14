@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CloudDownloadIcon, CloudIcon, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -225,9 +226,12 @@ export function CloudRoleMarketPanel({
             >
               <CardHeader className="gap-2 px-4 pb-3 pt-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border-default bg-primary/10 text-lg">
-                    {agent.icon}
-                  </div>
+                  <AgentAvatarTile
+                    agentId={agent.name}
+                    name={role.name}
+                    avatar={agent.icon}
+                    className="size-10 rounded-xl"
+                  />
                   <div className="min-w-0 flex-1">
                     <CardTitle className="truncate text-sm">
                       {role.name}
@@ -238,12 +242,12 @@ export function CloudRoleMarketPanel({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" className="gap-1 text-[11px]">
+                  <Badge variant="secondary" className="gap-1 text-xs">
                     <CloudIcon className="size-3" />
                     云端角色
                   </Badge>
                   {(role.tags ?? []).slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-[11px]">
+                    <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}

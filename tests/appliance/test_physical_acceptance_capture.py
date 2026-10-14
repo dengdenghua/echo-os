@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
+if os.name == "nt":
+    pytest.skip(
+        "physical acceptance capture requires Linux device and service semantics",
+        allow_module_level=True,
+    )
 
 from deploy.appliance import physical_acceptance as physical
 from tests.appliance.hub_lifecycle_fixture import hub_lifecycle_material
@@ -37,7 +44,7 @@ def _digest(data: bytes) -> str:
 
 def _candidate(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
     value = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
             "repository": "dengdenghua/echo-os",
@@ -48,6 +55,7 @@ def _candidate(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
         },
         "evidence": {
             "candidatePreflight": {"reportId": "4" * 64},
+            "nasRuntimeProfile": dict(physical.NAS_RUNTIME_PROFILE),
             "appliance": {
                 "manifestSha256": "5" * 64,
                 "immutableReference": f"ghcr.io/echo-os/echo-os@sha256:{'6' * 64}",
@@ -223,6 +231,7 @@ def _bare_metal_material(
 ) -> tuple[dict[str, Any], dict[str, dict[str, Any]], dict[str, bytes]]:
     appliance = {
         "bundleVerified": True,
+        "applianceCapabilitiesVerified": True,
         "immutableImageVerified": True,
         "administratorLoginReady": True,
         "agentWorkbenchReady": True,
@@ -2152,6 +2161,7 @@ def test_device_result_binds_four_machine_phases_and_all_common_checks(tmp_path:
     boot_b = "22222222-2222-4222-8222-222222222222"
     appliance = {
         "bundleVerified": True,
+        "applianceCapabilitiesVerified": True,
         "administratorLoginReady": True,
         "fileLifecycleVerified": True,
         "familyMemberIsolationVerified": True,

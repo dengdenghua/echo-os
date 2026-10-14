@@ -14,8 +14,10 @@ import {
   XCircleIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Switch } from "@/components/ui/switch";
 import { RoutedWebLink } from "@/components/ui/routed-web-link";
 import { cn } from "@/lib/utils";
@@ -42,6 +45,7 @@ import {
   type NASModel,
 } from "@/core/storage/api";
 import { useI18n } from "@/core/i18n/hooks";
+import { octAvailabilityQuery } from "@/core/oct/hooks";
 import {
   clearThreadModelReferences,
   getLocalSettings,
@@ -1017,7 +1021,7 @@ function ModelSettingsOverview({
 
       <div className="mt-3 flex flex-col border-t border-border pt-2.5 sm:flex-row sm:items-center sm:divide-x sm:divide-border">
         <div className="min-w-0 py-1 sm:flex-1 sm:py-0 sm:pr-4">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {copy.currentDefault}
           </div>
           <div className="truncate font-mono text-xs font-medium text-foreground">
@@ -1025,7 +1029,7 @@ function ModelSettingsOverview({
           </div>
         </div>
         <div className="min-w-0 py-1 sm:flex-1 sm:px-4 sm:py-0">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {copy.configuredModels}
           </div>
           <div className="text-xs font-medium text-foreground">
@@ -1034,9 +1038,7 @@ function ModelSettingsOverview({
         </div>
         <div className="flex items-center justify-between gap-3 py-1 sm:flex-1 sm:py-0 sm:pl-4">
           <div>
-            <div className="text-[11px] text-muted-foreground">
-              {copy.gateway}
-            </div>
+            <div className="text-xs text-muted-foreground">{copy.gateway}</div>
             <div
               role="status"
               aria-live="polite"
@@ -1060,7 +1062,9 @@ function ModelSettingsOverview({
 // ── Main page ──────────────────────────────────────────────────
 export default function ModelSettingsPage() {
   const { t, locale } = useI18n();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const pageCopy = modelSettingsPageCopy(locale);
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [compatDiagnostics, setCompatDiagnostics] =
@@ -1176,6 +1180,17 @@ export default function ModelSettingsPage() {
       const data = await res.json();
       const list = data.models || [];
       setModels(list);
+      // The composer's model picker caches the catalog for minutes; a
+      // connection added, removed or edited here must show up there now.
+      void queryClient.invalidateQueries({ queryKey: ["models"] });
+      // The Codex engine's "follow system" model is the system default,
+      // which the first connected model on a keyless device becomes at once.
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "coder" &&
+          query.queryKey[1] === "codex" &&
+          query.queryKey[3] === "model-profile",
+      });
       setModelsLoadError(false);
       setGatewayStatus("connected");
       void fetchCompatDiagnostics();
@@ -1191,6 +1206,7 @@ export default function ModelSettingsPage() {
   }, [
     fetchCompatDiagnostics,
     fetchCompatProfileCatalog,
+    queryClient,
     t.settings.model.loadFailed,
   ]);
 
@@ -1630,7 +1646,12 @@ export default function ModelSettingsPage() {
         onAddModel={handleOverviewAddModel}
         onScanLocal={handleOverviewScanLocal}
         onOpenZen={() =>
-          navigate("/workspace/agents?tab=plugins&connect=opencode")
+          navigate(
+            preserveWorkbenchPresentation(
+              "/workspace/agents?tab=plugins&connect=opencode",
+              search,
+            ),
+          )
         }
       />
 
@@ -1645,9 +1666,11 @@ export default function ModelSettingsPage() {
         description={pageCopy.connectionsSubtitle}
       >
         {loading ? (
-          <div role="status" className="text-muted-foreground text-sm">
-            {t.common.loading}
-          </div>
+          <PanelLoading
+            label={t.common.loading}
+            caption={t.common.loading}
+            className="min-h-24"
+          />
         ) : (
           <div className="flex w-full flex-col gap-3">
             {modelsLoadError ? (
@@ -1984,6 +2007,10 @@ function LocalVisionSection() {
   const [model, setModel] = useState<NASModel | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Echo Storage is optional. When it is not installed the start call says
+  // so (ok: false, "not_found"); listing its models anyway answered 503 on
+  // every visit to this page.
+  const [storageMissing, setStorageMissing] = useState(false);
 
   const presentError = useCallback((error: unknown) => {
     const raw = error instanceof Error ? error.message : String(error);
@@ -1996,7 +2023,15 @@ function LocalVisionSection() {
 
   const refresh = useCallback(async () => {
     try {
-      await startNASService();
+      const service = await startNASService();
+      if (!service.ok && service.status === "not_found") {
+        setStorageMissing(true);
+        setMessage(
+          "本地图片理解需要 Echo Storage 服务，这台设备还没有安装。安装后即可在这里下载并启用。",
+        );
+        return;
+      }
+      setStorageMissing(false);
       const models = await listNASModels();
       setModel(
         models.find((item) => item.model_id === "vision-default") ?? null,
@@ -2095,7 +2130,9 @@ function LocalVisionSection() {
                   "正在下载模型…",
                 )
               }
-              disabled={busy || Boolean(message?.includes("无权"))}
+              disabled={
+                busy || storageMissing || Boolean(message?.includes("无权"))
+              }
             >
               {busy ? "下载中…" : "下载并启用"}
             </Button>
@@ -2583,6 +2620,11 @@ interface UpstreamModel {
 
 function OfficialModelsSection() {
   const { t } = useI18n();
+  // The oct gateway (and its /api/oct/openai/v1/models catalog) is mounted
+  // only when the backend advertises the "oct" login provider. ECHO OS ships
+  // without it, so probing anyway logged a 404 on every visit to this page.
+  const { data: octAvailable, isPending: octPending } =
+    useQuery(octAvailabilityQuery);
   const [models, setModels] = useState<UpstreamModel[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailableReason, setUnavailableReason] = useState<string | null>(
@@ -2590,6 +2632,7 @@ function OfficialModelsSection() {
   );
 
   useEffect(() => {
+    if (!octAvailable) return;
     let cancelled = false;
     (async () => {
       try {
@@ -2630,14 +2673,17 @@ function OfficialModelsSection() {
     return () => {
       cancelled = true;
     };
-  }, [t.settings.model.gatewayNotEnabled, t.settings.model.accountNotLinked]);
+  }, [
+    octAvailable,
+    t.settings.model.gatewayNotEnabled,
+    t.settings.model.accountNotLinked,
+  ]);
 
-  if (loading) {
+  if (!octPending && !octAvailable) return null;
+  if (octPending || loading) {
     return (
       <SettingsSection title={t.settings.model.officialModels}>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2Icon className="size-4 animate-spin" /> {t.common.loading}
-        </div>
+        <PanelLoading label={t.common.loading} caption={t.common.loading} />
       </SettingsSection>
     );
   }
@@ -3210,7 +3256,7 @@ function EditModelForm({
               </div>
               {visionLocked && (
                 <span
-                  className="text-[11px] leading-tight text-muted-foreground"
+                  className="text-xs leading-tight text-muted-foreground"
                   role="status"
                 >
                   {t.settings.model.visionNotSupported}
@@ -3291,7 +3337,7 @@ function EditModelForm({
         </Button>
         <Button
           size="sm"
-          className="bg-chart-7 hover:bg-chart-7/90 text-white"
+          className="bg-chart-7 hover:bg-chart-7/90 text-primary-foreground"
           onClick={handleSave}
           disabled={saving || loading}
         >
@@ -3817,7 +3863,7 @@ function AddModelForm({
           </div>
           {visionLocked && (
             <span
-              className="text-[11px] leading-tight text-muted-foreground"
+              className="text-xs leading-tight text-muted-foreground"
               role="status"
             >
               {t.settings.model.visionNotSupported}
@@ -3907,7 +3953,7 @@ function AddModelForm({
         </Button>
         <Button
           type="submit"
-          className="bg-chart-7 hover:bg-chart-7/90 text-white"
+          className="bg-chart-7 hover:bg-chart-7/90 text-primary-foreground"
           disabled={saving}
         >
           {saving ? t.common.loading : t.common.save}

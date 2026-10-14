@@ -1,6 +1,12 @@
 /** React Query hooks for the oct account gateway. */
 import { swallow } from "@/core/utils/log";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { currentActorId, getAuthProviderInfo } from "@/core/auth/api";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { useAuth } from "@/providers/AuthProvider";
@@ -15,11 +21,33 @@ import {
 } from "./api";
 
 const octKey = ["account", "oct"] as const;
-const dailyClaimKey = ["account", "oct", "daily-claim"] as const;
 const goodsKey = ["account", "oct", "goods"] as const;
 
+function dailyClaimKey(userId: string | null) {
+  return [...octKey, "daily-claim", userId ?? "anonymous"] as const;
+}
+
 function octLinkKey(userId: string | null) {
-  return [...octKey, userId ?? "anonymous"] as const;
+  return [...octKey, "link", userId ?? "anonymous"] as const;
+}
+
+/**
+ * The /api/account/oct routes are mounted only when the backend enables the
+ * oct gateway, and that is exactly when it advertises the "oct" login
+ * provider. Feature-detect through the public provider list instead of
+ * polling routes that 404 (ECHO OS ships without the gateway by default).
+ */
+export const octAvailabilityQuery = queryOptions({
+  queryKey: [...octKey, "available"] as const,
+  queryFn: async () =>
+    (await getAuthProviderInfo()).some((provider) => provider.id === "oct"),
+  staleTime: 5 * 60_000,
+  refetchOnWindowFocus: false,
+});
+
+/** Canonical account-link key shared by settings prefetch and account widgets. */
+export function octLinkQueryKey(userId: string | null = currentActorId()) {
+  return octLinkKey(userId);
 }
 
 /**
@@ -44,20 +72,21 @@ function normalize(link: OctLink): OctLink {
 }
 
 /**
- * 读缓存的 oct 绑定(轻量轮询 60s)。404(未登录绑定)/503(网关关)→ null,
- * 让调用方渲染空态而非报错。登录态变化时失效缓存。
+ * 读缓存的 oct 绑定(已绑定时轻量轮询 60s)。网关未挂载时不请求;404(未登录绑定)
+ * /503(网关关)→ null 并停止轮询,让调用方渲染空态而非报错。登录态变化时失效缓存。
  */
 export function useOctLink() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const userId = user?.user_id ?? user?.actor_id ?? null;
+  const { data: octAvailable = false } = useQuery(octAvailabilityQuery);
 
   useEffect(() => {
-    void qc.invalidateQueries({ queryKey: octKey });
+    void qc.invalidateQueries({ queryKey: octLinkQueryKey(userId) });
   }, [userId, qc]);
 
   return useQuery<OctLink | null>({
-    queryKey: octLinkKey(userId),
+    queryKey: octLinkQueryKey(userId),
     queryFn: async () => {
       try {
         const link = await octApi.get();
@@ -73,29 +102,35 @@ export function useOctLink() {
         }
         return normalize(link);
       } catch (err) {
-        swallow(err);
+        // Not linked (404) or gateway off (503) is an expected empty state.
         if (
           err instanceof OctApiError &&
           (err.status === 404 || err.status === 503)
         ) {
           return null;
         }
+        swallow(err);
         throw err;
       }
     },
+    enabled: octAvailable,
     staleTime: 30_000,
-    refetchInterval: 60_000,
-    refetchOnWindowFocus: true,
+    // Only a linked account has a balance worth refreshing. An unlinked or
+    // disabled gateway answers 404/503; re-asking every minute is noise.
+    refetchInterval: (query) => (query.state.data ? 60_000 : false),
+    refetchOnWindowFocus: (query) => Boolean(query.state.data),
   });
 }
 
 /** 手动强刷(拉网关 balance + membership)。 */
 export function useRefreshOctCredits() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.user_id ?? user?.actor_id ?? null;
   return useMutation({
     mutationFn: () => octApi.refresh(),
     onSuccess: (data) => {
-      qc.setQueriesData({ queryKey: octKey }, normalize(data));
+      qc.setQueryData(octLinkQueryKey(userId), normalize(data));
     },
   });
 }
@@ -105,8 +140,10 @@ export function useRefreshOctCredits() {
  * (dailyFreeRemaining / dailyFreeCredits)。仅 link 存在时启用。
  */
 export function useDailyClaimInfo(enabled = true) {
+  const { user } = useAuth();
+  const userId = user?.user_id ?? user?.actor_id ?? null;
   return useQuery({
-    queryKey: dailyClaimKey,
+    queryKey: dailyClaimKey(userId),
     enabled,
     queryFn: async () => {
       try {
@@ -144,11 +181,13 @@ export function useDailyClaimInfo(enabled = true) {
 /** 每日签到领免费积分。成功后失效积分 + 签到缓存。 */
 export function useClaimDailyCredits() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.user_id ?? user?.actor_id ?? null;
   return useMutation<Record<string, unknown>, Error, boolean>({
     mutationFn: () => octApi.dailyClaim(),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: dailyClaimKey });
-      qc.invalidateQueries({ queryKey: octKey });
+      qc.invalidateQueries({ queryKey: dailyClaimKey(userId) });
+      qc.invalidateQueries({ queryKey: octLinkQueryKey(userId) });
     },
   });
 }
@@ -192,13 +231,15 @@ export function useCreateOrder() {
 /** 查单(status=PAID 时后端顺手刷余额);支付完成失效积分。 */
 export function useFindOrder(orderNo: string | null) {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.user_id ?? user?.actor_id ?? null;
   return useQuery<OctOrder>({
     queryKey: [...goodsKey, "order", orderNo],
     enabled: Boolean(orderNo),
     queryFn: async () => {
       const o = await octApi.orders.findByOrderNo(orderNo as string);
       if (o?.status === "PAID") {
-        qc.invalidateQueries({ queryKey: octKey });
+        qc.invalidateQueries({ queryKey: octLinkQueryKey(userId) });
       }
       return o;
     },

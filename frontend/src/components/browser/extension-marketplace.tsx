@@ -22,6 +22,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import { swallow } from "@/core/utils/log";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
@@ -50,6 +55,10 @@ type ExtensionListing = {
 
 const STORAGE_KEY = "echo-browser-extension-marketplace";
 
+function extensionStorageKey(actor = currentActorId()): string {
+  return actorScopedStorageKey(STORAGE_KEY, actor);
+}
+
 const categories: ExtensionCategory[] = [
   "featured",
   "efficiency",
@@ -77,7 +86,7 @@ const catalog: ExtensionListing[] = [
     tagline: "Collect web snippets, sources, and screenshots",
     category: "research",
     icon: BookOpen,
-    accent: "from-success to-teal-600",
+    accent: "from-success to-cyan-600",
     rating: "4.8",
     installs: "8.4K",
     tags: ["Library", "Citation", "Screenshot"],
@@ -142,10 +151,10 @@ const catalog: ExtensionListing[] = [
 
 const featuredListing = catalog[0]!;
 
-const readInstalled = () => {
+const readInstalled = (actor = currentActorId()) => {
   if (typeof window === "undefined") return new Set<string>();
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = readActorScopedStorageValue(STORAGE_KEY, actor);
     const parsed = raw ? (JSON.parse(raw) as string[]) : [];
     return new Set(parsed);
   } catch (e) {
@@ -325,7 +334,10 @@ export function ExtensionMarketplace({
     setInstalled((current) => {
       const next = new Set(current);
       next.add(id);
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+      window.localStorage.setItem(
+        extensionStorageKey(),
+        JSON.stringify([...next]),
+      );
       return next;
     });
   };

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -183,7 +184,12 @@ def test_marketplace_package_rejects_symlinked_content(tmp_path: Path) -> None:
         )
 
 
-@pytest.mark.parametrize("mutation", ["ignored-directory", "file-mode"])
+@pytest.mark.parametrize("mutation", [
+    "ignored-directory",
+    pytest.param("file-mode", marks=pytest.mark.skipif(
+        os.name != "posix", reason="Windows chmod cannot change the signed execute bit",
+    )),
+])
 def test_marketplace_signature_covers_all_directories_and_file_modes(
     tmp_path: Path,
     mutation: str,
@@ -267,7 +273,7 @@ def test_marketplace_package_projects_signed_requirements(tmp_path: Path, kind: 
     target = payload.setdefault("echo", {}) if kind == "codex" else payload
     target.update(
         {
-            "host_api": ">=0.2,<0.3",
+            "host_api": ">=0.2,<0.4",
             "permissions": ["content.read", "network.remote"],
             "auth_modes": ["oauth"],
             "dependencies": ["base-tools"],
@@ -278,7 +284,7 @@ def test_marketplace_package_projects_signed_requirements(tmp_path: Path, kind: 
 
     manifest = load_marketplace_package_manifest(root, package_kind=kind)
 
-    assert manifest["host_api"] == ">=0.2,<0.3"
+    assert manifest["host_api"] == ">=0.2,<0.4"
     assert manifest["permissions"] == ["content.read", "network.remote"]
     assert manifest["auth_modes"] == ["oauth"]
     assert manifest["dependencies"] == ["base-tools"]

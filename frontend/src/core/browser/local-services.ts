@@ -89,3 +89,44 @@ export async function detectLocalServices({
     return left.port - right.port;
   });
 }
+
+/** How long an automatic scan reuses the previous result. */
+export const LOCAL_SERVICE_SCAN_REUSE_MS = 60_000;
+
+let recentScan: {
+  key: string;
+  at: number;
+  result: Promise<DetectedLocalService[]>;
+} | null = null;
+
+/**
+ * Every probe of a closed port logs a refused connection in the console, and
+ * the AI browser start page scanned on each open and each return to its tab.
+ * Automatic scans now share one in-flight or recent (one minute) result;
+ * `force` (the refresh button) always probes again.
+ */
+export function detectLocalServicesShared({
+  excludePorts = [],
+  force = false,
+  now = Date.now(),
+}: {
+  excludePorts?: readonly number[];
+  force?: boolean;
+  now?: number;
+} = {}): Promise<DetectedLocalService[]> {
+  const key = [...excludePorts].sort((a, b) => a - b).join(",");
+  if (
+    !force &&
+    recentScan?.key === key &&
+    now - recentScan.at < LOCAL_SERVICE_SCAN_REUSE_MS
+  ) {
+    return recentScan.result;
+  }
+  const result = detectLocalServices({ excludePorts });
+  const entry = { key, at: now, result };
+  recentScan = entry;
+  result.catch(() => {
+    if (recentScan === entry) recentScan = null;
+  });
+  return result;
+}

@@ -8,7 +8,7 @@
   "module_id": "design",
   "version": "1.0.0",
   "release_summary": "1.0.0：提供视觉创作、素材编排与设计工作流画布。",
-  "host_api": ">=0.2,<0.3",
+  "host_api": ">=0.2,<0.4",
   "dependencies": [],
   "entry": "dist/index.html",
   "isolation": "iframe",

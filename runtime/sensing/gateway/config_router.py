@@ -55,6 +55,7 @@ from runtime.execution.codex_backend.model_profile import CodexModelPreferenceSt
 from runtime.execution.codex_backend.paths import resolve_codex_state_root
 from runtime.execution.codex_backend.upstream_update import CodexUpstreamUpdateService
 from runtime.platform.models.custom_model_selection import selections_for_entry
+from runtime.platform.observability.crash_reporter import install_best_effort
 from runtime.platform.process.paths import app_paths
 
 try:
@@ -187,44 +188,30 @@ def create_config_router(
             jwt_audience=jwt_audience,
         )
 
-    def _resolve_identity(request: Request) -> Any:
-        """Resolve the full Identity (with roles) for admin checks. ``None``
-        when auth is disabled or no valid bearer is present."""
-        if not require_auth or identity_store is None:
-            return None
-        auth = request.headers.get("Authorization") or ""
-        if not auth.lower().startswith("bearer "):
-            return None
-        token = auth[7:].strip()
-        if jwt_secret and token.count(".") == 2:
-            try:
-                identity = identity_store.verify_jwt(
-                    token,
-                    secret=jwt_secret,
-                    required_issuer=jwt_issuer,
-                    required_audience=jwt_audience,
-                )
-                if identity is not None:
-                    return identity
-            except Exception:  # noqa: BLE001 — fall through to api-key check
-                pass
-        try:
-            return identity_store.verify_api_key(token)
-        except Exception:  # noqa: BLE001 — unresolved identity → no roles
-            return None
-
     def _require_admin(request: Request) -> None:
         """Mutating config endpoints that are themselves security controls (the
         path-denylist is one) need the ``admin`` role when auth is on. The
         router-level ``_auth_dep`` already enforced authentication; this adds
         the role gate on top. Dev mode (require_auth=False) stays a no-op for
-        single-user local use."""
+        single-user local use.
+
+        The role comes from the same principal resolver as ``_auth_dep``
+        (bearer, WebSocket subprotocol, then the HttpOnly session cookie). A
+        bearer-only lookup answered 403 to a signed-in browser admin, whose
+        only credential is the session cookie."""
         if not require_auth:
             return
-        identity = _resolve_identity(request)
-        roles = getattr(identity, "roles", ()) or ()
-        if "admin" not in {str(r).lower() for r in roles}:
-            raise HTTPException(403, "admin role required")
+        from runtime.safety.auth.principal import require_roles
+
+        require_roles(
+            request,
+            identity_store,
+            require_auth,
+            ("admin",),
+            jwt_secret=jwt_secret,
+            jwt_issuer=jwt_issuer,
+            jwt_audience=jwt_audience,
+        )
 
     path = (
         Path(custom_models_path)
@@ -276,11 +263,15 @@ def create_config_router(
     async def _config_lifespan(_app: Any):
         codex_accounts.start_idle_reaper()
         codex_updates.start()
+        uninstall_crash_reporter = install_best_effort(context={"component": "config"})
         try:
             yield
         finally:
             await codex_updates.close()
             await codex_accounts.close_all()
+            # Uninstall last: teardown is exactly when a latent shutdown bug
+            # surfaces, so capture has to stay installed through close().
+            uninstall_crash_reporter()
 
     router = APIRouter(
         tags=["config"],
@@ -315,7 +306,7 @@ def create_config_router(
             return {}
         return {k: v for k, v in data.items() if isinstance(v, dict)}
 
-    def _save(*touched: str) -> None:
+    def _save(*touched: str, strict: bool = False) -> None:
         """Persist, writing through only the ids this request changed.
 
         This file is routinely hand-edited — it is where an operator sets
@@ -360,6 +351,8 @@ def create_config_router(
                 os.replace(temp_path, path)
                 temp_path = None
             except OSError as exc:  # noqa: BLE001 — in-memory mutation already succeeded
+                if strict:
+                    raise
                 # Preserve the historical best-effort API contract, but make
                 # restart data-loss risk visible to operators.
                 logging.getLogger(__name__).error(
@@ -408,6 +401,9 @@ def create_config_router(
     # upstream real model name ("claude-sonnet-4-6") substituted
     # before the sub-router sees it — without that wrap mirrors
     # reject the alias as an unknown model.
+
+    # Live wrapper per configured entry, kept for the keyless fallback below.
+    registered_wrappers: dict[str, Any] = {}
 
     def _dispatcher() -> Any:
         return getattr(
@@ -581,6 +577,14 @@ def create_config_router(
                 )
                 return inner.call(rewritten)
 
+            def privacy_upstream(self, model: str | None) -> _MRR:
+                resolved = self._resolve(_MR(model=model or self._default, messages=[]))
+                return (
+                    self._responses_inner
+                    if self._responses_inner is not None and resolved in self._responses_models
+                    else self._inner
+                )
+
             def call_stream(self, request: _MR):
                 # Mirror ``call`` · route to the right upstream slot,
                 # then delegate to the inner router's streaming path.
@@ -614,6 +618,7 @@ def create_config_router(
         )
         for route_id in _entry_route_ids(entry, model_id):
             dispatcher.register(route_id, wrapper)
+        registered_wrappers[model_id] = wrapper
         return {"ok": True, "model_id": model_id}
 
     def _unregister(model_id: str) -> bool:
@@ -621,6 +626,54 @@ def create_config_router(
             custom_models_state.get(model_id),
             fallback_id=model_id,
         )
+
+    def _refresh_custom_fallback() -> None:
+        """Keep a keyless device's system default on a connected model.
+
+        Without a provider key the boot-time fallback is the first
+        self-configured model, or an "unconfigured" router when there was
+        none. Connecting the first model at runtime left that unconfigured
+        fallback in place until a restart: the system default stayed the
+        template's planner model, so "follow system" Codex turns and desktop
+        tasks answered 还没有可用的模型 right after a model was connected.
+        Only an unconfigured or custom-model fallback is ever replaced.
+        """
+
+        from runtime.platform.models.custom_model_flags import entry_matches_model
+        from runtime.sensing.model_router.models import UnconfiguredModelRouter
+
+        dispatcher = _dispatcher()
+        if dispatcher is None or not callable(getattr(dispatcher, "set_fallback", None)):
+            return
+        current = getattr(dispatcher, "_fallback", None)
+        replaceable = isinstance(current, UnconfiguredModelRouter) or bool(
+            getattr(current, "echo_custom_models_fallback", False)
+        )
+        if not replaceable:
+            return
+        planner_model = str(
+            getattr(getattr(getattr(stack, "config", None), "planner", None), "model", "") or ""
+        )
+        live = [
+            (model_id, registered_wrappers[model_id])
+            for model_id in custom_models_state
+            if model_id in registered_wrappers
+        ]
+        chosen = next(
+            (
+                wrapper
+                for model_id, wrapper in live
+                if planner_model and entry_matches_model(custom_models_state[model_id], planner_model)
+            ),
+            live[0][1] if live else None,
+        )
+        if chosen is None:
+            if not isinstance(current, UnconfiguredModelRouter):
+                dispatcher.set_fallback(UnconfiguredModelRouter())
+            return
+        if chosen is not current:
+            chosen.echo_custom_models_fallback = True
+            dispatcher.set_fallback(chosen)
 
     def _rebuild_routes() -> dict[str, dict[str, Any]]:
         """Re-register all live entries in stable insertion order.
@@ -631,7 +684,10 @@ def create_config_router(
         the last still-configured owner while row-level selection ids stay
         unambiguous.
         """
-        return {model_id: _register(entry) for model_id, entry in custom_models_state.items()}
+        registered_wrappers.clear()
+        status = {model_id: _register(entry) for model_id, entry in custom_models_state.items()}
+        _refresh_custom_fallback()
+        return status
 
     from runtime.platform.models.model_provider_plugin import (
         ModelProviderPluginManager,

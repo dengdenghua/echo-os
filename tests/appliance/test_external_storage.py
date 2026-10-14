@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from deploy.appliance.external_storage import (
     ExternalStorageError,
+    list_external_storage_mounts,
     verify_external_storage,
 )
 
@@ -58,7 +60,7 @@ def _verify(
     )
 
 
-@pytest.mark.parametrize("filesystem", ["ext4", "nfs4", "cifs"])
+@pytest.mark.parametrize("filesystem", ["ext4", "nfs4", "cifs", "fuse.rclone"])
 def test_accepts_active_distinct_external_or_remote_filesystem(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -189,3 +191,114 @@ def test_appliance_env_nas_storage_is_resolved_and_strict(
             devices,
             appliance_env=appliance_env,
         )
+
+
+def test_native_layout_uses_explicit_state_and_nas_roots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("NAS_STORAGE", raising=False)
+    deployment = tmp_path / "opt" / "echo-os"
+    state = tmp_path / "data"
+    nas = state / "nas"
+    mountpoint = tmp_path / "external"
+    destination = mountpoint / "repository"
+    for directory in (deployment, nas, destination):
+        directory.mkdir(parents=True)
+    mountinfo = tmp_path / "mountinfo"
+    mountinfo.write_text(_mount_record(mountpoint), encoding="utf-8")
+    devices = {
+        deployment.resolve(): 10,
+        state.resolve(): 11,
+        nas.resolve(): 12,
+        mountpoint.resolve(): 20,
+        destination.resolve(): 20,
+    }
+
+    result = verify_external_storage(
+        destination=destination,
+        mountpoint=mountpoint,
+        deployment_root=deployment,
+        appliance_env=None,
+        state_root_override=state,
+        nas_root_override=nas,
+        mountinfo=mountinfo,
+        device_reader=lambda path: devices[path.resolve()],
+    )
+
+    assert result["filesystem"] == "ext4"
+    devices[state.resolve()] = 20
+    with pytest.raises(ExternalStorageError, match="device state"):
+        verify_external_storage(
+            destination=destination,
+            mountpoint=mountpoint,
+            deployment_root=deployment,
+            appliance_env=None,
+            state_root_override=state,
+            nas_root_override=nas,
+            mountinfo=mountinfo,
+            device_reader=lambda path: devices[path.resolve()],
+        )
+
+
+def test_lists_only_writable_safe_mounts_under_candidate_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deployment, mountpoint, destination, mountinfo, devices = _layout(tmp_path, monkeypatch)
+    mountinfo.write_text(_mount_record(mountpoint, "nfs4"), encoding="utf-8")
+
+    result = list_external_storage_mounts(
+        deployment_root=deployment,
+        appliance_env=None,
+        state_root_override=deployment / "data",
+        nas_root_override=deployment / "storage",
+        mountinfo=mountinfo,
+        device_reader=lambda path: devices[path.resolve()],
+        disk_usage_reader=lambda _path: SimpleNamespace(total=1_000, free=750),
+        candidate_roots=(tmp_path,),
+    )
+
+    assert result == {
+        "schema": "echo.external-storage-candidates.v1",
+        "candidates": [
+            {
+                "mountpoint": str(mountpoint.resolve()),
+                "filesystem": "nfs4",
+                "kind": "remote",
+                "totalBytes": 1_000,
+                "freeBytes": 750,
+                "writable": True,
+            }
+        ],
+        "truncated": False,
+        "sourcesRedacted": True,
+    }
+    assert "/dev/external" not in str(result)
+    assert str(destination) not in str(result)
+
+
+def test_candidate_discovery_skips_read_only_and_protected_filesystems(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deployment, mountpoint, _destination, mountinfo, devices = _layout(tmp_path, monkeypatch)
+    mountinfo.write_text(
+        _mount_record(mountpoint).replace(" rw,relatime ", " ro,relatime "),
+        encoding="utf-8",
+    )
+    common = {
+        "deployment_root": deployment,
+        "appliance_env": None,
+        "state_root_override": deployment / "data",
+        "nas_root_override": deployment / "storage",
+        "mountinfo": mountinfo,
+        "device_reader": lambda path: devices[path.resolve()],
+        "disk_usage_reader": lambda _path: SimpleNamespace(total=1_000, free=750),
+        "candidate_roots": (tmp_path,),
+    }
+
+    assert list_external_storage_mounts(**common)["candidates"] == []
+
+    mountinfo.write_text(_mount_record(mountpoint), encoding="utf-8")
+    devices[mountpoint.resolve()] = devices[(deployment / "storage").resolve()]
+    assert list_external_storage_mounts(**common)["candidates"] == []

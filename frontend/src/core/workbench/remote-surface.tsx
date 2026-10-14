@@ -2,7 +2,9 @@ import {
   AlertTriangleIcon,
   CloudDownloadIcon,
   Loader2Icon,
+  PackageIcon,
   PowerIcon,
+  PowerOffIcon,
   RefreshCwIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +19,9 @@ import {
 } from "@/core/agents/agent-world-api";
 import { authHeaders } from "@/core/auth/api";
 import { getBackendBaseURL } from "@/core/config";
+import { setModuleAvailable } from "@/core/modules/enabled-modules";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
+import { cn } from "@/lib/utils";
 
 import type { WorkbenchBuiltinApp } from "./apps";
 
@@ -160,6 +165,7 @@ function SurfaceState({
   actionBusy?: boolean;
 }) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   if (!issue) {
     return (
       <div
@@ -174,11 +180,28 @@ function SurfaceState({
       </div>
     );
   }
+  // Not installed or switched off is a neutral state, not a risk: amber is
+  // reserved for approval and risk, so only real failures get the warning.
+  const neutral = issue.kind === "missing" || issue.kind === "disabled";
+  const IssueIcon =
+    issue.kind === "disabled"
+      ? PowerOffIcon
+      : issue.kind === "missing"
+        ? PackageIcon
+        : AlertTriangleIcon;
   return (
     <div className="flex size-full min-h-80 items-center justify-center p-5">
       <section className="w-full max-w-md rounded-2xl border border-border/70 bg-card/75 p-6 text-center shadow-sm">
-        <div className="mx-auto grid size-11 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
-          <AlertTriangleIcon className="size-5" />
+        <div
+          data-issue-tone={neutral ? "neutral" : "warning"}
+          className={cn(
+            "mx-auto grid size-11 place-items-center rounded-2xl",
+            neutral
+              ? "bg-muted text-muted-foreground"
+              : "bg-warning/10 text-warning",
+          )}
+        >
+          <IssueIcon className="size-5" />
         </div>
         <h1 className="mt-4 text-base font-semibold">
           {issue.kind === "disabled"
@@ -209,7 +232,12 @@ function SurfaceState({
             variant={enable || retry ? "outline" : "default"}
             size="sm"
             onClick={() =>
-              navigate("/workspace/agents?surface=chat&tab=plugins")
+              navigate(
+                preserveWorkbenchPresentation(
+                  "/workspace/agents?surface=chat&tab=plugins",
+                  search,
+                ),
+              )
             }
           >
             <CloudDownloadIcon className="mr-1.5 size-3.5" />
@@ -362,6 +390,7 @@ export function RemoteWorkbenchSurface({
       if (!status.enabled) {
         throw new Error(status.error || "应用未能进入启用状态");
       }
+      setModuleAvailable(app.moduleId, true);
       setAttempt((value) => value + 1);
     } catch (enableError) {
       setIssue({
@@ -371,7 +400,7 @@ export function RemoteWorkbenchSurface({
     } finally {
       setActionBusy(false);
     }
-  }, [app.cloudId, app.runtimePlugin]);
+  }, [app.cloudId, app.moduleId, app.runtimePlugin]);
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {

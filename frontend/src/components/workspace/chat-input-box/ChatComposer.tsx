@@ -1,4 +1,8 @@
 import {
+  COMPOSER_FILES_READY,
+  consumeComposerFiles,
+} from "@/core/composer-file-inbox";
+import {
   BookOpenIcon,
   ExternalLinkIcon,
   FileIcon,
@@ -19,9 +23,11 @@ import {
   PlusIcon,
   SlidersHorizontalIcon,
   SquareIcon,
+  TargetIcon,
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useMentionAutocomplete } from "../mention-autocomplete";
@@ -60,6 +66,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import { normalizePermissionMode } from "@/core/permissions";
 import { captureComputerAppshot } from "@/core/computer/api";
 import { uploadFiles, useAttachmentUploads } from "@/core/uploads";
@@ -130,6 +137,7 @@ export function ChatComposer({
   permissionMode,
   reasoningEffort,
   modelProfileControl = false,
+  taskModelOverride = false,
   executionEngine = "echo",
   onPermissionModeChange,
   onReasoningEffortChange,
@@ -143,6 +151,7 @@ export function ChatComposer({
   className,
 }: ChatInputBoxProps) {
   const { t } = useI18n();
+  const { search } = useLocation();
   const { models } = useModels();
   const [draft, setDraft] = useState(
     () =>
@@ -393,7 +402,7 @@ export function ChatComposer({
       }>,
     ) => {
       const detail = event.detail;
-      if (detail?.threadId && threadId && detail.threadId !== threadId) {
+      if (detail?.threadId && detail.threadId !== threadId) {
         return;
       }
       const nextDraft = (detail?.topic ?? detail?.text ?? "").trim();
@@ -427,7 +436,7 @@ export function ChatComposer({
       event: CustomEvent<{ threadId?: string | null; text?: string | null }>,
     ) => {
       const detail = event.detail;
-      if (detail?.threadId && threadId && detail.threadId !== threadId) {
+      if (detail?.threadId && detail.threadId !== threadId) {
         return;
       }
       const lostText = detail?.text ?? "";
@@ -437,10 +446,7 @@ export function ChatComposer({
     };
     window.addEventListener("echo:send-failed", handler as EventListener);
     return () => {
-      window.removeEventListener(
-        "echo:send-failed",
-        handler as EventListener,
-      );
+      window.removeEventListener("echo:send-failed", handler as EventListener);
     };
   }, [threadId]);
 
@@ -456,6 +462,7 @@ export function ChatComposer({
         path: rawPath,
         workDir: normalizedWorkDir,
         sourceLabel: detail.sourceLabel?.trim() || null,
+        resourceId: detail.resourceId?.trim() || null,
       };
       setPendingFiles((current) => {
         if (current.some((file) => file.id === nextFile.id)) return current;
@@ -469,7 +476,7 @@ export function ChatComposer({
   useEffect(() => {
     const handler = (event: CustomEvent<WorkspaceFileInjectionDetail>) => {
       const detail = event.detail;
-      if (detail?.threadId && threadId && detail.threadId !== threadId) {
+      if (detail?.threadId && detail.threadId !== threadId) {
         return;
       }
       addPendingWorkspaceFile(detail ?? {});
@@ -479,6 +486,14 @@ export function ChatComposer({
       window.removeEventListener("echo:open-file", handler as EventListener);
     };
   }, [addPendingWorkspaceFile, threadId]);
+
+  useEffect(() => {
+    const receive = () =>
+      consumeComposerFiles(threadId).forEach(addPendingWorkspaceFile);
+    window.addEventListener(COMPOSER_FILES_READY, receive);
+    receive();
+    return () => window.removeEventListener(COMPOSER_FILES_READY, receive);
+  }, [threadId, addPendingWorkspaceFile]);
 
   const handleSubmit = useCallback(async () => {
     const text = draft.trim();
@@ -528,6 +543,7 @@ export function ChatComposer({
           title: file.name,
           path: file.path,
           notes: file.workDir ? `workspace: ${file.workDir}` : undefined,
+          ...(file.resourceId ? { resource_id: file.resourceId } : {}),
         }));
       const pendingBrowserFiles = pendingFiles
         .map((file) => file.file)
@@ -601,6 +617,19 @@ export function ChatComposer({
         text: appendReferencedFiles(text, pendingFiles),
         images: pendingImages.length > 0 ? pendingImages : undefined,
         files: browserUploadFiles.length > 0 ? browserUploadFiles : undefined,
+        contextFiles: (() => {
+          const resourceFiles = pendingFiles.filter((file) => file.resourceId);
+          return resourceFiles.length > 0
+            ? resourceFiles.map(
+                ({ path, workDir, sourceLabel, resourceId }) => ({
+                  path,
+                  workDir,
+                  sourceLabel,
+                  resourceId,
+                }),
+              )
+            : undefined;
+        })(),
         // Already on the server — the send path matches these by filename and
         // skips re-uploading the same bytes.
         uploaded: completedUploads.length > 0 ? completedUploads : undefined,
@@ -770,10 +799,13 @@ export function ChatComposer({
     (tab: "plugins" | "skills", view?: "installed" | "all") => {
       const params = new URLSearchParams({ surface: "chat", tab });
       if (view) params.set("view", view);
-      window.location.hash = `#/workspace/agents?${params.toString()}`;
+      window.location.hash = `#${preserveWorkbenchPresentation(
+        `/workspace/agents?${params.toString()}`,
+        search,
+      )}`;
       setToolsMenuOpen(false);
     },
-    [],
+    [search],
   );
 
   const toggleResearchSource = useCallback((kind: ResearchSourceKind) => {
@@ -995,7 +1027,7 @@ export function ChatComposer({
   useEffect(() => {
     const handler = (event: CustomEvent<ComposerImageInjectionDetail>) => {
       const detail = event.detail;
-      if (detail?.threadId && threadId && detail.threadId !== threadId) {
+      if (detail?.threadId && detail.threadId !== threadId) {
         return;
       }
       const images = Array.isArray(detail?.images)
@@ -1024,10 +1056,7 @@ export function ChatComposer({
       handler as EventListener,
     );
     return () => {
-      window.removeEventListener(
-        "echo:send-failed",
-        handler as EventListener,
-      );
+      window.removeEventListener("echo:send-failed", handler as EventListener);
       window.removeEventListener(
         "echo:inject-composer-images",
         handler as EventListener,
@@ -1146,7 +1175,7 @@ export function ChatComposer({
         "rounded-xl border border-border-subtle bg-background/90 shadow-none backdrop-blur-sm",
         "transition-[background-color,border-color,box-shadow] duration-base ease-out",
         "hover:border-border-default",
-        "focus-within:border-primary/30 focus-within:shadow-[0_0_0_3px_rgba(138,127,255,0.08)]",
+        "focus-within:border-primary/30 focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--ring)_14%,transparent)]",
         className,
       )}
     >
@@ -1195,11 +1224,9 @@ export function ChatComposer({
                 data-testid={`composer-capability-${ref.type}-${ref.id}`}
                 className={cn(
                   "inline-flex h-6 max-w-48 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-semibold",
-                  isPlugin &&
-                    "bg-violet-500/10 text-violet-700 dark:text-violet-300",
-                  isSkill && "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-                  ref.type === "surface" &&
-                    "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+                  isPlugin && "bg-muted text-foreground",
+                  isSkill && "bg-muted text-foreground",
+                  ref.type === "surface" && "bg-muted text-foreground",
                 )}
               >
                 {isPlugin ? (
@@ -1227,23 +1254,13 @@ export function ChatComposer({
         {activeComposerMode ? (
           <span
             data-testid="composer-command-prefix"
-            className={cn(
-              "pointer-events-none absolute left-3 top-2.5 z-10 inline-flex items-center gap-1 text-sm font-bold leading-snug",
-              activeComposerMode === "goal" &&
-                "text-violet-600 dark:text-violet-400",
-              activeComposerMode === "plan" && "text-sky-600 dark:text-sky-400",
-              activeComposerMode === "spec" &&
-                "text-amber-600 dark:text-amber-400",
-              activeComposerMode === "project" &&
-                "text-rose-600 dark:text-rose-400",
-            )}
+            // The active mode is a live state: one core tone; the label names the mode.
+            className="pointer-events-none absolute left-3 top-2.5 z-10 inline-flex items-center gap-1 text-sm font-bold leading-snug text-core"
           >
             {activeComposerMode === "project" ? (
               <FlagIcon className="size-4" />
             ) : activeComposerMode === "goal" ? (
-              <span className="text-[15px] leading-none" aria-hidden="true">
-                🎯
-              </span>
+              <TargetIcon className="size-4" />
             ) : activeComposerMode === "plan" ? (
               <MapIcon className="size-4" />
             ) : (
@@ -1502,12 +1519,7 @@ export function ChatComposer({
                     onSelect={() => insertCommandModeMarker("goal")}
                     className="gap-2 rounded-lg text-sm"
                   >
-                    <span
-                      className="text-[15px] leading-none grayscale opacity-70"
-                      aria-hidden="true"
-                    >
-                      🎯
-                    </span>
+                    <TargetIcon className="size-4" />
                     Goal
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -1574,7 +1586,7 @@ export function ChatComposer({
                         }
                         className="items-start gap-2 rounded-lg py-2 text-sm"
                       >
-                        <PuzzleIcon className="mt-0.5 size-4 text-violet-600" />
+                        <PuzzleIcon className="mt-0.5 size-4 text-muted-foreground" />
                         <span className="min-w-0">
                           <span className="block truncate font-medium">
                             {plugin.name}
@@ -1656,7 +1668,7 @@ export function ChatComposer({
                         }
                         className="items-start gap-2 rounded-lg py-2 text-sm"
                       >
-                        <BookOpenIcon className="mt-0.5 size-4 text-blue-600" />
+                        <BookOpenIcon className="mt-0.5 size-4 text-muted-foreground" />
                         <span className="min-w-0">
                           <span className="block truncate font-medium">
                             {skill.name}
@@ -1747,12 +1759,7 @@ export function ChatComposer({
               }
             >
               {activeLongTaskMode === "goal" ? (
-                <span
-                  className="text-[15px] leading-none grayscale opacity-70"
-                  aria-hidden="true"
-                >
-                  🎯
-                </span>
+                <TargetIcon className="size-4" />
               ) : (
                 <FlagIcon className="size-4" />
               )}
@@ -1816,6 +1823,7 @@ export function ChatComposer({
                 systemModels={pickerModels}
                 disabled={disabled || status === "streaming"}
                 executionEngine={executionEngine}
+                taskOverride={taskModelOverride}
                 value={modelName}
                 onChange={onModelChange}
                 onEffectiveModelChange={onModelSwitchNotice}
@@ -1826,6 +1834,7 @@ export function ChatComposer({
           ) : (
             <div className="composer-footer__model contents">
               <ModelPicker
+                disabled={disabled || status === "streaming"}
                 models={pickerModels}
                 // Pass the raw modelName so the picker sees the "auto"
                 // sentinel — selectedModel falls back to pickerModels[0]

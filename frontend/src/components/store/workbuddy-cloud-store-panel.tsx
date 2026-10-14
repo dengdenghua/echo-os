@@ -155,7 +155,7 @@ function ExpertDetailDialog({
                     <Badge
                       key={tag}
                       variant="outline"
-                      className="text-[11px] font-normal text-muted-foreground"
+                      className="text-xs font-normal text-muted-foreground"
                     >
                       {tag}
                     </Badge>
@@ -185,9 +185,7 @@ function ExpertDetailDialog({
         </ScrollArea>
 
         <DialogFooter className="flex items-center justify-between gap-2">
-          <Badge
-            className={cn("border-transparent text-[11px]", typeStyle.badge)}
-          >
+          <Badge className={cn("border-transparent text-xs", typeStyle.badge)}>
             {isTeam && <Users className="mr-1 inline size-3 align-[-2px]" />}
             {isTeam ? t.store.expertTypeTeam : t.store.expertTypeAgent}
           </Badge>
@@ -710,7 +708,7 @@ export function WorkBuddyCloudStorePanel({
                   <div className="flex flex-wrap gap-1 px-3">
                     <Badge
                       className={cn(
-                        "border-transparent text-[11px]",
+                        "border-transparent text-xs",
                         typeStyle.badge,
                       )}
                     >
@@ -723,7 +721,7 @@ export function WorkBuddyCloudStorePanel({
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="text-[11px] font-normal text-muted-foreground"
+                        className="text-xs font-normal text-muted-foreground"
                       >
                         {tag}
                       </Badge>

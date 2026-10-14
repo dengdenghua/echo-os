@@ -415,7 +415,7 @@ function MatchBox({ compact = false }: { compact?: boolean }) {
             "h-9 shrink-0",
             compact
               ? "rounded-full px-3"
-              : "bg-gradient-to-r from-success to-blue-500 text-white",
+              : "bg-primary text-primary-foreground",
           )}
           onClick={() => void submit()}
           disabled={busy || !query.trim()}

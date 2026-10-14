@@ -198,7 +198,7 @@ export function ModelContextSetting({
               )}
             >
               <span className="truncate">{profileLabel}</span>
-              <span className="shrink-0 tabular-nums text-[11px] opacity-70">
+              <span className="shrink-0 tabular-nums text-xs opacity-70">
                 {formatted}
               </span>
             </button>
@@ -326,7 +326,7 @@ function ReasoningEffortSetting({
         </span>
       </div>
       {mapped && (
-        <div className="mb-1 px-1 text-[11px] text-muted-foreground/70">
+        <div className="mb-1 px-1 text-xs text-muted-foreground/70">
           {t.inputBox.reasoningEffortMapped(
             reasoningEffortLabel(rawCurrent, t),
             reasoningEffortLabel(effective, t),
@@ -436,6 +436,7 @@ function PickerRow({
 }
 
 export interface ModelPickerProps {
+  disabled?: boolean;
   models: PickerModel[];
   value?: string | null;
   onChange: (name: string) => void;
@@ -449,6 +450,7 @@ export interface ModelPickerProps {
 }
 
 export function ModelPicker({
+  disabled = false,
   models,
   value,
   onChange,
@@ -543,6 +545,7 @@ export function ModelPicker({
   const flatEntries = useMemo(() => deduplicatePickerModels(models), [models]);
 
   const handleSelect = (name: string) => {
+    if (disabled) return;
     onChange(name);
     setOpen(false);
   };
@@ -569,6 +572,7 @@ export function ModelPicker({
     <button
       type="button"
       data-testid="model-picker-trigger"
+      disabled={disabled}
       className={cn(
         "inline-flex h-8 min-w-0 items-center gap-1 rounded-lg border border-transparent",
         "bg-transparent px-2 py-1 text-xs text-muted-foreground transition outline-none",
@@ -579,13 +583,8 @@ export function ModelPicker({
       title={selectedDisplayLabel}
     >
       {isAutoMode && <SparklesIcon className="size-3 shrink-0 text-info" />}
-      <span className="truncate max-w-[var(--text-truncate-md)]">
-        <span
-          className={cn(
-            isOpenCodeZenFreeModel(selected) &&
-              "text-emerald-600 dark:text-emerald-400",
-          )}
-        >
+      <span className="truncate max-w-[var(--text-truncate-md,140px)]">
+        <span className={cn(isOpenCodeZenFreeModel(selected) && "text-core")}>
           {selectedDisplayLabel}
         </span>
       </span>
@@ -603,7 +602,10 @@ export function ModelPicker({
   );
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={!disabled && open}
+      onOpenChange={(next) => setOpen(!disabled && next)}
+    >
       {renderTrigger ? (
         <DropdownMenuTrigger asChild>
           {renderTrigger(selected)}
@@ -678,10 +680,7 @@ export function ModelPicker({
                     key={selectKey}
                     label={
                       <span
-                        className={cn(
-                          isOpenCodeZenFreeModel(m) &&
-                            "text-emerald-600 dark:text-emerald-400",
-                        )}
+                        className={cn(isOpenCodeZenFreeModel(m) && "text-core")}
                       >
                         {m.display_name || m.name}
                       </span>

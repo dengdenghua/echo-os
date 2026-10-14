@@ -9,8 +9,8 @@ import {
   LIQUID_GLASS_MOTION_EVENT,
   type LiquidGlassMotionDetail,
 } from "@/appliance/liquid-glass-motion";
+import { DESKTOP_WALLPAPER_URL } from "@/appliance/desktop-wallpaper";
 
-const WALLPAPER_URL = "/third-party/appletechie-macos/wallpaper-day2.jpg";
 const MAX_LENSES = MAX_LIQUID_GLASS_SURFACES;
 export const LIQUID_GLASS_INTERACTION_SETTLE_MS = 180;
 
@@ -535,8 +535,8 @@ void main() {
   // broadBevel ~ 0, so it settles on the neutral mid-tone.
   float horizon = clamp(outward.y * broadBevel * 0.5 + 0.5, 0.0, 1.0);
   vec3 envColour = mix(
-    vec3(0.46, 0.51, 0.60),
-    vec3(0.88, 0.94, 1.02),
+    vec3(0.52),
+    vec3(0.94),
     smoothstep(0.18, 0.82, horizon)
   );
   colour = mix(colour, envColour, reflection);
@@ -546,14 +546,14 @@ void main() {
   float rimBand = exp(-pow(-distanceToEdge / 1.7, 2.0));
   float tir = rimBand * clamp(u_thickness / 12.0, 0.0, 1.6) * 0.055 *
     u_intensity;
-  colour += vec3(0.90, 0.96, 1.0) * tir;
+  colour += vec3(0.95) * tir;
 
   float causticWave = 0.5 + 0.5 * sin(
     local.x * 22.0 - local.y * 15.0 + u_time * 0.7
   );
   float caustic = pointerReach * dome *
     (0.012 + causticWave * 0.018 * u_motion) * u_intensity;
-  colour += vec3(0.82, 0.94, 1.0) * caustic;
+  colour += vec3(0.92) * caustic;
   colour *= 1.0 - edge * (1.0 - facing) * 0.035;
 
   float alpha = clamp(
@@ -666,11 +666,7 @@ type BlurProgram = Readonly<{
 
 function createBlurProgram(gl: WebGL2RenderingContext): BlurProgram {
   const vertex = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-  const fragment = compileShader(
-    gl,
-    gl.FRAGMENT_SHADER,
-    BLUR_FRAGMENT_SHADER,
-  );
+  const fragment = compileShader(gl, gl.FRAGMENT_SHADER, BLUR_FRAGMENT_SHADER);
   const program = gl.createProgram();
   if (!program) throw new Error("Unable to create Liquid Glass blur program");
   gl.attachShader(program, vertex);
@@ -686,7 +682,8 @@ function createBlurProgram(gl: WebGL2RenderingContext): BlurProgram {
 
   const uniform = (name: string) => {
     const location = gl.getUniformLocation(program, name);
-    if (!location) throw new Error(`Missing Liquid Glass blur uniform: ${name}`);
+    if (!location)
+      throw new Error(`Missing Liquid Glass blur uniform: ${name}`);
     return location;
   };
 
@@ -701,7 +698,8 @@ function createBlurProgram(gl: WebGL2RenderingContext): BlurProgram {
 
 function createScratchTexture(gl: WebGL2RenderingContext): WebGLTexture {
   const texture = gl.createTexture();
-  if (!texture) throw new Error("Unable to create Liquid Glass scratch texture");
+  if (!texture)
+    throw new Error("Unable to create Liquid Glass scratch texture");
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -780,9 +778,7 @@ function buildGaussianMipChain(
       into,
       0,
     );
-    if (
-      gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE
-    ) {
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
       return false;
     }
     gl.bindTexture(gl.TEXTURE_2D, from);
@@ -847,7 +843,12 @@ function createWallpaperTexture(
  * surfaces. The shader samples the exact wallpaper crop and paints only
  * inside real DOM bounds; content remains ordinary sharp DOM above it.
  */
-export function MacLiquidGlassWebGL() {
+export function MacLiquidGlassWebGL({
+  wallpaperUrl = DESKTOP_WALLPAPER_URL,
+}: {
+  /** The texture refracted under the glass; must match the visible wallpaper. */
+  wallpaperUrl?: string;
+} = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -1145,7 +1146,7 @@ export function MacLiquidGlassWebGL() {
     reducedMotion.addEventListener?.("change", handleMotionPreference);
 
     image.decoding = "async";
-    image.src = WALLPAPER_URL;
+    image.src = wallpaperUrl;
     image.onload = () => {
       if (disposed) return;
       texture = createWallpaperTexture(gl, image);
@@ -1168,7 +1169,10 @@ export function MacLiquidGlassWebGL() {
         gl.deleteProgram(blur.program);
         if (built) frostQuality = "gaussian-mipmap";
       } catch (error) {
-        console.warn("[echo] Liquid Glass Gaussian mip chain unavailable", error);
+        console.warn(
+          "[echo] Liquid Glass Gaussian mip chain unavailable",
+          error,
+        );
       }
       canvas.dataset.liquidFrostQuality = frostQuality;
 
@@ -1210,7 +1214,7 @@ export function MacLiquidGlassWebGL() {
         delete root.dataset.liquidWebgl;
       }
     };
-  }, []);
+  }, [wallpaperUrl]);
 
   return (
     <canvas

@@ -57,7 +57,7 @@ def test_codex_prepare_uses_only_the_captured_repository_dependency_tree():
     assert 'DEPENDENCY_SRC="${ECHO_AGENT_DEPENDENCY_SRC:-$AGENT_SRC}"' in codex
     assert "install --frozen-lockfile --ignore-scripts" in codex
     assert 'NODE_PATH="$DEPENDENCY_SRC/frontend/node_modules${NODE_PATH:+:$NODE_PATH}"' in codex
-    assert "ECHO_LINUX_ARCH=x64" in codex
+    assert 'ECHO_LINUX_ARCH="${ECHO_LINUX_ARCH:-x64}"' in codex
     assert "OCTO" + "PUS_LINUX_ARCH" not in codex
     assert "octo" + "pus-codex-bundle.json" not in codex
 
@@ -71,18 +71,26 @@ def test_codex_prepare_cleans_external_staging_after_atomic_promotion():
 
 
 def test_local_dev_backend_loads_the_os_appliance_extension():
-    package = json.loads((REPO_ROOT / "frontend/package.json").read_text())
+    package = json.loads((REPO_ROOT / "frontend/package.json").read_text(encoding="utf-8"))
     scripts = package["scripts"]
-    launcher = (REPO_ROOT / "frontend/scripts/dev-appliance-backend.mjs").read_text()
+    supervisor = (REPO_ROOT / "frontend/scripts/dev-with-agent.mjs").read_text(encoding="utf-8")
+    launcher = (REPO_ROOT / "frontend/scripts/dev-appliance-backend.mjs").read_text(
+        encoding="utf-8"
+    )
 
     assert scripts["dev:backend"] == "node scripts/dev-appliance-backend.mjs"
-    assert "pnpm dev:backend" in scripts["dev:with-agent"]
+    assert scripts["dev:with-agent"] == "pnpm build:workbenches && node scripts/dev-with-agent.mjs"
+    assert 'launch(resolve(frontendRoot, "scripts/dev-appliance-backend.mjs"))' in supervisor
     assert 'ECHO_APPLIANCE: "1"' in launcher
-    assert 'ECHO_APP_EXTENSIONS: "appliance.extension"' in launcher
+    assert 'ECHO_REQUIRED_APP_EXTENSIONS: "1"' in launcher
+    assert 'PYTHONUTF8: "1"' in launcher
+    # The launcher prepends the appliance extension to any inherited extensions.
+    assert "ECHO_APP_EXTENSIONS: [" in launcher
+    assert '"appliance.extension",' in launcher
     assert "ECHO_APPLIANCE_TRUSTED_ORIGINS: trustedOrigins" in launcher
-    assert 'ECHO_APPLIANCE_DEV_PASSWORDLESS:' in launcher
-    assert 'persistedApplianceJwtSecret()' in launcher
-    assert 'const frontendPort = process.env.FRONTEND_PORT || "3000"' in launcher
+    assert "ECHO_APPLIANCE_DEV_PASSWORDLESS:" in launcher
+    assert "persistedApplianceJwtSecret()" in launcher
+    assert "const frontendPort = String(settings.ports.frontend)" in launcher
     assert "`http://localhost:${frontendPort}`" in launcher
     assert "`http://127.0.0.1:${frontendPort}`" in launcher
     assert "FRONTEND_PORT must be a valid TCP port" in launcher
@@ -140,7 +148,8 @@ def test_runtime_config_injects_auth_and_reserves_tentacle_for_device_link(tmp_p
     assert loaded.users["admin"] == stored["password_hash"]
     assert loaded.jwt_secret == stored["jwt_secret"]
     assert verify_password("device-pass-123", loaded.users["admin"])
-    assert runtime_path.stat().st_mode & 0o777 == 0o600
+    if os.name != "nt":
+        assert runtime_path.stat().st_mode & 0o777 == 0o600
 
 
 def test_runtime_config_references_each_family_hash_without_writing_it(tmp_path, monkeypatch):
@@ -207,6 +216,7 @@ def test_main_rewrites_explicit_config_to_secure_runtime_copy(tmp_path, monkeypa
         "ECHO_PACKAGED_CODEX_VERSION",
         "ECHO_APPLIANCE",
         "ECHO_APP_EXTENSIONS",
+        "ECHO_REQUIRED_APP_EXTENSIONS",
         "ECHO_SKILL_EXTENSIONS",
     ):
         # Track an initially absent key so values written by entrypoint.main()
@@ -235,6 +245,7 @@ def test_main_rewrites_explicit_config_to_secure_runtime_copy(tmp_path, monkeypa
     assert os.environ["ECHO_PACKAGED_CODEX_VERSION"] == "0.149.0"
     assert os.environ["ECHO_APPLIANCE"] == "1"
     assert os.environ["ECHO_APP_EXTENSIONS"] == "appliance.extension"
+    assert os.environ["ECHO_REQUIRED_APP_EXTENSIONS"] == "1"
     assert os.environ["ECHO_SKILL_EXTENSIONS"] == "appliance.pm_skills:register_pm_skills"
     assert observed["args"] == [
         sys.executable,
@@ -248,6 +259,51 @@ def test_main_rewrites_explicit_config_to_secure_runtime_copy(tmp_path, monkeypa
     ]
 
 
+def test_generated_password_notice_does_not_claim_plaintext_is_stored(
+    tmp_path, monkeypatch, capsys
+):
+    from appliance import agent_ui
+
+    generated = "generated-secret-value"
+    monkeypatch.setenv("ECHO_RUNTIME_CONFIG", str(tmp_path / "runtime.yaml"))
+    monkeypatch.delenv("ECHO_PRINT_GENERATED_PASSWORD", raising=False)
+    for name in (
+        "ECHO_PACKAGED_CODEX_VERSION",
+        "ECHO_APPLIANCE",
+        "ECHO_APP_EXTENSIONS",
+        "ECHO_REQUIRED_APP_EXTENSIONS",
+        "ECHO_SKILL_EXTENSIONS",
+    ):
+        monkeypatch.setenv(name, "pytest-restore-guard")
+        monkeypatch.delenv(name)
+    monkeypatch.setattr(entrypoint, "_drop_container_privileges", lambda _root: None)
+    monkeypatch.setattr(
+        entrypoint,
+        "prepare_runtime_config",
+        lambda _template, output: (output, generated),
+    )
+    monkeypatch.setattr(
+        agent_ui,
+        "agent_bundle_status",
+        lambda: {"source_id": "a" * 40, "version": "1.2.3", "packaged_codex_version": "0"},
+    )
+
+    def _exec(_program: str, _args: list[str]):
+        raise OSError("exec captured")
+
+    monkeypatch.setattr(os, "execv", _exec)
+    with pytest.raises(OSError, match="exec captured"):
+        entrypoint.main(["serve", "--config", str(tmp_path / "custom.yaml")])
+
+    notice = capsys.readouterr().err
+    assert generated not in notice
+    assert "bcrypt hash" in notice
+    assert "cannot be recovered" in notice
+    assert "ECHO_ADMIN_PASSWORD" in notice
+    assert "stored in" not in notice
+
+
+@pytest.mark.skipif(os.name == "nt", reason="container privilege migration requires POSIX uid APIs")
 def test_container_entrypoint_migrates_state_but_never_nas_data(tmp_path, monkeypatch):
     data_root = tmp_path / "data"
     nas_root = data_root / "nas"
@@ -302,6 +358,9 @@ def test_container_entrypoint_migrates_state_but_never_nas_data(tmp_path, monkey
 @pytest.mark.parametrize(
     ("name", "value"),
     [("ECHO_PUID", "0"), ("ECHO_PGID", "-1"), ("ECHO_PUID", "root")],
+)
+@pytest.mark.skipif(
+    os.name == "nt", reason="container privilege validation requires POSIX uid APIs"
 )
 def test_container_entrypoint_rejects_unsafe_numeric_identity(name, value, tmp_path, monkeypatch):
     monkeypatch.setattr(entrypoint.os, "geteuid", lambda: 0)

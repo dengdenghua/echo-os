@@ -1,5 +1,6 @@
 import { BotIcon, MonitorIcon } from "lucide-react";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import type { WorkbenchRosterSeat } from "./helpers";
 import { rosterSeatRoleLabel } from "./helpers";
@@ -19,14 +20,15 @@ export function RosterComputerPlaceholder({
         <section className="border-b border-border-subtle pb-4">
           <div className="flex items-center gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted/30 text-xl">
-              {seat.avatarUrl ? (
-                <img
-                  src={seat.avatarUrl}
-                  alt={seat.name}
-                  className="size-full object-cover"
+              {seat.avatarUrl || seat.icon?.trim() ? (
+                <AgentAvatarTile
+                  agentId={seat.kind === "human" ? null : seat.id}
+                  name={seat.name}
+                  avatar={seat.icon}
+                  imageUrl={seat.avatarUrl}
+                  className="size-full rounded-full"
+                  label={seat.name}
                 />
-              ) : seat.icon?.trim() ? (
-                <span aria-hidden="true">{seat.icon}</span>
               ) : (
                 <BotIcon className="size-7 text-muted-foreground" />
               )}

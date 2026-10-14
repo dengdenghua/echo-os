@@ -16,6 +16,7 @@ whose demanded evidence physically cannot exist. These tests pin the cure:
 
 from __future__ import annotations
 
+import sys
 from uuid import uuid4
 
 from runtime.core.cerebrum import env_health
@@ -115,7 +116,7 @@ def _run_canonical_exec(*, hooks: HookManager | None = None):
         step_id=1,
         node_id="provenance",
         sucker_id=SkillId("exec_shell"),
-        args={"command": "true"},
+        args={"command": f'"{sys.executable}" -c pass'},
         caller="arms/test",
         task_id=task_id,
         arm_id=ArmId("test"),
@@ -759,4 +760,3 @@ class TestStartupCanary:
         env_health.run_startup_canary()
         # After a real probe the recorded cell is a bool (probe returned one).
         assert env_health.execution_canary() in (True, False)
-

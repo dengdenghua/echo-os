@@ -50,7 +50,7 @@ def create_reach_router(
     def _auth_dep(request: Request) -> None:
         from runtime.adapters.web_auth import _resolve_actor
 
-        _resolve_actor(
+        actor = _resolve_actor(  # AUTH-OK: actor-agnostic
             request,
             identity_store,
             require_auth,
@@ -58,6 +58,7 @@ def create_reach_router(
             jwt_issuer=jwt_issuer,
             jwt_audience=jwt_audience,
         )
+        request.state.actor = actor
 
     def _operator_dep(request: Request) -> None:
         from runtime.safety.auth.principal import require_roles

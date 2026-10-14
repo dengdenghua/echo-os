@@ -352,6 +352,14 @@ def create_thread_state_router(
     ) -> bool:
         if thread is None:
             return False
+        if require_auth:
+            # Authenticated decisions share the resolver's fail-closed rules:
+            # an ownerless tenantless legacy row is admin/operator-only, never
+            # manageable by every ``legacy:<actor>`` login.
+            thread_id = thread.get("thread_id")
+            if not isinstance(thread_id, str) or not thread_id:
+                return False
+            return access_resolver.resolve(thread_id, actor_id, tenant_id).can_manage
         raw_metadata = thread.get("metadata")
         metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
         stored_tenant = str(metadata.get("tenant_id") or "").strip()
@@ -409,7 +417,15 @@ def create_thread_state_router(
             return False
         from runtime.memory.threads.event_log import EventLog, thread_log_path
 
-        summary = EventLog(thread_log_path(logs_root, thread_id)).summary()
+        try:
+            summary = EventLog(thread_log_path(logs_root, thread_id)).summary()
+        except OSError as exc:
+            _logger.warning(
+                "thread archive probe temporarily unavailable thread_id=%s: %s",
+                thread_id,
+                exc,
+            )
+            return False
         return bool(summary and summary.archived)
 
     @router.post("/api/threads")

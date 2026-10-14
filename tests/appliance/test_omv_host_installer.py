@@ -13,6 +13,11 @@ from pathlib import Path
 
 import pytest
 
+if os.name == "nt":
+    pytest.skip(
+        "OMV host installer requires POSIX user and Unix-socket primitives", allow_module_level=True
+    )
+
 _REPOSITORY = Path(__file__).resolve().parents[2]
 _SCRIPT = _REPOSITORY / "deploy" / "omv" / "echo_omv_host.py"
 sys.path.insert(0, str(_SCRIPT.parent))
@@ -66,7 +71,7 @@ def installed_socket():
     path = short_root / "omv.sock"
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     listener.bind(str(path))
-    os.chown(path, -1, os.getgid())
+    os.chown(path, -1, os.getgid() or 1000)
     path.chmod(0o660)
     try:
         yield path
@@ -77,7 +82,8 @@ def installed_socket():
 
 @pytest.fixture
 def installer_factory(tmp_path: Path, installed_socket: Path):
-    gid = os.getgid()
+    # The service group must be non-root even when pytest is invoked as root.
+    gid = os.getgid() or 1000
     harness = HostHarness(gid)
     layout = host.HostLayout(
         unit_path=tmp_path / "etc" / "systemd" / "system" / host.SERVICE_NAME,
@@ -171,7 +177,7 @@ def test_install_copies_only_managed_bridge_and_is_idempotent(installer_factory)
     assert report["omvMajor"] == 8
     assert report["supportMatrix"] == "debian-13+omv-8"
     assert harness.active is True
-    assert harness.group == host.GroupInfo(host.GROUP_NAME, os.getgid(), ())
+    assert harness.group == host.GroupInfo(host.GROUP_NAME, harness.gid, ())
     unit = layout.unit_path.read_text()
     assert "/usr/lib/echo-os/omv-bridge" in unit
     assert "/opt/echo-os" not in unit
@@ -215,7 +221,7 @@ def test_uninstall_retains_group_with_members_without_failing(installer_factory)
     factory, harness, layout = installer_factory
     installer = factory()
     _install(installer)
-    harness.group = host.GroupInfo(host.GROUP_NAME, os.getgid(), ("nas-user",))
+    harness.group = host.GroupInfo(host.GROUP_NAME, harness.gid, ("nas-user",))
     confirmation = installer.plan()["uninstallConfirmation"]
 
     receipt = installer.uninstall(confirmation)

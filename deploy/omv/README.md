@@ -126,19 +126,19 @@ helper 生命周期；桥 unit 安装到 `/usr/lib/systemd/system/echo-omv-bridg
 ```bash
 python3 deploy/omv/plugin_package.py build --output-directory dist
 python3 deploy/omv/plugin_package.py verify \
-  dist/openmediavault-echo-os_0.2.0-1_all.deb
-dpkg-deb --info dist/openmediavault-echo-os_0.2.0-1_all.deb
-dpkg-deb --contents dist/openmediavault-echo-os_0.2.0-1_all.deb
+  dist/openmediavault-echo-os_0.3.0-1_all.deb
+dpkg-deb --info dist/openmediavault-echo-os_0.3.0-1_all.deb
+dpkg-deb --contents dist/openmediavault-echo-os_0.3.0-1_all.deb
 ```
 
-版本默认由前端产品版本生成 Debian revision（例如 `0.2.0` 生成 `0.2.0-1`）。构建同时输出
+版本默认由前端产品版本生成 Debian revision（例如 `0.3.0` 生成 `0.3.0-1`）。构建同时输出
 `.deb.sha256` 和 SPDX 2.3 SBOM；CI 会在 Ubuntu 上再用系统 `dpkg-deb` 检查包，并在 main 发布
 构建中为 `.deb` 和 SBOM 分别生成 GitHub OIDC/Sigstore 证明。正式安装前必须核对摘要和仓库身份：
 
 ```bash
-gh attestation verify openmediavault-echo-os_0.2.0-1_all.deb \
+gh attestation verify openmediavault-echo-os_0.3.0-1_all.deb \
   --repo <owner>/<repository>
-sudo apt install ./openmediavault-echo-os_0.2.0-1_all.deb
+sudo apt install ./openmediavault-echo-os_0.3.0-1_all.deb
 sudo python3 /usr/lib/echo-os/omv-bridge/platform_preflight.py
 getent group echo-omv
 sudo systemctl status echo-omv-bridge.service
@@ -200,9 +200,9 @@ attestation。下载并进入 artifact 目录后可再次离线复核：
 sha256sum -c echo-real-omv-x86-artifact-set.sha256
 python3 verify-real-omv-x86-evidence.py \
   "$PWD/echo-real-omv-x86-evidence.json" \
-  --plugin-package "$PWD/openmediavault-echo-os_0.2.0-1_all.deb" \
+  --plugin-package "$PWD/openmediavault-echo-os_0.3.0-1_all.deb" \
   --expected-source-revision '<artifact 对应的 40 位 Git SHA>'
-gh attestation verify openmediavault-echo-os_0.2.0-1_all.deb \
+gh attestation verify openmediavault-echo-os_0.3.0-1_all.deb \
   --repo '<owner>/<repository>'
 gh attestation verify echo-real-omv-x86-evidence.json \
   --repo '<owner>/<repository>'
@@ -384,7 +384,7 @@ Echo 会在设置页保留告警变化并写容器日志，但不擅自配置邮
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000
 ```
 
 结果的 `omv.host_install` 必须包含 `support_matrix:debian-13+omv-8` 和实际 `omv_version`；如果
@@ -398,7 +398,7 @@ ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000 \
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000 \
   --omv-smb-test-folder 11111111-2222-4333-8444-555555555555
 ```
 
@@ -408,7 +408,7 @@ ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000 \
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000 \
   --omv-smb-test-folder 11111111-2222-4333-8444-555555555555 \
   --require-omv-smb-write \
   --omv-smb-write-confirm \
@@ -427,7 +427,7 @@ ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000 \
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000 \
   --omv-quota-test-filesystem aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee \
   --omv-quota-test-subject-type user \
   --omv-quota-test-subject-name echoverify \
@@ -441,7 +441,7 @@ ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000 \
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000 \
   --omv-quota-test-filesystem aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee \
   --omv-quota-test-subject-type user \
   --omv-quota-test-subject-name echoverify \
@@ -462,7 +462,7 @@ SMB、NFS 写满配额的底层强制执行测试。
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid 1000 \
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid 1000 \
   --nas-transfer-test-bytes 1073741824 --nas-transfer-test-path verification \
   --nas-transfer-restart-main
 ```

@@ -9,7 +9,10 @@
 export type WorkspacePreset = {
   id: string;
   direction: string;
-  themeId: PersonaThemeId;
+  /** Persona scope id, set as `data-persona-theme` on the workspace and
+   *  browser shells. It never recolours the UI: every persona keeps the ECHO
+   *  tokens (monochrome primary, core-cyan focus). The base preset has none. */
+  themeId?: PersonaThemeId;
   defaultHiddenModuleIds: readonly string[];
   defaultVisibleModuleIds?: readonly string[];
   defaultWorkbenchTab: PersonaWorkbenchTab;
@@ -49,7 +52,6 @@ export type PersonaWorkbenchTab =
 const BASE_PRESET: WorkspacePreset = {
   id: "general",
   direction: "通用协作",
-  themeId: "eve",
   defaultHiddenModuleIds: ["paper.trading"],
   defaultWorkbenchTab: "agent",
   workbenchLabel: "协作工作台",

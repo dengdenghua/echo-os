@@ -33,12 +33,12 @@ afterEach(() => {
 
 describe("desktop renderer origin", () => {
   it("accepts only the fixed app scheme and host", () => {
-    expect(
-      desktopProtocol.isDesktopAppURL("echo-app://app/index.html"),
-    ).toBe(true);
-    expect(
-      desktopProtocol.isDesktopAppURL("echo-app://evil/index.html"),
-    ).toBe(false);
+    expect(desktopProtocol.isDesktopAppURL("echo-app://app/index.html")).toBe(
+      true,
+    );
+    expect(desktopProtocol.isDesktopAppURL("echo-app://evil/index.html")).toBe(
+      false,
+    );
     expect(desktopProtocol.isDesktopAppURL("https://app/index.html")).toBe(
       false,
     );
@@ -152,6 +152,98 @@ describe("desktop protocol handler", () => {
     expect(response.headers.has("access-control-allow-origin")).toBe(false);
   });
 
+  it("answers an unreachable backend like the appliance nginx: 503 appliance_starting", async () => {
+    const onProxyError = vi.fn();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: vi.fn(async () => {
+        throw new TypeError("net::ERR_CONNECTION_REFUSED");
+      }),
+      onProxyError,
+    });
+
+    const response = await handler(
+      new Request("echo-app://app/api/auth/status"),
+    );
+
+    expect(onProxyError).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe("3");
+    expect(await response.json()).toEqual({
+      detail: {
+        code: "appliance_starting",
+        message: "ECHO OS 正在启动，请稍后重试",
+      },
+    });
+  });
+
+  it("retries idempotent requests that Chromium refused for lack of resources", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockResolvedValue(Response.json({ enabled: false }));
+    const onProxyError = vi.fn();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl,
+      onProxyError,
+      retryDelayMs: 1,
+    });
+
+    const response = await handler(
+      new Request("echo-app://app/api/auth/status"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(onProxyError).not.toHaveBeenCalled();
+
+    const post = vi.fn(async () => {
+      throw new TypeError("net::ERR_INSUFFICIENT_RESOURCES");
+    });
+    const postResponse = await desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: post,
+      retryDelayMs: 1,
+    })(new Request("echo-app://app/api/tasks", { method: "POST", body: "{}" }));
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(postResponse.status).toBe(503);
+  });
+
+  it("retries a renderer asset Chromium refused for lack of resources", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("net::ERR_INSUFFICIENT_RESOURCES"))
+      .mockResolvedValue(new Response("<main>Echo</main>"));
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl,
+      retryDelayMs: 1,
+    });
+
+    const response = await handler(new Request("echo-app://app/index.html"));
+
+    expect(response.status).toBe(200);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+
+    const missing = vi.fn(async () => {
+      throw new TypeError("net::ERR_FILE_NOT_FOUND");
+    });
+    const notFound = await desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8765",
+      fetchImpl: missing,
+      retryDelayMs: 1,
+    })(new Request("echo-app://app/index.html"));
+    expect(missing).toHaveBeenCalledTimes(1);
+    expect(notFound.status).toBe(404);
+  });
+
   it("does not mistake lookalike paths or foreign hosts for backend routes", async () => {
     const fetchImpl = vi.fn(async () => new Response("unexpected"));
     const handler = makeHandler(fetchImpl);
@@ -198,8 +290,6 @@ describe("desktop protocol handler", () => {
     );
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "echo-app://app/api/health/",
-    );
+    expect(response.headers.get("location")).toBe("echo-app://app/api/health/");
   });
 });

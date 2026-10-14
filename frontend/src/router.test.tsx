@@ -18,7 +18,10 @@ describe("PageLoading", () => {
       </AllProviders>,
     );
 
-    expect(screen.getByText("加载中...")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("加载中...");
+    expect(screen.getByTestId("page-loading")).toContainElement(
+      document.querySelector('[data-slot="progress-line"]') as HTMLElement,
+    );
     expect(screen.queryByRole("button", { name: "重试" })).toBeNull();
 
     act(() => vi.advanceTimersByTime(8_000));

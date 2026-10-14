@@ -19,6 +19,10 @@ assert _SPEC is not None and _SPEC.loader is not None
 verifier = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(verifier)
 
+LINUX_UID_TEST = pytest.mark.skipif(
+    not hasattr(os, "geteuid"), reason="verifier fixture requires POSIX uid and mode semantics"
+)
+
 
 def _family_fixture() -> dict:
     return {
@@ -49,6 +53,7 @@ def _family_fixture() -> dict:
     }
 
 
+@LINUX_UID_TEST
 def test_family_isolation_fixture_drives_two_real_identity_projections(
     tmp_path,
     monkeypatch,
@@ -116,6 +121,7 @@ def test_family_isolation_fixture_drives_two_real_identity_projections(
     assert "Bob-physical" not in serialized
 
 
+@LINUX_UID_TEST
 def test_family_isolation_fixture_rejects_public_or_duplicate_secret_files(tmp_path) -> None:
     fixture = tmp_path / "family.json"
     fixture.write_text(json.dumps(_family_fixture()))
@@ -1175,6 +1181,110 @@ def test_web_surface_probe_requires_one_echo_frontend(monkeypatch) -> None:
     ]
 
 
+def _system_capability(capability_id: str) -> dict:
+    return {
+        "apiVersion": "echo.ai/v1alpha1",
+        "kind": "Capability",
+        "metadata": {
+            "id": capability_id,
+            "version": 1,
+            "title": capability_id,
+            "description": "release verification fixture",
+        },
+        "provider": {
+            "id": "echo-os.verifier",
+            "transport": "http",
+            "operation": {"method": "GET", "path": "/api/appliance/status"},
+        },
+        "requestSchema": {"type": "object"},
+        "effect": {"type": "read", "risk": "low", "reversible": True},
+        "scope": {"resourceKind": "system", "validation": "fixed"},
+        "authorization": {"approval": "none", "actorKinds": ["human", "agent"]},
+        "audit": {"action": capability_id, "required": False},
+    }
+
+
+def test_system_capability_probe_proves_the_appliance_extension_is_mounted(monkeypatch) -> None:
+    capabilities = [
+        _system_capability(capability_id)
+        for capability_id in ("apps.list", "hub.catalog.list", "storage.health.read")
+    ]
+    responses = iter(
+        [
+            (401, b'{"detail":"authentication required"}', {}),
+            (
+                200,
+                json.dumps(
+                    {
+                        "apiVersion": "echo.ai/v1alpha1",
+                        "kind": "CapabilityList",
+                        "count": len(capabilities),
+                        "capabilities": capabilities,
+                    }
+                ).encode(),
+                {},
+            ),
+        ]
+    )
+    observed: list[dict] = []
+
+    def http(method, url, **kwargs):
+        observed.append({"method": method, "url": url, **kwargs})
+        return next(responses)
+
+    monkeypatch.setattr(verifier, "_http", http)
+
+    result = verifier._assert_system_capabilities_contract("http://127.0.0.1:8000", "token")
+
+    assert result == {
+        "apiVersion": "echo.ai/v1alpha1",
+        "count": 3,
+        "requiredCapabilities": ["apps.list", "hub.catalog.list", "storage.health.read"],
+        "unique": True,
+    }
+    assert observed[0].get("token") is None
+    assert observed[1]["token"] == "token"
+
+
+@pytest.mark.parametrize(
+    ("status", "capability_ids", "message"),
+    [
+        (404, [], "contract is invalid"),
+        (200, ["apps.list", "hub.catalog.list"], "omitted required"),
+        (
+            200,
+            ["apps.list", "hub.catalog.list", "storage.health.read", "apps.list"],
+            "invalid capability",
+        ),
+    ],
+)
+def test_system_capability_probe_fails_closed_when_extension_contract_is_incomplete(
+    monkeypatch, status, capability_ids, message
+) -> None:
+    capabilities = [_system_capability(capability_id) for capability_id in capability_ids]
+    responses = iter(
+        [
+            (401, b"{}", {}),
+            (
+                status,
+                json.dumps(
+                    {
+                        "apiVersion": "echo.ai/v1alpha1",
+                        "kind": "CapabilityList",
+                        "count": len(capabilities),
+                        "capabilities": capabilities,
+                    }
+                ).encode(),
+                {},
+            ),
+        ]
+    )
+    monkeypatch.setattr(verifier, "_http", lambda *_args, **_kwargs: next(responses))
+
+    with pytest.raises(verifier.VerificationError, match=message):
+        verifier._assert_system_capabilities_contract("http://127.0.0.1:8000", "token")
+
+
 def test_agent_asset_probe_requires_auth_and_public_bounded_fields(monkeypatch) -> None:
     payload = {
         "schema": "echo.agent-assets.v6",
@@ -1212,7 +1322,7 @@ def test_agent_asset_probe_requires_auth_and_public_bounded_fields(monkeypatch) 
                 "publisherVerified": True,
                 "publisher": "Echo Publisher",
                 "compatibility": "compatible",
-                "hostApi": ">=0.2,<0.3",
+                "hostApi": ">=0.2,<0.4",
                 "releaseSummary": "1.1.0：新增受信版本说明。",
                 "version": "1.0.0",
                 "availableVersion": "1.1.0",
@@ -1323,7 +1433,7 @@ def test_agent_asset_probe_rejects_private_lifecycle_fields(monkeypatch) -> None
                 "integrityVerified": True,
                 "publisherVerified": False,
                 "compatibility": "compatible",
-                "hostApi": ">=0.2,<0.3",
+                "hostApi": ">=0.2,<0.4",
                 "version": "1.0.0",
                 "path": "/data/agent/plugins/documents",
                 "permissions": [],
@@ -1857,6 +1967,7 @@ def test_nonroot_proxy_check_rejects_any_root_identity(monkeypatch) -> None:
         verifier._assert_nonroot_runtime_identity("echo-proxy")
 
 
+@LINUX_UID_TEST
 def test_omv_real_device_probe_checks_socket_mount_auth_and_redaction(
     tmp_path: Path,
     monkeypatch,
@@ -2571,6 +2682,7 @@ def test_omv_quota_write_rejects_ambiguous_target_before_http(
         )
 
 
+@LINUX_UID_TEST
 def test_omv_host_install_uses_root_managed_code_path(tmp_path: Path) -> None:
     code_root = tmp_path / "usr" / "lib" / "echo-os" / "omv-bridge"
     package = code_root / "appliance"
@@ -2605,6 +2717,7 @@ def test_omv_host_install_uses_root_managed_code_path(tmp_path: Path) -> None:
     assert result["support_matrix"] == "debian-13+omv-8"
 
 
+@LINUX_UID_TEST
 def test_omv_host_install_rejects_user_repository_unit(tmp_path: Path) -> None:
     code_root = tmp_path / "managed"
     package = code_root / "appliance"
@@ -2641,6 +2754,7 @@ def _supported_omv_host_files(tmp_path: Path) -> tuple[Path, Path]:
     return os_release, dpkg_query
 
 
+@LINUX_UID_TEST
 def test_omv_runtime_verifier_confirms_supported_host_matrix(tmp_path: Path) -> None:
     os_release, dpkg_query = _supported_omv_host_files(tmp_path)
     observed: list[list[str]] = []
@@ -2666,6 +2780,7 @@ def test_omv_runtime_verifier_confirms_supported_host_matrix(tmp_path: Path) -> 
     assert observed == [[str(dpkg_query), "-W", "-f=${Version}", "openmediavault"]]
 
 
+@LINUX_UID_TEST
 def test_omv_runtime_verifier_rejects_debian_12_before_package_query(
     tmp_path: Path,
 ) -> None:
@@ -2681,6 +2796,7 @@ def test_omv_runtime_verifier_rejects_debian_12_before_package_query(
         )
 
 
+@LINUX_UID_TEST
 def test_omv_runtime_verifier_rejects_unsupported_omv_major(tmp_path: Path) -> None:
     os_release, dpkg_query = _supported_omv_host_files(tmp_path)
 
@@ -2724,6 +2840,7 @@ def test_omv_unit_auto_detection_distinguishes_native_and_managed_install(
         verifier._resolve_omv_unit_path("auto")
 
 
+@pytest.mark.skipif(os.name == "nt", reason="OMV unit paths use POSIX absolute-path semantics")
 def test_omv_unit_explicit_path_must_be_absolute() -> None:
     with pytest.raises(verifier.VerificationError, match="absolute or auto"):
         verifier._resolve_omv_unit_path("relative/echo-omv-bridge.service")

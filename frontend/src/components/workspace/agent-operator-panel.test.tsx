@@ -69,6 +69,19 @@ const pluginApi = vi.hoisted(() => ({
 vi.mock("@/core/agent-trace/api", () => api);
 vi.mock("@/core/plugins/api", () => pluginApi);
 
+/**
+ * Find a button and wait until it is enabled. Several panel actions render
+ * disabled until their data loads (a selected run, a non-empty queue), and a
+ * click before that is a silent no-op, which made these tests flaky under CI load.
+ */
+async function findEnabledButton(name: RegExp): Promise<HTMLElement> {
+  const button = await screen.findByRole("button", { name });
+  await waitFor(() => {
+    expect(button).toBeEnabled();
+  });
+  return button;
+}
+
 describe("<AgentOperatorPanel />", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -1502,7 +1515,7 @@ describe("<AgentOperatorPanel />", () => {
         reason: "operator scorecard drill-down remediation",
       });
     });
-    expect(await screen.findByText("#1 EchoAI 97")).toBeInTheDocument();
+    expect(await screen.findByText("#1 Echo 97")).toBeInTheDocument();
     expect(await screen.findByText("Promotion audit")).toBeInTheDocument();
     expect(await screen.findByText("Memory quality")).toBeInTheDocument();
     expect(await screen.findByText("82% reliable")).toBeInTheDocument();
@@ -1625,7 +1638,7 @@ describe("<AgentOperatorPanel />", () => {
   it("queues the selected task run review", async () => {
     renderWithProviders(<AgentOperatorPanel />);
 
-    const button = await screen.findByRole("button", { name: /Queue review/ });
+    const button = await findEnabledButton(/Queue review/);
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -1777,9 +1790,7 @@ describe("<AgentOperatorPanel />", () => {
   it("queues repeated tool denials for policy review", async () => {
     renderWithProviders(<AgentOperatorPanel />);
 
-    const button = await screen.findByRole("button", {
-      name: /Queue policy review/,
-    });
+    const button = await findEnabledButton(/Queue policy review/);
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -1839,9 +1850,7 @@ describe("<AgentOperatorPanel />", () => {
   it("applies promoted review queue items", async () => {
     renderWithProviders(<AgentOperatorPanel />);
 
-    const button = await screen.findByRole("button", {
-      name: /Apply promoted/,
-    });
+    const button = await findEnabledButton(/Apply promoted/);
     fireEvent.click(button);
 
     await waitFor(() => {
@@ -1899,9 +1908,7 @@ describe("<AgentOperatorPanel />", () => {
 
     renderWithProviders(<AgentOperatorPanel />);
 
-    const apply = await screen.findByRole("button", {
-      name: /Apply promoted/,
-    });
+    const apply = await findEnabledButton(/Apply promoted/);
     fireEvent.click(apply);
 
     expect(
@@ -1942,9 +1949,7 @@ describe("<AgentOperatorPanel />", () => {
 
     renderWithProviders(<AgentOperatorPanel />);
 
-    const apply = await screen.findByRole("button", {
-      name: /Apply promoted/,
-    });
+    const apply = await findEnabledButton(/Apply promoted/);
     fireEvent.click(apply);
 
     expect(

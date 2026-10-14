@@ -179,10 +179,17 @@ def maybe_setup_prompt_evolution(
     color: bool,
 ) -> tuple[Any, int]:
     """Enable optional live prompt evolution for serve mode."""
-    from runtime.core.cerebrum import LLMPlanner
+    from runtime.execution.model_services import background_model_router
 
+    background_router = background_model_router(stack)
     if prompt_variants_path is None:
         return None, 0
+    if background_router is None:
+        # Requested but unusable: say so instead of silently dropping it.
+        print(_yellow(color, "prompt A/B needs LLMPlanner (model router) · skipping"))
+        return None, 0
+    from runtime.core.cerebrum import LLMPlanner
+
     if not prompt_variants_path.exists():
         print(_yellow(color, f"--prompt-variants not found: {prompt_variants_path} · skipping"))
         return None, 0
@@ -213,11 +220,13 @@ def maybe_setup_prompt_evolution(
                 response="<suffix>prefer shorter plans · check inputs first</suffix>",
             )
         else:
-            mutator_router = stack.planner.router
+            mutator_router = background_router
         mutator = PromptMutator(router=mutator_router, model=mutator_model)
         evolver = PromptEvolver(optimizer, mutator, EvolutionPolicy())
 
         def _evolve_tick() -> None:
+            if background_model_router(stack) is None:
+                return
             evolver.step()
 
         runner.add_periodic(
@@ -312,12 +321,12 @@ def register_memory_distill_task(runner: Any, stack: Any) -> int:
     if interval_s <= 0:
         return 0
 
-    router = getattr(getattr(stack, "planner", None), "router", None)
+    from runtime.execution.model_services import background_model_router
 
     def _tick() -> None:
         from runtime.memory.users.distill import distill_user_memory
 
-        distill_user_memory(router)
+        distill_user_memory(background_model_router(stack))
 
     runner.add_periodic(
         "memory_distill",
@@ -481,23 +490,28 @@ def register_reflection_tasks(
 ) -> int:
     """Register the periodic self-improvement tasks for serve mode."""
     from runtime.core.cerebrum import LLMPlanner, StaticPlanner
+    from runtime.execution.model_services import background_model_calls_enabled
 
     count = 0
     jitter = min(30.0, interval_s * 0.05)
 
-    if isinstance(stack.planner, LLMPlanner):
+    if isinstance(stack.planner, LLMPlanner) and background_model_calls_enabled(stack):
 
         def _learn_rules() -> None:
-            stack.planner.learn_from_journal(stack.journal)
+            if background_model_calls_enabled(stack):
+                stack.planner.learn_from_journal(stack.journal)
 
         def _learn_memories() -> None:
-            stack.planner.learn_memories_from_journal(stack.journal)
+            if background_model_calls_enabled(stack):
+                stack.planner.learn_memories_from_journal(stack.journal)
 
         def _learn_kg() -> None:
-            stack.planner.learn_kg_from_journal(stack.journal)
+            if background_model_calls_enabled(stack):
+                stack.planner.learn_kg_from_journal(stack.journal)
 
         def _assess_recipe() -> None:
-            stack.planner.assess_recipe_from_journal(stack.journal)
+            if background_model_calls_enabled(stack):
+                stack.planner.assess_recipe_from_journal(stack.journal)
 
         runner.add_periodic(
             "reflect_rules",
@@ -581,6 +595,18 @@ def run_serve(
     c = _Colors(color)
     try:
         cfg = load_from_yaml(config_path)
+        # Development launchers isolate device listeners without rewriting a
+        # user-owned config. Explicit overrides are validated before use.
+        ws_port_override = os.environ.get("ECHO_TENTACLE_WS_PORT")
+        if ws_port_override is not None:
+            if not ws_port_override.isascii() or not ws_port_override.isdecimal():
+                raise ConfigLoadError("ECHO_TENTACLE_WS_PORT must be a TCP port")
+            ws_port = int(ws_port_override)
+            if not 1 <= ws_port <= 65535:
+                raise ConfigLoadError("ECHO_TENTACLE_WS_PORT must be between 1 and 65535")
+            cfg = cfg.model_copy(
+                update={"tentacle": cfg.tentacle.model_copy(update={"ws_port": ws_port})}
+            )
     except ConfigLoadError as e:
         print(c.red(f"config error: {e}"), file=sys.stderr)
         return 2
@@ -934,7 +960,6 @@ def run_serve(
     try:
         if uds:
             import contextlib
-            import os
 
             with contextlib.suppress(FileNotFoundError):
                 os.unlink(uds)

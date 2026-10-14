@@ -18,6 +18,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import {
+  PanelLoading,
+  PROGRESS_LINE_DEFAULT_LABEL,
+} from "@/components/ui/progress-line";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -32,14 +36,11 @@ export type StatusTone =
 
 const STATUS_STYLES: Record<StatusTone, string> = {
   idle: "border-border-default bg-muted/35 text-muted-foreground",
-  queued:
-    "border-warning/25 bg-warning/10 text-warning",
+  queued: "border-warning/25 bg-warning/10 text-warning",
   running:
     "border-primary/25 bg-primary/10 text-primary [&_[data-status-dot]]:animate-pulse",
-  success:
-    "border-success/25 bg-success/10 text-success",
-  warning:
-    "border-warning/25 bg-warning/10 text-warning",
+  success: "border-success/25 bg-success/10 text-success",
+  warning: "border-warning/25 bg-warning/10 text-warning",
   error: "border-destructive/25 bg-destructive/10 text-destructive",
   paused: "border-info/25 bg-info/10 text-info dark:text-info",
 };
@@ -99,7 +100,7 @@ export function StatusBadge({
 export function LoadingState({
   className,
   description,
-  title = "Loading",
+  title = PROGRESS_LINE_DEFAULT_LABEL,
   variant = "spinner",
 }: {
   className?: string;
@@ -120,21 +121,20 @@ export function LoadingState({
     );
   }
 
+  // "spinner" is kept as the variant name for existing callers; it renders
+  // the brand progress line, not a spinning icon.
   return (
-    <Empty
-      className={cn("min-h-[220px] border-0 bg-transparent", className)}
-      aria-busy="true"
+    <PanelLoading
+      label={typeof title === "string" ? title : undefined}
+      caption={title}
+      className={cn("min-h-[220px]", className)}
     >
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <Loader2Icon className="animate-spin" />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        {description ? (
-          <EmptyDescription>{description}</EmptyDescription>
-        ) : null}
-      </EmptyHeader>
-    </Empty>
+      {description ? (
+        <p className="px-4 pt-1 text-center text-caption text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+    </PanelLoading>
   );
 }
 

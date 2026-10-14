@@ -34,7 +34,7 @@ import { TabBar } from "@/components/browser/tab-bar";
 import { UrlBar } from "@/components/browser/url-bar";
 import {
   BROWSER_HOME_URL,
-  BROWSER_OPEN_URL_REQUEST_KEY,
+  browserOpenUrlRequestStorageKey,
   BROWSER_OPEN_URL_ACK_EVENT,
   BrowserStoreProvider,
   SEARCH_ENGINE_URLS,
@@ -46,7 +46,12 @@ import {
 } from "@/components/browser/browser-store";
 import type { WebviewTabHandle } from "@/components/browser/webview-tab";
 import { WorkspaceSurfaceHeader } from "@/components/workspace/workspace-surface-header";
+import {
+  SystemAppLightsSpacer,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
 import { useActiveAgentId } from "@/core/agents/active";
+import { currentActorId } from "@/core/auth/api";
 import {
   isLocalPreviewUrl,
   localPreviewPort,
@@ -99,7 +104,9 @@ const DEVICE_STAGE = {
   },
 } as const;
 
-function BrowserShell() {
+function BrowserShell({ active = true }: { active?: boolean }) {
+  const inWindow = useInSystemAppWindow();
+  const actor = currentActorId();
   const { t } = useI18n();
   const activeAgentId = useActiveAgentId() ?? "general";
   const personaThemeId = workspacePresetForAgent(activeAgentId).themeId;
@@ -166,7 +173,7 @@ function BrowserShell() {
       const request = (event as CustomEvent<BrowserOpenUrlRequest>).detail;
       if (!request?.url) return;
       try {
-        localStorage.removeItem(BROWSER_OPEN_URL_REQUEST_KEY);
+        localStorage.removeItem(browserOpenUrlRequestStorageKey(actor));
         openTab(request.url, {
           ...(request.title ? { title: request.title } : {}),
           ...(request.device ? { device: request.device } : {}),
@@ -183,7 +190,7 @@ function BrowserShell() {
         BROWSER_OPEN_URL_REQUEST_EVENT,
         openRequestedUrl,
       );
-  }, [acknowledgeOpenRequest, openTab]);
+  }, [acknowledgeOpenRequest, actor, openTab]);
 
   useEffect(() => {
     if (!activeTabId) {
@@ -241,10 +248,7 @@ function BrowserShell() {
   // Implementation note.
   useEffect(() => {
     if (!activeTabUrl || activeTabLoading) return;
-    if (
-      activeTabUrl.startsWith("about:") ||
-      activeTabUrl.startsWith("echo:")
-    ) {
+    if (activeTabUrl.startsWith("about:") || activeTabUrl.startsWith("echo:")) {
       return;
     }
     const t = setTimeout(() => {
@@ -275,9 +279,11 @@ function BrowserShell() {
 
   useEffect(() => {
     try {
-      const rawRequest = localStorage.getItem(BROWSER_OPEN_URL_REQUEST_KEY);
+      const rawRequest = localStorage.getItem(
+        browserOpenUrlRequestStorageKey(actor),
+      );
       if (!rawRequest) return;
-      localStorage.removeItem(BROWSER_OPEN_URL_REQUEST_KEY);
+      localStorage.removeItem(browserOpenUrlRequestStorageKey(actor));
       let request: BrowserOpenUrlRequest | null = null;
       try {
         const parsed = JSON.parse(rawRequest) as Partial<BrowserOpenUrlRequest>;
@@ -315,13 +321,14 @@ function BrowserShell() {
     } catch (e) {
       swallow(e);
     }
-  }, [acknowledgeOpenRequest, openTab]);
+  }, [acknowledgeOpenRequest, actor, openTab]);
 
   // Implementation note.
   // Implementation note.
   // Implementation note.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!active) return;
       const isMac = navigator.userAgent.includes("Mac");
       const mod = isMac ? e.metaKey : e.ctrlKey;
       if (!mod) return;
@@ -380,36 +387,34 @@ function BrowserShell() {
     // Implementation note.
     // Implementation note.
     // Implementation note.
-    const offIpc = window.echo?.on(
-      "browser:keyboard-shortcut",
-      (...args) => {
-        const p = args[0] as
-          | {
-              key: string;
-              shift: boolean;
-              alt: boolean;
-              meta: boolean;
-              control: boolean;
-            }
-          | undefined;
-        if (!p) return;
-        onKey(
-          new KeyboardEvent("keydown", {
-            key: p.key,
-            shiftKey: p.shift,
-            altKey: p.alt,
-            metaKey: p.meta,
-            ctrlKey: p.control,
-          }),
-        );
-      },
-    );
+    const offIpc = window.echo?.on("browser:keyboard-shortcut", (...args) => {
+      const p = args[0] as
+        | {
+            key: string;
+            shift: boolean;
+            alt: boolean;
+            meta: boolean;
+            control: boolean;
+          }
+        | undefined;
+      if (!p) return;
+      onKey(
+        new KeyboardEvent("keydown", {
+          key: p.key,
+          shiftKey: p.shift,
+          altKey: p.alt,
+          metaKey: p.meta,
+          ctrlKey: p.control,
+        }),
+      );
+    });
 
     return () => {
       window.removeEventListener("keydown", onKey);
       offIpc?.();
     };
   }, [
+    active,
     openTab,
     closeTab,
     restoreClosedTab,
@@ -423,7 +428,7 @@ function BrowserShell() {
   // Implementation note.
   // Implementation note.
   useEffect(() => {
-    if (!isWindows() || !window.echo) return;
+    if (inWindow || !isWindows() || !window.echo) return;
     const apply = () => {
       // Implementation note.
       const root = document.documentElement;
@@ -448,7 +453,7 @@ function BrowserShell() {
       attributeFilter: ["data-theme", "class"],
     });
     return () => obs.disconnect();
-  }, []);
+  }, [inWindow]);
 
   const sidePanelOpen = sidePanelHovered || sidePanelPinned;
   const clearSidePanelCloseTimer = useCallback(() => {
@@ -473,7 +478,10 @@ function BrowserShell() {
   return (
     <div
       data-persona-theme={personaThemeId}
-      className="persona-shell browser-shell relative flex h-screen overflow-hidden bg-[linear-gradient(135deg,var(--muted)_0%,var(--background)_42%,var(--muted)_100%)] text-foreground"
+      className={cn(
+        "persona-shell browser-shell relative flex overflow-hidden bg-[linear-gradient(135deg,var(--muted)_0%,var(--background)_42%,var(--muted)_100%)] text-foreground",
+        inWindow ? "h-full min-h-0" : "h-screen",
+      )}
     >
       <BrowserSidePanel
         open={sidePanelOpen}
@@ -489,8 +497,8 @@ function BrowserShell() {
             style={
               {
                 paddingLeft: 10,
-                paddingRight: isWindows() && electron ? 154 : 6,
-                WebkitAppRegion: "drag",
+                paddingRight: !inWindow && isWindows() && electron ? 154 : 6,
+                WebkitAppRegion: inWindow ? "no-drag" : "drag",
               } as React.CSSProperties
             }
           >
@@ -502,7 +510,11 @@ function BrowserShell() {
                 } as React.CSSProperties
               }
             >
-              <WorkspaceSurfaceHeader active="browser" />
+              {inWindow ? (
+                <SystemAppLightsSpacer />
+              ) : (
+                <WorkspaceSurfaceHeader active="browser" />
+              )}
             </div>
             <div className="flex h-8 min-w-0 flex-1 items-center">
               <TabBar />
@@ -558,14 +570,14 @@ function BrowserShell() {
                   data-testid="local-preview-toolbar"
                   className="flex h-10 shrink-0 items-center gap-2 border-b border-border-subtle bg-muted/35 px-3"
                 >
-                  <span className="grid size-6 place-items-center rounded-md bg-emerald-500/10 text-emerald-600">
+                  <span className="grid size-6 place-items-center rounded-md bg-core/10 text-core">
                     <ServerIcon className="size-3.5" />
                   </span>
-                  <span className="text-[11px] font-semibold">
+                  <span className="text-xs font-semibold">
                     {t.browserPreviewPanel.localPreviewMode}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="size-1.5 rounded-full bg-core" />
                     {t.browserPreviewPanel.localPreviewRunning(previewPort)}
                   </span>
                   <span className="mx-1 h-4 w-px bg-border-subtle" />
@@ -582,7 +594,7 @@ function BrowserShell() {
                         type="button"
                         onClick={() => patchTab(activeTab.id, { device })}
                         className={cn(
-                          "flex h-7 items-center gap-1.5 rounded-md px-2 text-[10px] text-muted-foreground transition-colors hover:text-foreground",
+                          "flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:text-foreground",
                           activeDevice === device &&
                             "bg-foreground text-background shadow-sm hover:text-background",
                         )}
@@ -1126,34 +1138,64 @@ function BrowserSidePanel({
   );
 }
 
-function BrowserRouteQuery() {
+export type BrowserSearchRequest = { query: string; revision: number };
+
+function BrowserRouteQuery({
+  request,
+}: {
+  request?: BrowserSearchRequest | null;
+}) {
+  const inWindow = useInSystemAppWindow();
+  const consumed = useRef<number | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { openTab, settings } = useBrowserStore();
-  const query = searchParams.get("q")?.trim() ?? "";
+  const query = inWindow
+    ? (request?.query.trim() ?? "")
+    : (searchParams.get("q")?.trim() ?? "");
 
   useEffect(() => {
     if (!query) return;
+    if (inWindow && request) {
+      if (consumed.current === request.revision) return;
+      consumed.current = request.revision;
+    }
     openTab(
       `${SEARCH_ENGINE_URLS[settings.searchEngine]}${encodeURIComponent(query)}`,
       { title: query },
     );
+    if (inWindow) return;
     const next = new URLSearchParams(searchParams);
     next.delete("q");
     setSearchParams(next, { replace: true });
-  }, [openTab, query, searchParams, setSearchParams, settings.searchEngine]);
+  }, [
+    inWindow,
+    openTab,
+    query,
+    request,
+    searchParams,
+    setSearchParams,
+    settings.searchEngine,
+  ]);
 
   return null;
 }
 
-export default function BrowserPage() {
+export default function BrowserPage({
+  active = true,
+  searchRequest,
+}: {
+  active?: boolean;
+  searchRequest?: BrowserSearchRequest | null;
+}) {
+  const inWindow = useInSystemAppWindow();
   // Implementation note.
   useEffect(() => {
-    setAppMode("browser");
-  }, []);
+    if (!inWindow) setAppMode("browser");
+  }, [inWindow]);
   return (
     <BrowserStoreProvider>
-      <BrowserRouteQuery />
-      <BrowserShell />
+      <BrowserRouteQuery request={searchRequest} />
+      <BrowserShell active={active} />
     </BrowserStoreProvider>
   );
 }

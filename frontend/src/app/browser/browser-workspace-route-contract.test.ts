@@ -35,8 +35,8 @@ describe("AI browser mode ownership", () => {
   });
 
   it("renders the Agent desktop browser rather than the embedded preview", () => {
-    expect(browserSource).toContain("function BrowserShell()");
-    expect(browserSource).toContain("<BrowserShell />");
+    expect(browserSource).toContain("function BrowserShell(");
+    expect(browserSource).toContain("<BrowserShell active={active} />");
     expect(browserSource).toContain('WorkspaceSurfaceHeader active="browser"');
     expect(browserSource).not.toContain("BrowserPreviewPanel");
   });

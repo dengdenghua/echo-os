@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Request
 
 from runtime import __version__
 from runtime.platform.process.paths import app_paths, project_root
+from runtime.release_identity import public_kernel_identity
 
 from ._health_checks import (
     _api_surface_info,
@@ -52,6 +53,7 @@ def _runtime_identity() -> dict[str, Any]:
         "name": "echo-agent-runtime",
         "version": __version__,
         "verifiedBundle": False,
+        "kernel": public_kernel_identity("os"),
     }
     source_id = os.environ.get("ECHO_RUNTIME_SOURCE_ID", "").strip()
     verified = os.environ.get("ECHO_RUNTIME_BUNDLE_VERIFIED") == "1"
@@ -117,6 +119,14 @@ def create_health_router(
 
     @router.get("/api/health")
     def api_health() -> dict[str, Any]:
+        if require_auth:
+            # Anonymous probes need only liveness and a public build identity.
+            # Detailed diagnostics belong to the operator-only endpoints.
+            return {
+                "status": "ok",
+                "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                "runtime": _runtime_identity(),
+            }
         out: dict[str, Any] = {
             "status": "ok",
             "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
@@ -168,7 +178,7 @@ def create_health_router(
                 out["groups"] = len(group_registry)
         return out
 
-    @router.get("/api/storage/status")
+    @router.get("/api/storage/status", dependencies=[Depends(_capability_auth)])
     def api_storage_status() -> dict[str, Any]:
         """Liveness of the echo-storage sibling (本地数据库 / File Agent), as the
         co-launch heartbeat last observed it. ``up=false`` means search_documents
@@ -179,7 +189,7 @@ def create_health_router(
             return storage_status()
         return {"up": False, "heartbeat": False, "error": "unavailable"}
 
-    @router.get("/api/status")
+    @router.get("/api/status", dependencies=[Depends(_capability_auth)])
     def api_status() -> dict[str, Any]:
         from runtime.adapters.instrumentation import OTEL_AVAILABLE
         from runtime.adapters.mcp_client.client import STDIO_AVAILABLE
@@ -207,7 +217,7 @@ def create_health_router(
             },
         }
 
-    @router.get("/api/runtime/self-check")
+    @router.get("/api/runtime/self-check", dependencies=[Depends(_capability_auth)])
     def api_runtime_self_check(request: Request) -> dict[str, Any]:
         return build_runtime_self_check(
             request=request,
@@ -282,7 +292,11 @@ def build_runtime_self_check(
         or os.environ.get("GATEWAY_PORT")
         or os.environ.get("PORT")
     )
-    observed_port = request_port or _coerce_port(server_port) or env_port or 8000
+    # The configured listener is authoritative when the request arrived
+    # through a frontend proxy. A preserved browser Host header then contains
+    # the frontend port, which must not be mistaken for the backend port in
+    # the self-check report.
+    observed_port = _coerce_port(server_port) or env_port or request_port or 8000
     observed_host = _clean_host(server_host or request_host or "127.0.0.1")
     canonical_host = _canonical_backend_host(observed_host)
     canonical_base_url = f"{request_scheme}://{canonical_host}:{observed_port}"

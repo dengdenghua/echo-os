@@ -20,12 +20,11 @@
   overflow: hidden;
   background-color: #101745;
   background-image:
-    conic-gradient(
-      from 214deg at 56% 42%,
-      transparent 0deg 28deg,
-      rgba(110, 113, 255, 0.2) 52deg,
-      rgba(255, 142, 212, 0.16) 93deg,
-      transparent 138deg 360deg
+    radial-gradient(
+      70% 60% at 56% 42%,
+      rgba(110, 113, 255, 0.25) 0%,
+      rgba(255, 142, 212, 0.18) 45%,
+      transparent 72%
     ),
     radial-gradient(
       90% 120% at 93% 10%,
@@ -51,101 +50,30 @@
   background-size: 110% 110%;
 }
 
-.macos-desktop-root .desktop-wallpaper::before {
-  position: absolute;
-  inset: -16%;
-  z-index: 0;
-  content: "";
-  background:
-    conic-gradient(
-      from 34deg at 48% 38%,
-      transparent 0deg 38deg,
-      rgba(89, 199, 255, 0.34) 64deg,
-      rgba(148, 113, 255, 0.16) 92deg,
-      transparent 126deg 360deg
-    ),
-    radial-gradient(
-      72% 34% at 28% 42%,
-      transparent 0 52%,
-      rgba(209, 231, 255, 0.2) 57%,
-      transparent 67%
-    ),
-    radial-gradient(
-      74% 34% at 76% 66%,
-      transparent 0 53%,
-      rgba(255, 205, 241, 0.2) 58%,
-      transparent 68%
-    ),
-    radial-gradient(
-      112% 68% at 56% 56%,
-      transparent 0 54%,
-      rgba(214, 235, 255, 0.16) 58%,
-      rgba(214, 235, 255, 0.045) 62%,
-      transparent 70%
-    ),
-    radial-gradient(
-      124% 64% at 44% 38%,
-      transparent 0 58%,
-      rgba(255, 198, 238, 0.14) 62%,
-      rgba(255, 198, 238, 0.04) 66%,
-      transparent 73%
-    ),
-    linear-gradient(
-      118deg,
-      transparent 22%,
-      rgba(83, 190, 255, 0.8) 30%,
-      rgba(105, 71, 238, 0.38) 43%,
-      transparent 52%
-    ),
-    linear-gradient(
-      310deg,
-      transparent 27%,
-      rgba(255, 94, 177, 0.66) 38%,
-      rgba(246, 152, 255, 0.36) 51%,
-      transparent 63%
-    );
-  filter: blur(12px) saturate(132%);
-  opacity: 0.94;
-  transform: rotate(-7deg) scale(1.1);
-}
-
+.macos-desktop-root .desktop-wallpaper::before,
 .macos-desktop-root .desktop-wallpaper::after {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  content: "";
-  background:
-    radial-gradient(
-      75% 60% at 48% 42%,
-      rgba(255, 255, 255, 0.09),
-      transparent 72%
-    ),
-    linear-gradient(180deg, rgba(7, 10, 35, 0.04), rgba(7, 10, 35, 0.25));
-  box-shadow: inset 0 0 120px rgba(4, 7, 26, 0.2);
+  display: none !important;
+  content: none !important;
 }
 
 .desktop-wallpaper-art {
   position: absolute;
-  z-index: 3;
-  inset: -4%;
-  width: 108%;
-  height: 108%;
-  opacity: 1;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 1 !important;
   pointer-events: none;
-  filter: saturate(140%) contrast(1.09);
-  transform-origin: 50% 50%;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  transform: none !important;
 }
 
-/* Legacy fold layers are retained for saved variants, but the default Echo
- * Orbit scene is authored entirely in the project SVG. */
+/* Fold layers are disabled to keep the wallpaper crisp and unfiltered. */
 .desktop-wallpaper-fold {
-  position: absolute;
-  z-index: 4;
-  display: block;
-  pointer-events: none;
-  border-radius: 50%;
-  mix-blend-mode: normal;
-  filter: blur(7px) saturate(150%);
+  display: none !important;
 }
 
 .desktop-wallpaper-fold-a {
@@ -229,13 +157,14 @@
 }
 
 .mac-wallpaper-sunset .desktop-wallpaper-art {
-  opacity: 0.28;
-  filter: blur(1px) saturate(112%);
+  opacity: 0 !important;
+  display: none !important;
 }
 
+/* The graphite theme keeps the Echo wallpaper; only the midnight choice swaps it. */
 .mac-wallpaper-midnight .desktop-wallpaper-art {
-  opacity: 0.18;
-  filter: blur(2px) saturate(95%);
+  opacity: 0 !important;
+  display: none !important;
 }
 
 .mac-wallpaper-sunset .desktop-wallpaper {
@@ -264,46 +193,51 @@
     linear-gradient(145deg, #ef9676, #ac4eb5 52%, #3e63ba);
 }
 
-/* Licensed wallpaper retained as the user's selected visual background. */
+/* Echo 原创默认壁纸（scripts/generate-echo-wallpaper.mjs 生成）。
+   3840 宽的候选覆盖高 DPI 屏，其余屏幕加载 2560 宽版本。 */
 .mac-wallpaper-orbit .desktop-wallpaper {
-  background-color: #3852a6;
-  background-image: url("/third-party/appletechie-macos/wallpaper-day2.jpg");
+  background-color: #0a0b0e;
+  /* Preserve the source colours; surfaces must not wash out the wallpaper. */
+  filter: none;
+  background-image: url("/echo/wallpaper-echo-2560.webp");
   background-position: center;
   background-size: cover;
   animation: none;
 }
 
-.mac-wallpaper-orbit .desktop-wallpaper::before {
-  opacity: 0.12;
-  filter: blur(18px) saturate(112%);
+@media (min-resolution: 1.5dppx) {
+  .mac-wallpaper-orbit .desktop-wallpaper {
+    background-image: url("/echo/wallpaper-echo-3840.webp");
+  }
 }
 
+/* 雪白桌面使用同一构图的雪白版本（同一生成器的 snow 色调）。 */
+.macos-desktop-root.theme-white.mac-wallpaper-orbit .desktop-wallpaper {
+  background-color: #eef0f3;
+  background-image: url("/echo/wallpaper-echo-snow-2560.webp");
+}
+
+@media (min-resolution: 1.5dppx) {
+  .macos-desktop-root.theme-white.mac-wallpaper-orbit .desktop-wallpaper {
+    background-image: url("/echo/wallpaper-echo-snow-3840.webp");
+  }
+}
+
+.mac-wallpaper-orbit .desktop-wallpaper::before,
 .mac-wallpaper-orbit .desktop-wallpaper::after {
-  background:
-    radial-gradient(
-      120% 120% at 50% 0%,
-      transparent 52%,
-      rgba(7, 12, 35, 0.16) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(7, 12, 35, 0.06),
-      transparent 14%,
-      transparent 84%,
-      rgba(7, 12, 35, 0.12)
-    );
+  display: none !important;
+  content: none !important;
 }
 
 .mac-wallpaper-orbit .desktop-wallpaper-art {
-  opacity: 0.08;
-  filter: blur(1px) saturate(108%);
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
   animation: none;
 }
 
 .mac-wallpaper-orbit .desktop-wallpaper-fold {
-  opacity: 0.1;
-  filter: blur(10px) saturate(112%);
-  animation: none;
+  display: none !important;
 }
 
 /* The Orbit scene already supplies a detailed source for the compositor. */
@@ -312,33 +246,124 @@
 }
 
 .mac-wallpaper-midnight .desktop-wallpaper {
-  background-color: #07111f;
+  overflow: hidden;
+  background-color: #030611 !important;
   background-image:
+    /* Starry dust micro-particles */
     radial-gradient(
-      80% 110% at 16% 6%,
-      rgba(42, 103, 164, 0.68),
-      transparent 60%
+      1.2px 1.2px at 45px 65px,
+      rgba(255, 255, 255, 0.8),
+      transparent
     ),
     radial-gradient(
-      90% 100% at 88% 14%,
-      rgba(80, 50, 133, 0.58),
+      1.5px 1.5px at 160px 220px,
+      rgba(165, 243, 252, 0.85),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 320px 110px,
+      rgba(216, 180, 254, 0.75),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 520px 380px,
+      rgba(255, 255, 255, 0.7),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 710px 180px,
+      rgba(125, 211, 252, 0.85),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 890px 310px,
+      rgba(192, 132, 252, 0.8),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 1080px 100px,
+      rgba(255, 255, 255, 0.75),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 1280px 260px,
+      rgba(165, 243, 252, 0.85),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 1480px 180px,
+      rgba(216, 180, 254, 0.8),
+      transparent
+    ),
+    radial-gradient(
+      1.5px 1.5px at 1690px 340px,
+      rgba(255, 255, 255, 0.7),
+      transparent
+    ),
+    radial-gradient(
+      1px 1px at 1920px 130px,
+      rgba(125, 211, 252, 0.85),
+      transparent
+    ),
+    /* Deep space midnight nebulas */
+    radial-gradient(
+        80% 110% at 18% 10%,
+        rgba(30, 75, 145, 0.52),
+        transparent 60%
+      ),
+    radial-gradient(
+      85% 100% at 86% 16%,
+      rgba(70, 35, 125, 0.45),
       transparent 62%
     ),
     radial-gradient(
-      110% 90% at 52% 104%,
-      rgba(23, 101, 102, 0.42),
+      110% 90% at 50% 98%,
+      rgba(15, 80, 95, 0.38),
       transparent 64%
     ),
-    linear-gradient(150deg, #0c233a, #11182d 45%, #180f2d);
+    linear-gradient(
+      155deg,
+      #020409 0%,
+      #060b17 44%,
+      #0d0a1e 86%,
+      #030409 100%
+    ) !important;
+  background-size: 100% 100% !important;
+  animation: none !important;
 }
 
 .mac-wallpaper-midnight .desktop-wallpaper::before {
-  opacity: 0.36;
-  filter: blur(68px) saturate(90%);
+  opacity: 0.24 !important;
+  filter: blur(72px) saturate(85%) !important;
 }
 
-/* Menu bar */
-.mac-menu-bar {
+.macos-desktop-root.theme-dark .mac-app-icon-liquid-backdrop > img {
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Menu bar - Base styling */
+.mac-menu-bar,
+/* Side sheets (the workbench's navigation drawer at phone width) portal to
+   <body>, outside the desktop root, and span the whole viewport height. The
+   menu bar (z-index 100) covered their title and close button, and the Dock
+   (z-index 90) their footer, where 设置 sits. On the desktop they fit between
+   the two; raising them above the Dock instead would bury the menus and
+   confirmations they open (z-index 50). */
+body:has(.macos-desktop-root .mac-menu-bar)
+  [data-slot="sheet-content"]:is([data-side="left"], [data-side="right"]) {
+  top: 25px;
+  bottom: 80px;
+  height: auto;
+}
+@media (max-width: 640px) {
+  body:has(.macos-desktop-root .mac-menu-bar)
+    [data-slot="sheet-content"]:is([data-side="left"], [data-side="right"]) {
+    bottom: 61px;
+  }
+}
+
+.macos-desktop-root .mac-menu-bar {
   position: absolute;
   inset: 0 0 auto;
   z-index: 100;
@@ -347,17 +372,31 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 0 10px;
-  color: var(--mac-text);
-  background: rgba(247, 248, 251, 0.63);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
   font-size: 13px;
   line-height: 1;
+  transition:
+    background-color 240ms ease,
+    border-color 240ms ease,
+    color 240ms ease;
+}
+
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::before,
+.macos-desktop-root .mac-menu-bar[data-liquid-surface]::after {
+  display: none !important;
+}
+
+.mac-menu-bar .mac-menu-logo,
+.mac-menu-bar .mac-menu-button,
+.mac-menu-bar .mac-status-icon,
+.mac-menu-bar .mac-clock {
+  color: inherit;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .mac-menu-left,
+.mac-menu-center,
 .mac-menu-right {
   display: flex;
   height: 100%;
@@ -365,9 +404,15 @@
 }
 
 .mac-menu-left {
+  flex-shrink: 0;
   gap: 1px;
 }
+.mac-menu-center {
+  justify-content: center;
+  pointer-events: auto;
+}
 .mac-menu-right {
+  flex-shrink: 0;
   gap: 3px;
 }
 
@@ -709,7 +754,7 @@
 .mac-widget-caption {
   margin-top: 5px;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .mac-agent-widget {
@@ -733,7 +778,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-agent-widget > svg {
   width: 14px;
@@ -746,7 +791,7 @@
   color: rgba(255, 255, 255, 0.65);
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-agent-orb {
   display: grid;
@@ -864,7 +909,7 @@
 .mac-spotlight-heading {
   padding: 1px 8px 7px;
   color: rgba(40, 42, 48, 0.55);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .mac-spotlight-result {
@@ -901,12 +946,12 @@
 .mac-spotlight-result small {
   margin-top: 2px;
   opacity: 0.67;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-result-kind {
   margin-left: auto;
   opacity: 0.6;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-spotlight-empty {
   display: grid;
@@ -923,7 +968,7 @@
   padding: 0 14px;
   color: rgba(35, 38, 47, 0.48);
   border-top: 1px solid rgba(0, 0, 0, 0.09);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Launchpad */
@@ -1093,7 +1138,7 @@
 .mac-control-network small {
   margin-top: 2px;
   color: rgba(32, 33, 38, 0.56);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-control-round {
   display: grid;
@@ -1132,7 +1177,7 @@
   background: var(--mac-blue);
 }
 .mac-control-tile strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-control-slider {
   display: block;
@@ -1146,7 +1191,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .mac-control-slider input {
@@ -1162,7 +1207,7 @@
   margin-top: 9px;
   padding: 0 3px;
   color: rgba(32, 33, 38, 0.58);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-control-footer span {
   display: flex;
@@ -1196,7 +1241,7 @@
 }
 .mac-notification-day-row button {
   color: rgba(32, 33, 38, 0.58);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 .mac-notification-day-row button:hover {
@@ -1218,7 +1263,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-calendar-panel header span {
   color: rgba(32, 33, 38, 0.45);
@@ -1232,12 +1277,12 @@
 .mac-calendar-week {
   margin-top: 10px;
   color: rgba(32, 33, 38, 0.45);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-calendar-days {
   row-gap: 4px;
   margin-top: 7px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-calendar-days span {
   display: grid;
@@ -1281,12 +1326,12 @@
   width: 14px;
 }
 .mac-notification-app strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-notification-app small {
   margin-left: auto;
   color: rgba(32, 33, 38, 0.42);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-notification-dismiss {
   display: grid;
@@ -1315,7 +1360,7 @@
   display: block;
   margin-top: 2px;
   color: rgba(32, 33, 38, 0.65);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-notification-empty {
   display: flex;
@@ -1338,11 +1383,11 @@
 }
 .mac-notification-empty strong {
   color: rgba(32, 33, 38, 0.78);
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-notification-empty span {
   max-width: 220px;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .mac-clock {
@@ -1359,7 +1404,7 @@
   background: #ff3b30;
   border: 1px solid rgba(255, 255, 255, 0.76);
   border-radius: 999px;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
 }
@@ -1391,19 +1436,26 @@
   display: grid;
   width: 14px;
   height: 14px;
+  padding: 0;
   place-items: center;
-  background: #ff5f57;
-  border: 1px solid rgba(190, 30, 30, 0.35);
+  color: #fff;
+  background: color-mix(in srgb, var(--echo-ink-faint) 72%, transparent);
+  border: 1px solid var(--echo-line-strong);
   border-radius: 50%;
 }
-.mac-about-close span {
-  width: 6px;
-  height: 1px;
-  background: rgba(80, 0, 0, 0.55);
+.mac-about-close svg {
+  width: 9px;
+  height: 9px;
+  stroke-width: 3;
   opacity: 0;
-  transform: rotate(45deg);
 }
-.mac-about-close:hover span {
+.mac-about-close:hover,
+.mac-about-close:focus-visible {
+  background: var(--echo-breach);
+  border-color: transparent;
+}
+.mac-about-close:hover svg,
+.mac-about-close:focus-visible svg {
   opacity: 1;
 }
 .mac-about-mark {
@@ -1447,7 +1499,7 @@
   grid-template-columns: 70px 1fr;
   min-height: 25px;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-about-dialog dt {
   color: rgba(36, 37, 42, 0.55);
@@ -1459,7 +1511,7 @@
 .mac-about-dialog .mac-about-agent-source {
   overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.3;
 }
 .mac-about-settings {
@@ -1470,7 +1522,7 @@
   border: 1px solid rgba(0, 91, 196, 0.45);
   border-radius: 7px;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.24);
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-about-update {
   width: 100%;
@@ -1493,13 +1545,13 @@
   display: block;
 }
 .mac-about-update-heading strong {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.3;
 }
 .mac-about-update-heading small {
   margin-top: 3px;
   color: rgba(36, 37, 42, 0.56);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .mac-about-update-icon {
@@ -1531,7 +1583,7 @@
   background: rgba(255, 255, 255, 0.66);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-about-update-actions button.is-primary {
   color: white;
@@ -1550,7 +1602,7 @@
 .mac-about-dialog > small {
   margin-top: auto;
   color: rgba(36, 37, 42, 0.42);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 /* Native system action confirmation */
@@ -1603,7 +1655,7 @@
 .mac-system-action-copy > p {
   margin-top: 5px;
   color: rgba(36, 37, 42, 0.62);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .mac-system-action-copy .mac-system-action-error {
@@ -1625,7 +1677,7 @@
   border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 7px;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.7);
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-system-action-buttons button.is-primary {
   color: white;
@@ -1636,13 +1688,13 @@
   opacity: 0.55;
 }
 
-/* Dock */
+/* Dock：系统层，始终高于应用窗口（z-40）和应用面板（最高 z-89），低于菜单栏（100）。 */
 .mac-dock {
   --dock-glass-height: 68px;
   position: absolute;
   bottom: 6px;
   left: 50%;
-  z-index: 60;
+  z-index: 90;
   display: flex;
   height: var(--dock-glass-height);
   min-height: var(--dock-glass-height);
@@ -1685,6 +1737,14 @@
   display: none;
 }
 
+/* The items' track: invisible on a wide screen, the scroller on a phone. */
+.mac-dock-track {
+  display: contents;
+}
+
+/* 覆盖层：globals.css 的 .dock-item 是基础定义（170ms 曲线，供寄生/非 mac-dock
+   场景用），这里是 macOS 桌面专用的更紧致版本（145ms + place-items: end center）。
+   改缩放曲线时两处都要动，否则两种形态手感不一致。 */
 .mac-dock .dock-item {
   position: relative;
   display: grid;
@@ -1732,13 +1792,251 @@
   width: 29px;
   height: 29px;
 }
+.mac-dock .mac-app-icon-art {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .mac-dock-separator {
   width: 1px;
-  height: 45px;
+  height: 38px;
   align-self: center;
-  margin: 0 2px;
-  background: rgba(32, 36, 50, 0.27);
-  box-shadow: 1px 0 rgba(255, 255, 255, 0.26);
+  margin: 0 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.38) 30%,
+    rgba(255, 255, 255, 0.38) 70%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  box-shadow: -1px 0 0 rgba(0, 0, 0, 0.22);
+  border-radius: 0.5px;
+  flex-shrink: 0;
+}
+.mac-dock-trash {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  user-select: none;
+}
+.mac-dock-trash svg {
+  width: 50px;
+  height: 50px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms ease;
+}
+.mac-dock .dock-item:hover .mac-dock-trash svg {
+  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.42));
+}
+.mac-dock-minimized-window {
+  position: relative;
+  width: 48px;
+  height: 38px;
+  border-radius: 7px;
+  background: rgba(18, 24, 38, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms ease;
+}
+.mac-dock .dock-item:hover .mac-dock-minimized-window {
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+.mac-dock-mini-titlebar {
+  height: 9px;
+  width: 100%;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.mac-dock-mini-titlebar .mini-dot {
+  width: 3.5px;
+  height: 3.5px;
+  background: rgba(255, 255, 255, 0.38);
+  border-radius: 50%;
+}
+.mac-dock-mini-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 0, 0, 0.15)
+  );
+}
+.mac-dock-mini-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mac-dock-stack-folder {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.mac-dock-stack-folder svg {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms ease;
+}
+.mac-dock .dock-item:hover .mac-dock-stack-folder svg {
+  filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.38));
+}
+
+/* Dock 任务轨：进行中的 Agent 任务，外圈是进度环 */
+.mac-dock-task {
+  position: relative;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  color: white;
+  background: radial-gradient(
+    circle at 32% 26%,
+    rgba(255, 255, 255, 0.3),
+    rgba(16, 18, 22, 0.86) 72%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  user-select: none;
+}
+.mac-dock-task-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.mac-dock-task-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+.mac-dock-task-ring-track {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+.mac-dock-task-ring-value {
+  stroke: #6fe3f0;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 600ms ease;
+}
+.mac-dock-task.is-attention .mac-dock-task-ring-value {
+  stroke: #f2b84b;
+}
+.mac-dock-task.is-muted .mac-dock-task-ring-value {
+  stroke: rgba(255, 255, 255, 0.55);
+}
+.mac-dock-task.is-indeterminate .mac-dock-task-ring {
+  animation: mac-dock-task-spin 1.4s linear infinite;
+}
+.mac-dock-task.is-attention {
+  animation: mac-dock-task-pulse 2s ease-in-out infinite;
+}
+.mac-dock-task-glyph {
+  position: relative;
+  font-size: 22px;
+  line-height: 1;
+}
+.mac-dock-task-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  place-items: center;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f2b84b;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.mac-dock-task.is-more {
+  font-size: 14px;
+  font-weight: 600;
+}
+@keyframes mac-dock-task-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}
+@keyframes mac-dock-task-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.32),
+      0 0 0 0 rgba(242, 184, 75, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.32),
+      0 0 0 6px rgba(242, 184, 75, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mac-dock-task.is-indeterminate .mac-dock-task-ring,
+  .mac-dock-task.is-attention {
+    animation: none;
+  }
+}
+@media (max-width: 640px) {
+  .mac-dock-task {
+    width: 36px;
+    height: 36px;
+  }
+  .mac-dock-task-glyph {
+    font-size: 16px;
+  }
 }
 .mac-dock-running-dot {
   position: absolute;
@@ -1748,12 +2046,12 @@
   width: 4px;
   height: 4px;
   pointer-events: none;
-  background: rgba(213, 239, 255, 0.94);
-  border: 0.5px solid rgba(10, 25, 48, 0.58);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 50%;
   box-shadow:
-    0 0 4px rgba(93, 190, 255, 0.54),
-    0 1px 2px rgba(2, 9, 26, 0.34);
+    0 0 5px rgba(255, 255, 255, 0.85),
+    0 0 9px rgba(56, 189, 248, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.5);
   transform: translateX(-50%);
 }
 .mac-dock .dock-item:hover::before {
@@ -1774,7 +2072,7 @@
   transform: translateX(-50%) scale(calc(1 / var(--dock-s, 1)));
   transform-origin: center bottom;
   pointer-events: none;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1791,23 +2089,37 @@
     inset 0 1px rgba(255, 255, 255, 0.72);
   transition:
     transform 340ms cubic-bezier(0.16, 1.28, 0.36, 1),
-    box-shadow 120ms ease,
-    opacity 120ms ease;
+    box-shadow 180ms ease,
+    opacity 140ms ease,
+    left 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 260ms cubic-bezier(0.16, 1, 0.3, 1);
   transform: perspective(1500px) rotateX(var(--window-tilt-x))
     rotateY(var(--window-tilt-y));
   transform-origin: 50% 22%;
+  animation: mac-window-spring-enter 260ms cubic-bezier(0.16, 1.25, 0.36, 1);
 }
 
 .mac-window[data-window-dragging] {
+  animation: none !important;
   box-shadow:
     0 31px 84px rgba(3, 6, 25, 0.5),
     0 7px 22px rgba(3, 6, 25, 0.24),
     inset 0 1px rgba(255, 255, 255, 0.72);
   transition:
     transform 62ms linear,
-    box-shadow 100ms ease;
+    box-shadow 100ms ease,
+    left 0s linear,
+    top 0s linear,
+    width 0s linear,
+    height 0s linear !important;
   transform: perspective(1500px) rotateX(var(--window-tilt-x))
     rotateY(var(--window-tilt-y)) scale(1.002);
+}
+.mac-window[data-window-entered] {
+  /* 入场动画只播一次：拖拽时临时移除的 animation 恢复后，窗口不会重新弹入。 */
+  animation: none;
 }
 .mac-window.is-unfocused {
   box-shadow:
@@ -1815,6 +2127,65 @@
     0 2px 9px rgba(3, 6, 25, 0.13);
   filter: saturate(0.94);
 }
+
+/* Translucent Magnetic Snap Preview Outline */
+.mac-window-snap-preview {
+  pointer-events: none;
+  animation: mac-snap-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mac-snap-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* macOS Sequoia Style Quick Tile Menu */
+.mac-quick-tile-menu {
+  animation: mac-tile-pop 160ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mac-tile-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mac-window-spring-enter {
+  from {
+    opacity: 0;
+    transform: perspective(1500px) scale(0.94) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1500px) scale(1) translateY(0);
+  }
+}
+
+/* Phone Mirror Window specific appearance */
+.mac-window[data-window-id="phone-mirror"] {
+  background: rgba(10, 15, 29, 0.95);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.7),
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.mac-window[data-window-id="phone-mirror"] .mac-window-content {
+  background: transparent;
+}
+
 .mac-window.is-integrated-chrome {
   /* 内建应用保留自己的导航；Echo OS 只叠加窗口按钮，不新增横栏。 */
   background: white;
@@ -1873,48 +2244,64 @@
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.1px;
 }
 .mac-traffic-lights {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+/* ECHO window controls: monochrome graphite/snow dots. The colour-only macOS
+   lights told the three apart by hue alone; here every control carries its
+   lucide glyph, shown while the group is hovered or holds keyboard focus. */
 .mac-traffic-light {
   position: relative;
+  display: grid;
   width: 12px;
   height: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16);
-}
-.mac-traffic-light.close {
-  background: #ff5f57;
-}
-.mac-traffic-light.minimize {
-  background: #febc2e;
-}
-.mac-traffic-light.zoom {
-  background: #28c840;
-}
-.mac-traffic-lights:hover .mac-traffic-light::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
+  padding: 0;
   place-items: center;
-  color: rgba(40, 20, 20, 0.58);
-  content: "×";
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 10px;
+  color: var(--echo-on-action);
+  background: color-mix(in srgb, var(--echo-ink-faint) 72%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  border-radius: 50%;
+  transition:
+    background-color var(--echo-duration-fast, 120ms) ease,
+    border-color var(--echo-duration-fast, 120ms) ease;
 }
-.mac-traffic-lights:hover .mac-traffic-light.minimize::after {
-  content: "−";
+.mac-traffic-light > .mac-traffic-glyph {
+  width: 8px;
+  height: 8px;
+  stroke-width: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--echo-duration-fast, 120ms) ease;
 }
-.mac-traffic-lights:hover .mac-traffic-light.zoom::after {
-  content: "+";
+.mac-traffic-lights:hover .mac-traffic-light,
+.mac-traffic-lights:focus-within .mac-traffic-light {
+  background: var(--echo-ink-muted);
+}
+.mac-traffic-lights:hover .mac-traffic-glyph,
+.mac-traffic-lights:focus-within .mac-traffic-glyph {
+  opacity: 1;
+}
+.mac-traffic-light.close:hover,
+.mac-traffic-light.close:focus-visible {
+  color: #fff;
+  background: var(--echo-breach);
+  border-color: transparent;
+}
+.mac-traffic-light:focus-visible {
+  outline: 2px solid var(--echo-focus);
+  outline-offset: 2px;
+}
+.mac-traffic-light:disabled {
+  opacity: 0.5;
+}
+/* Standalone panels draw the same three dots; only close does anything. */
+.mac-traffic-light.is-inert {
+  opacity: 0.55;
 }
 .mac-window-title {
   overflow: hidden;
@@ -2021,18 +2408,18 @@
   width: 92px;
   height: 92px;
   place-items: center;
-  color: white;
-  background: radial-gradient(circle at 35% 25%, #b99cff, #7151e8 48%, #2948b8);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 50%;
+  color: var(--echo-ink);
+  /* The ECHO app tile: graphite, one hairline, the Echo Core inside. */
+  background: linear-gradient(180deg, #1b1f25, #0c0e11);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.42),
-    0 13px 34px rgba(4, 7, 28, 0.32);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 44px rgba(0, 0, 0, 0.5);
 }
 .mac-login-avatar svg {
-  width: 48px;
-  height: 48px;
-  stroke-width: 1.5;
+  width: 54px;
+  height: 54px;
 }
 .mac-login-form h1 {
   margin-top: 14px;
@@ -2043,7 +2430,7 @@
 .mac-login-form > p {
   margin-top: 1px;
   color: rgba(255, 255, 255, 0.66);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-login-username,
 .mac-login-password {
@@ -2054,19 +2441,19 @@
   align-items: center;
   margin-top: 14px;
   overflow: hidden;
-  color: white;
-  background: rgba(255, 255, 255, 0.17);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: var(--echo-ink);
+  background: rgba(16, 18, 22, 0.56);
+  border: 1px solid var(--echo-line-strong);
   border-radius: 16px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
 }
 .mac-login-username:focus-within,
 .mac-login-password:focus-within {
-  border-color: rgba(255, 255, 255, 0.7);
+  border-color: var(--echo-core);
   box-shadow:
-    0 0 0 3px rgba(10, 132, 255, 0.5),
-    inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    0 0 0 3px var(--echo-core-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .mac-login-username input,
 .mac-login-password input {
@@ -2076,7 +2463,7 @@
   color: white;
   background: transparent;
   outline: none;
-  font-size: 11px;
+  font-size: 13px;
 }
 .mac-login-username input::placeholder,
 .mac-login-password input::placeholder {
@@ -2103,16 +2490,16 @@
   width: 14px;
   height: 14px;
 }
-.mac-login-error {
+.mac-login-form > .mac-login-error {
   margin-top: 8px;
-  color: #ffd6d2;
+  color: var(--echo-breach);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-login-form > small {
   margin-top: 10px;
   color: rgba(255, 255, 255, 0.62);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-login-system-actions {
   position: absolute;
@@ -2148,7 +2535,7 @@
 }
 .mac-login-system-actions small {
   color: rgba(255, 255, 255, 0.72);
-  font-size: 8px;
+  font-size: 12px;
 }
 .mac-login-footer {
   position: absolute;
@@ -2160,7 +2547,7 @@
   flex-direction: column;
   gap: 4px;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 8px;
+  font-size: 12px;
 }
 .mac-login-footer span {
   display: flex;
@@ -2170,6 +2557,112 @@
 .mac-login-footer svg {
   width: 11px;
   height: 11px;
+}
+.mac-login-form > .mac-login-notice {
+  margin-top: 8px;
+  color: var(--echo-ink);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+
+/* First-boot owner setup: the lock-screen card, one step wider. */
+.mac-owner-setup {
+  width: min(92vw, 320px);
+  margin-top: 0;
+}
+.mac-owner-setup .mac-login-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+}
+.mac-owner-setup .mac-login-avatar svg {
+  width: 38px;
+  height: 38px;
+}
+.mac-owner-setup > p {
+  max-width: 300px;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.mac-owner-setup-field {
+  width: min(92vw, 268px);
+  height: 36px;
+  margin-top: 10px;
+}
+.mac-owner-setup-field:first-of-type {
+  margin-top: 16px;
+}
+.mac-owner-setup-code {
+  font-family: var(--echo-font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mac-owner-setup-code::placeholder {
+  font-family: var(--echo-font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mac-owner-setup-rules {
+  display: flex;
+  width: min(92vw, 268px);
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  text-align: left;
+}
+.mac-owner-setup-rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+.mac-owner-setup-rules li[data-met="true"] {
+  color: var(--echo-ink);
+}
+.mac-owner-setup-rule-mark {
+  display: grid;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  place-items: center;
+  border: 1px solid var(--echo-line-strong);
+  border-radius: 999px;
+}
+.mac-owner-setup-rules li[data-met="true"] .mac-owner-setup-rule-mark {
+  color: var(--echo-on-core);
+  background: var(--echo-core);
+  border-color: var(--echo-core);
+}
+.mac-owner-setup-rule-mark svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.5;
+}
+.mac-owner-setup-submit {
+  width: min(92vw, 268px);
+  height: 36px;
+  margin-top: 14px;
+  color: var(--echo-on-action);
+  background: var(--echo-action);
+  border-radius: var(--echo-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity var(--echo-duration-fast) var(--echo-ease);
+}
+.mac-owner-setup-submit:focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 2px;
+}
+.mac-owner-setup-submit:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+.mac-owner-setup > small {
+  max-width: 268px;
+  line-height: 1.5;
 }
 
 /* Finder */
@@ -2213,6 +2706,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* 窗口形态：外框、阴影和红绿灯都由桌面窗口提供，访达只填满内容区。 */
+.mac-finder-window.is-in-window {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  background: rgba(247, 248, 250, 0.98);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+.mac-finder-window.is-in-window .mac-finder-toolbar {
+  grid-template-columns: 100px 68px minmax(100px, 1fr) auto;
+}
+.mac-finder-window.is-in-window .mac-finder-traffic {
+  /* 系统红绿灯占据左上 64px。 */
+  padding-left: 64px;
 }
 .mac-finder-navigation {
   display: flex;
@@ -2282,7 +2798,7 @@
 .mac-finder-sidebar p {
   margin: 10px 8px 4px;
   color: rgba(32, 33, 38, 0.46);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 .mac-finder-sidebar p:first-child {
@@ -2300,7 +2816,7 @@
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-finder-sidebar button:hover {
   background: rgba(0, 0, 0, 0.065);
@@ -2312,12 +2828,6 @@
   width: 15px;
   height: 15px;
   flex: 0 0 auto;
-}
-.mac-tag-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 auto;
-  border-radius: 50%;
 }
 
 .mac-finder-content {
@@ -2334,7 +2844,7 @@
   background: #fff1ef;
   border: 1px solid #f1c5bf;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-finder-transfer {
   display: grid;
@@ -2347,7 +2857,7 @@
   color: rgba(32, 33, 38, 0.62);
   background: rgba(10, 132, 255, 0.06);
   border-bottom: 1px solid rgba(10, 132, 255, 0.12);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-finder-transfer > svg {
   width: 14px;
@@ -2415,7 +2925,7 @@
 .mac-finder-drop-overlay span {
   margin-top: 3px;
   color: rgba(7, 94, 183, 0.65);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-finder-empty {
   display: flex;
@@ -2432,7 +2942,7 @@
 }
 .mac-finder-empty span {
   margin-top: 3px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-finder-local-empty span {
   max-width: 290px;
@@ -2442,7 +2952,7 @@
 
 .mac-finder-table {
   padding: 0 9px 10px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .mac-finder-table > li {
   position: relative;
@@ -2464,7 +2974,7 @@
   min-height: 26px !important;
   color: rgba(32, 33, 38, 0.48);
   background: rgba(250, 250, 251, 0.96);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mac-finder-table li > button:first-child {
   display: flex;
@@ -2488,7 +2998,7 @@
 }
 .mac-finder-table li > span {
   color: rgba(32, 33, 38, 0.5);
-  font-size: 10px;
+  font-size: 12px;
 }
 .mac-finder-row-actions {
   position: absolute;
@@ -2538,7 +3048,7 @@
   color: rgba(32, 33, 38, 0.45);
   background: rgba(239, 240, 243, 0.86);
   border-top: 1px solid rgba(0, 0, 0, 0.09);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
@@ -2561,7 +3071,7 @@
     border-radius: 10px;
   }
   .mac-agent-widget strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .mac-launchpad-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -2664,14 +3174,80 @@
     width: 21px;
     height: 21px;
   }
+  .mac-dock .mac-app-icon-art {
+    width: 28px;
+    height: 28px;
+  }
   .mac-dock-separator {
-    height: 30px;
-    margin: 0 1px;
+    height: 24px;
+    margin: 0 3px;
+  }
+  .mac-dock-trash {
+    width: 36px;
+    height: 36px;
+  }
+  .mac-dock-trash svg {
+    width: 34px;
+    height: 34px;
+  }
+  .mac-dock-minimized-window {
+    width: 34px;
+    height: 26px;
+  }
+  .mac-dock-stack-folder {
+    width: 34px;
+    height: 34px;
+  }
+  .mac-dock-stack-folder svg {
+    width: 32px;
+    height: 32px;
   }
   .mac-dock-running-dot {
     bottom: -4px;
     width: 3px;
     height: 3px;
+  }
+  /* Every Dock item stays reachable: the track scrolls inside the glass and
+     fades the end that hides more items. */
+  .mac-dock-track {
+    display: flex;
+    min-width: 0;
+    flex: 0 1 auto;
+    align-items: flex-end;
+    gap: inherit;
+    margin-bottom: -5px;
+    padding-bottom: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .mac-dock-track::-webkit-scrollbar {
+    display: none;
+  }
+  .mac-dock-track > * {
+    scroll-snap-align: start;
+  }
+  .mac-dock-track[data-overflow="end"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .mac-dock-track[data-overflow="start"] {
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+  }
+  .mac-dock-track[data-overflow="both"] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent
+    );
+  }
+  /* Hover labels would be clipped by the scroller; items keep their title. */
+  .macos-desktop-root .mac-dock .dock-item:hover::before,
+  .macos-desktop-root.mac-liquid-crystal .mac-dock .dock-item:hover::before {
+    display: none;
   }
   .mac-finder-window {
     inset: 34px 5px 74px;
@@ -2726,12 +3302,9 @@
   --liquid-surface-thick: rgba(238, 241, 249, 0.54);
   --liquid-surface-ultra-thick: rgba(245, 247, 252, 0.78);
   --liquid-inner-surface: rgba(255, 255, 255, 0.4);
-  --liquid-edge: rgba(171, 201, 247, 0.24);
-  --liquid-edge-soft: rgba(141, 181, 238, 0.14);
-  --liquid-specular: rgba(255, 255, 255, 0.55);
-  --liquid-prism-a: rgba(108, 207, 255, 0.14);
-  --liquid-prism-b: rgba(255, 130, 220, 0.1);
-  --liquid-prism-c: rgba(255, 238, 151, 0.08);
+  --liquid-edge: rgba(200, 200, 200, 0.24);
+  --liquid-edge-soft: rgba(200, 200, 200, 0.14);
+  --liquid-specular: rgba(255, 255, 255, 0.32);
   --liquid-shadow: rgba(5, 9, 28, 0.32);
   --liquid-caustic-opacity: 0.34;
   --liquid-grain-opacity: 0.055;
@@ -2751,7 +3324,7 @@
   --liquid-surface-thin: rgba(238, 242, 252, 0.32);
   --liquid-surface-thick: rgba(241, 243, 249, 0.68);
   --liquid-surface-ultra-thick: rgba(247, 248, 252, 0.88);
-  --liquid-specular: rgba(255, 255, 255, 0.38);
+  --liquid-specular: rgba(255, 255, 255, 0.22);
   --liquid-caustic-opacity: 0.13;
   --liquid-grain-opacity: 0.025;
 }
@@ -2763,27 +3336,24 @@
   --liquid-blur-ultra-thick: 72px;
   --liquid-saturation: 220%;
   --liquid-surface-ultra-thin: rgba(244, 248, 255, 0.18);
-  --liquid-surface-thin: rgba(233, 241, 253, 0.13);
+  --liquid-surface-thin: rgba(240, 240, 240, 0.13);
   --liquid-surface-thick: rgba(232, 239, 250, 0.43);
   --liquid-surface-ultra-thick: rgba(240, 245, 252, 0.68);
-  --liquid-specular: rgba(255, 255, 255, 0.7);
+  --liquid-specular: rgba(255, 255, 255, 0.4);
   --liquid-caustic-opacity: 0.48;
   --liquid-grain-opacity: 0.08;
 }
 
 .macos-desktop-root.mac-liquid-softlight {
   --liquid-saturation: 205%;
-  --liquid-surface-ultra-thin: rgba(231, 248, 255, 0.34);
-  --liquid-surface-thin: rgba(223, 244, 252, 0.29);
+  --liquid-surface-ultra-thin: rgba(245, 245, 245, 0.34);
+  --liquid-surface-thin: rgba(240, 240, 240, 0.29);
   --liquid-surface-thick: rgba(230, 242, 248, 0.68);
   --liquid-surface-ultra-thick: rgba(238, 247, 250, 0.84);
   --liquid-inner-surface: rgba(248, 253, 255, 0.46);
-  --liquid-edge: rgba(111, 222, 240, 0.28);
-  --liquid-edge-soft: rgba(91, 203, 232, 0.17);
-  --liquid-specular: rgba(229, 255, 255, 0.58);
-  --liquid-prism-a: rgba(55, 224, 255, 0.22);
-  --liquid-prism-b: rgba(162, 126, 255, 0.19);
-  --liquid-prism-c: rgba(255, 175, 218, 0.14);
+  --liquid-edge: rgba(200, 200, 200, 0.28);
+  --liquid-edge-soft: rgba(200, 200, 200, 0.17);
+  --liquid-specular: rgba(255, 255, 255, 0.32);
   --liquid-shadow: rgba(7, 22, 42, 0.28);
   --liquid-caustic-opacity: 0.5;
   --liquid-grain-opacity: 0.035;
@@ -2791,17 +3361,11 @@
 
 .macos-desktop-root.mac-liquid-softlight[data-liquid-intensity="strong"] {
   --liquid-caustic-opacity: 0.72;
-  --liquid-prism-a: rgba(55, 224, 255, 0.32);
-  --liquid-prism-b: rgba(162, 126, 255, 0.28);
-  --liquid-prism-c: rgba(255, 175, 218, 0.21);
 }
 
 .macos-desktop-root.mac-liquid-softlight[data-liquid-intensity="weak"] {
   --liquid-caustic-opacity: 0.22;
-  --liquid-specular: rgba(229, 255, 255, 0.4);
-  --liquid-prism-a: rgba(55, 224, 255, 0.12);
-  --liquid-prism-b: rgba(162, 126, 255, 0.1);
-  --liquid-prism-c: rgba(255, 175, 218, 0.08);
+  --liquid-specular: rgba(255, 255, 255, 0.22);
 }
 
 /* Balanced Crystal mode should reveal the wallpaper's own geometry;
@@ -2838,13 +3402,10 @@
     --liquid-surface-thin: rgba(20, 24, 36, 0.34);
     --liquid-surface-thick: rgba(18, 22, 33, 0.62);
     --liquid-surface-ultra-thick: rgba(16, 20, 30, 0.82);
-    --liquid-inner-surface: rgba(196, 214, 245, 0.1);
-    --liquid-edge: rgba(150, 186, 240, 0.2);
-    --liquid-edge-soft: rgba(122, 163, 226, 0.12);
-    --liquid-specular: rgba(226, 240, 255, 0.3);
-    --liquid-prism-a: rgba(108, 207, 255, 0.1);
-    --liquid-prism-b: rgba(255, 130, 220, 0.07);
-    --liquid-prism-c: rgba(255, 238, 151, 0.05);
+    --liquid-inner-surface: rgba(212, 212, 212, 0.1);
+    --liquid-edge: rgba(200, 200, 200, 0.2);
+    --liquid-edge-soft: rgba(200, 200, 200, 0.12);
+    --liquid-specular: rgba(238, 238, 238, 0.3);
     --liquid-shadow: rgba(0, 0, 0, 0.52);
     --liquid-caustic-opacity: 0.22;
     --liquid-grain-opacity: 0.07;
@@ -2856,7 +3417,7 @@
     --liquid-surface-thin: rgba(22, 26, 38, 0.48);
     --liquid-surface-thick: rgba(20, 24, 35, 0.74);
     --liquid-surface-ultra-thick: rgba(18, 22, 32, 0.9);
-    --liquid-specular: rgba(226, 240, 255, 0.2);
+    --liquid-specular: rgba(238, 238, 238, 0.2);
     --liquid-caustic-opacity: 0.09;
     --liquid-grain-opacity: 0.032;
   }
@@ -2867,7 +3428,7 @@
     --liquid-surface-thin: rgba(18, 23, 35, 0.24);
     --liquid-surface-thick: rgba(16, 21, 32, 0.5);
     --liquid-surface-ultra-thick: rgba(14, 19, 29, 0.72);
-    --liquid-specular: rgba(226, 240, 255, 0.4);
+    --liquid-specular: rgba(238, 238, 238, 0.4);
     --liquid-caustic-opacity: 0.34;
     --liquid-grain-opacity: 0.095;
   }
@@ -2878,152 +3439,51 @@
     --liquid-surface-thin: rgba(16, 28, 38, 0.37);
     --liquid-surface-thick: rgba(15, 26, 35, 0.66);
     --liquid-surface-ultra-thick: rgba(13, 24, 32, 0.84);
-    --liquid-inner-surface: rgba(196, 236, 250, 0.12);
-    --liquid-edge: rgba(111, 222, 240, 0.24);
-    --liquid-edge-soft: rgba(91, 203, 232, 0.14);
-    --liquid-specular: rgba(214, 250, 255, 0.32);
+    --liquid-inner-surface: rgba(229, 229, 229, 0.12);
+    --liquid-edge: rgba(200, 200, 200, 0.24);
+    --liquid-edge-soft: rgba(200, 200, 200, 0.14);
+    --liquid-specular: rgba(243, 243, 243, 0.32);
     --liquid-shadow: rgba(0, 6, 14, 0.5);
   }
 }
 
-.mac-liquid-atmosphere {
-  position: absolute;
-  inset: var(--mac-menu-height) 0 0;
-  z-index: 1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.mac-liquid-caustic {
-  position: absolute;
-  width: 58vw;
-  height: 58vw;
-  min-width: 540px;
-  min-height: 540px;
-  border-radius: 45% 55% 58% 42% / 46% 38% 62% 54%;
-  opacity: var(--liquid-caustic-opacity);
-  filter: blur(44px) saturate(145%);
-  mix-blend-mode: screen;
-  transition:
-    opacity var(--liquid-transition),
-    filter var(--liquid-transition);
-}
-
-.mac-liquid-caustic.is-a {
-  top: -36%;
-  left: -18%;
-  background:
-    radial-gradient(circle at 62% 58%, var(--liquid-prism-a), transparent 45%),
-    conic-gradient(
-      from 80deg at 58% 52%,
-      transparent,
-      var(--liquid-prism-c),
-      transparent 34%,
-      var(--liquid-prism-a),
-      transparent 66%
-    );
-  transform: translate(var(--liquid-shift-x), var(--liquid-shift-y))
-    rotate(-12deg);
-}
-
-.mac-liquid-caustic.is-b {
-  right: -19%;
-  bottom: -42%;
-  background:
-    radial-gradient(circle at 38% 38%, var(--liquid-prism-b), transparent 42%),
-    conic-gradient(
-      from 210deg at 45% 42%,
-      transparent,
-      var(--liquid-prism-a),
-      transparent 38%,
-      var(--liquid-prism-b),
-      transparent 72%
-    );
-  transform: translate(
-      calc(0px - var(--liquid-shift-x)),
-      calc(0px - var(--liquid-shift-y))
-    )
-    rotate(18deg);
-}
-
+/* Atmospheric caustics and grain are disabled to keep the desktop wallpaper
+ * authentic, sharp, and free of artificial bleaching, haze, or filters. */
+.mac-liquid-atmosphere,
+.mac-liquid-caustic,
 .mac-liquid-grain {
-  position: absolute;
-  inset: 0;
-  opacity: var(--liquid-grain-opacity);
-  background-image:
-    radial-gradient(circle at 20% 30%, white 0 0.45px, transparent 0.8px),
-    radial-gradient(circle at 72% 64%, white 0 0.4px, transparent 0.75px);
-  background-position:
-    0 0,
-    5px 7px;
-  background-size:
-    9px 9px,
-    11px 11px;
-  mix-blend-mode: soft-light;
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-.mac-liquid-softlight .mac-liquid-caustic {
-  filter: blur(64px) saturate(165%);
-  border-radius: 50% 38% 56% 44% / 42% 58% 40% 60%;
-}
-
-/* Ultra-thin material: menu bar. */
+/* Ultra-thin material: menu bar default. */
 .macos-desktop-root .mac-menu-bar {
   background-color: var(--liquid-surface-ultra-thin);
-  background-image:
-    radial-gradient(
-      360px 70px at var(--liquid-pointer-x) -10%,
-      var(--liquid-specular),
-      transparent 72%
-    ),
-    linear-gradient(
-      110deg,
-      var(--liquid-prism-a),
-      transparent 32%,
-      var(--liquid-prism-b)
-    );
-  border-bottom-color: var(--liquid-edge-soft);
-  box-shadow:
-    inset 0 1px 0 var(--liquid-edge),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
-    0 5px 22px rgba(5, 10, 28, 0.08);
-  backdrop-filter: blur(var(--liquid-blur-ultra-thin))
-    saturate(var(--liquid-saturation));
-  -webkit-backdrop-filter: blur(var(--liquid-blur-ultra-thin))
-    saturate(var(--liquid-saturation));
-  transition:
-    background-color var(--liquid-transition),
-    border-color var(--liquid-transition),
-    backdrop-filter var(--liquid-transition);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Thick material: menus and floating panes. */
 .macos-desktop-root .mac-menu-dropdown,
 .macos-desktop-root .mac-desktop-context-menu,
+.macos-desktop-root .mac-model-status-popover,
 .macos-desktop-root .mac-spotlight,
 .macos-desktop-root .mac-control-center,
 .macos-desktop-root .mac-notification-center,
 .macos-desktop-root .mac-liquid-glass-panel {
   background-color: var(--liquid-surface-thick);
-  background-image:
-    radial-gradient(
-      280px 210px at var(--liquid-pointer-x) var(--liquid-pointer-y),
-      var(--liquid-specular),
-      transparent 76%
-    ),
-    linear-gradient(
-      135deg,
-      var(--liquid-prism-a),
-      transparent 42%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    280px 210px at var(--liquid-pointer-x) var(--liquid-pointer-y),
+    var(--liquid-specular),
+    transparent 76%
+  );
   border-color: var(--liquid-edge);
   box-shadow:
     0 24px 68px var(--liquid-shadow),
     inset 0 1px 0 var(--liquid-edge),
     inset 1px 0 0 var(--liquid-edge-soft),
     inset 0 -1px 0 rgba(0, 0, 0, 0.11),
-    inset -1px 0 0 rgba(185, 160, 238, 0.08);
+    inset -1px 0 0 rgba(200, 200, 200, 0.08);
   backdrop-filter: blur(var(--liquid-blur-thick))
     saturate(var(--liquid-saturation));
   -webkit-backdrop-filter: blur(var(--liquid-blur-thick))
@@ -3073,30 +3533,23 @@
   background-color: var(--liquid-inner-surface);
   background-image: linear-gradient(
     135deg,
-    rgba(193, 220, 255, 0.11),
+    rgba(217, 217, 217, 0.11),
     transparent 62%
   );
   border-color: var(--liquid-edge-soft);
   box-shadow:
-    inset 0 1px 0 rgba(191, 219, 255, 0.2),
+    inset 0 1px 0 rgba(216, 216, 216, 0.2),
     0 2px 8px rgba(5, 10, 25, 0.06);
 }
 
 /* Thin material: the Dock glass is a fixed independent layer. */
 .macos-desktop-root .mac-dock::before {
   background-color: var(--liquid-surface-thin);
-  background-image:
-    radial-gradient(
-      260px 100px at var(--liquid-pointer-x) 0%,
-      var(--liquid-specular),
-      transparent 74%
-    ),
-    linear-gradient(
-      118deg,
-      var(--liquid-prism-a),
-      transparent 38%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    260px 100px at var(--liquid-pointer-x) 0%,
+    var(--liquid-specular),
+    transparent 74%
+  );
   border-color: var(--liquid-edge);
   box-shadow:
     0 16px 40px var(--liquid-shadow),
@@ -3152,18 +3605,11 @@
 .macos-desktop-root .mac-system-action-dialog,
 .macos-desktop-root .mac-finder-window {
   background-color: var(--liquid-surface-ultra-thick);
-  background-image:
-    radial-gradient(
-      440px 300px at var(--liquid-pointer-x) var(--liquid-pointer-y),
-      rgba(255, 255, 255, 0.31),
-      transparent 72%
-    ),
-    linear-gradient(
-      145deg,
-      var(--liquid-prism-a),
-      transparent 36%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    440px 300px at var(--liquid-pointer-x) var(--liquid-pointer-y),
+    rgba(255, 255, 255, 0.31),
+    transparent 72%
+  );
   border-color: var(--liquid-edge);
   box-shadow:
     0 30px 86px rgba(3, 7, 25, 0.43),
@@ -3182,18 +3628,53 @@
     box-shadow 120ms ease;
 }
 
+/* The model badge is a Radix menu, but on the desktop it is still part of
+ * the OS shell. Keep it on the same material stack as Control Center instead
+ * of falling back to the opaque workspace popover surface. */
+.macos-desktop-root .mac-model-status-popover {
+  color: var(--foreground);
+  border-color: var(--liquid-edge);
+  box-shadow:
+    0 24px 68px var(--liquid-shadow),
+    inset 0 1px 0 var(--liquid-edge),
+    inset 1px 0 0 var(--liquid-edge-soft),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.11);
+}
+
+.macos-desktop-root .mac-model-status-popover .mac-model-status-select,
+.macos-desktop-root .mac-model-status-popover .mac-model-status-action {
+  color: var(--foreground);
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-inner-surface) 70%,
+    transparent
+  );
+  border-color: var(--liquid-edge);
+  box-shadow: inset 0 1px 0 var(--liquid-edge-soft);
+}
+
+.macos-desktop-root
+  .mac-model-status-popover
+  .mac-model-status-select:focus-visible,
+.macos-desktop-root .mac-model-status-popover .mac-model-status-action:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-inner-surface) 90%,
+    transparent
+  );
+  border-color: var(--ring);
+}
+
 .macos-desktop-root .mac-window-titlebar,
 .macos-desktop-root .mac-window-compact-titlebar,
 .macos-desktop-root .mac-finder-toolbar,
 .macos-desktop-root .mac-finder-status {
   background-color: rgba(244, 247, 251, 0.66);
-  background-image:
-    radial-gradient(
-      300px 90px at var(--liquid-pointer-x) -10%,
-      rgba(255, 255, 255, 0.45),
-      transparent 72%
-    ),
-    linear-gradient(120deg, var(--liquid-prism-a), transparent 52%);
+  background-image: radial-gradient(
+    300px 90px at var(--liquid-pointer-x) -10%,
+    rgba(255, 255, 255, 0.45),
+    transparent 72%
+  );
   backdrop-filter: blur(var(--liquid-blur-thin))
     saturate(var(--liquid-saturation));
   -webkit-backdrop-filter: blur(var(--liquid-blur-thin))
@@ -3212,15 +3693,11 @@
 .macos-desktop-root.mac-liquid-softlight .mac-about-dialog,
 .macos-desktop-root.mac-liquid-softlight .mac-system-action-dialog,
 .macos-desktop-root.mac-liquid-softlight .mac-finder-window {
-  background-image:
-    radial-gradient(
-      420px 290px at var(--liquid-pointer-x) var(--liquid-pointer-y),
-      var(--liquid-specular),
-      transparent 68%
-    ),
-    radial-gradient(circle at 12% 15%, var(--liquid-prism-a), transparent 42%),
-    radial-gradient(circle at 88% 86%, var(--liquid-prism-b), transparent 46%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.14), var(--liquid-prism-c));
+  background-image: radial-gradient(
+    420px 290px at var(--liquid-pointer-x) var(--liquid-pointer-y),
+    var(--liquid-specular),
+    transparent 68%
+  );
 }
 
 /* Liquid Glass studio */
@@ -3283,7 +3760,7 @@
 .mac-glass-panel-header small {
   margin-top: 2px;
   color: rgba(32, 33, 38, 0.52);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mac-glass-panel-reset {
@@ -3294,7 +3771,7 @@
   place-items: center;
   color: #725ce1;
   background: rgba(255, 255, 255, 0.28);
-  border: 1px solid rgba(133, 160, 218, 0.16);
+  border: 1px solid rgba(200, 200, 200, 0.16);
   border-radius: 9px;
   transition:
     background 140ms ease,
@@ -3321,10 +3798,10 @@
     radial-gradient(circle at 17% 25%, #72d6ff, transparent 42%),
     radial-gradient(circle at 86% 80%, #ee7cbe, transparent 43%),
     linear-gradient(135deg, #455dc6, #7353ba 48%, #173b8f);
-  border: 1px solid rgba(151, 199, 255, 0.24);
+  border: 1px solid rgba(200, 200, 200, 0.24);
   border-radius: 16px;
   box-shadow:
-    inset 0 1px 0 rgba(194, 222, 255, 0.24),
+    inset 0 1px 0 rgba(218, 218, 218, 0.24),
     0 5px 18px rgba(24, 30, 80, 0.16);
 }
 
@@ -3356,7 +3833,7 @@
   left: 18px;
   width: 78px;
   height: 78px;
-  background: rgba(255, 217, 246, 0.2);
+  background: rgba(227, 227, 227, 0.2);
 }
 
 .mac-glass-preview-lens {
@@ -3387,10 +3864,10 @@
         transparent
       )
     );
-  border: 1px solid rgba(178, 214, 255, 0.36);
+  border: 1px solid rgba(209, 209, 209, 0.36);
   border-radius: 25px;
   box-shadow:
-    inset 0 1px 0 rgba(210, 231, 255, 0.36),
+    inset 0 1px 0 rgba(228, 228, 228, 0.36),
     inset 0 -1px 0 rgba(0, 0, 0, 0.16),
     0 14px 28px rgba(9, 16, 50, 0.22);
   backdrop-filter: blur(var(--liquid-blur-thin))
@@ -3409,7 +3886,7 @@
   bottom: 7px;
   color: rgba(255, 255, 255, 0.76);
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.4px;
 }
 
@@ -3420,7 +3897,7 @@
 .mac-glass-fieldset legend {
   margin-bottom: 6px;
   color: rgba(32, 33, 38, 0.54);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -3466,13 +3943,13 @@
 }
 
 .mac-glass-style-options strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .mac-glass-style-options small {
   margin-top: 3px;
   opacity: 0.68;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mac-glass-intensity-options {
@@ -3490,7 +3967,7 @@
   height: 27px;
   color: rgba(32, 33, 38, 0.6);
   border-radius: 7px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mac-glass-intensity-options button.is-selected {
@@ -3529,7 +4006,7 @@
   justify-content: space-between;
   margin-bottom: 4px;
   color: rgba(32, 33, 38, 0.68);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .mac-glass-parameter output {
@@ -3586,7 +4063,7 @@
   background: rgba(255, 255, 255, 0.24);
   border: 1px solid transparent;
   border-radius: 9px;
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mac-glass-tint-options button:hover,
@@ -3630,16 +4107,16 @@
   margin-top: 10px;
   padding: 0 2px;
   color: rgba(32, 33, 38, 0.48);
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .mac-glass-live-dot {
   width: 6px;
   height: 6px;
-  background: #31c86a;
-  border: 1px solid rgba(0, 96, 38, 0.18);
+  background: var(--echo-core);
+  border: 1px solid color-mix(in srgb, var(--echo-core) 30%, transparent);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(49, 200, 106, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--echo-core) 12%, transparent);
 }
 
 @media (max-width: 640px) {
@@ -3712,7 +4189,7 @@
   --liquid-motion-x: 0px;
   --liquid-motion-y: 0px;
   --liquid-motion-energy: 0;
-  --liquid-local-glint: rgba(194, 220, 255, 0.32);
+  --liquid-local-glint: rgba(217, 217, 217, 0.32);
   isolation: isolate;
   transition:
     --liquid-local-x 105ms cubic-bezier(0.16, 0.72, 0.24, 1),
@@ -3725,21 +4202,12 @@
   z-index: 0;
   content: "";
   pointer-events: none;
-  background:
-    radial-gradient(
-      170px 118px at var(--liquid-local-x) var(--liquid-local-y),
-      var(--liquid-local-glint) 0%,
-      rgba(150, 192, 255, 0.1) 16%,
-      transparent 62%
-    ),
-    linear-gradient(
-      112deg,
-      transparent 14%,
-      var(--liquid-prism-a) 40%,
-      transparent 56%,
-      var(--liquid-prism-b) 82%,
-      transparent
-    );
+  background: radial-gradient(
+    170px 118px at var(--liquid-local-x) var(--liquid-local-y),
+    var(--liquid-local-glint) 0%,
+    rgba(200, 200, 200, 0.1) 16%,
+    transparent 62%
+  );
   border-radius: inherit;
   opacity: 0.28;
   transform: translate3d(
@@ -3765,23 +4233,23 @@
   background:
     radial-gradient(
       170px 125px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(206, 231, 255, 0.62) 0%,
-      rgba(135, 187, 255, 0.28) 18%,
+      rgba(227, 227, 227, 0.62) 0%,
+      rgba(200, 200, 200, 0.28) 18%,
       transparent 52%
     ),
     conic-gradient(
       from 205deg at 50% 50%,
-      rgba(105, 195, 255, 0.3),
-      rgba(201, 225, 255, 0.46) 14%,
-      rgba(219, 137, 223, 0.22) 29%,
-      rgba(138, 173, 226, 0.13) 48%,
-      rgba(222, 201, 137, 0.18) 69%,
-      rgba(191, 219, 255, 0.4) 86%,
-      rgba(105, 195, 255, 0.3)
+      rgba(200, 200, 200, 0.3),
+      rgba(222, 222, 222, 0.46) 14%,
+      rgba(200, 200, 200, 0.22) 29%,
+      rgba(200, 200, 200, 0.13) 48%,
+      rgba(201, 201, 201, 0.18) 69%,
+      rgba(216, 216, 216, 0.4) 86%,
+      rgba(200, 200, 200, 0.3)
     );
   border-radius: inherit;
   opacity: 0.22;
-  filter: drop-shadow(0 0 4px rgba(125, 183, 255, 0.08));
+  filter: drop-shadow(0 0 4px rgba(200, 200, 200, 0.08));
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -3806,19 +4274,16 @@
 
 [data-liquid-surface][data-liquid-active="true"]::after {
   opacity: calc(0.44 + var(--liquid-motion-energy) * 0.14);
-  filter: drop-shadow(0 0 6px rgba(135, 193, 255, 0.14));
+  filter: drop-shadow(0 0 6px rgba(200, 200, 200, 0.14));
 }
 
 .mac-liquid-softlight [data-liquid-surface]:not(.mac-dock)::before {
-  background:
-    radial-gradient(
-      230px 175px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(213, 250, 255, 0.38),
-      rgba(70, 216, 255, 0.13) 22%,
-      transparent 62%
-    ),
-    radial-gradient(circle at 14% 18%, var(--liquid-prism-a), transparent 48%),
-    radial-gradient(circle at 88% 82%, var(--liquid-prism-b), transparent 52%);
+  background: radial-gradient(
+    230px 175px at var(--liquid-local-x) var(--liquid-local-y),
+    rgba(242, 242, 242, 0.38),
+    rgba(200, 200, 200, 0.13) 22%,
+    transparent 62%
+  );
   opacity: 0.34;
   filter: blur(5px) saturate(128%);
   transform: translate3d(
@@ -3834,17 +4299,17 @@
   background:
     radial-gradient(
       220px 160px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(211, 249, 255, 0.62),
-      rgba(83, 216, 255, 0.34) 18%,
+      rgba(241, 241, 241, 0.62),
+      rgba(200, 200, 200, 0.34) 18%,
       transparent 55%
     ),
     conic-gradient(
       from 190deg,
-      rgba(72, 207, 255, 0.42),
-      rgba(211, 241, 255, 0.46),
-      rgba(158, 111, 240, 0.34),
-      rgba(235, 147, 216, 0.24),
-      rgba(72, 207, 255, 0.42)
+      rgba(200, 200, 200, 0.42),
+      rgba(236, 236, 236, 0.46),
+      rgba(200, 200, 200, 0.34),
+      rgba(200, 200, 200, 0.24),
+      rgba(200, 200, 200, 0.42)
     );
   opacity: 0.34;
 }
@@ -3856,18 +4321,11 @@
 
 /* Local-coordinate transmission replaces the old viewport-wide highlight. */
 .macos-desktop-root .mac-menu-bar[data-liquid-surface] {
-  background-image:
-    radial-gradient(
-      210px 54px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(191, 220, 255, 0.22),
-      transparent 64%
-    ),
-    linear-gradient(
-      110deg,
-      var(--liquid-prism-a),
-      transparent 34%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    210px 54px at var(--liquid-local-x) var(--liquid-local-y),
+    rgba(216, 216, 216, 0.22),
+    transparent 64%
+  );
 }
 
 .macos-desktop-root .mac-menu-bar[data-liquid-surface]::before {
@@ -3893,40 +4351,27 @@
 
 .macos-desktop-root .mac-menu-dropdown[data-liquid-surface],
 .macos-desktop-root .mac-desktop-context-menu[data-liquid-surface],
+.macos-desktop-root .mac-model-status-popover[data-liquid-surface],
 .macos-desktop-root .mac-spotlight[data-liquid-surface],
 .macos-desktop-root .mac-control-center[data-liquid-surface],
 .macos-desktop-root .mac-notification-center[data-liquid-surface],
 .macos-desktop-root .mac-liquid-glass-panel[data-liquid-surface] {
-  background-image:
-    radial-gradient(
-      250px 190px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(190, 218, 255, 0.2),
-      transparent 68%
-    ),
-    linear-gradient(
-      136deg,
-      var(--liquid-prism-a),
-      transparent 44%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    250px 190px at var(--liquid-local-x) var(--liquid-local-y),
+    rgba(215, 215, 215, 0.2),
+    transparent 68%
+  );
 }
 
 .macos-desktop-root .mac-window[data-liquid-surface],
 .macos-desktop-root .mac-about-dialog[data-liquid-surface],
 .macos-desktop-root .mac-system-action-dialog[data-liquid-surface],
 .macos-desktop-root .mac-finder-window[data-liquid-surface] {
-  background-image:
-    radial-gradient(
-      460px 330px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(195, 220, 255, 0.18),
-      transparent 72%
-    ),
-    linear-gradient(
-      145deg,
-      var(--liquid-prism-a),
-      transparent 38%,
-      var(--liquid-prism-b)
-    );
+  background-image: radial-gradient(
+    460px 330px at var(--liquid-local-x) var(--liquid-local-y),
+    rgba(217, 217, 217, 0.18),
+    transparent 72%
+  );
 }
 
 /* Dock: two independent fixed-size optical layers. Only their light field
@@ -3937,24 +4382,18 @@
     radial-gradient(
       112px 72px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(238, 247, 255, 0.42) 0%,
-      rgba(145, 191, 255, 0.12) 26%,
+      rgba(200, 200, 200, 0.12) 26%,
       transparent 67%
     ),
-    linear-gradient(180deg, rgba(236, 244, 255, 0.08), transparent 36%),
-    linear-gradient(
-      118deg,
-      var(--liquid-prism-a),
-      transparent 42%,
-      var(--liquid-prism-b)
-    );
-  border-color: rgba(169, 196, 255, 0.22);
+    linear-gradient(180deg, rgba(236, 244, 255, 0.08), transparent 36%);
+  border-color: rgba(200, 200, 200, 0.22);
   box-shadow:
     0 18px 48px rgba(4, 7, 25, 0.3),
     0 3px 12px rgba(4, 7, 25, 0.14),
-    inset 0 1px 0 rgba(196, 221, 255, 0.26),
-    inset 1px 0 0 rgba(157, 196, 255, 0.12),
+    inset 0 1px 0 rgba(218, 218, 218, 0.26),
+    inset 1px 0 0 rgba(200, 200, 200, 0.12),
     inset 0 -1px 0 rgba(10, 16, 38, 0.2),
-    inset 0 12px 20px rgba(226, 239, 255, 0.045),
+    inset 0 12px 20px rgba(237, 237, 237, 0.045),
     inset 0 -12px 24px rgba(58, 68, 120, 0.08),
     0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
@@ -3963,15 +4402,15 @@
   background:
     radial-gradient(
       150px 72px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(205, 232, 255, 0.34),
-      rgba(133, 190, 255, 0.1) 28%,
+      rgba(228, 228, 228, 0.34),
+      rgba(200, 200, 200, 0.1) 28%,
       transparent 68%
     ),
-    linear-gradient(180deg, rgba(183, 207, 255, 0.08), transparent 32%);
+    linear-gradient(180deg, rgba(205, 205, 205, 0.08), transparent 32%);
   box-shadow:
-    inset 0 1px 0 rgba(207, 231, 255, 0.22),
-    inset 1px 0 0 rgba(142, 196, 255, 0.12),
-    inset -1px 0 0 rgba(205, 154, 255, 0.08),
+    inset 0 1px 0 rgba(228, 228, 228, 0.22),
+    inset 1px 0 0 rgba(200, 200, 200, 0.12),
+    inset -1px 0 0 rgba(200, 200, 200, 0.08),
     inset 0 -1px 0 rgba(12, 18, 39, 0.18);
   opacity: 0.3;
   transform: translate3d(var(--liquid-motion-x), var(--liquid-motion-y), 0);
@@ -3983,40 +4422,38 @@
 
 .macos-desktop-root .mac-dock[data-liquid-active="true"]::after {
   opacity: 0.58;
-  filter: drop-shadow(0 0 7px rgba(189, 221, 255, 0.12));
+  filter: drop-shadow(0 0 7px rgba(217, 217, 217, 0.12));
 }
 
 .mac-liquid-softlight .mac-dock::before {
   background-image:
     radial-gradient(
       170px 100px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(226, 251, 255, 0.46),
-      rgba(54, 223, 255, 0.14) 27%,
+      rgba(246, 246, 246, 0.46),
+      rgba(200, 200, 200, 0.14) 27%,
       transparent 68%
     ),
-    radial-gradient(circle at 8% 18%, var(--liquid-prism-a), transparent 46%),
-    radial-gradient(circle at 92% 82%, var(--liquid-prism-b), transparent 48%),
-    linear-gradient(180deg, rgba(229, 250, 255, 0.08), transparent 48%);
-  border-color: rgba(143, 226, 255, 0.26);
+    linear-gradient(180deg, rgba(246, 246, 246, 0.08), transparent 48%);
+  border-color: rgba(210, 210, 210, 0.26);
 }
 
 /* Desktop widgets now share the same optical body instead of using a flat
  * dark translucent rectangle. */
 .macos-desktop-root .mac-calendar-widget[data-liquid-surface],
 .macos-desktop-root .mac-agent-widget[data-liquid-surface] {
-  --liquid-local-glint: rgba(195, 222, 255, 0.26);
+  --liquid-local-glint: rgba(219, 219, 219, 0.26);
   background-color: rgba(18, 23, 39, 0.2);
   background-image:
     radial-gradient(
       160px 120px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(188, 217, 255, 0.1),
+      rgba(214, 214, 214, 0.1),
       transparent 68%
     ),
-    linear-gradient(145deg, rgba(180, 207, 255, 0.045), rgba(21, 28, 54, 0.13));
-  border-color: rgba(164, 194, 244, 0.16);
+    linear-gradient(145deg, rgba(205, 205, 205, 0.045), rgba(21, 28, 54, 0.13));
+  border-color: rgba(200, 200, 200, 0.16);
   box-shadow:
     0 16px 42px rgba(5, 8, 28, 0.24),
-    inset 0 1px 0 rgba(190, 218, 255, 0.18),
+    inset 0 1px 0 rgba(215, 215, 215, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.17);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
@@ -4033,21 +4470,21 @@
   background:
     radial-gradient(
       150px 112px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(202, 227, 255, 0.48) 0%,
-      rgba(143, 187, 255, 0.2) 20%,
+      rgba(224, 224, 224, 0.48) 0%,
+      rgba(200, 200, 200, 0.2) 20%,
       transparent 54%
     ),
     conic-gradient(
       from 205deg at 50% 50%,
-      rgba(112, 190, 255, 0.25),
-      rgba(197, 220, 255, 0.32) 17%,
-      rgba(210, 151, 255, 0.18) 33%,
-      rgba(135, 170, 225, 0.12) 57%,
-      rgba(146, 205, 255, 0.22) 82%,
-      rgba(112, 190, 255, 0.25)
+      rgba(200, 200, 200, 0.25),
+      rgba(218, 218, 218, 0.32) 17%,
+      rgba(200, 200, 200, 0.18) 33%,
+      rgba(200, 200, 200, 0.12) 57%,
+      rgba(200, 200, 200, 0.22) 82%,
+      rgba(200, 200, 200, 0.25)
     );
   opacity: 0.18;
-  filter: drop-shadow(0 0 3px rgba(140, 193, 255, 0.08));
+  filter: drop-shadow(0 0 3px rgba(200, 200, 200, 0.08));
 }
 
 .macos-desktop-root
@@ -4062,21 +4499,21 @@
 .macos-desktop-root
   .mac-agent-widget[data-liquid-surface][data-liquid-active="true"]::after {
   opacity: 0.46;
-  filter: drop-shadow(0 0 5px rgba(150, 205, 255, 0.12));
+  filter: drop-shadow(0 0 5px rgba(200, 200, 200, 0.12));
 }
 
 .mac-liquid-softlight .mac-calendar-widget[data-liquid-surface],
 .mac-liquid-softlight .mac-agent-widget[data-liquid-surface] {
-  --liquid-local-glint: rgba(139, 236, 255, 0.28);
+  --liquid-local-glint: rgba(217, 217, 217, 0.28);
   background-color: rgba(23, 54, 70, 0.2);
   background-image:
     radial-gradient(
       190px 145px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(119, 235, 255, 0.14),
+      rgba(212, 212, 212, 0.14),
       transparent 65%
     ),
-    linear-gradient(145deg, rgba(78, 225, 255, 0.1), rgba(110, 78, 178, 0.14));
-  border-color: rgba(101, 209, 236, 0.18);
+    linear-gradient(145deg, rgba(200, 200, 200, 0.1), rgba(200, 200, 200, 0.14));
+  border-color: rgba(200, 200, 200, 0.18);
 }
 
 .macos-desktop-root [data-liquid-surface]:is(button):not(.mac-dock):active {
@@ -4173,14 +4610,14 @@
 
 .macos-desktop-root.mac-liquid-crystal .mac-dock::before {
   background-color: rgba(238, 245, 255, 0.22);
-  border-color: rgba(226, 238, 255, 0.3);
+  border-color: rgba(237, 237, 237, 0.3);
   border-top-color: rgba(255, 255, 255, 0.68);
   border-radius: 22px;
   box-shadow:
     0 10px 28px rgba(4, 7, 25, 0.18),
     0 2px 8px rgba(4, 7, 25, 0.1),
     inset 0 1.5px 0 rgba(240, 247, 255, 0.52),
-    inset 1px 0 0 rgba(208, 228, 255, 0.12),
+    inset 1px 0 0 rgba(226, 226, 226, 0.12),
     inset 0 -3px 0 rgba(10, 16, 38, 0.24),
     inset 0 -14px 22px rgba(38, 50, 92, 0.08),
     0 0 0 0.5px rgba(0, 0, 0, 0.045);
@@ -4200,11 +4637,11 @@
     ),
     radial-gradient(
       180px 58px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(235, 246, 255, 0.24),
+      rgba(244, 244, 244, 0.24),
       transparent 72%
     );
   box-shadow:
-    inset 0 1px 0 rgba(235, 245, 255, 0.4),
+    inset 0 1px 0 rgba(244, 244, 244, 0.4),
     inset 0 -2px 0 rgba(12, 18, 39, 0.16);
   opacity: 0.36;
 }
@@ -4222,12 +4659,12 @@
     ),
     radial-gradient(
       180px 58px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(235, 246, 255, 0.25),
+      rgba(244, 244, 244, 0.25),
       transparent 72%
     );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 2px 0 rgba(225, 241, 255, 0.16),
+    inset 0 2px 0 rgba(239, 239, 239, 0.16),
     inset 0 -2px 0 rgba(12, 18, 39, 0.18);
   opacity: 0.58;
 }
@@ -4235,12 +4672,12 @@
 .macos-desktop-root.mac-liquid-crystal
   .mac-dock[data-liquid-active="true"]::after {
   opacity: 0.36;
-  filter: drop-shadow(0 0 5px rgba(189, 221, 255, 0.08));
+  filter: drop-shadow(0 0 5px rgba(217, 217, 217, 0.08));
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-finder-window {
   background-color: rgba(245, 248, 252, 0.76);
-  border-color: rgba(232, 241, 255, 0.34);
+  border-color: rgba(240, 240, 240, 0.34);
   box-shadow:
     0 22px 62px rgba(3, 7, 25, 0.28),
     0 4px 15px rgba(3, 7, 25, 0.13),
@@ -4253,7 +4690,7 @@
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-finder-sidebar {
-  background: rgba(214, 225, 241, 0.48);
+  background: rgba(224, 224, 224, 0.48);
   border-right-color: rgba(31, 42, 62, 0.08);
   backdrop-filter: blur(26px) saturate(145%);
   -webkit-backdrop-filter: blur(26px) saturate(145%);
@@ -4283,14 +4720,14 @@
 .macos-desktop-root.mac-liquid-crystal .mac-control-slider {
   position: relative;
   overflow: hidden;
-  background-color: rgba(226, 239, 252, 0.19);
+  background-color: rgba(237, 237, 237, 0.19);
   background-image:
     radial-gradient(
       150px 100px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.22),
       transparent 68%
     ),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(169, 205, 245, 0.06));
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(200, 200, 200, 0.06));
   border-color: rgba(241, 248, 255, 0.38);
   box-shadow:
     0 10px 26px rgba(3, 8, 28, 0.16),
@@ -4413,7 +4850,7 @@
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-control-tile:focus-visible {
-  outline: 2px solid rgba(214, 235, 255, 0.72);
+  outline: 2px solid rgba(232, 232, 232, 0.72);
   outline-offset: 2px;
 }
 
@@ -4525,7 +4962,7 @@
   background:
     radial-gradient(circle at 34% 34%, #69b8ff 0 8%, transparent 9%),
     radial-gradient(circle at 66% 34%, #ff8b71 0 8%, transparent 9%),
-    radial-gradient(circle at 34% 66%, #69d39f 0 8%, transparent 9%),
+    radial-gradient(circle at 34% 66%, #6fe3f0 0 8%, transparent 9%),
     radial-gradient(circle at 66% 66%, #9f8cff 0 8%, transparent 9%),
     linear-gradient(150deg, rgba(255, 255, 255, 0.98), #cdd6e2);
 }
@@ -4569,8 +5006,8 @@
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:activity-monitor"] {
   background:
-    linear-gradient(rgba(72, 242, 162, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(72, 242, 162, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(111, 227, 240, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 227, 240, 0.055) 1px, transparent 1px),
     linear-gradient(145deg, #263238, #070a0c);
   background-size:
     8px 8px,
@@ -4581,29 +5018,42 @@
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:activity-monitor"]
   .mac-app-icon-glyph {
-  color: #6df1a9;
-  filter: drop-shadow(0 0 3px rgba(74, 235, 151, 0.28));
+  color: #6fe3f0;
+  filter: drop-shadow(0 0 3px rgba(111, 227, 240, 0.28));
 }
 
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:trash"] {
-  color: rgba(65, 81, 103, 0.9);
+  color: rgba(235, 245, 255, 0.92);
   background:
     linear-gradient(
       90deg,
-      transparent 0 22%,
-      rgba(91, 130, 164, 0.12) 23% 27%,
+      transparent 0 20%,
+      rgba(255, 255, 255, 0.08) 22% 26%,
       transparent 28% 72%,
-      rgba(91, 130, 164, 0.12) 73% 77%,
-      transparent 78%
+      rgba(255, 255, 255, 0.08) 74% 78%,
+      transparent 80%
     ),
-    linear-gradient(155deg, rgba(255, 255, 255, 0.98), #b9c8d5);
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.04)
+    ),
+    linear-gradient(180deg, rgba(40, 52, 70, 0.6), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .macos-desktop-root.mac-liquid-crystal
   .mac-app-icon[data-app-id="system:trash"]
   .mac-app-icon-glyph {
-  filter: none;
+  color: rgba(225, 238, 255, 0.9);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-spotlight-overlay {
@@ -4615,7 +5065,7 @@
   width: min(650px, calc(100vw - 36px));
   margin-top: 15vh;
   color: rgba(20, 26, 37, 0.94);
-  background-color: rgba(226, 237, 250, 0.4);
+  background-color: rgba(236, 236, 236, 0.4);
   background-image:
     radial-gradient(
       380px 180px at var(--liquid-local-x) var(--liquid-local-y),
@@ -4625,7 +5075,7 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.18),
-      rgba(170, 201, 235, 0.08)
+      rgba(200, 200, 200, 0.08)
     );
   border-color: rgba(241, 248, 255, 0.5);
   border-radius: 22px;
@@ -4734,7 +5184,7 @@
   height: 34px;
   margin-top: 35px;
   padding: 0 12px;
-  background: rgba(225, 239, 255, 0.14);
+  background: rgba(237, 237, 237, 0.14);
   border-color: rgba(239, 248, 255, 0.3);
   border-radius: 17px;
   box-shadow:
@@ -4786,7 +5236,7 @@
     linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.13),
-      rgba(163, 187, 218, 0.05)
+      rgba(200, 200, 200, 0.05)
     );
   border-bottom-color: rgba(36, 52, 76, 0.085);
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
@@ -4816,10 +5266,10 @@
   background:
     linear-gradient(
       155deg,
-      rgba(226, 238, 252, 0.2),
-      rgba(175, 197, 224, 0.06)
+      rgba(236, 236, 236, 0.2),
+      rgba(200, 200, 200, 0.06)
     ),
-    rgba(193, 211, 233, 0.34);
+    rgba(209, 209, 209, 0.34);
   border-right-color: rgba(33, 49, 73, 0.075);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(34px) saturate(152%);
@@ -4899,11 +5349,11 @@
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-finder-status {
-  background-color: rgba(228, 238, 250, 0.34);
+  background-color: rgba(237, 237, 237, 0.34);
   background-image: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.08),
-    rgba(177, 199, 226, 0.04)
+    rgba(200, 200, 200, 0.04)
   );
   border-top-color: rgba(35, 51, 75, 0.07);
   backdrop-filter: blur(24px) saturate(145%);
@@ -4976,7 +5426,7 @@
 
   .macos-desktop-root.mac-liquid-crystal .mac-control-network,
   .macos-desktop-root.mac-liquid-crystal .mac-control-slider {
-    background-color: rgba(218, 230, 247, 0.32);
+    background-color: rgba(229, 229, 229, 0.32);
     border-color: rgba(241, 248, 255, 0.23);
     backdrop-filter: url("#echo-liquid-wide-refraction") blur(32px)
       saturate(145%);
@@ -4990,7 +5440,7 @@
    * and leave the SVG optics to the large surfaces (Dock, Spotlight, widgets)
    * where the bevel is actually visible. */
   .macos-desktop-root.mac-liquid-crystal .mac-control-tile {
-    background-color: rgba(218, 230, 247, 0.32);
+    background-color: rgba(229, 229, 229, 0.32);
     border-color: rgba(241, 248, 255, 0.23);
     backdrop-filter: blur(32px) saturate(145%);
     -webkit-backdrop-filter: blur(32px) saturate(145%);
@@ -5044,14 +5494,18 @@
   :is(.mac-calendar-widget, .mac-agent-widget)[data-liquid-surface] {
   position: relative;
   overflow: hidden;
-  background-color: rgba(214, 229, 248, 0.065);
+  background-color: rgba(227, 227, 227, 0.065);
   background-image:
     radial-gradient(
       170px 130px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(236, 247, 255, 0.14),
       transparent 68%
     ),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(99, 126, 183, 0.05));
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.12),
+      rgba(200, 200, 200, 0.05)
+    );
   border-color: rgba(238, 247, 255, 0.27);
   border-top-color: rgba(255, 255, 255, 0.64);
   box-shadow:
@@ -5071,34 +5525,34 @@
     ),
     radial-gradient(
       150px 112px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(213, 237, 255, 0.5) 0%,
-      rgba(143, 187, 255, 0.18) 20%,
+      rgba(233, 233, 233, 0.5) 0%,
+      rgba(200, 200, 200, 0.18) 20%,
       transparent 54%
     ),
     conic-gradient(
       from 205deg at 50% 50%,
-      rgba(112, 190, 255, 0.28),
-      rgba(232, 246, 255, 0.42) 17%,
-      rgba(210, 151, 255, 0.18) 33%,
-      rgba(135, 170, 225, 0.12) 57%,
-      rgba(146, 205, 255, 0.24) 82%,
-      rgba(112, 190, 255, 0.28)
+      rgba(200, 200, 200, 0.28),
+      rgba(244, 244, 244, 0.42) 17%,
+      rgba(200, 200, 200, 0.18) 33%,
+      rgba(200, 200, 200, 0.12) 57%,
+      rgba(200, 200, 200, 0.24) 82%,
+      rgba(200, 200, 200, 0.28)
     );
   opacity: 0.29;
-  filter: drop-shadow(0 0 5px rgba(180, 224, 255, 0.14));
+  filter: drop-shadow(0 0 5px rgba(217, 217, 217, 0.14));
 }
 
 /* The dock is the signature Echo Orbit surface: let the wallpaper read through
  * its body, then reserve contrast for the optical rim and the icon shadows. */
 .macos-desktop-root.mac-liquid-crystal .mac-dock::before {
   background-color: rgba(238, 245, 255, 0.15);
-  border-color: rgba(226, 238, 255, 0.24);
+  border-color: rgba(237, 237, 237, 0.24);
   border-top-color: rgba(255, 255, 255, 0.62);
   box-shadow:
     0 12px 34px rgba(4, 7, 25, 0.2),
     0 2px 9px rgba(4, 7, 25, 0.1),
     inset 0 1.5px 0 rgba(240, 247, 255, 0.48),
-    inset 1px 0 0 rgba(208, 228, 255, 0.1),
+    inset 1px 0 0 rgba(226, 226, 226, 0.1),
     inset 0 -2px 0 rgba(10, 16, 38, 0.17),
     inset 0 -14px 22px rgba(38, 50, 92, 0.055),
     0 0 0 0.5px rgba(0, 0, 0, 0.035);
@@ -5115,12 +5569,12 @@
     ),
     radial-gradient(
       180px 58px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(235, 246, 255, 0.2),
+      rgba(244, 244, 244, 0.2),
       transparent 72%
     );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    inset 0 2px 0 rgba(225, 241, 255, 0.12),
+    inset 0 2px 0 rgba(239, 239, 239, 0.12),
     inset 0 -2px 0 rgba(12, 18, 39, 0.13);
   mix-blend-mode: screen;
   opacity: 0.47;
@@ -5160,8 +5614,8 @@
   content: "";
   background: radial-gradient(
     ellipse at 50% 48%,
-    rgba(225, 243, 255, 0.26),
-    rgba(109, 167, 242, 0.1) 42%,
+    rgba(240, 240, 240, 0.26),
+    rgba(200, 200, 200, 0.1) 42%,
     transparent 74%
   );
   border-radius: 17px;
@@ -5195,7 +5649,7 @@
   inset: -5px;
   content: "";
   pointer-events: none;
-  background: rgba(220, 234, 250, 0.035);
+  background: rgba(232, 232, 232, 0.035);
   border-radius: 27px;
   backdrop-filter: blur(13px) saturate(132%);
   -webkit-backdrop-filter: blur(13px) saturate(132%);
@@ -5272,13 +5726,13 @@
     radial-gradient(
       210px 150px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.32),
-      rgba(185, 216, 252, 0.1) 34%,
+      rgba(212, 212, 212, 0.1) 34%,
       transparent 72%
     ),
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.12),
-      rgba(158, 187, 222, 0.07)
+      rgba(200, 200, 200, 0.07)
     );
   border-color: rgba(242, 248, 255, 0.42);
   border-radius: 13px;
@@ -5299,10 +5753,10 @@
     radial-gradient(
       130px 96px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.36),
-      rgba(153, 199, 255, 0.11) 28%,
+      rgba(200, 200, 200, 0.11) 28%,
       transparent 68%
     ),
-    linear-gradient(122deg, rgba(133, 190, 255, 0.08), transparent 58%);
+    linear-gradient(122deg, rgba(200, 200, 200, 0.08), transparent 58%);
   opacity: 0.34;
   mix-blend-mode: screen;
 }
@@ -5360,7 +5814,7 @@
   inset: -5px;
   content: "";
   pointer-events: none;
-  background: rgba(220, 234, 250, 0.035);
+  background: rgba(232, 232, 232, 0.035);
   border-radius: 27px;
   backdrop-filter: blur(13px) saturate(132%);
   -webkit-backdrop-filter: blur(13px) saturate(132%);
@@ -5375,7 +5829,7 @@
   background-image: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.11),
-    rgba(163, 194, 231, 0.05)
+    rgba(200, 200, 200, 0.05)
   );
   border: 1px solid rgba(241, 248, 255, 0.3);
   border-radius: 18px;
@@ -5415,7 +5869,7 @@
       rgba(255, 255, 255, 0.25),
       transparent 72%
     ),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(163, 194, 231, 0.06));
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(200, 200, 200, 0.06));
   border-color: rgba(241, 248, 255, 0.34);
   box-shadow:
     0 12px 30px rgba(3, 8, 27, 0.15),
@@ -5475,7 +5929,7 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.13),
-      rgba(164, 191, 225, 0.07)
+      rgba(200, 200, 200, 0.07)
     );
   border-color: rgba(242, 248, 255, 0.42);
   border-radius: 24px;
@@ -5501,11 +5955,11 @@
 .macos-desktop-root.mac-liquid-crystal .mac-about-update {
   position: relative;
   overflow: hidden;
-  background-color: rgba(227, 237, 249, 0.22);
+  background-color: rgba(236, 236, 236, 0.22);
   background-image: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.13),
-    rgba(161, 190, 227, 0.04)
+    rgba(200, 200, 200, 0.04)
   );
   border: 1px solid rgba(241, 248, 255, 0.24);
   border-radius: 15px;
@@ -5559,7 +6013,7 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.12),
-      rgba(159, 189, 225, 0.06)
+      rgba(200, 200, 200, 0.06)
     );
   border-color: rgba(242, 248, 255, 0.42);
   border-radius: 22px;
@@ -5672,7 +6126,7 @@
   background-image:
     radial-gradient(
       210px 54px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(191, 220, 255, 0.18),
+      rgba(216, 216, 216, 0.18),
       transparent 64%
     ),
     linear-gradient(
@@ -5697,7 +6151,7 @@
     linear-gradient(
       145deg,
       rgba(255, 255, 255, 0.14),
-      rgba(145, 176, 220, 0.06)
+      rgba(200, 200, 200, 0.06)
     );
   border-color: rgba(247, 251, 255, 0.4);
   box-shadow:
@@ -5723,21 +6177,21 @@
     ),
     radial-gradient(
       160px 112px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(214, 239, 255, 0.34),
+      rgba(235, 235, 235, 0.34),
       transparent 62%
     ),
     conic-gradient(
       from 205deg at 50% 50%,
-      rgba(112, 190, 255, 0.2),
-      rgba(232, 246, 255, 0.32) 17%,
-      rgba(210, 151, 255, 0.14) 33%,
-      rgba(135, 170, 225, 0.08) 57%,
-      rgba(146, 205, 255, 0.16) 82%,
-      rgba(112, 190, 255, 0.2)
+      rgba(200, 200, 200, 0.2),
+      rgba(244, 244, 244, 0.32) 17%,
+      rgba(200, 200, 200, 0.14) 33%,
+      rgba(200, 200, 200, 0.08) 57%,
+      rgba(200, 200, 200, 0.16) 82%,
+      rgba(200, 200, 200, 0.2)
     );
   opacity: 0.42;
   mix-blend-mode: screen;
-  filter: drop-shadow(0 0 6px rgba(190, 230, 255, 0.16));
+  filter: drop-shadow(0 0 6px rgba(223, 223, 223, 0.16));
 }
 
 /* The hover state needs its own shadow plane: the icon rises first, then its
@@ -5881,14 +6335,14 @@
     ),
     radial-gradient(
       170px 120px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(214, 239, 255, 0.24),
+      rgba(235, 235, 235, 0.24),
       transparent 66%
     ),
     linear-gradient(
       112deg,
-      rgba(108, 207, 255, 0.07),
+      rgba(200, 200, 200, 0.07),
       transparent 35%,
-      rgba(255, 130, 220, 0.05) 78%,
+      rgba(200, 200, 200, 0.05) 78%,
       transparent
     );
   border-radius: inherit;
@@ -5921,14 +6375,14 @@
     ),
     radial-gradient(
       180px 58px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(235, 246, 255, 0.12),
+      rgba(244, 244, 244, 0.12),
       transparent 72%
     ),
     linear-gradient(
       115deg,
-      rgba(108, 207, 255, 0.06),
+      rgba(200, 200, 200, 0.06),
       transparent 38%,
-      rgba(255, 130, 220, 0.045) 78%,
+      rgba(200, 200, 200, 0.045) 78%,
       transparent
     );
   box-shadow: none;
@@ -5992,27 +6446,27 @@
     ),
     linear-gradient(
       118deg,
-      rgba(108, 207, 255, 0.08),
+      rgba(200, 200, 200, 0.08),
       transparent 42%,
-      rgba(255, 130, 220, 0.06)
+      rgba(200, 200, 200, 0.06)
     ),
     radial-gradient(
       150px 22px at 18% 108%,
-      rgba(85, 202, 255, 0.14),
+      rgba(200, 200, 200, 0.14),
       transparent 72%
     ),
     radial-gradient(
       170px 24px at 84% -8%,
-      rgba(242, 145, 255, 0.1),
+      rgba(200, 200, 200, 0.1),
       transparent 72%
     );
-  border-color: rgba(226, 238, 255, 0.16);
+  border-color: rgba(237, 237, 237, 0.16);
   border-top-color: rgba(255, 255, 255, 0.38);
   box-shadow:
     0 20px 50px rgba(4, 7, 25, 0.2),
     0 5px 15px rgba(4, 7, 25, 0.1),
     inset 0 1px 0 rgba(240, 247, 255, 0.34),
-    inset 1px 0 0 rgba(208, 228, 255, 0.08),
+    inset 1px 0 0 rgba(226, 226, 226, 0.08),
     inset 0 -2px 0 rgba(10, 16, 38, 0.1),
     inset 0 -14px 22px rgba(38, 50, 92, 0.035),
     0 0 0 0.5px rgba(0, 0, 0, 0.018);
@@ -6277,10 +6731,10 @@
     linear-gradient(
       112deg,
       transparent 19%,
-      rgba(152, 221, 255, 0.1) 32%,
+      rgba(209, 209, 209, 0.1) 32%,
       rgba(255, 255, 255, 0.085) 39%,
       transparent 51%,
-      rgba(246, 159, 235, 0.06) 77%,
+      rgba(200, 200, 200, 0.06) 77%,
       transparent 88%
     ),
     radial-gradient(
@@ -6300,7 +6754,7 @@
 }
 
 .macos-desktop-root.mac-liquid-crystal .mac-dock::before {
-  border-color: rgba(226, 238, 255, 0.14);
+  border-color: rgba(237, 237, 237, 0.14);
   border-top-color: rgba(255, 255, 255, 0.38);
   backdrop-filter: blur(26px) saturate(168%) contrast(1.02);
   -webkit-backdrop-filter: blur(26px) saturate(168%) contrast(1.02);
@@ -6317,7 +6771,7 @@
     ),
     radial-gradient(
       180px 58px at var(--liquid-local-x) var(--liquid-local-y),
-      rgba(235, 246, 255, 0.08),
+      rgba(244, 244, 244, 0.08),
       transparent 72%
     );
   box-shadow: none;
@@ -6422,10 +6876,10 @@
     linear-gradient(
       112deg,
       transparent 18%,
-      rgba(78, 201, 255, 0.1) 30%,
+      rgba(200, 200, 200, 0.1) 30%,
       rgba(255, 255, 255, 0.09) 38%,
       transparent 50%,
-      rgba(255, 122, 221, 0.07) 75%,
+      rgba(200, 200, 200, 0.07) 75%,
       transparent 90%
     ),
     radial-gradient(
@@ -6546,7 +7000,7 @@
   :is(.mac-calendar-widget, .mac-agent-widget)[data-liquid-surface] {
   /* One directional border owns the silhouette: brighter toward the light,
    * cool and quiet on the sides, and slightly darker at the lower edge. */
-  border-color: rgba(255, 255, 255, 0.34) rgba(228, 240, 255, 0.2)
+  border-color: rgba(255, 255, 255, 0.34) rgba(239, 239, 239, 0.2)
     rgba(8, 22, 53, 0.08);
   box-shadow:
     0 3px 14px rgba(0, 20, 50, 0.15),
@@ -6613,7 +7067,7 @@
  * continuous glass tray instead of reading as nested cards. */
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit
   :is(.mac-calendar-widget, .mac-agent-widget)[data-liquid-surface] {
-  background-color: rgba(202, 224, 255, 0.11);
+  background-color: rgba(222, 222, 222, 0.11);
 }
 
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit .mac-surface-lens {
@@ -6679,7 +7133,7 @@
 
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit .mac-dock::before {
   background-color: rgba(238, 245, 255, 0.18);
-  border-color: rgba(226, 238, 255, 0.12);
+  border-color: rgba(237, 237, 237, 0.12);
   border-top-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -6780,17 +7234,16 @@
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit
   > .desktop-wallpaper
   > .desktop-wallpaper-art {
-  opacity: 0.18;
-  mix-blend-mode: soft-light;
-  filter: blur(0.35px) saturate(118%) contrast(1.035);
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
+  transform: none !important;
 }
 
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit
   > .desktop-wallpaper
   > .desktop-wallpaper-fold {
-  opacity: 0.14;
-  mix-blend-mode: soft-light;
-  filter: blur(11px) saturate(124%);
+  display: none !important;
 }
 
 /* WebGL optical compositor -------------------------------------------------
@@ -6833,7 +7286,7 @@
  * glint can travel around the lens without bringing back nested roundrects. */
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit[data-liquid-webgl="ready"]
   :is(.mac-calendar-widget, .mac-agent-widget)[data-liquid-surface] {
-  background-color: rgba(220, 233, 252, 0.075);
+  background-color: rgba(232, 232, 232, 0.075);
   border-color: transparent;
   backdrop-filter: blur(15px) saturate(152%) contrast(1.02);
   -webkit-backdrop-filter: blur(15px) saturate(152%) contrast(1.02);
@@ -6846,15 +7299,15 @@
     radial-gradient(
       120px 96px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.2),
-      rgba(160, 218, 255, 0.065) 28%,
+      rgba(208, 208, 208, 0.065) 28%,
       transparent 66%
     ),
     linear-gradient(
       116deg,
       transparent 18%,
-      rgba(121, 213, 255, 0.065) 34%,
+      rgba(200, 200, 200, 0.065) 34%,
       transparent 54%,
-      rgba(255, 146, 228, 0.045) 78%,
+      rgba(200, 200, 200, 0.045) 78%,
       transparent 90%
     );
   mix-blend-mode: screen;
@@ -6882,17 +7335,17 @@
     radial-gradient(
       94px 86px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.86),
-      rgba(184, 228, 255, 0.36) 22%,
+      rgba(221, 221, 221, 0.36) 22%,
       transparent 58%
     ),
     conic-gradient(
       from 214deg,
-      rgba(129, 207, 255, 0.2),
+      rgba(200, 200, 200, 0.2),
       rgba(255, 255, 255, 0.58) 15%,
-      rgba(255, 184, 239, 0.16) 30%,
+      rgba(203, 203, 203, 0.16) 30%,
       rgba(12, 28, 62, 0.08) 60%,
-      rgba(205, 237, 255, 0.34) 84%,
-      rgba(129, 207, 255, 0.2)
+      rgba(231, 231, 231, 0.34) 84%,
+      rgba(200, 200, 200, 0.2)
     );
   border-radius: inherit;
   corner-shape: squircle;
@@ -6943,7 +7396,7 @@
     radial-gradient(
       110px 72px at var(--liquid-local-x) var(--liquid-local-y),
       rgba(255, 255, 255, 0.7),
-      rgba(184, 228, 255, 0.22) 24%,
+      rgba(221, 221, 221, 0.22) 24%,
       transparent 62%
     ),
     linear-gradient(
@@ -6951,7 +7404,7 @@
       rgba(255, 255, 255, 0.34),
       rgba(255, 255, 255, 0.07) 34%,
       rgba(20, 37, 68, 0.1) 70%,
-      rgba(220, 240, 255, 0.2)
+      rgba(237, 237, 237, 0.2)
     );
   border-radius: inherit;
   corner-shape: squircle;
@@ -7471,6 +7924,16 @@
     drop-shadow(0 0 3px var(--echo-app-glow));
 }
 
+/* 浅色底座（钛灰、冰川）上，单色图形改用强调色。信号玻璃底色在所有壁纸
+   和主题下都会生效，所以这条规则不能只写在 orbit 作用域里；!important
+   用来压过各主题给图形统一设置的白色。 */
+.macos-desktop-root
+  .mac-app-icon[data-echo-family="true"][data-echo-surface="light"][data-icon-source]
+  :is(.mac-app-icon-art, .mac-app-icon-glyph) {
+  color: var(--echo-app-accent) !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12)) !important;
+}
+
 .macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit
   .mac-app-icon[data-echo-family="true"][data-app-id="echo:/photos"]
   .mac-app-icon-art {
@@ -7716,10 +8179,7 @@
 
 .macos-desktop-root
   :is(.mac-desktop-icon, .mac-dock, .mac-launchpad-app, .mac-spotlight-result)
-  .mac-app-icon:is(
-    [data-app-id="system:launchpad"],
-    [data-app-id="system:trash"]
-  )
+  .mac-app-icon[data-app-id="system:launchpad"]
   .mac-app-icon-glyph {
   color: #667085 !important;
 }
@@ -7802,7 +8262,7 @@
       rgba(255, 255, 255, 0.34),
       transparent 72%
     ),
-    linear-gradient(145deg, rgba(217, 246, 250, 0.2), rgba(226, 218, 249, 0.18));
+    linear-gradient(145deg, rgba(240, 240, 240, 0.2), rgba(222, 222, 222, 0.18));
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -7849,7 +8309,7 @@
 
   .macos-desktop-root .mac-dock::before {
     display: block !important;
-    background-color: rgba(226, 235, 247, 0.34) !important;
+    background-color: rgba(234, 234, 234, 0.34) !important;
     background-image: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.22),
@@ -7924,10 +8384,7 @@
 
   .macos-desktop-root
     .mac-dock
-    .mac-app-icon:is(
-      [data-app-id="system:launchpad"],
-      [data-app-id="system:trash"]
-    )
+    .mac-app-icon[data-app-id="system:launchpad"]
     .mac-app-icon-glyph {
     color: #667085 !important;
   }
@@ -7970,4 +8427,966 @@
     filter: none !important;
     transform: none !important;
   }
+}
+
+/* ==========================================================================
+ * TOP STATUS BAR - DYNAMIC THEME & WALLPAPER HARMONY
+ * ========================================================================== */
+
+/* 1. 象牙白 / theme-white: Apple macOS Light Mode Frosted Glass */
+.mac-menu-bar.theme-white,
+.theme-white .mac-menu-bar,
+.macos-desktop-root.theme-white .mac-menu-bar {
+  background: rgba(255, 255, 255, 0.72) !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.65) 100%
+  ) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.mac-menu-bar.theme-white .mac-menu-button,
+.mac-menu-bar.theme-white .mac-status-icon,
+.mac-menu-bar.theme-white .mac-clock,
+.mac-menu-bar.theme-white .mac-menu-logo,
+.theme-white .mac-menu-bar .mac-menu-button,
+.theme-white .mac-menu-bar .mac-status-icon,
+.theme-white .mac-menu-bar .mac-clock,
+.theme-white .mac-menu-bar .mac-menu-logo {
+  color: rgba(15, 23, 42, 0.88) !important;
+}
+
+.mac-menu-bar.theme-white .mac-menu-button:hover,
+.mac-menu-bar.theme-white .mac-menu-button.is-active,
+.mac-menu-bar.theme-white .mac-status-icon:hover,
+.mac-menu-bar.theme-white .mac-status-icon.is-active,
+.mac-menu-bar.theme-white .mac-clock:hover,
+.mac-menu-bar.theme-white .mac-clock.is-active,
+.mac-menu-bar.theme-white .mac-menu-logo:hover,
+.mac-menu-bar.theme-white .mac-menu-logo.is-active,
+.theme-white .mac-menu-bar .mac-menu-button:hover,
+.theme-white .mac-menu-bar .mac-menu-button.is-active,
+.theme-white .mac-menu-bar .mac-status-icon:hover,
+.theme-white .mac-menu-bar .mac-status-icon.is-active,
+.theme-white .mac-menu-bar .mac-clock:hover,
+.theme-white .mac-menu-bar .mac-clock.is-active,
+.theme-white .mac-menu-bar .mac-menu-logo:hover,
+.theme-white .mac-menu-bar .mac-menu-logo.is-active {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+/* 象牙白状态栏中的 AI Network 胶囊与工作区下拉按钮 */
+.theme-white .mac-menu-bar button[aria-label*="AI Network"],
+.mac-menu-bar.theme-white button[aria-label*="AI Network"] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.theme-white .mac-menu-bar button[aria-label*="AI Network"]:hover,
+.mac-menu-bar.theme-white button[aria-label*="AI Network"]:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+}
+
+.theme-white .mac-menu-bar button[aria-label="空间与模式控制"],
+.mac-menu-bar.theme-white button[aria-label="空间与模式控制"] {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.theme-white .mac-menu-bar button[aria-label="空间与模式控制"]:hover,
+.mac-menu-bar.theme-white button[aria-label="空间与模式控制"]:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+}
+
+/* 2. 神经玻璃 / theme-glass: clear graphite glass over the wallpaper */
+.mac-menu-bar.theme-glass,
+.theme-glass .mac-menu-bar,
+.macos-desktop-root.theme-glass .mac-menu-bar {
+  background: rgba(16, 18, 22, 0.36) !important;
+  background-color: rgba(16, 18, 22, 0.36) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  ) !important;
+  backdrop-filter: blur(28px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) !important;
+  border-bottom: 1px solid var(--echo-line-strong) !important;
+  box-shadow: none !important;
+  color: var(--echo-ink) !important;
+}
+
+.mac-menu-bar.theme-glass .mac-menu-button,
+.mac-menu-bar.theme-glass .mac-status-icon,
+.mac-menu-bar.theme-glass .mac-clock,
+.mac-menu-bar.theme-glass .mac-menu-logo,
+.theme-glass .mac-menu-bar .mac-menu-button,
+.theme-glass .mac-menu-bar .mac-status-icon,
+.theme-glass .mac-menu-bar .mac-clock,
+.theme-glass .mac-menu-bar .mac-menu-logo {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.mac-menu-bar.theme-glass .mac-menu-button:hover,
+.mac-menu-bar.theme-glass .mac-menu-button.is-active,
+.mac-menu-bar.theme-glass .mac-status-icon:hover,
+.mac-menu-bar.theme-glass .mac-status-icon.is-active,
+.mac-menu-bar.theme-glass .mac-clock:hover,
+.mac-menu-bar.theme-glass .mac-clock.is-active,
+.mac-menu-bar.theme-glass .mac-menu-logo:hover,
+.mac-menu-bar.theme-glass .mac-menu-logo.is-active,
+.theme-glass .mac-menu-bar .mac-menu-button:hover,
+.theme-glass .mac-menu-bar .mac-menu-button.is-active,
+.theme-glass .mac-menu-bar .mac-status-icon:hover,
+.theme-glass .mac-menu-bar .mac-status-icon.is-active,
+.theme-glass .mac-menu-bar .mac-clock:hover,
+.theme-glass .mac-menu-bar .mac-clock.is-active,
+.theme-glass .mac-menu-bar .mac-menu-logo:hover,
+.theme-glass .mac-menu-bar .mac-menu-logo.is-active {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+/* 3. 暗夜黑 / theme-dark: Obsidian Night Glass */
+.mac-menu-bar.theme-dark,
+.theme-dark .mac-menu-bar,
+.macos-desktop-root.theme-dark .mac-menu-bar {
+  background: rgba(9, 10, 12, 0.72) !important;
+  background-color: rgba(9, 10, 12, 0.72) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 100%
+  ) !important;
+  backdrop-filter: blur(32px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.mac-menu-bar.theme-dark .mac-menu-button,
+.mac-menu-bar.theme-dark .mac-status-icon,
+.mac-menu-bar.theme-dark .mac-clock,
+.mac-menu-bar.theme-dark .mac-menu-logo,
+.theme-dark .mac-menu-bar .mac-menu-button,
+.theme-dark .mac-menu-bar .mac-status-icon,
+.theme-dark .mac-menu-bar .mac-clock,
+.theme-dark .mac-menu-bar .mac-menu-logo {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.mac-menu-bar.theme-dark .mac-menu-button:hover,
+.mac-menu-bar.theme-dark .mac-menu-button.is-active,
+.mac-menu-bar.theme-dark .mac-status-icon:hover,
+.mac-menu-bar.theme-dark .mac-status-icon.is-active,
+.mac-menu-bar.theme-dark .mac-clock:hover,
+.mac-menu-bar.theme-dark .mac-clock.is-active,
+.mac-menu-bar.theme-dark .mac-menu-logo:hover,
+.mac-menu-bar.theme-dark .mac-menu-logo.is-active,
+.theme-dark .mac-menu-bar .mac-menu-button:hover,
+.theme-dark .mac-menu-bar .mac-menu-button.is-active,
+.theme-dark .mac-menu-bar .mac-status-icon:hover,
+.theme-dark .mac-menu-bar .mac-status-icon.is-active,
+.theme-dark .mac-menu-bar .mac-clock:hover,
+.theme-dark .mac-menu-bar .mac-clock.is-active,
+.theme-dark .mac-menu-bar .mac-menu-logo:hover,
+.theme-dark .mac-menu-bar .mac-menu-logo.is-active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+ * WALLPAPER: AURORA (Northern Lights Fluid Gradient)
+ * ========================================================================== */
+.mac-wallpaper-aurora .desktop-wallpaper-art {
+  opacity: 0 !important;
+  display: none !important;
+}
+
+.mac-wallpaper-aurora .desktop-wallpaper {
+  overflow: hidden;
+  background-color: #0c1236;
+  background-image:
+    radial-gradient(
+      75% 65% at 56% 42%,
+      rgba(110, 113, 255, 0.3) 0%,
+      rgba(255, 142, 212, 0.22) 48%,
+      transparent 75%
+    ),
+    radial-gradient(
+      90% 120% at 93% 10%,
+      rgba(213, 98, 255, 0.9),
+      transparent 55%
+    ),
+    radial-gradient(
+      95% 120% at 12% 18%,
+      rgba(74, 107, 255, 0.94),
+      transparent 58%
+    ),
+    radial-gradient(
+      85% 80% at 84% 92%,
+      rgba(255, 107, 151, 0.82),
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 80% at 18% 92%,
+      rgba(43, 210, 220, 0.72),
+      transparent 62%
+    ),
+    linear-gradient(135deg, #172260 0%, #322476 44%, #321a59 100%);
+  background-size: 110% 110%;
+}
+
+/* ==========================================================================
+ * SURFACE LENS GHOSTING REMOVAL
+ * 彻底消除小组件错位重影、双重图片采样与反光撕裂
+ * ========================================================================== */
+.mac-surface-lens,
+.mac-surface-lens-raster {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ==========================================================================
+ * VISUAL QUALITY & PERFORMANCE OPTIMIZATIONS (A11y, Contrast, Drag Framerate)
+ * ========================================================================== */
+
+/* 1. 窗口拖拽时 iframe 捕获防护与 GPU 渲染加速 */
+.mac-window[data-window-dragging] iframe,
+.macos-desktop-root[data-window-dragging] iframe {
+  pointer-events: none !important;
+}
+
+.mac-window[data-window-dragging] {
+  will-change: transform, left, top;
+}
+
+/* 2. 液态玻璃 (theme-glass) 高光壁纸下的文字可读性与 WCAG 边缘对比度增强 */
+.theme-glass .mac-window-title,
+.theme-glass .mac-quick-tile-menu,
+.theme-glass .mac-dock-label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.theme-glass [data-liquid-surface] .text-slate-400,
+.theme-glass [data-liquid-surface] .text-muted-foreground {
+  color: rgba(226, 232, 240, 0.9) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 3. 减弱动态效果时的无障碍降级与帧率保护 */
+@media (prefers-reduced-motion: reduce) {
+  .mac-window {
+    transition: none !important;
+    animation: none !important;
+  }
+  .mac-window[data-window-dragging] {
+    box-shadow: 0 18px 48px rgba(3, 6, 25, 0.35) !important;
+  }
+}
+
+/* 4. 极简意图态 (is-mode-pure) 下的 Dock 沉浸聚焦：减淡并微移，悬停时即时点亮 */
+.macos-desktop-root.is-mode-pure .mac-dock {
+  opacity: 0.55;
+  transform: translateX(-50%) translateY(4px);
+  transition:
+    opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.macos-desktop-root.is-mode-pure .mac-dock:hover {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 5. 流光壁纸深空呼吸微动效 (Nebula Ambient Breathing) */
+@keyframes mac-wallpaper-aurora-breathe {
+  0%,
+  100% {
+    background-size: 110% 110%;
+    background-position: 50% 50%;
+  }
+  50% {
+    background-size: 114% 114%;
+    background-position: 52% 48%;
+  }
+}
+
+.mac-wallpaper-aurora .desktop-wallpaper,
+.macos-desktop-root .desktop-wallpaper {
+  animation: mac-wallpaper-aurora-breathe 90s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mac-wallpaper-aurora .desktop-wallpaper,
+  .macos-desktop-root .desktop-wallpaper {
+    animation: none !important;
+  }
+}
+
+/* Keep the menu's colour close to the wallpaper instead of amplifying it twice.
+   Preserve the user's blur setting while capping the extra saturation. */
+.macos-desktop-root.mac-liquid-crystal.mac-wallpaper-orbit .mac-menu-bar,
+.macos-desktop-root.mac-wallpaper-orbit[data-liquid-custom="true"]:not(
+    [data-liquid-native="ready"]
+  )
+  .mac-menu-bar {
+  backdrop-filter: blur(var(--liquid-blur-ultra-thin, 26px))
+    saturate(min(var(--liquid-saturation, 112%), 112%)) !important;
+  -webkit-backdrop-filter: blur(var(--liquid-blur-ultra-thin, 26px))
+    saturate(min(var(--liquid-saturation, 112%), 112%)) !important;
+}
+
+/* 6. Dock 玻璃底托光泽与反射增强 (Dock Glass Tray Refraction) */
+.mac-dock {
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+/* 石墨 (graphite) and 神经玻璃 (neural glass) are one family at two
+ * densities. Graphite: the brand glass token (a 72% graphite film) on the
+ * menu bar and Dock, dense windows and a dimmed wallpaper. Neural glass: the
+ * wallpaper at full strength reads through clear graphite glass (the tuned
+ * film), held apart by blur and hairlines. No navy, no colour cast. */
+.macos-desktop-root.theme-dark {
+  --liquid-fill-floor-ultra-thin: 72%;
+  --liquid-fill-floor-thin: 72%;
+  --liquid-fill-floor-ultra-thick: 92%;
+  --liquid-fill-floor-inner: 62%;
+}
+
+.macos-desktop-root.theme-dark > .desktop-wallpaper {
+  filter: brightness(0.62);
+}
+
+.macos-desktop-root.theme-glass {
+  --liquid-fill-floor-ultra-thin: 24%;
+  --liquid-fill-floor-thin: 30%;
+}
+
+.macos-desktop-root.theme-dark [data-task-card="true"] {
+  background: color-mix(in srgb, var(--echo-surface) 94%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+  backdrop-filter: blur(24px);
+}
+
+.macos-desktop-root.theme-glass [data-task-card="true"] {
+  background: color-mix(in srgb, var(--echo-surface) 46%, transparent);
+  border: 1px solid var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) [data-task-card="true"] h4 {
+  color: var(--echo-ink);
+  font-weight: 500;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  [data-task-card="true"]
+  button.bg-blue-600 {
+  background: var(--echo-action);
+  color: var(--echo-on-action);
+  box-shadow: none;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  [data-task-card="true"]
+  button.bg-blue-600:hover {
+  background: color-mix(in srgb, var(--echo-action) 86%, transparent);
+}
+
+.macos-desktop-root.theme-dark .mac-menu-bar {
+  border-bottom: 1px solid var(--echo-line) !important;
+  box-shadow: none !important;
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root.theme-dark .mac-dock {
+  border-color: var(--echo-line-strong) !important;
+}
+
+.macos-desktop-root.theme-dark .mac-dock .mac-app-icon {
+  filter: saturate(0.7);
+  transition: filter 180ms ease;
+}
+
+.macos-desktop-root.theme-dark .mac-dock .dock-item:hover .mac-app-icon {
+  filter: saturate(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .macos-desktop-root.theme-dark .mac-dock .mac-app-icon {
+    transition: none;
+  }
+}
+
+.macos-desktop-root.theme-dark [data-intent-composer] {
+  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);
+  border-color: var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+}
+
+.macos-desktop-root.theme-glass [data-intent-composer] {
+  background: color-mix(in srgb, var(--echo-surface) 42%, transparent);
+  border-color: var(--echo-line-strong);
+  box-shadow: var(--echo-shadow-raised);
+  backdrop-filter: blur(var(--echo-blur-glass)) saturate(140%);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  [data-intent-composer]:focus-within {
+  border-color: color-mix(in srgb, var(--echo-core) 55%, transparent);
+  box-shadow:
+    0 0 0 3px var(--echo-core-soft),
+    var(--echo-shadow-raised);
+}
+
+/* ECHO theme-bound floating material ----------------------------------------
+ * The desktop theme decides the glass film, not the OS colour scheme: snow
+ * gets a white film with graphite text, graphite and neural glass a graphite
+ * film with snow text. Menus, Spotlight, Control Center and Notification
+ * Center carry text, and the menu-bar menus cannot blur the wallpaper (the
+ * menu bar is their backdrop root), so their film keeps a legibility floor
+ * instead of letting desktop content read through the copy. Selection and
+ * "on" states use the Echo Core accent instead of system blue; today in the
+ * calendar is a selection, not an alarm. */
+.macos-desktop-root {
+  --mac-blue: var(--echo-core);
+  --liquid-fill-floor-thick: 88%;
+}
+
+.macos-desktop-root.theme-white {
+  --liquid-film-base: #ffffff;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) {
+  --liquid-film-base: #101216;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  ) {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  )
+  :is(span, strong, p, label, button, input, header, svg):not(
+    [class*="text-"],
+    .mac-app-icon-art,
+    .mac-app-icon-glyph,
+    .mac-control-round,
+    .is-today,
+    small,
+    kbd,
+    .mac-menu-shortcut,
+    .mac-spotlight-heading,
+    .mac-result-kind,
+    .mac-spotlight-footer
+  ) {
+  color: inherit !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-menu-dropdown,
+    .mac-desktop-context-menu,
+    .mac-spotlight,
+    .mac-control-center,
+    .mac-notification-center
+  )
+  :is(
+    small,
+    kbd,
+    .mac-menu-shortcut,
+    .mac-spotlight-heading,
+    .mac-result-kind,
+    .mac-spotlight-footer,
+    .mac-spotlight-search-icon,
+    .mac-calendar-week span,
+    .mac-control-footer
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-spotlight-input::placeholder {
+  color: var(--echo-ink-faint) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-menu-separator, .mac-desktop-context-menu > div) {
+  background: var(--echo-line-strong) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-control-center
+  .mac-control-round {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-item, .mac-desktop-context-menu button):hover:not(:disabled),
+.macos-desktop-root .mac-spotlight-result:is(:hover, .is-selected) {
+  color: var(--echo-ink) !important;
+  background: color-mix(in srgb, var(--echo-core) 22%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-spotlight-result::before {
+  background: var(--echo-core) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root
+  .mac-control-center
+  :is(.mac-control-round.is-on, .mac-control-tile.is-on .mac-control-round) {
+  color: var(--echo-on-core) !important;
+  background: var(--echo-core) !important;
+}
+
+.macos-desktop-root .mac-control-center .mac-control-tile.is-on {
+  color: var(--echo-ink) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--echo-core) 22%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root .mac-calendar-days span.is-today {
+  color: var(--echo-on-core) !important;
+  background: var(--echo-core) !important;
+}
+
+/* Text menus and Spotlight read like paper, not like a lens: a near-opaque
+ * film and no specular glare, so nothing behind them competes with the copy. */
+.macos-desktop-root[data-liquid-custom="true"]:not([data-liquid-native="ready"])
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight) {
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-custom-colour) max(var(--liquid-fill-thick), 94%),
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight) {
+  background-image: none !important;
+}
+
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight)::before,
+.macos-desktop-root
+  :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root[data-liquid-custom="true"]:not([data-liquid-native="ready"])
+  .mac-notification-empty {
+  background-color: color-mix(
+    in srgb,
+    var(--liquid-custom-colour) var(--liquid-fill-inner),
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-notification-empty {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-notification-center
+  .mac-notification-empty
+  strong {
+  color: var(--echo-ink) !important;
+}
+
+/* Toasts portal outside the desktop root and take their light/dark palette
+ * from the OS theme, while their surface follows the desktop theme on <html>.
+ * Keep the description on the same scope as the surface so a snow desktop on
+ * a dark OS does not print white text on a white toast. */
+html[data-echo-theme] [data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+}
+
+/* Control Center, Notification Center and the liquid-glass panel open under
+ * the menu bar at the right edge, where the toaster sits too, so a toast used
+ * to cover the panel's first row. While one of them is open the toasts move to
+ * its left (panel right inset + width + a 12px gap); on a phone-width screen,
+ * where the panel spans the width, they wait until it closes. */
+:root:has(:is(.mac-control-center, .mac-notification-center))
+  [data-sonner-toaster][data-x-position="right"] {
+  right: calc(8px + 320px + 12px) !important;
+}
+
+:root:has(.mac-liquid-glass-panel)
+  [data-sonner-toaster][data-x-position="right"] {
+  right: calc(8px + 382px + 12px) !important;
+}
+
+@media (max-width: 640px) {
+  :root:has(
+      :is(
+        .mac-control-center,
+        .mac-notification-center,
+        .mac-liquid-glass-panel
+      )
+    )
+    [data-sonner-toaster] {
+    visibility: hidden;
+  }
+}
+
+/* Keyboard focus ------------------------------------------------------------
+ * Menu-bar titles and status items and Dock items only had the base faint 1px
+ * ring (ring at 50%), so keyboard focus was nearly invisible. They show a 2px
+ * Echo Core ring; a focused menu item is highlighted like a hovered one and
+ * keeps an inset ring so it stays distinct from the pointer's row. */
+.macos-desktop-root .mac-menu-bar button:focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 0;
+}
+
+.macos-desktop-root .mac-menu-dropdown .mac-menu-item:focus-visible {
+  color: var(--echo-ink) !important;
+  background: color-mix(in srgb, var(--echo-core) 22%, transparent) !important;
+  box-shadow: none !important;
+  outline: 2px solid var(--echo-core);
+  outline-offset: -2px;
+}
+
+.macos-desktop-root .mac-dock :is(.dock-item, button):focus-visible {
+  outline: 2px solid var(--echo-core);
+  outline-offset: 2px;
+}
+
+/* Finder on the graphite and neural-glass desktops ------------------------
+ * The Finder was authored as a light-only window, so on a graphite desktop
+ * it was the one pale window among dark ones. Its panes follow the theme
+ * tokens here; accents (row hover, transfers, drop target) use Echo Core in
+ * every theme instead of system blue. */
+.macos-desktop-root .mac-finder-table > li:not(.mac-finder-table-head):hover {
+  background: var(--echo-core-soft) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-finder-row-actions button:hover {
+  color: var(--echo-core) !important;
+  background: var(--echo-core-soft) !important;
+}
+
+.macos-desktop-root .mac-finder-transfer {
+  background: var(--echo-core-soft);
+  border-bottom-color: color-mix(in srgb, var(--echo-core) 20%, transparent);
+}
+
+.macos-desktop-root .mac-finder-transfer > svg {
+  color: var(--echo-core);
+}
+
+.macos-desktop-root .mac-finder-transfer-progress {
+  background: color-mix(in srgb, var(--echo-core) 15%, transparent);
+}
+
+.macos-desktop-root .mac-finder-transfer i {
+  background: var(--echo-core);
+}
+
+.macos-desktop-root .mac-finder-drop-overlay {
+  color: var(--echo-core);
+  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);
+  border-color: color-mix(in srgb, var(--echo-core) 55%, transparent);
+}
+
+.macos-desktop-root .mac-finder-drop-overlay span {
+  color: var(--echo-ink-muted);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-window {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-toolbar, .mac-finder-status) {
+  color: var(--echo-ink-muted) !important;
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-raised) 72%,
+    transparent
+  ) !important;
+  border-color: var(--echo-line) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-location {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-navigation, .mac-finder-actions)
+  button {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-navigation, .mac-finder-actions)
+  button:is(:hover:not(:disabled), .is-active) {
+  color: var(--echo-ink) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-sunken) 60%,
+    transparent
+  ) !important;
+  border-right-color: var(--echo-line) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar p {
+  color: var(--echo-ink-faint) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-sidebar button {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-finder-sidebar
+  button:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  .mac-finder-sidebar
+  button.is-selected {
+  background: rgba(255, 255, 255, 0.11) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-content {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface) 90%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-table-head {
+  color: var(--echo-ink-muted) !important;
+  background: var(--echo-surface) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-table > li {
+  border-bottom-color: var(--echo-line) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-table li > span, .mac-finder-row-actions button) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-row-actions {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--echo-surface) 16px
+  ) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-finder-empty,
+    .mac-finder-local-empty,
+    .mac-finder-local-empty span
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-finder-empty strong, .mac-finder-local-empty strong) {
+  color: var(--echo-ink) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass) .mac-finder-error {
+  color: var(--echo-breach);
+  background: var(--echo-breach-soft);
+  border-color: color-mix(in srgb, var(--echo-breach) 30%, transparent);
+}
+
+.macos-desktop-root .mac-finder-sidebar button.is-selected svg {
+  color: var(--echo-core) !important;
+}
+
+/* About and system confirmations ---------------------------------------------
+ * The ECHO app tile is graphite with the snow mark and its core light, not a
+ * violet gradient; primary buttons are the monochrome action, not system
+ * blue. On the graphite and neural-glass desktops these dialogs sit on the
+ * graphite film with snow text instead of graphite text on grey glass. */
+.macos-desktop-root :is(.mac-about-mark, .mac-system-action-mark) {
+  background: linear-gradient(180deg, #1b1f25, #0c0e11) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.35) !important;
+}
+
+.macos-desktop-root
+  :is(
+    .mac-about-settings,
+    .mac-about-update-actions button.is-primary,
+    .mac-system-action-buttons button.is-primary
+  ) {
+  color: var(--echo-on-action) !important;
+  background: var(--echo-action) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root .mac-about-update-icon {
+  color: var(--echo-ink-muted);
+  background: color-mix(in srgb, var(--echo-ink) 8%, transparent);
+}
+
+.macos-desktop-root .mac-system-action-copy .mac-system-action-error {
+  color: var(--echo-breach);
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog) {
+  color: var(--echo-ink) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--echo-surface) 94%,
+    transparent
+  ) !important;
+  background-image: none !important;
+  border-color: var(--echo-line-strong) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog)::before,
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog, .mac-system-action-dialog)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--echo-line) !important;
+  box-shadow: none !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update)::before,
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(.mac-about-dialog dl, .mac-about-update)::after {
+  opacity: 0 !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-about-dialog > p,
+    .mac-about-dialog dt,
+    .mac-about-dialog > small,
+    .mac-about-update-heading small,
+    .mac-system-action-copy > p:not(.mac-system-action-error)
+  ) {
+  color: var(--echo-ink-muted) !important;
+}
+
+.macos-desktop-root:is(.theme-dark, .theme-glass)
+  :is(
+    .mac-about-update-actions button:not(.is-primary),
+    .mac-system-action-buttons button:not(.is-primary)
+  ) {
+  color: var(--echo-ink) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--echo-line-strong) !important;
+  box-shadow: none !important;
+}
+
+/* A selected or focused desktop icon highlights its label with Echo Core. */
+.macos-desktop-root
+  .mac-desktop-icon:is(:focus, :active)
+  .mac-desktop-icon-label {
+  color: var(--echo-on-core);
+  background: var(--echo-core);
+  box-shadow: none;
+}
+
+/* 神经玻璃 windows -------------------------------------------------------------
+ * Neural glass is the translucent member of the graphite family: window
+ * bodies are frosted graphite glass, so the wallpaper reads through every
+ * window, panel and the Finder. Graphite keeps them solid. Popovers and menus
+ * stay on their legibility floor. */
+.macos-desktop-root.theme-glass :is(.mac-window, .mac-finder-window) {
+  --background: color-mix(in srgb, var(--echo-surface) 50%, transparent);
+  --card: color-mix(in srgb, var(--echo-surface-raised) 56%, transparent);
+  --sidebar: color-mix(in srgb, var(--echo-surface-sunken) 40%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--echo-surface) 36%,
+    transparent
+  ) !important;
+  backdrop-filter: blur(44px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(140%) !important;
+}
+
+.macos-desktop-root.theme-glass
+  :is(.mac-finder-content, .mac-finder-table-head) {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface) 34%,
+    transparent
+  ) !important;
+}
+
+.macos-desktop-root.theme-glass .mac-finder-sidebar {
+  background: color-mix(
+    in srgb,
+    var(--echo-surface-sunken) 30%,
+    transparent
+  ) !important;
+}
+
+/* 雪白: desktop icon labels sit on the light snow wallpaper. */
+.macos-desktop-root.theme-white .mac-desktop-icon-label {
+  color: var(--echo-ink);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
 }

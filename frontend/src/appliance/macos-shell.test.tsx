@@ -16,6 +16,7 @@ import {
   MacNotificationCenter,
   MacSpotlight,
   MacSystemActionDialog,
+  MacWorkspaceDropdown,
   type MacShellApp,
 } from "./macos-shell";
 import { DEFAULT_LIQUID_GLASS_TUNING } from "./liquid-glass-settings";
@@ -47,7 +48,7 @@ const unverifiedAgentHealth = {
 };
 
 describe("Echo desktop shell", () => {
-  it("uses familiar system glyphs for built-in shell apps", () => {
+  it("uses Echo's own artwork for built-in shell apps in every surface", () => {
     const { container } = render(
       <MacAppIcon
         icon={GlobeIcon}
@@ -57,17 +58,14 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    const icon = container.querySelector('[data-icon-source="glyph"]');
+    const icon = container.querySelector('[data-icon-source="art"]');
     expect(icon).toBeInTheDocument();
-    expect(icon?.querySelector(".mac-app-icon-glyph")).toBeInTheDocument();
-    expect(icon?.querySelector(".mac-app-icon-art")).not.toBeInTheDocument();
+    expect(icon?.querySelector("svg.echo-app-glyph")).toBeInTheDocument();
+    expect(icon?.querySelector(".mac-app-icon-glyph")).not.toBeInTheDocument();
     expect(icon?.querySelector(".mac-app-icon-specular")).toBeInTheDocument();
     expect(
       icon?.querySelector(".mac-app-icon-liquid-backdrop > img"),
-    ).toHaveAttribute(
-      "src",
-      "/third-party/appletechie-macos/wallpaper-day2.jpg",
-    );
+    ).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     expect(
       icon?.querySelector(".mac-app-icon-liquid-backdrop > svg"),
     ).toBeNull();
@@ -84,7 +82,7 @@ describe("Echo desktop shell", () => {
 
     const icon = container.querySelector('[data-app-id="system:finder"]');
     expect(icon).toHaveAttribute("data-echo-family", "true");
-    expect(icon).toHaveAttribute("data-icon-source", "glyph");
+    expect(icon).toHaveAttribute("data-icon-source", "art");
     expect(icon?.querySelector(".mac-app-icon-tech-field")).toBeNull();
     expect(
       icon?.querySelector(".mac-app-icon-echo-signal"),
@@ -94,7 +92,50 @@ describe("Echo desktop shell", () => {
     ).toBeInTheDocument();
     expect(
       (icon as HTMLElement).style.getPropertyValue("--echo-app-surface"),
-    ).toBe("#246bfd");
+    ).toBe("#16191e");
+  });
+
+  it("puts every first-party glyph app on the same graphite family tile", () => {
+    const { container } = render(
+      <>
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#f8fafc, #cbd5e1)"
+          appId="system:launchpad"
+        />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#6bc9ff, #1d78d4)"
+          appId="system:finder"
+        />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(145deg, #54d59d, #0c8e66)"
+          appId="echo:/workbench/unlisted"
+        />
+        <MacAppIcon
+          icon={FolderIcon}
+          gradient="linear-gradient(#fff, #000)"
+          iconUrl="data:image/png;base64,iVBORw0KGgo="
+          appId="native:example"
+        />
+      </>,
+    );
+    for (const appId of [
+      "system:launchpad",
+      "system:finder",
+      "echo:/workbench/unlisted",
+    ]) {
+      const icon = container.querySelector(`[data-app-id="${appId}"]`);
+      expect(icon).toHaveAttribute("data-echo-family", "true");
+      expect(icon).not.toHaveAttribute("data-echo-surface");
+      expect(
+        (icon as HTMLElement).style.getPropertyValue("--echo-app-surface"),
+      ).toBe("#16191e");
+    }
+    expect(
+      container.querySelector('[data-app-id="native:example"]'),
+    ).not.toHaveAttribute("data-echo-family");
   });
 
   it("keeps desktop shortcut artwork independent from glass presets", () => {
@@ -157,10 +198,7 @@ describe("Echo desktop shell", () => {
     const wallpaper = container.querySelector("img.desktop-wallpaper-art");
 
     expect(wallpaper).toBeInTheDocument();
-    expect(wallpaper).toHaveAttribute(
-      "src",
-      "/third-party/appletechie-macos/wallpaper-day2.jpg",
-    );
+    expect(wallpaper).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     expect(wallpaper).toHaveAttribute("alt", "");
   });
 
@@ -177,10 +215,7 @@ describe("Echo desktop shell", () => {
     );
     expect(samples.length).toBeGreaterThanOrEqual(2);
     samples.forEach((sample) => {
-      expect(sample).toHaveAttribute(
-        "src",
-        "/third-party/appletechie-macos/wallpaper-day2.jpg",
-      );
+      expect(sample).toHaveAttribute("src", "/echo/wallpaper-echo-2560.webp");
     });
     expect(
       container.querySelector(".mac-surface-lens-raster > svg"),
@@ -188,20 +223,20 @@ describe("Echo desktop shell", () => {
   });
 
   it.each([
-    ["checking", "正在连接 Echo Agent，打开工作台", "正在连接 Echo"],
+    ["checking", "正在连接 Echo Agent，打开 Agent", "正在连接 Echo"],
     [
       "ready",
-      "Echo Agent 在线，Runtime 版本未知 · 来源未验证，打开工作台",
+      "Echo Agent 在线，Runtime 版本未知 · 来源未验证，开始新的 Agent 会话",
       "Echo Agent 在线",
     ],
     [
       "restart-required",
-      "Echo Agent 等待重启，打开工作台",
+      "Echo Agent 等待重启，打开 Agent",
       "Echo Agent 等待重启",
     ],
     [
       "unavailable",
-      "Echo Agent 未连接，打开工作台检查连接",
+      "Echo Agent 未连接，打开 Agent 检查连接",
       "Echo Agent 未连接",
     ],
   ] as const)(
@@ -244,7 +279,7 @@ describe("Echo desktop shell", () => {
     expect(screen.getByText("v0.2.0 · aaaaaaaa")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "Echo Agent 已验证，v0.2.0 · aaaaaaaa，打开工作台",
+        name: "Echo Agent 已验证，v0.2.0 · aaaaaaaa，开始新的 Agent 会话",
       }),
     ).toHaveAttribute("data-agent-status", "ready");
   });
@@ -293,7 +328,7 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    expect(screen.getByText("Echo OS 0.2.1 已认证")).toBeInTheDocument();
+    expect(screen.getByText("ECHO OS 0.2.1 已认证")).toBeInTheDocument();
     expect(screen.getByText(/未启用的系统槽/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "安装更新…" }));
     expect(onApplyUpdate).toHaveBeenCalledOnce();
@@ -380,6 +415,9 @@ describe("Echo desktop shell", () => {
 
     render(<MacLaunchpad open apps={apps} onClose={vi.fn()} />);
 
+    expect(
+      screen.getByRole("textbox", { name: "搜索应用" }),
+    ).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText("搜索"), "文件");
 
     expect(screen.getByRole("button", { name: "文件" })).toBeInTheDocument();
@@ -414,6 +452,28 @@ describe("Echo desktop shell", () => {
     await user.click(focusControl);
 
     expect(focusControl).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("invokes onOpenLiquidGlass and closes control center when liquid glass tile is clicked", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const onOpenLiquidGlass = vi.fn();
+
+    render(
+      <MacControlCenter
+        open
+        onClose={onClose}
+        onOpenSettings={vi.fn()}
+        onOpenLiquidGlass={onOpenLiquidGlass}
+      />,
+    );
+
+    const glassTile = screen.getByRole("button", { name: /流光玻璃/ });
+    expect(glassTile).toBeInTheDocument();
+    await user.click(glassTile);
+
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onOpenLiquidGlass).toHaveBeenCalledOnce();
   });
 
   it("projects native Linux radios and invokes the real control bridge", async () => {
@@ -535,6 +595,76 @@ describe("Echo desktop shell", () => {
     expect(onOpenAbout).toHaveBeenCalledOnce();
   });
 
+  it("opens Control Center from the Wi-Fi and battery status items", async () => {
+    const user = userEvent.setup();
+    const onToggleControlCenter = vi.fn();
+
+    render(
+      <MacMenuBar
+        showBattery
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={onToggleControlCenter}
+        onToggleNotifications={vi.fn()}
+        onToggleLiquidGlass={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Wi-Fi" }));
+    await user.click(screen.getByRole("button", { name: "电池" }));
+
+    expect(onToggleControlCenter).toHaveBeenCalledTimes(2);
+  });
+
+  it("hides battery icon by default on desktop/NAS when showBattery is omitted", () => {
+    render(
+      <MacMenuBar
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "电池" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Wi-Fi" })).toBeInTheDocument();
+  });
+
   it("keeps the active application name distinct from the File menu", () => {
     render(
       <MacMenuBar
@@ -569,6 +699,70 @@ describe("Echo desktop shell", () => {
     expect(
       screen.getByRole("button", { name: "文件", exact: true }),
     ).toBeInTheDocument();
+  });
+
+  it("lets the keyboard reach and walk the menu-bar menus", async () => {
+    const user = userEvent.setup();
+    const onOpenSettings = vi.fn();
+
+    render(
+      <MacMenuBar
+        activeApp="照片"
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={onOpenSettings}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    // The first Tab lands on the Echo menu; arrows move between titles.
+    await user.tab();
+    expect(screen.getByLabelText("Echo 菜单")).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    const appTitle = screen.getByRole("button", { name: "照片", exact: true });
+    expect(appTitle).toHaveFocus();
+    expect(appTitle).toHaveAttribute("aria-expanded", "false");
+
+    // Down opens the menu on its first item and walks the items.
+    await user.keyboard("{ArrowDown}");
+    expect(appTitle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "关于 照片" })).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("button", { name: /设置…/ })).toHaveFocus();
+
+    // With a menu open, Right moves to the next menu's first item.
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("button", { name: /新建文件窗口/ })).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: "关于 照片" }),
+    ).not.toBeInTheDocument();
+
+    // Escape closes it back onto its title.
+    await user.keyboard("{Escape}");
+    const fileTitle = screen.getByRole("button", { name: "文件", exact: true });
+    expect(fileTitle).toHaveFocus();
+    expect(fileTitle).toHaveAttribute("aria-expanded", "false");
+
+    // Enter on an item runs it.
+    await user.keyboard("{ArrowLeft}{ArrowDown}{ArrowDown}{Enter}");
+    expect(onOpenSettings).toHaveBeenCalledOnce();
   });
 
   it("only enables power actions exposed by the native shell", async () => {
@@ -632,10 +826,44 @@ describe("Echo desktop shell", () => {
     );
 
     expect(
-      screen.getByRole("alertdialog", { name: "关闭 Echo OS？" }),
+      screen.getByRole("alertdialog", { name: "关闭 ECHO OS？" }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关机" }));
     expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it("closes the About dialog and cancels a system action with Escape", async () => {
+    const user = userEvent.setup();
+    const onCloseAbout = vi.fn();
+    const onCancelAction = vi.fn();
+
+    const about = render(
+      <MacAboutDialog
+        open
+        onClose={onCloseAbout}
+        onOpenSettings={vi.fn()}
+        agentHealth={unverifiedAgentHealth}
+      />,
+    );
+    expect(screen.getByRole("dialog", { name: "关于本机" })).toHaveAttribute(
+      "aria-modal",
+      "true",
+    );
+    await user.keyboard("{Escape}");
+    expect(onCloseAbout).toHaveBeenCalledOnce();
+    about.unmount();
+
+    render(
+      <MacSystemActionDialog
+        action="restart"
+        busy={false}
+        error={null}
+        onCancel={onCancelAction}
+        onConfirm={vi.fn()}
+      />,
+    );
+    await user.keyboard("{Escape}");
+    expect(onCancelAction).toHaveBeenCalledOnce();
   });
 
   it("opens the native app store when the OS exposes it", async () => {
@@ -759,5 +987,127 @@ describe("Echo desktop shell", () => {
 
     await user.click(screen.getByRole("button", { name: "流光玻璃设置" }));
     expect(onToggleLiquidGlass).toHaveBeenCalledOnce();
+  });
+
+  it("switches desktop atmosphere themes from the liquid glass panel", async () => {
+    const user = userEvent.setup();
+    const onDesktopThemeChange = vi.fn();
+
+    render(
+      <MacLiquidGlassPanel
+        open={true}
+        style="crystal"
+        intensity="regular"
+        tuning={DEFAULT_LIQUID_GLASS_TUNING}
+        desktopTheme="theme-white"
+        onDesktopThemeChange={onDesktopThemeChange}
+        onStyleChange={vi.fn()}
+        onIntensityChange={vi.fn()}
+        onTuningChange={vi.fn()}
+        onResetTuning={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "桌面环境主题" })).toBeVisible();
+    const whiteBtn = screen.getByRole("button", { name: /雪白/ });
+    const glassBtn = screen.getByRole("button", { name: /神经玻璃/ });
+    const darkBtn = screen.getByRole("button", { name: /石墨/ });
+
+    expect(whiteBtn).toHaveAttribute("aria-pressed", "true");
+    expect(glassBtn).toHaveAttribute("aria-pressed", "false");
+    expect(darkBtn).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(glassBtn);
+    expect(onDesktopThemeChange).toHaveBeenCalledWith("theme-glass");
+
+    await user.click(darkBtn);
+    expect(onDesktopThemeChange).toHaveBeenCalledWith("theme-dark");
+  });
+
+  it("provides a quick desktop theme toggle in the menu bar", async () => {
+    const user = userEvent.setup();
+    const onToggleTheme = vi.fn();
+
+    render(
+      <MacMenuBar
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        desktopTheme="theme-glass"
+        onToggleTheme={onToggleTheme}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onToggleLiquidGlass={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    const themeToggle = screen.getByRole("button", {
+      name: "快速切换桌面主题",
+    });
+    expect(themeToggle).toBeVisible();
+    await user.click(themeToggle);
+    expect(onToggleTheme).toHaveBeenCalledOnce();
+  });
+
+  it("renders collapsed workspace capsule and toggles options via dropdown", async () => {
+    const user = userEvent.setup();
+    const onToggleMode = vi.fn();
+    const onSelectRoom = vi.fn();
+
+    const { rerender } = render(
+      <MacWorkspaceDropdown
+        desktopMode="workspace"
+        onToggleMode={onToggleMode}
+        activeRoom="researcher"
+        onSelectRoom={onSelectRoom}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: "空间与模式控制" });
+    expect(trigger).toBeVisible();
+    expect(trigger).toHaveTextContent("调研室");
+    // One line at any width; at phone width the label is screen-reader only.
+    expect(trigger).toHaveClass("whitespace-nowrap", "shrink-0");
+    expect(screen.getByText("调研室")).toHaveClass("max-sm:sr-only");
+
+    // Open dropdown
+    await user.click(trigger);
+    expect(screen.getByText("桌面模式")).toBeVisible();
+    expect(screen.getByText("协作空间")).toBeVisible();
+
+    // Select a room
+    const builderBtn = screen.getByRole("button", { name: /工坊/ });
+    await user.click(builderBtn);
+    expect(onSelectRoom).toHaveBeenCalledWith("builder");
+
+    // Re-render in pure mode
+    rerender(
+      <MacWorkspaceDropdown
+        desktopMode="pure"
+        onToggleMode={onToggleMode}
+        activeRoom="all"
+        onSelectRoom={onSelectRoom}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "空间与模式控制" }),
+    ).toHaveTextContent("意图纯净态");
   });
 });

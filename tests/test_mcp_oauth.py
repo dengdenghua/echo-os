@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -93,9 +94,10 @@ def test_save_and_bearer_and_forget(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     )
     assert store.bearer("cf") == "AT"
     assert store.has_tokens("cf")
-    # token file is restricted
+    # POSIX permission bits are authoritative there; Windows stat reports
+    # writable-file metadata, not NTFS ACLs. This does not validate an ACL.
     mode = (tmp_path / "mcp_oauth.json").stat().st_mode & 0o777
-    assert mode == 0o600
+    assert mode == (0o600 if os.name == "posix" else 0o666)
     assert store.forget("cf") and not store.has_tokens("cf")
     oauth.reset_oauth_store_for_tests()
 
@@ -117,7 +119,7 @@ def test_tokens_encrypted_at_rest_when_key_set(
     blob = path.read_bytes()
     assert blob[:1] != b"{"  # encrypted, not plaintext JSON
     assert b"AT-secret" not in blob  # token unreadable on disk
-    assert (path.stat().st_mode & 0o777) == 0o600
+    assert (path.stat().st_mode & 0o777) == (0o600 if os.name == "posix" else 0o666)
     # A fresh store with the same key round-trips the tokens.
     assert oauth.MCPOAuthStore(path=path).bearer("cf") == "AT-secret"
 

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [os-main, main]
+    branches: [os-main, main, p3-provision]
   pull_request:
-    branches: [os-main, main]
+    branches: [os-main, main, p3-provision]
 
 permissions:
   contents: read
@@ -40,6 +40,53 @@ jobs:
           tar -xzf "$actionlint_archive" -C "$actionlint_directory" actionlint
           "$actionlint_directory/actionlint" -shellcheck= -pyflakes=
 
+  # 2026-08-28 audit P0-1 (recurred 2026-09-09): source files that exist on
+  # disk but were never `git add`-ed pass locally and vanish on every fresh
+  # clone.  `runtime/adapters/integrations/local_auth/passwords.py` was the
+  # recurrence — `appliance/agent_api/contract.py` probes it at startup, so CI
+  # lost auth entirely.  Standard-library only, so no uv sync needed.
+  untracked-source-guard:
+    name: Untracked source guard
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11.9"
+      - name: Fail if any source file is untracked
+        run: python tools/lint/untracked_source_check.py
+
+  # F09 coordination was collected only by the full-suite job;
+  # its three xfails concealed missing production wiring. Keep this real,
+  # deterministic subset blocking while unrelated full-suite debt is triaged.
+  coordination-contract:
+    name: Group coordination production contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12.11"
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v6.6.1
+        with:
+          version: "0.11.25"
+      - name: Install locked coordination dependencies
+        run: uv sync --locked --python 3.12.11 --extra dev --extra serve
+      - name: Verify production wiring, authorization and delayed execution
+        run: >-
+          uv run pytest tests/test_group_coordination.py
+          tests/test_coordination_production_wiring.py
+          tests/test_cowork_async_runner.py tests/test_cowork_group_router.py
+          tests/test_collaboration_store_cutover.py
+          tests/test_subagent_timeout.py tests/test_subagent_threading.py
+          tests/test_subagent_denylist_propagation.py
+          tests/test_ephemeral_write_confine.py tests/test_ephemeral_runner_sec2.py
+          tests/test_ci_gate_contract.py
+          --runxfail -q --timeout=60 -p no:cacheprovider
+
   public-source-contract:
     name: Public source contract (Python ${{ matrix.python-version }})
     runs-on: ubuntu-24.04
@@ -50,6 +97,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -68,9 +117,13 @@ jobs:
       - name: Verify the unified Echo source policy
         run: uv run python deploy/appliance/test_unified_echo_workflow_policy.py
 
+      # Coverage note: `ruff check` now covers runtime/ and the whole tests/ tree.
+      # `ruff format --check` deliberately still covers only appliance/ plus the
+      # explicit deploy lists, because runtime/ (51 files) and tests/ (587 files)
+      # are not yet formatted — widening format is a separate, larger change.
       - name: Ruff check and format
         run: |
-          uv run ruff check appliance/ tests/appliance/ deploy/appliance/agent_bundle.py \
+          uv run ruff check appliance/ runtime/ tests/ deploy/appliance/agent_bundle.py \
             deploy/appliance/delivery_source_preflight.py \
             deploy/appliance/external_storage.py \
             deploy/appliance/hub_oci_storage.py \
@@ -129,10 +182,13 @@ jobs:
       - name: Test the OS-owned release and delivery contracts
         run: uv run python deploy/appliance/run_public_source_tests.py
 
+      - name: Test optional engine host transport with locked MCP dependencies
+        run: uv run --locked --extra dev --extra serve --extra mcp pytest -q tests/test_host_mcp.py tests/test_host_tool_broker.py tests/test_opencode_backend.py
+
   frontend:
     name: Frontend quality and production build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -146,6 +202,23 @@ jobs:
           node-version: "20"
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # scripts/dev-instance.test.mjs and scripts/dev-with-agent.test.mjs drive
+      # the real development launcher against the checkout's .venv (runtime
+      # import probe plus fastapi/uvicorn/yaml/pydantic), so this job provisions
+      # the same locked development environment a developer checkout has.
+      - name: Setup Python for the development launcher contracts
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12.11"
+
+      - name: Setup pinned uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v6.6.1
+        with:
+          version: "0.11.25"
+
+      - name: Install the locked development Python environment
+        run: uv sync --locked --python 3.12.11 --extra dev --extra serve
 
       - name: Install dependencies
         working-directory: frontend
@@ -170,9 +243,29 @@ jobs:
         working-directory: frontend
         run: pnpm build
 
+      # Electron desktop smoke: launch the unpackaged shell against the
+      # dist/ built above (shell boot, preload bridge, browser-profile
+      # download contract). The backend-spawn contract test is excluded:
+      # it asserts /api/auth/status enabled=true, which depends on
+      # checkout-local auth config a fresh CI checkout does not have, so
+      # it stays a developer-machine lane for now.
+      - name: Install Electron runtime system dependencies
+        working-directory: frontend
+        run: |
+          # Playwright has no "electron" install-deps target; Electron needs
+          # the same system libraries as Chromium.
+          pnpm exec playwright install-deps chromium
+          sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: Run the Electron desktop smoke
+        working-directory: frontend
+        run: >
+          xvfb-run --auto-servernum
+          pnpm exec playwright test -c playwright.electron.config.ts
+          --grep-invert "desktop backend spawns"
+
   lint-and-test:
     name: Lint + Test (Python ${{ matrix.python-version }})
-    if: github.event_name != 'pull_request'
     needs: public-source-contract
     runs-on: ubuntu-24.04
     strategy:
@@ -201,7 +294,7 @@ jobs:
 
       - name: Ruff check
         run: >-
-          uv run ruff check appliance/ tests/appliance/ deploy/appliance/agent_bundle.py
+          uv run ruff check appliance/ runtime/ tests/ deploy/appliance/agent_bundle.py
           deploy/appliance/delivery_source_preflight.py
           deploy/appliance/external_storage.py
           deploy/appliance/nas_data_backup.py
@@ -273,6 +366,30 @@ jobs:
           path: ${{ runner.temp }}/echo-readiness/readiness_static.json
           if-no-files-found: error
 
+      # verify_local.sh --full-stack-only starts FastAPI + Vite and drives
+      # Chromium through `pnpm e2e:full` / `pnpm e2e:full:mobile`, so this lane
+      # needs the locked frontend toolchain and a Playwright browser too.
+      - name: Setup pnpm for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+        with:
+          version: 10.26.2
+
+      - name: Setup Node.js for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies and Chromium for the full-stack smoke
+        if: matrix.python-version == '3.11.9'
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
       - name: Run full-stack smoke proof
         if: matrix.python-version == '3.11.9'
         env:
@@ -319,7 +436,11 @@ jobs:
       matrix:
         os: [windows-2025, macos-15]
     steps:
+      # extensions/workbuddy-connectors is a git submodule: without it the
+      # connector catalogue is empty and every connector test fails.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11.9"
@@ -335,6 +456,74 @@ jobs:
           tests/test_config.py
           tests/test_desktop_config_packaging.py
           tests/test_production_readiness_gate.py
+
+  # 2026-09-09: `testpaths = ["tests/appliance"]` collects 2,404 of 17,050
+  # tests — 86% never run in CI.  The fast job cannot simply be widened: the
+  # whole suite costs ~40 min, so it runs here as one single-version job.
+  # 2026-10-08: triaged on a non-root Linux clone (Ubuntu 24.04, `runner`
+  # user, the identity of hosted runners).  The uid-0 ownership checks take an
+  # injectable trusted uid (tests/appliance/conftest.py) and the load-sensitive
+  # tests have headroom, so this is a blocking gate.  A new failure here is a
+  # regression or a new flake: fix it, do not re-add `continue-on-error`.
+  # The JUnit failure summary below is kept for triage.
+  full-test-suite:
+    name: Full suite (Python 3.12)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      # extensions/workbuddy-connectors is a git submodule.  Without it the
+      # connector catalogue is empty and ~30 connector tests fail for reasons
+      # that have nothing to do with the code under test.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12.11"
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v6.6.1
+        with:
+          version: "0.11.25"
+      - name: Sync locked test dependencies
+        run: uv sync --locked --python 3.12.11 --extra dev --extra serve
+      - name: Report the collected size
+        run: uv run pytest tests/ --collect-only -q | tail -1
+      - name: Run the whole suite
+        run: >-
+          uv run pytest tests/ -q -rf --tb=line --timeout=60
+          -p no:cacheprovider
+          --junitxml=full-suite-junit.xml
+      - name: Summarise failures by file
+        if: always()
+        run: |
+          uv run python - <<'PY'
+          import collections
+          import pathlib
+          import xml.etree.ElementTree as ET
+
+          report = pathlib.Path("full-suite-junit.xml")
+          if not report.exists():
+              print("no JUnit report: the suite aborted before pytest could write one")
+              raise SystemExit(0)
+
+          root = ET.parse(report).getroot()
+          by_file = collections.Counter()
+          for case in root.iter("testcase"):
+              if any(child.tag in {"failure", "error"} for child in case):
+                  by_file[case.get("file") or case.get("classname") or "?"] += 1
+
+          cases = list(root.iter("testcase"))
+          print(f"testcases: {len(cases)}")
+          print(f"files with failures/errors: {len(by_file)}")
+          for path, count in by_file.most_common(40):
+              print(f"{count:5d}  {path}")
+          PY
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-suite-junit
+          path: full-suite-junit.xml
+          if-no-files-found: warn
 
   security-scan:
     name: Security scan
@@ -355,7 +544,7 @@ jobs:
 
       - name: Bandit SAST
         run: >-
-          uv run bandit -r appliance/ deploy/appliance/verify-running-appliance.py
+          uv run bandit -r appliance/ runtime/ deploy/appliance/verify-running-appliance.py
           deploy/appliance/delivery_source_preflight.py
           deploy/appliance/external_storage.py
           deploy/appliance/nas_data_backup.py
@@ -418,6 +607,18 @@ jobs:
             python:3.13-slim-trixie@sha256:7e3a6aca9d74f93cca21a91d86a8dad8c34749afd5b4a98ee481c9c47b9f5ed4 \
             /bin/sh /source/deploy/omv/verify-plugin-package-lifecycle.sh \
             "/source/${plugin_package[0]}"
+      # actions/attest expands globs in subject-path but not in sbom-path:
+      # a glob there fails with "SBOM file not found" (os-main run 38170069021).
+      - name: Resolve exact SBOM paths for attestation
+        id: omv-sbom
+        run: |
+          shopt -s nullglob
+          host_sboms=(dist/echo-omv-host-*.spdx.json)
+          plugin_sboms=(dist/openmediavault-echo-os_*_all.spdx.json)
+          test "${#host_sboms[@]}" -eq 1
+          test "${#plugin_sboms[@]}" -eq 1
+          echo "host=${host_sboms[0]}" >> "$GITHUB_OUTPUT"
+          echo "plugin=${plugin_sboms[0]}" >> "$GITHUB_OUTPUT"
       - name: Attest build provenance
         if: >-
           github.event_name == 'push' &&
@@ -432,7 +633,7 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/echo-omv-host-*.tar.gz
-          sbom-path: dist/echo-omv-host-*.spdx.json
+          sbom-path: ${{ steps.omv-sbom.outputs.host }}
       - name: Attest native plugin provenance
         if: >-
           github.event_name == 'push' &&
@@ -447,7 +648,7 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/openmediavault-echo-os_*_all.deb
-          sbom-path: dist/openmediavault-echo-os_*_all.spdx.json
+          sbom-path: ${{ steps.omv-sbom.outputs.plugin }}
       - name: Upload host bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

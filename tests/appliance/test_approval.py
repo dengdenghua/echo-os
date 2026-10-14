@@ -137,6 +137,167 @@ def test_token_expires_and_dies_on_service_restart(tmp_path):
         )
 
 
+def test_shared_folder_comment_update_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.shared-folder.update",
+        target="a" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.shared-folder.update",
+        target="a" * 64,
+    )
+
+
+def test_nfs_rule_removal_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.nfs.remove",
+        target="b" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.nfs.remove",
+        target="b" * 64,
+    )
+
+
+def test_empty_shared_folder_delete_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.shared-folder.delete",
+        target="c" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.shared-folder.delete",
+        target="c" * 64,
+    )
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        "omv.btrfs-snapshot.create",
+        "omv.btrfs-snapshot.delete",
+        "omv.btrfs-snapshot.lock",
+        "omv.btrfs-snapshot.restore-copy",
+        "storage.btrfs.snapshot.schedule",
+        "storage.nas-backup.schedule",
+        "storage.nas-backup.credential.provision",
+        "storage.nas-backup.credential.rotate",
+        "storage.nas-backup.remote.configure",
+        "storage.nas-backup.restore",
+        "storage.time-machine.apply",
+        "storage.dlna.apply",
+        "storage.webdav.apply",
+    ],
+)
+def test_btrfs_snapshot_mutations_use_plan_bound_approval(tmp_path, action):
+    service, _audit = _service(tmp_path)
+    token = _issue(service, action=action, target="e" * 64)
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action=action,
+        target="e" * 64,
+    )
+
+
+def test_zfs_mirror_creation_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.zfs-mirror.create",
+        target="d" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.zfs-mirror.create",
+        target="d" * 64,
+    )
+
+
+def test_mdraid1_creation_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.mdraid1.create",
+        target="f" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.mdraid1.create",
+        target="f" * 64,
+    )
+
+
+def test_ext4_volume_creation_uses_a_plan_bound_approval(tmp_path):
+    service, _audit = _service(tmp_path)
+    token = _issue(
+        service,
+        action="omv.ext4-volume.create",
+        target="a" * 64,
+    )
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action="omv.ext4-volume.create",
+        target="a" * 64,
+    )
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        "omv.zfs-pool.export",
+        "omv.zfs-pool.import",
+        "omv.zfs-mirror.replace",
+        "omv.zfs.scrub.start",
+        "omv.btrfs-raid1.create",
+        "omv.btrfs-raid1.replace",
+        "omv.btrfs.scrub.start",
+        "storage.btrfs.scrub.schedule",
+        "storage.disk.idle.configure",
+        "omv.ext4.offline-check",
+        "omv.mdraid.check.start",
+        "storage.mdraid.check.schedule",
+        "omv.smb.apply",
+        "omv.quota.apply",
+        "power.ups-shutdown-policy.set",
+        "power.ups.local-usb.configure",
+        "storage.smart.self-test.start",
+        "storage.smart.self-test.schedule",
+    ],
+)
+def test_storage_lifecycle_uses_plan_bound_approvals(tmp_path, action):
+    service, _audit = _service(tmp_path)
+    token = _issue(service, action=action, target="e" * 64)
+
+    service.consume(
+        token=token,
+        actor="local:admin",
+        action=action,
+        target="e" * 64,
+    )
+
+
 def test_wrong_password_is_rate_limited_without_logging_password(tmp_path):
     service, audit = _service(tmp_path, max_failures=2)
 

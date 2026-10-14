@@ -16,6 +16,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { useDesktopWallpaperSources } from "@/appliance/desktop-wallpaper";
+
 // 应用图标属于稳定的系统识别层，不随鼠标或玻璃模式改变尺寸和基线。
 const BASE_SIZE = 62;
 
@@ -26,13 +28,52 @@ function isDockLayoutChild(element: Element): element is HTMLElement {
   );
 }
 
+const TRACK_CLASS = "mac-dock-track";
+
+/**
+ * Items live in one track. On a wide screen the track is `display: contents`
+ * (the nav lays the items out); on a phone-width screen it becomes the
+ * horizontal scroller, so every item stays reachable.
+ */
+function dockLayoutChildren(nav: HTMLElement): HTMLElement[] {
+  return Array.from(nav.children)
+    .flatMap((child) =>
+      child.classList.contains(TRACK_CLASS)
+        ? Array.from(child.children)
+        : [child],
+    )
+    .filter(isDockLayoutChild);
+}
+
+function scrollingTrack(nav: HTMLElement): HTMLElement | null {
+  const track = Array.from(nav.children).find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && child.classList.contains(TRACK_CLASS),
+  );
+  if (!track || getComputedStyle(track).display === "contents") return null;
+  return track.scrollWidth > track.clientWidth + 1 ? track : null;
+}
+
+/** Which ends of a scrolling track hide items, for the edge fades. */
+export function dockTrackOverflow(
+  track: Pick<HTMLElement, "scrollLeft" | "scrollWidth" | "clientWidth">,
+): "none" | "start" | "end" | "both" {
+  const hiddenStart = track.scrollLeft > 1;
+  const hiddenEnd =
+    track.scrollLeft + track.clientWidth < track.scrollWidth - 1;
+  if (hiddenStart && hiddenEnd) return "both";
+  if (hiddenStart) return "start";
+  if (hiddenEnd) return "end";
+  return "none";
+}
+
 /**
  * 邻近缩放会改变按钮的布局宽度,但 Dock 玻璃应保持静息尺寸。这里从每个
  * item 的未缩放 inner 宽度计算底座宽度,不受当前 --dock-s 影响。
  */
 function measureRestingGlassWidth(nav: HTMLElement): number {
   const navStyle = getComputedStyle(nav);
-  const children = Array.from(nav.children).filter(isDockLayoutChild);
+  const children = dockLayoutChildren(nav);
   const gap = Number.parseFloat(navStyle.columnGap || navStyle.gap) || 0;
   const chrome =
     (Number.parseFloat(navStyle.paddingLeft) || 0) +
@@ -55,6 +96,10 @@ function measureRestingGlassWidth(nav: HTMLElement): number {
       (Number.parseFloat(childStyle.marginRight) || 0)
     );
   }, 0);
+  const track = scrollingTrack(nav);
+  // A phone-width dock scrolls inside its glass: the glass spans the visible
+  // track, not every item.
+  if (track) return Math.ceil(chrome + track.clientWidth);
   return Math.ceil(chrome + content + Math.max(0, children.length - 1) * gap);
 }
 
@@ -67,16 +112,29 @@ function measureRestingGlassWidth(nav: HTMLElement): number {
 export function Dock({
   children,
   className,
+  onItemActivate,
 }: {
   children: ReactNode;
   className?: string;
+  /** 在图标自身的 onClick 之前调用，用于切换应用前收起当前面板。 */
+  onItemActivate?: () => void;
 }) {
   const navRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
+    const syncTrackOverflow = () => {
+      const track = trackRef.current;
+      if (!track) return;
+      track.dataset.overflow = scrollingTrack(nav)
+        ? dockTrackOverflow(track)
+        : "none";
+    };
     const syncGlassWidth = () => {
+      syncTrackOverflow();
       const glassWidth = measureRestingGlassWidth(nav);
       nav.style.setProperty("--dock-glass-width", `${glassWidth}px`);
       const lens = nav.querySelector<HTMLElement>(".mac-dock-lens");
@@ -92,19 +150,44 @@ export function Dock({
         ? null
         : new ResizeObserver(syncGlassWidth);
     observer?.observe(nav);
+    const track = trackRef.current;
+    if (track) observer?.observe(track);
+    track?.addEventListener("scroll", syncTrackOverflow, { passive: true });
     window.addEventListener("resize", syncGlassWidth);
     return () => {
       observer?.disconnect();
+      track?.removeEventListener("scroll", syncTrackOverflow);
       window.removeEventListener("resize", syncGlassWidth);
     };
   }, [children]);
 
   return (
-    <nav ref={navRef} data-desktop-interactive className={className}>
+    <nav
+      ref={navRef}
+      aria-label="程序坞"
+      data-desktop-interactive
+      className={className}
+      onClickCapture={(event) => {
+        if (
+          onItemActivate &&
+          event.target instanceof Element &&
+          event.target.closest(".dock-item")
+        ) {
+          onItemActivate();
+        }
+      }}
+    >
       <span className="mac-dock-lens" aria-hidden>
-        <img src="/third-party/appletechie-macos/wallpaper-day2.jpg" alt="" />
+        <img
+          src={wallpaper.url}
+          srcSet={wallpaper.srcSet}
+          sizes={wallpaper.sizes}
+          alt=""
+        />
       </span>
-      {children}
+      <div ref={trackRef} className={TRACK_CLASS} data-overflow="none">
+        {children}
+      </div>
     </nav>
   );
 }

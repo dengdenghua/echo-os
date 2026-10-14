@@ -44,6 +44,15 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { swallow } from "@/core/utils/log";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
+import {
+  readRecentWorkdirs,
+  writeRecentWorkdirs,
+} from "@/core/workspace/recent-workdirs";
 import { useEvent, eventBus, emitProjectsChanged } from "@/core/events";
 
 import {
@@ -53,6 +62,7 @@ import {
 import { AgentFooter } from "./sidebar-footer";
 import { FileTree } from "./file-tree";
 import { useEchoDesktopWindowChrome } from "./embedded-window-bridge";
+import { ThreadRenameDialog } from "./thread-rename-dialog";
 
 const LazySettingsDialog = lazy(() =>
   import("./settings/settings-dialog").then((module) => ({
@@ -66,27 +76,17 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   inElectron,
   useElectronTitleBar,
 } from "@/components/electron-title-bar";
-import { isIMEComposing } from "@/lib/ime";
 
 import {
   Sidebar,
@@ -98,6 +98,8 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  sidebarShortcutLabel,
+  useCloseMobileSidebarOnChange,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -113,6 +115,7 @@ import {
   useDeleteThread,
   useRenameThread,
   useThreads,
+  threadSearchQueryKey,
 } from "@/core/threads/hooks";
 import {
   buildConversationThreadSummaries,
@@ -139,8 +142,6 @@ import {
   isAgentSurfaceActive,
   isCompanySurfaceActive,
   isNavRouteActive,
-  isStorageLibraryRouteActive,
-  isStorageRouteActive,
   PRIMARY_WORKSPACE_ROUTE,
 } from "@/core/workspace/sidebar-routing";
 
@@ -159,9 +160,11 @@ import { formatCompactRelativeTimestamp } from "@/core/utils/datetime";
 import { basename, isAbsolutePath } from "@/lib/path-utils";
 import { cn } from "@/lib/utils";
 import { preloadWorkspaceRoute } from "@/core/navigation/workspace-route-preload";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import { WorkspaceSurfaceHeader } from "@/components/workspace/workspace-surface-header";
 import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 import {
+  LOCAL_DATABASE_APP_ID,
   setWorkspaceWebShortcut,
   useWorkspaceWebShortcuts,
   workspaceWebAppRoute,
@@ -219,6 +222,7 @@ const SIDEBAR_THREAD_QUERY_PARAMS = {
 // Icons live here rather than in the catalog so `core/modules` stays free of
 // component imports (it is pure data + logic, unit-tested without React).
 const MODULE_ICONS: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
+  [LOCAL_DATABASE_APP_ID]: DatabaseIcon,
   hr: StoreIcon,
   assistant: UserRoundPenIcon,
   intelligence: RssIcon,
@@ -249,8 +253,6 @@ const CHAT_CAPABILITY_ROUTES: NavRoute[] = moduleNavRoutes("chatCapability");
 
 const COMMUNITY_ROUTES: NavRoute[] = moduleNavRoutes("community");
 
-const STORAGE_LIBRARY_ROUTES: NavRoute[] = moduleNavRoutes("storageLibrary");
-
 type SidebarFileExplorerTarget = {
   project: string;
   title: string;
@@ -260,13 +262,15 @@ type SidebarFileExplorerTarget = {
 };
 
 const PROJECTS_KEY = "echo.projects";
-const RECENT_WORKDIRS_KEY = "echo:recentWorkdirs";
+const projectsStorageKey = () => actorScopedStorageKey(PROJECTS_KEY);
 const PROJECT_GROUPING_KEY = "echo.sidebar.project-grouping-enabled";
+const PROJECTS_OPEN_KEY = "echo.sidebar.projects-open";
+const CHATS_OPEN_KEY = "echo.sidebar.chats-open";
 const PROJECT_THREAD_PREVIEW_LIMIT = 6;
 
 function readUserProjects(): string[] {
   try {
-    const raw = window.localStorage.getItem(PROJECTS_KEY);
+    const raw = window.localStorage.getItem(projectsStorageKey());
     if (!raw) return [];
     const data = JSON.parse(raw);
     return Array.isArray(data)
@@ -286,7 +290,7 @@ function readUserProjects(): string[] {
 function writeUserProjects(names: string[]) {
   try {
     window.localStorage.setItem(
-      PROJECTS_KEY,
+      projectsStorageKey(),
       JSON.stringify(names.filter((name) => !isGeneratedTeamProjectName(name))),
     );
   } catch (e) {
@@ -297,18 +301,14 @@ function writeUserProjects(names: string[]) {
 function rememberProjectWorkDir(path: string) {
   if (typeof window === "undefined" || !isAbsolutePath(path)) return;
   try {
-    const raw = window.localStorage.getItem(RECENT_WORKDIRS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    const current = Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
+    const current = readRecentWorkdirs();
     const normalize = (value: string) =>
       value.trim().replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
     const next = [
       path,
       ...current.filter((item) => normalize(item) !== normalize(path)),
     ].slice(0, 6);
-    window.localStorage.setItem(RECENT_WORKDIRS_KEY, JSON.stringify(next));
+    writeRecentWorkdirs(next);
   } catch (e) {
     swallow(e, "storage");
   }
@@ -326,7 +326,7 @@ function emitWorkDirSelected(path: string) {
 
 function readProjectGroupingEnabled(): boolean {
   try {
-    const raw = window.localStorage.getItem(PROJECT_GROUPING_KEY);
+    const raw = readActorScopedStorageValue(PROJECT_GROUPING_KEY);
     return raw === null ? true : raw === "1";
   } catch (e) {
     swallow(e);
@@ -455,6 +455,7 @@ export function syncedSidebarPathname(
 }
 
 export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const actor = currentActorId();
   const { pathname, search } = useLocation();
   const embeddedInEchoOs = useEchoDesktopWindowChrome();
   const { t } = useI18n();
@@ -485,6 +486,7 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
     }
   }, [pathname, pendingThreadPath]);
   const sidebarPathname = syncedSidebarPathname(pathname, pendingThreadPath);
+  useCloseMobileSidebarOnChange(`${pathname}${search}`);
 
   // Resolve a NavRoute's labelKey against the sidebar namespace. The cast
   // keeps TS narrowing happy without silently swallowing typos in route keys.
@@ -525,10 +527,6 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
   );
   const communityItems = useMemo(
     () => resolveRoutes(COMMUNITY_ROUTES),
-    [resolveRoutes],
-  );
-  const nasLibraryItems = useMemo(
-    () => resolveRoutes(STORAGE_LIBRARY_ROUTES),
     [resolveRoutes],
   );
 
@@ -703,20 +701,27 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
       window.removeEventListener("storage", refresh);
       window.removeEventListener("echo:projects-changed", refresh);
     };
-  }, []);
+  }, [actor]);
   const [projectGroupingEnabled, setProjectGroupingEnabled] = useState<boolean>(
     () => readProjectGroupingEnabled(),
   );
+  const [projectGroupingActor, setProjectGroupingActor] = useState(actor);
   useEffect(() => {
+    if (projectGroupingActor === actor) return;
+    setProjectGroupingActor(actor);
+    setProjectGroupingEnabled(readProjectGroupingEnabled());
+  }, [actor, projectGroupingActor]);
+  useEffect(() => {
+    if (projectGroupingActor !== actor) return;
     try {
       window.localStorage.setItem(
-        PROJECT_GROUPING_KEY,
+        actorScopedStorageKey(PROJECT_GROUPING_KEY, actor),
         projectGroupingEnabled ? "1" : "0",
       );
     } catch (e) {
       swallow(e);
     }
-  }, [projectGroupingEnabled]);
+  }, [actor, projectGroupingActor, projectGroupingEnabled]);
   const toggleProjectGrouping = useCallback(() => {
     setProjectGroupingEnabled((enabled) => !enabled);
   }, []);
@@ -799,12 +804,14 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
             workspace_path: "",
           },
         });
-        queryClient.invalidateQueries({ queryKey: ["threads", "search"] });
+        queryClient.invalidateQueries({
+          queryKey: threadSearchQueryKey(actor),
+        });
       } catch (error) {
         console.error("Failed to switch workspace", error);
       }
     },
-    [activeThreadId, apiClient, queryClient],
+    [activeThreadId, actor, apiClient, queryClient],
   );
 
   const activeTaskRoomId = activeTeamTaskRoomId(sidebarPathname, activeThread);
@@ -819,10 +826,9 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
     // Fallback: use the most-recent workdir from localStorage so the
     // file explorer is visible even on the "new task" page.
     try {
-      const raw = window.localStorage.getItem(RECENT_WORKDIRS_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const first = parsed[0];
+      const recent = readRecentWorkdirs();
+      if (recent.length > 0) {
+        const first = recent[0];
         if (typeof first === "string" && first) return first;
       }
     } catch {
@@ -980,7 +986,7 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
       setUserProjects(next);
       emitProjectsChanged();
       queryClient.setQueriesData(
-        { queryKey: ["threads", "search"], exact: false },
+        { queryKey: threadSearchQueryKey(actor), exact: false },
         (oldData: AgentThread[] | undefined) => {
           if (!oldData) return oldData;
           const ids = new Set(threadIds);
@@ -1003,7 +1009,9 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
       toast.error(t.sidebar.deleteProjectFailed);
     } finally {
       setDeletingProject(null);
-      void queryClient.invalidateQueries({ queryKey: ["threads", "search"] });
+      void queryClient.invalidateQueries({
+        queryKey: threadSearchQueryKey(actor),
+      });
     }
   };
   const sidebarConversationThreads = conversationThreads;
@@ -1058,12 +1066,16 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className={cn("border-r bg-sidebar")}
+        className={cn(
+          "border-r bg-sidebar",
+          embeddedInEchoOs &&
+            "absolute h-full group-data-[collapsible=icon]:pt-8",
+        )}
         {...props}
       >
         {/* Implementation note. */}
         <SidebarHeader
-          className="h-10 shrink-0 border-b border-white/40 bg-transparent p-0 pr-2 py-0 group-data-[collapsible=icon]:px-0 dark:border-white/10"
+          className="h-10 shrink-0 border-b border-border bg-transparent p-0 pr-2 py-0 group-data-[collapsible=icon]:px-0"
           style={
             electron
               ? ({
@@ -1125,10 +1137,8 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
             pathname={pathname}
             search={search}
           />
-          <NavSection items={communityItems} pathname={pathname} />
-          <LocalDatabaseSection
-            title={resolveLabel("navDatabase")}
-            items={nasLibraryItems}
+          <NavSection
+            items={communityItems}
             pathname={pathname}
             search={search}
           />
@@ -1142,9 +1152,11 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
           ) : (
             <>
               <ProjectsSection
+                actor={actor}
                 groups={projectOrder}
                 byProject={byProject}
                 pathname={sidebarPathname}
+                search={search}
                 deletableProjects={deletableProjects}
                 deletingProject={deletingProject}
                 groupingEnabled={projectGroupingEnabled}
@@ -1155,8 +1167,10 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 onNewProject={() => void pickProjectFolder()}
               />
               <ChatsSection
+                actor={actor}
                 threads={sidebarHistoryThreads}
                 pathname={sidebarPathname}
+                search={search}
                 label={t.sidebar.sectionChats}
                 agentId={activeAgentId}
                 workspacePath={activeTaskWorkspacePath}
@@ -1255,133 +1269,6 @@ function EditModulesButton({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function LocalDatabaseSection({
-  title,
-  items,
-  pathname,
-  search,
-}: {
-  title: string;
-  items: NavItem[];
-  pathname: string;
-  search: string;
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const active = isStorageRouteActive(pathname);
-
-  return (
-    <SidebarGroup className="p-0 px-1 group-data-[collapsible=icon]:px-0">
-      <SidebarMenu className="gap-0.5">
-        <SidebarMenuItem className="justify-center">
-          <SidebarMenuButton
-            isActive={active}
-            tooltip={title}
-            aria-current={active ? "page" : undefined}
-            aria-expanded={open}
-            aria-label={
-              open
-                ? t.sidebar.ariaCollapseLocalDatabase
-                : t.sidebar.ariaExpandLocalDatabase
-            }
-            onClick={() => setOpen((value) => !value)}
-            className={cn(
-              "group/nav relative h-9 w-full opacity-76 transition-[opacity,background-color,border-color] text-sm",
-              "border border-transparent hover:border-border-subtle hover:bg-muted/32 hover:opacity-100",
-              "data-[active=true]:opacity-100",
-              "data-[active=true]:border-sidebar-primary/18 data-[active=true]:bg-[color:color-mix(in_oklch,var(--sidebar-accent)_82%,transparent)]",
-              "data-[active=true]:shadow-[var(--shadow-xs)]",
-              "data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-[2px] data-[active=true]:before:rounded-r data-[active=true]:before:bg-sidebar-primary/85",
-              "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0",
-            )}
-          >
-            <span
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-lg transition-colors",
-                active
-                  ? "bg-sidebar-primary/12 text-sidebar-primary"
-                  : "text-muted-foreground group-hover/nav:text-foreground",
-              )}
-            >
-              <DatabaseIcon className="size-[16px]" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-left group-data-[collapsible=icon]:hidden">
-              {title}
-            </span>
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors group-hover/nav:bg-muted/60 group-hover/nav:text-foreground group-data-[collapsible=icon]:hidden">
-              <ChevronRightIcon
-                className={cn(
-                  "size-3.5 transition-transform",
-                  open && "rotate-90",
-                )}
-              />
-            </span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        {open && (
-          <div className="space-y-0.5 pl-4 group-data-[collapsible=icon]:hidden">
-            {items.map((item) => (
-              <StorageLibraryRow
-                key={item.to}
-                item={item}
-                pathname={pathname}
-                search={search}
-              />
-            ))}
-          </div>
-        )}
-      </SidebarMenu>
-    </SidebarGroup>
-  );
-}
-
-function StorageLibraryRow({
-  item,
-  pathname,
-  search,
-}: {
-  item: NavItem;
-  pathname: string;
-  search: string;
-}) {
-  const active = isStorageLibraryRouteActive(pathname, search, item.to);
-  const Icon = item.icon;
-  return (
-    <SidebarMenuItem className="justify-center">
-      <SidebarMenuButton
-        asChild
-        isActive={active}
-        tooltip={item.label}
-        className={cn(
-          "group/nav relative h-8 w-full opacity-72 transition-[opacity,background-color,border-color] text-xs",
-          "border border-transparent hover:border-border-subtle hover:bg-muted/32 hover:opacity-100",
-          "data-[active=true]:opacity-100 data-[active=true]:bg-[color:color-mix(in_oklch,var(--sidebar-accent)_58%,transparent)]",
-        )}
-      >
-        <Link
-          to={item.to}
-          onMouseEnter={() => preloadWorkspaceRoute(item.to)}
-          onFocus={() => preloadWorkspaceRoute(item.to)}
-          aria-current={active ? "page" : undefined}
-          className="flex items-center gap-2"
-        >
-          <span
-            className={cn(
-              "flex size-5 shrink-0 items-center justify-center rounded-lg transition-colors",
-              active
-                ? "text-sidebar-primary"
-                : "text-muted-foreground group-hover/nav:text-foreground",
-            )}
-          >
-            <Icon className="size-[14px]" />
-          </span>
-          <span className="truncate">{item.label}</span>
-        </Link>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-}
-
 function ProjectFileExplorerView({
   target,
   fallbackWorkDir,
@@ -1402,8 +1289,7 @@ function ProjectFileExplorerView({
       }
     };
     window.addEventListener("echo:workdir-selected", handler);
-    return () =>
-      window.removeEventListener("echo:workdir-selected", handler);
+    return () => window.removeEventListener("echo:workdir-selected", handler);
   }, []);
 
   const resolvedWorkDir =
@@ -1412,10 +1298,9 @@ function ProjectFileExplorerView({
     eventWorkDir ??
     (() => {
       try {
-        const raw = window.localStorage.getItem(RECENT_WORKDIRS_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const first = parsed[0];
+        const recent = readRecentWorkdirs();
+        if (recent.length > 0) {
+          const first = recent[0];
           if (typeof first === "string" && first) return first;
         }
       } catch {
@@ -1556,6 +1441,7 @@ function NavRow({
       new URLSearchParams(search).get("url") === item.externalUrl
     : isNavRouteActive(pathname, item.to);
   const Icon = item.icon;
+  const targetTo = preserveWorkbenchPresentation(item.to, search);
 
   const removeWebShortcut = () => {
     if (!item.externalUrl) return;
@@ -1586,12 +1472,12 @@ function NavRow({
         )}
       >
         <Link
-          to={item.to}
+          to={targetTo}
           onMouseEnter={() => {
-            if (!item.externalUrl) preloadWorkspaceRoute(item.to);
+            if (!item.externalUrl) preloadWorkspaceRoute(targetTo);
           }}
           onFocus={() => {
-            if (!item.externalUrl) preloadWorkspaceRoute(item.to);
+            if (!item.externalUrl) preloadWorkspaceRoute(targetTo);
           }}
           aria-current={active ? "page" : undefined}
           className={cn(
@@ -1767,7 +1653,7 @@ function ProjectGroupTrigger({
         className="max-w-72 break-words"
       >
         <span className="block font-medium">{project}</span>
-        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+        <span className="mt-0.5 block text-xs text-muted-foreground">
           {hasBoundFolder
             ? boundWorkspacePath || "本地目录项目"
             : "里程碑项目 · 不绑定本地目录"}
@@ -1800,6 +1686,7 @@ function ProjectGroup({
   project,
   threads,
   pathname,
+  search,
   deletable,
   deleting,
   runStatusByHref,
@@ -1809,6 +1696,7 @@ function ProjectGroup({
   project: string;
   threads: ThreadSummary[];
   pathname: string;
+  search?: string;
   deletable: boolean;
   deleting: boolean;
   runStatusByHref: Map<string, ThreadRunStatus>;
@@ -1866,7 +1754,9 @@ function ProjectGroup({
     if (!ok) return;
     deleteThread.mutate({ threadId: thread.id });
     if (pathname === thread.href) {
-      void navigate(PRIMARY_WORKSPACE_ROUTE);
+      void navigate(
+        preserveWorkbenchPresentation(PRIMARY_WORKSPACE_ROUTE, search),
+      );
     }
   };
   const handleDeleteProject = async (project: string) => {
@@ -1959,7 +1849,7 @@ function ProjectGroup({
               return (
                 <li key={thread.id} className="group/thread relative">
                   <Link
-                    to={thread.href}
+                    to={preserveWorkbenchPresentation(thread.href, search)}
                     state={{
                       threadOwnerAgentId:
                         thread.agents.length === 1
@@ -2085,57 +1975,16 @@ function ProjectGroup({
           )}
         </CollapsibleContent>
       </SidebarGroup>
-      <Dialog
+      <ThreadRenameDialog
         open={threadToRename !== null}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setThreadToRename(null);
-            setRenameValue("");
-          }
+        value={renameValue}
+        onChange={setRenameValue}
+        onClose={() => {
+          setThreadToRename(null);
+          setRenameValue("");
         }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="w-[min(360px,calc(100vw-2rem))] gap-3 rounded-lg p-4 sm:max-w-[360px]"
-        >
-          <DialogHeader className="gap-1 text-left">
-            <DialogTitle className="text-base">{t.common.rename}</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isIMEComposing(e)) {
-                e.preventDefault();
-                handleRenameSubmit();
-              }
-            }}
-            autoFocus
-            className="h-8 text-sm"
-          />
-          <DialogFooter className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setThreadToRename(null);
-                setRenameValue("");
-              }}
-            >
-              {t.common.cancel}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!renameValue.trim()}
-              onClick={handleRenameSubmit}
-            >
-              {t.common.save}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onSubmit={handleRenameSubmit}
+      />
       {confirmDialog}
     </Collapsible>
   );
@@ -2318,9 +2167,11 @@ function SectionHeader({
 }
 
 function ProjectsSection({
+  actor,
   groups,
   byProject,
   pathname,
+  search,
   deletableProjects,
   deletingProject,
   groupingEnabled,
@@ -2330,9 +2181,11 @@ function ProjectsSection({
   onOpenFiles,
   onNewProject,
 }: {
+  actor: string;
   groups: string[];
   byProject: Record<string, ThreadSummary[]>;
   pathname: string;
+  search?: string;
   deletableProjects: Set<string>;
   deletingProject: string | null;
   groupingEnabled: boolean;
@@ -2351,23 +2204,36 @@ function ProjectsSection({
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     try {
-      const v = window.localStorage.getItem("echo.sidebar.projects-open");
+      const v = readActorScopedStorageValue(PROJECTS_OPEN_KEY, actor);
       return v === null ? true : v === "1";
     } catch (e) {
       swallow(e, "storage");
       return true;
     }
   });
+  const [openActor, setOpenActor] = useState(actor);
   useEffect(() => {
+    if (openActor === actor) return;
+    setOpenActor(actor);
+    try {
+      const v = readActorScopedStorageValue(PROJECTS_OPEN_KEY, actor);
+      setOpen(v === null ? true : v === "1");
+    } catch (e) {
+      swallow(e, "storage");
+      setOpen(true);
+    }
+  }, [actor, openActor]);
+  useEffect(() => {
+    if (openActor !== actor) return;
     try {
       window.localStorage.setItem(
-        "echo.sidebar.projects-open",
+        actorScopedStorageKey(PROJECTS_OPEN_KEY, actor),
         open ? "1" : "0",
       );
     } catch (e) {
       swallow(e, "storage");
     }
-  }, [open]);
+  }, [actor, open, openActor]);
   return (
     <div className="mt-2 group-data-[collapsible=icon]:hidden">
       <SidebarGroup className="p-0 px-2 pb-0">
@@ -2395,6 +2261,7 @@ function ProjectsSection({
                 project={project}
                 threads={byProject[project]!}
                 pathname={pathname}
+                search={search}
                 deletable={deletableProjects.has(project)}
                 deleting={deletingProject === project}
                 runStatusByHref={runStatusByHref}
@@ -2410,16 +2277,20 @@ function ProjectsSection({
 }
 
 function ChatsSection({
+  actor,
   threads,
   pathname,
+  search,
   label,
   newActionLabel,
   agentId,
   workspacePath,
   runStatusByHref,
 }: {
+  actor: string;
   threads: ThreadSummary[];
   pathname: string;
+  search?: string;
   label?: string;
   newActionLabel?: string;
   agentId?: string | null;
@@ -2433,23 +2304,36 @@ function ChatsSection({
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     try {
-      const v = window.localStorage.getItem("echo.sidebar.chats-open");
+      const v = readActorScopedStorageValue(CHATS_OPEN_KEY, actor);
       return v === null ? true : v === "1";
     } catch (e) {
       swallow(e, "storage");
       return true;
     }
   });
+  const [openActor, setOpenActor] = useState(actor);
   useEffect(() => {
+    if (openActor === actor) return;
+    setOpenActor(actor);
+    try {
+      const v = readActorScopedStorageValue(CHATS_OPEN_KEY, actor);
+      setOpen(v === null ? true : v === "1");
+    } catch (e) {
+      swallow(e, "storage");
+      setOpen(true);
+    }
+  }, [actor, openActor]);
+  useEffect(() => {
+    if (openActor !== actor) return;
     try {
       window.localStorage.setItem(
-        "echo.sidebar.chats-open",
+        actorScopedStorageKey(CHATS_OPEN_KEY, actor),
         open ? "1" : "0",
       );
     } catch (e) {
       swallow(e);
     }
-  }, [open]);
+  }, [actor, open, openActor]);
   useEffect(() => {
     if (activeWorkspaceThreadIdFromPathname(pathname)) setOpen(true);
   }, [pathname]);
@@ -2480,10 +2364,12 @@ function ChatsSection({
       if (!ok) return;
       deleteThread.mutate({ threadId: thread.id });
       if (pathname === thread.href) {
-        void navigate(PRIMARY_WORKSPACE_ROUTE);
+        void navigate(
+          preserveWorkbenchPresentation(PRIMARY_WORKSPACE_ROUTE, search),
+        );
       }
     },
-    [confirm, deleteThread, navigate, pathname, tr],
+    [confirm, deleteThread, navigate, pathname, search, tr],
   );
   const startNewChat = useCallback(() => {
     eventBus.emit("task:new", {
@@ -2534,7 +2420,7 @@ function ChatsSection({
                 return (
                   <li key={t.id} className="group/thread relative">
                     <Link
-                      to={t.href}
+                      to={preserveWorkbenchPresentation(t.href, search)}
                       state={{
                         threadOwnerAgentId:
                           t.agents.length === 1 ? t.agents[0] : undefined,
@@ -2606,57 +2492,16 @@ function ChatsSection({
             </ul>
           ))}
       </SidebarGroup>
-      <Dialog
+      <ThreadRenameDialog
         open={threadToRename !== null}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setThreadToRename(null);
-            setRenameValue("");
-          }
+        value={renameValue}
+        onChange={setRenameValue}
+        onClose={() => {
+          setThreadToRename(null);
+          setRenameValue("");
         }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="w-[min(360px,calc(100vw-2rem))] gap-3 rounded-lg p-4 sm:max-w-[360px]"
-        >
-          <DialogHeader className="gap-1 text-left">
-            <DialogTitle className="text-base">{tr.common.rename}</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isIMEComposing(e)) {
-                e.preventDefault();
-                handleRenameSubmit();
-              }
-            }}
-            autoFocus
-            className="h-8 text-sm"
-          />
-          <DialogFooter className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setThreadToRename(null);
-                setRenameValue("");
-              }}
-            >
-              {tr.common.cancel}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!renameValue.trim()}
-              onClick={handleRenameSubmit}
-            >
-              {tr.common.save}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onSubmit={handleRenameSubmit}
+      />
       {confirmDialog}
     </div>
   );
@@ -2667,6 +2512,9 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const Icon = open ? PanelLeftCloseIcon : PanelLeftOpenIcon;
   const isCollapsed = state === "collapsed";
+  const toggleLabel = open
+    ? t.sidebar.collapseSidebar(sidebarShortcutLabel())
+    : t.sidebar.expandSidebar(sidebarShortcutLabel());
 
   return (
     <Tooltip>
@@ -2674,10 +2522,8 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={toggleSidebar}
-          title={open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar}
-          aria-label={
-            open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar
-          }
+          title={toggleLabel}
+          aria-label={toggleLabel}
           aria-expanded={open}
           className={cn(
             "flex shrink-0 items-center justify-center justify-self-center border border-transparent bg-transparent text-muted-foreground shadow-none transition-[background-color,border-color,color] hover:border-border-default hover:bg-muted/55 hover:text-foreground",
@@ -2690,7 +2536,7 @@ export function CollapseToggle({ compact = false }: { compact?: boolean }) {
         </button>
       </TooltipTrigger>
       <TooltipContent side={isCollapsed ? "right" : "bottom"} align="center">
-        {open ? t.sidebar.collapseSidebar : t.sidebar.expandSidebar}
+        {toggleLabel}
       </TooltipContent>
     </Tooltip>
   );

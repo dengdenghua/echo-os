@@ -351,6 +351,14 @@ export type ConversationEvent =
       };
     }
   | {
+      method: "turn/execution/updated";
+      params: {
+        threadId: string;
+        turnId: string;
+        execution?: Record<string, unknown> | null;
+      };
+    }
+  | {
       method: "item/started";
       params: { threadId: string; turnId: string; item: Item };
     }
@@ -779,6 +787,26 @@ export function reduce(
         return { next: state, changedTurnIds: [], changedItemIds: [] };
       }
       void threadId;
+      return {
+        next: { ...state, turns },
+        changedTurnIds: [turnId],
+        changedItemIds: [],
+      };
+    }
+    case "turn/execution/updated": {
+      const { turnId, execution } = evt.params;
+      let touched = false;
+      const turns = state.turns.map((t) => {
+        if (t.id !== turnId) return t;
+        touched = true;
+        return {
+          ...t,
+          execution: execution ?? t.execution,
+        };
+      });
+      if (!touched) {
+        return { next: state, changedTurnIds: [], changedItemIds: [] };
+      }
       return {
         next: { ...state, turns },
         changedTurnIds: [turnId],

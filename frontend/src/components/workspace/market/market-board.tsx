@@ -6,8 +6,8 @@ import {
   SearchIcon,
   XIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MarketGrid } from "@/components/workspace/market/market-feed";
 import { MarketDetail } from "@/components/workspace/market/market-detail";
 import { communityAssetURL } from "@/components/workspace/community/community-assets";
@@ -18,7 +18,13 @@ import {
   type MarketItem,
 } from "@/components/workspace/market/market-data";
 import { getCommunityCredits } from "@/core/credits/ledger";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 /** 可选封面（复用社区已生成封面图）。 */
 const COVER_OPTIONS = [
@@ -40,9 +46,9 @@ const COVER_OPTIONS = [
 /** 资产引导横幅的 localStorage key(关闭后不再显示)。 */
 const ASSETS_BANNER_KEY = "echo.market.assets-banner-dismissed.v1";
 
-function readBannerDismissed(): boolean {
+function readBannerDismissed(actor = currentActorId()): boolean {
   try {
-    return window.localStorage.getItem(ASSETS_BANNER_KEY) === "1";
+    return readActorScopedStorageValue(ASSETS_BANNER_KEY, actor) === "1";
   } catch {
     return false;
   }
@@ -50,12 +56,23 @@ function readBannerDismissed(): boolean {
 
 export function MarketBoard() {
   const navigate = useNavigate();
+  const { search } = useLocation();
+  const actor = currentActorId();
+  const actorRef = useRef(actor);
   const [activeTab, setActiveTab] = useState("all");
-  const [bannerDismissed, setBannerDismissed] = useState(readBannerDismissed);
+  const [bannerDismissed, setBannerDismissed] = useState(() =>
+    readBannerDismissed(actor),
+  );
   const [query, setQuery] = useState("");
   const [version, setVersion] = useState(0);
   const [detail, setDetail] = useState<MarketItem | null>(null);
   const [listOpen, setListOpen] = useState(false);
+
+  useEffect(() => {
+    if (actorRef.current === actor) return;
+    actorRef.current = actor;
+    setBannerDismissed(readBannerDismissed(actor));
+  }, [actor]);
 
   // `version` is intentionally read so mutations can refresh the local store
   // snapshot without pretending the store getter is a memo dependency.
@@ -95,7 +112,14 @@ export function MarketBoard() {
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => navigate("/workspace/agents?tab=assets")}
+              onClick={() =>
+                navigate(
+                  preserveWorkbenchPresentation(
+                    "/workspace/agents?tab=assets",
+                    search,
+                  ),
+                )
+              }
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               前往统一资产
@@ -105,7 +129,10 @@ export function MarketBoard() {
               type="button"
               onClick={() => {
                 try {
-                  window.localStorage.setItem(ASSETS_BANNER_KEY, "1");
+                  window.localStorage.setItem(
+                    actorScopedStorageKey(ASSETS_BANNER_KEY, actorRef.current),
+                    "1",
+                  );
                 } catch {
                   /* ignore */
                 }
@@ -132,7 +159,7 @@ export function MarketBoard() {
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                   isActive
-                    ? "border-rose-300/60 bg-rose-500/10 text-rose-600 dark:border-rose-400/30 dark:text-rose-300"
+                    ? "border-breach/30 bg-breach/10 text-breach"
                     : "border-transparent bg-muted/35 text-muted-foreground hover:bg-muted/65 hover:text-foreground",
                 )}
               >
@@ -180,9 +207,9 @@ export function MarketBoard() {
           <button
             type="button"
             onClick={() => setListOpen(true)}
-            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-rose-300 hover:bg-rose-500/5 hover:text-rose-600"
+            className="flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-breach/30 hover:bg-breach/5 hover:text-breach"
           >
-            <PlusIcon className="size-4 text-rose-500" />
+            <PlusIcon className="size-4 text-muted-foreground" />
             上架
           </button>
         </div>
@@ -317,7 +344,7 @@ export function ListModal({
                   className={cn(
                     "aspect-[4/3] overflow-hidden rounded-md ring-2 transition",
                     cover === c
-                      ? "ring-rose-500"
+                      ? "ring-breach/30"
                       : "ring-transparent hover:ring-border-default",
                   )}
                 >
@@ -338,7 +365,7 @@ export function ListModal({
             className={cn(
               "rounded-md px-4 py-1.5 text-sm font-semibold transition-colors",
               canSubmit
-                ? "bg-rose-500 text-white hover:bg-rose-600"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "cursor-not-allowed bg-muted text-muted-foreground/50",
             )}
           >

@@ -1,28 +1,41 @@
 /* Implementation note. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   BrainIcon,
-  Loader2Icon,
   NetworkIcon,
   RefreshCwIcon,
   SearchIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authHeaders } from "@/core/auth/api";
 import { useI18n } from "@/core/i18n/hooks";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import {
   GlobalControlPlaneAccessError,
   globalControlPlaneUrl,
   requireGlobalControlPlaneResponse,
 } from "@/core/observability/api";
 import { KnowledgeGraphView } from "./knowledge-graph-view";
+import {
+  FOCUS_TOKEN,
+  entityTypeStyle,
+  tokenVar,
+  type EntityShape,
+} from "./knowledge-graph-style";
 
 interface KGEntity {
   id: string;
@@ -46,6 +59,7 @@ interface GraphStats {
 
 export function KnowledgeGraphPanel() {
   const { t } = useI18n();
+  const { search } = useLocation();
   const [entities, setEntities] = useState<KGEntity[]>([]);
   const [relationships, setRelationships] = useState<KGRelationship[]>([]);
   const [stats, setStats] = useState<GraphStats | null>(null);
@@ -117,11 +131,7 @@ export function KnowledgeGraphPanel() {
   }, [entities, trimmedSearchQuery]);
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PanelLoading className="h-64" />;
   }
 
   if (loadError) {
@@ -151,7 +161,7 @@ export function KnowledgeGraphPanel() {
   if (entities.length === 0 && relationships.length === 0 && !searchQuery) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 px-4 py-10 text-center">
-        <div className="rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/5 p-3 text-chart-1 dark:text-chart-1">
+        <div className="rounded-lg border border-border bg-[var(--echo-surface-sunken)] p-3 text-muted-foreground">
           <BrainIcon className="h-5 w-5" />
         </div>
         <div className="space-y-1">
@@ -159,7 +169,12 @@ export function KnowledgeGraphPanel() {
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button asChild size="sm">
-            <Link to="/workspace/realtime/new">
+            <Link
+              to={preserveWorkbenchPresentation(
+                "/workspace/realtime/new",
+                search,
+              )}
+            >
               {t.knowledgeGraph.startTask}
             </Link>
           </Button>
@@ -184,7 +199,7 @@ export function KnowledgeGraphPanel() {
         <button
           type="button"
           onClick={() => setViewMode("map")}
-          className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${viewMode === "map" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          className={`rounded-md px-2.5 py-1.5 text-caption font-medium transition-colors ${viewMode === "map" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
         >
           <NetworkIcon className="mr-1 inline size-3.5" />
           关系视图
@@ -192,7 +207,7 @@ export function KnowledgeGraphPanel() {
         <button
           type="button"
           onClick={() => setViewMode("graph")}
-          className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${viewMode === "graph" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          className={`rounded-md px-2.5 py-1.5 text-caption font-medium transition-colors ${viewMode === "graph" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
         >
           <NetworkIcon className="mr-1 inline size-3.5" />
           {t.knowledgePanel.graphView}
@@ -200,7 +215,7 @@ export function KnowledgeGraphPanel() {
         <button
           type="button"
           onClick={() => setViewMode("list")}
-          className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          className={`rounded-md px-2.5 py-1.5 text-caption font-medium transition-colors ${viewMode === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
         >
           <BrainIcon className="mr-1 inline size-3.5" />
           {t.knowledgePanel.listView}
@@ -213,7 +228,7 @@ export function KnowledgeGraphPanel() {
               placeholder="查找节点"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-7 rounded-md pl-8 text-xs"
+              className="h-7 rounded-md pl-8 text-caption"
             />
           </div>
         )}
@@ -281,7 +296,7 @@ export function KnowledgeGraphPanel() {
           )}
 
           {/* Implementation note. */}
-          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-2 text-caption text-muted-foreground">
             <span>
               {trimmedSearchQuery
                 ? t.knowledgeGraph.foundEntities(
@@ -295,7 +310,7 @@ export function KnowledgeGraphPanel() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-caption"
                 onClick={() => setSearchQuery("")}
               >
                 {t.knowledgeGraph.clearSearch}
@@ -329,7 +344,7 @@ export function KnowledgeGraphPanel() {
               <div className="text-sm font-medium">
                 {t.knowledgeGraph.noMatchingEntities}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-caption text-muted-foreground">
                 {t.knowledgeGraph.noMatchingEntitiesHint}
               </p>
             </div>
@@ -360,6 +375,93 @@ export function KnowledgeGraphPanel() {
   );
 }
 
+function shapePoints(points: Array<[number, number]>): string {
+  return points
+    .map(
+      ([x, y]) => `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`,
+    )
+    .join(" ");
+}
+
+/** One node mark; the shape, not a hue, carries the entity type. */
+function EntityShapeMark({
+  shape,
+  r,
+  style,
+}: {
+  shape: EntityShape;
+  r: number;
+  style: CSSProperties;
+}) {
+  switch (shape) {
+    case "square": {
+      const half = r * 0.9;
+      return (
+        <rect
+          x={-half}
+          y={-half}
+          width={half * 2}
+          height={half * 2}
+          rx={r * 0.22}
+          style={style}
+          data-entity-mark
+        />
+      );
+    }
+    case "diamond": {
+      const d = r * 1.2;
+      return (
+        <polygon
+          points={shapePoints([
+            [0, -d],
+            [d, 0],
+            [0, d],
+            [-d, 0],
+          ])}
+          style={style}
+          data-entity-mark
+        />
+      );
+    }
+    case "triangle":
+      return (
+        <polygon
+          points={shapePoints([
+            [0, -r * 1.2],
+            [r * 1.1, r * 0.8],
+            [-r * 1.1, r * 0.8],
+          ])}
+          style={style}
+          data-entity-mark
+        />
+      );
+    case "hexagon":
+      return (
+        <polygon
+          points={shapePoints(
+            Array.from({ length: 6 }, (_, index) => {
+              const angle = (Math.PI / 3) * index - Math.PI / 2;
+              return [Math.cos(angle) * r * 1.1, Math.sin(angle) * r * 1.1];
+            }),
+          )}
+          style={style}
+          data-entity-mark
+        />
+      );
+    default:
+      return <circle r={r} style={style} data-entity-mark />;
+  }
+}
+
+/** Rough label width in viewBox units: CJK glyphs are square, Latin ~0.6em. */
+function labelWidth(text: string, fontSize: number): number {
+  let width = 0;
+  for (const char of text) {
+    width += char.charCodeAt(0) > 0x2e80 ? fontSize : fontSize * 0.6;
+  }
+  return Math.max(48, width + 20);
+}
+
 function KnowledgeRelationMap({
   entities,
   relationships,
@@ -369,7 +471,7 @@ function KnowledgeRelationMap({
   relationships: KGRelationship[];
   searchQuery: string;
 }) {
-  const palette = ["#67e8f9", "#a7f3d0", "#f9a8d4", "#fde68a", "#c4b5fd"];
+  const { t } = useI18n();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [localDepth, setLocalDepth] = useState<0 | 1 | 2>(0);
@@ -491,16 +593,34 @@ function KnowledgeRelationMap({
       .replace(/^https?:\/\//, "")
       .split("/")[0]!
       .slice(0, 14);
+  const typeLabels = t.knowledgePanel.entityTypes as unknown as
+    | Record<string, string | undefined>
+    | undefined;
   const typeLabelFor = (type: string) =>
-    ({ object: "对象", subject: "主题" })[type] ?? type;
+    (typeof typeLabels === "object" ? typeLabels?.[type] : undefined) ?? type;
+  const typeCounts = new Map<string, number>();
+  entities.forEach((node) => {
+    if (!node.entity_type) return;
+    typeCounts.set(
+      node.entity_type,
+      (typeCounts.get(node.entity_type) ?? 0) + 1,
+    );
+  });
+  const selectedStyle = selectedNode
+    ? entityTypeStyle(selectedNode.entity_type)
+    : null;
+  const SelectedTypeIcon = selectedStyle?.icon;
   return (
-    <div className="relative overflow-hidden rounded-md border border-border bg-[#07101c]">
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-white/10 bg-black/35 p-1 text-mini text-white/60 backdrop-blur-md">
+    <div
+      className="relative overflow-hidden rounded-md border border-border bg-[var(--echo-surface-sunken)]"
+      data-knowledge-relation-map
+    >
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-border-default bg-background/90 p-1 text-mini text-muted-foreground backdrop-blur-md">
         <select
           aria-label="按实体类型筛选"
           value={entityType}
           onChange={(event) => setEntityType(event.target.value)}
-          className="h-6 max-w-28 rounded border-0 bg-white/10 px-1.5 text-mini text-white outline-none"
+          className="h-6 max-w-28 rounded border-0 bg-muted px-1.5 text-mini text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="all">全部类型</option>
           {entityTypes.map((type) => (
@@ -509,7 +629,7 @@ function KnowledgeRelationMap({
             </option>
           ))}
         </select>
-        <span className="mx-0.5 h-4 w-px bg-white/10" />
+        <span className="mx-0.5 h-4 w-px bg-border" />
         {(
           [
             [0, "全局"],
@@ -521,17 +641,17 @@ function KnowledgeRelationMap({
             key={depth}
             type="button"
             onClick={() => setLocalDepth(depth)}
-            className={`rounded px-2 py-1 transition-colors ${localDepth === depth ? "bg-white text-black" : "hover:bg-white/10 hover:text-white"}`}
+            className={`rounded px-2 py-1 transition-colors ${localDepth === depth ? "bg-primary text-primary-foreground" : "hover:bg-muted hover:text-foreground"}`}
           >
             {label}
           </button>
         ))}
-        <span className="mx-0.5 h-4 w-px bg-white/10" />
+        <span className="mx-0.5 h-4 w-px bg-border" />
         <button
           type="button"
           aria-pressed={hideOrphans}
           onClick={() => setHideOrphans((value) => !value)}
-          className={`rounded px-2 py-1 transition-colors ${hideOrphans ? "bg-white/15 text-white" : "hover:bg-white/10 hover:text-white"}`}
+          className={`rounded px-2 py-1 transition-colors ${hideOrphans ? "bg-muted text-foreground" : "hover:bg-muted hover:text-foreground"}`}
         >
           隐藏孤立
         </button>
@@ -539,7 +659,7 @@ function KnowledgeRelationMap({
           type="button"
           aria-pressed={showArrows}
           onClick={() => setShowArrows((value) => !value)}
-          className={`rounded px-2 py-1 transition-colors ${showArrows ? "bg-white/15 text-white" : "hover:bg-white/10 hover:text-white"}`}
+          className={`rounded px-2 py-1 transition-colors ${showArrows ? "bg-muted text-foreground" : "hover:bg-muted hover:text-foreground"}`}
         >
           方向
         </button>
@@ -556,23 +676,6 @@ function KnowledgeRelationMap({
           aria-label="知识关系图"
         >
           <defs>
-            <radialGradient id="knowledge-map-glow" cx="50%" cy="50%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity=".18" />
-              <stop offset="100%" stopColor="#07101c" stopOpacity="0" />
-            </radialGradient>
-            <filter
-              id="knowledge-map-shadow"
-              x="-80%"
-              y="-80%"
-              width="260%"
-              height="260%"
-            >
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
             <marker
               id="knowledge-map-arrow"
               viewBox="0 0 10 10"
@@ -582,28 +685,39 @@ function KnowledgeRelationMap({
               markerHeight="5"
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#93c5fd" fillOpacity=".7" />
+              <path
+                d="M 0 0 L 10 5 L 0 10 z"
+                style={{ fill: tokenVar("ink-faint") }}
+              />
+            </marker>
+            <marker
+              id="knowledge-map-arrow-focus"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
+              orient="auto-start-reverse"
+            >
+              <path
+                d="M 0 0 L 10 5 L 0 10 z"
+                style={{ fill: tokenVar(FOCUS_TOKEN) }}
+              />
             </marker>
           </defs>
-          <rect width="1000" height="560" fill="url(#knowledge-map-glow)" />
-          <circle cx="500" cy="280" r="72" fill="#38bdf8" fillOpacity=".035" />
-          <circle
-            cx="500"
-            cy="280"
-            r="118"
-            fill="none"
-            stroke="#7dd3fc"
-            strokeOpacity=".07"
-          />
-          <circle
-            cx="500"
-            cy="280"
-            r="218"
-            fill="none"
-            stroke="#7dd3fc"
-            strokeOpacity=".045"
-          />
-          <g fill="none" stroke="#93c5fd" strokeWidth="1.2">
+          {/* Orbit hairlines the rings of nodes sit on. */}
+          <g fill="none" style={{ stroke: tokenVar("line") }}>
+            {[118, 218, 300].map((radius) => (
+              <ellipse
+                key={radius}
+                cx="500"
+                cy="280"
+                rx={radius}
+                ry={radius * 0.72}
+              />
+            ))}
+          </g>
+          <g fill="none">
             {visibleRelationships.map((relationship) => {
               const source = positions.get(relationship.source_name);
               const target = positions.get(relationship.target_name);
@@ -611,109 +725,163 @@ function KnowledgeRelationMap({
               const midX = (source.x + target.x) / 2;
               const midY = (source.y + target.y) / 2 - 18;
               const related =
-                !activeNode ||
-                relationship.source_name === activeNode.name ||
-                relationship.target_name === activeNode.name;
+                !!activeNode &&
+                (relationship.source_name === activeNode.name ||
+                  relationship.target_name === activeNode.name);
               return (
                 <path
                   key={relationship.id}
                   d={`M ${source.x} ${source.y} Q ${midX} ${midY} ${target.x} ${target.y}`}
-                  strokeOpacity={related ? 0.58 : 0.09}
-                  strokeWidth={related ? 1.8 : 1}
+                  data-focus={related ? "true" : undefined}
+                  style={{
+                    stroke: tokenVar(related ? FOCUS_TOKEN : "ink-faint"),
+                  }}
+                  strokeOpacity={related ? 0.8 : activeNode ? 0.22 : 0.4}
+                  strokeWidth={related ? 1.6 : 1}
                   markerEnd={
-                    showArrows ? "url(#knowledge-map-arrow)" : undefined
+                    showArrows
+                      ? related
+                        ? "url(#knowledge-map-arrow-focus)"
+                        : "url(#knowledge-map-arrow)"
+                      : undefined
                   }
                 />
               );
             })}
           </g>
           {nodePositions.map(({ node, point, rank }) => {
-            const color =
-              palette[
-                Math.abs(
-                  node.entity_type
-                    .split("")
-                    .reduce((sum, char) => sum + char.charCodeAt(0), 0),
-                ) % palette.length
-              ];
+            const typeStyle = entityTypeStyle(node.entity_type);
             const nodeDegree = degree.get(node.name) ?? 0;
             const radius =
               rank === 0 ? 12 : Math.min(8, 4.5 + nodeDegree * 0.7);
             const selected = selectedNode?.id === node.id;
             const active = activeNode?.id === node.id;
+            const focused = selected || active;
             const connected =
               !activeNode || active || activeNeighbors.has(node.name);
             const showLabel = rank === 0 || selected;
+            const label = labelFor(node.name);
+            const fontSize = rank === 0 ? 16 : 15;
+            const pillWidth = labelWidth(label, fontSize);
+            const pillTop = -radius - 36;
             return (
               <g
                 key={node.id}
                 transform={`translate(${point.x} ${point.y})`}
-                filter="url(#knowledge-map-shadow)"
-                opacity={connected ? 1 : 0.22}
+                opacity={connected ? 1 : 0.3}
                 className="group cursor-pointer transition-opacity"
+                data-entity-type={node.entity_type}
+                data-entity-shape={typeStyle.shape}
+                data-focus={focused ? "true" : undefined}
                 onMouseEnter={() => setHoveredNodeId(node.id)}
                 onMouseLeave={() => setHoveredNodeId(null)}
                 onClick={() => setSelectedNodeId(node.id)}
               >
-                <circle
-                  r={radius * 2.7}
-                  fill={color}
-                  fillOpacity={selected ? ".2" : ".09"}
-                />
-                <circle
+                {/* Transparent hit target, larger than the mark itself. */}
+                <circle r={radius * 2.4} fill="transparent" />
+                {focused && (
+                  <circle
+                    r={radius * 2}
+                    fill="none"
+                    style={{ stroke: tokenVar(FOCUS_TOKEN) }}
+                    strokeOpacity={0.45}
+                    strokeWidth={1}
+                  />
+                )}
+                <EntityShapeMark
+                  shape={typeStyle.shape}
                   r={radius}
-                  fill={color}
-                  stroke={selected || active ? "#ffffff" : color}
-                  strokeWidth={selected || active ? 2 : 0}
+                  style={{
+                    fill: tokenVar(focused ? FOCUS_TOKEN : typeStyle.tone),
+                    stroke: tokenVar("surface-sunken"),
+                    strokeWidth: 1.5,
+                  }}
                 />
-                <rect
-                  x="-56"
-                  y={-radius - 28}
-                  width="112"
-                  height="20"
-                  rx="10"
-                  fill="#020617"
-                  fillOpacity={showLabel ? ".78" : ".2"}
-                  className={
-                    showLabel
-                      ? "opacity-100"
-                      : "opacity-0 transition-opacity group-hover:opacity-100"
-                  }
-                />
-                <text
-                  y={-radius - 14}
-                  textAnchor="middle"
-                  fill={color}
-                  fontSize={rank === 0 ? "13" : "11"}
-                  fontWeight="600"
+                <g
                   className={
                     showLabel
                       ? "opacity-100"
                       : "opacity-0 transition-opacity group-hover:opacity-100"
                   }
                 >
-                  {labelFor(node.name)}
-                </text>
+                  <rect
+                    x={-pillWidth / 2}
+                    y={pillTop}
+                    width={pillWidth}
+                    height="24"
+                    rx="4"
+                    style={{
+                      fill: tokenVar("surface-raised"),
+                      stroke: tokenVar("line-strong"),
+                    }}
+                    fillOpacity={0.94}
+                  />
+                  <text
+                    y={pillTop + 12}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={fontSize}
+                    fontWeight="600"
+                    style={{ fill: tokenVar("ink") }}
+                  >
+                    {label}
+                  </text>
+                </g>
               </g>
             );
           })}
         </svg>
       )}
       {selectedNode && (
-        <div className="absolute bottom-3 left-3 max-w-[var(--text-truncate-2xl)] rounded-md border border-white/10 bg-black/45 px-3 py-2 text-white backdrop-blur-md">
-          <div className="truncate text-xs font-semibold">
+        <div className="absolute bottom-3 left-3 max-w-[var(--text-truncate-2xl,320px)] rounded-md border border-border-default bg-background/90 px-3 py-2 text-foreground backdrop-blur-md">
+          <div className="truncate text-caption font-semibold">
             {labelFor(selectedNode.name)}
           </div>
-          <div className="mt-1 text-mini text-white/55">
-            {typeLabelFor(selectedNode.entity_type)} ·{" "}
-            {degree.get(selectedNode.name) ?? 0} 条关系
+          <div className="mt-1 flex items-center gap-1.5 text-mini text-muted-foreground">
+            {SelectedTypeIcon && (
+              <SelectedTypeIcon
+                aria-hidden
+                className="size-3.5 shrink-0"
+                strokeWidth={1.5}
+              />
+            )}
+            <span>
+              {typeLabelFor(selectedNode.entity_type)} ·{" "}
+              {degree.get(selectedNode.name) ?? 0} 条关系
+            </span>
           </div>
           {selectedNode.description && (
-            <div className="mt-1 line-clamp-2 text-mini leading-4 text-white/65">
+            <div className="mt-1 line-clamp-2 text-mini leading-4 text-muted-foreground">
               {selectedNode.description}
             </div>
           )}
         </div>
+      )}
+      {nodes.length > 0 && entityTypes.length > 0 && (
+        <ul
+          aria-label="实体类型图例"
+          className="absolute bottom-3 right-3 flex max-w-[45%] flex-wrap justify-end gap-x-3 gap-y-1 rounded-md border border-border-default bg-background/90 px-2.5 py-1.5 text-mini text-muted-foreground backdrop-blur-md"
+        >
+          {entityTypes.map((type) => {
+            const { icon: TypeIcon, tone, shape } = entityTypeStyle(type);
+            return (
+              <li
+                key={type}
+                className="flex items-center gap-1.5"
+                data-entity-shape={shape}
+              >
+                <TypeIcon
+                  aria-hidden
+                  className="size-3.5 shrink-0"
+                  strokeWidth={1.5}
+                  style={{ color: tokenVar(tone) }}
+                />
+                <span className="text-foreground">{typeLabelFor(type)}</span>
+                <span className="font-mono">{typeCounts.get(type) ?? 0}</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

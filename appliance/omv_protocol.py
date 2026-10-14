@@ -11,15 +11,47 @@ MAX_DEVICEFILE_LENGTH = 256
 SHARED_FOLDER_DESIRED_SCHEMA = "echo.omv.shared-folder-desired.v1"
 SHARED_FOLDER_PLAN_SCHEMA = "echo.omv.shared-folder-plan.v1"
 SHARED_FOLDER_CONTROL_CAPABILITY = "shared-folder.create.simple.v1"
+SHARED_FOLDER_DETACH_DESIRED_SCHEMA = "echo.omv.shared-folder-detach-desired.v1"
+SHARED_FOLDER_DETACH_PLAN_SCHEMA = "echo.omv.shared-folder-detach-plan.v1"
+SHARED_FOLDER_DETACH_CONTROL_CAPABILITY = "shared-folder.detach.safe.v1"
+SHARED_FOLDER_DELETE_DESIRED_SCHEMA = "echo.omv.shared-folder-delete-desired.v1"
+SHARED_FOLDER_DELETE_PLAN_SCHEMA = "echo.omv.shared-folder-delete-plan.v1"
+SHARED_FOLDER_DELETE_CONTROL_CAPABILITY = "shared-folder.delete.empty.v1"
+SHARED_FOLDER_RENAME_DESIRED_SCHEMA = "echo.omv.shared-folder-rename-desired.v1"
+SHARED_FOLDER_RENAME_PLAN_SCHEMA = "echo.omv.shared-folder-rename-plan.v1"
+SHARED_FOLDER_RENAME_CONTROL_CAPABILITY = "shared-folder.rename.safe.v1"
+BTRFS_SNAPSHOT_DESIRED_SCHEMA = "echo.omv.btrfs-snapshot-desired.v1"
+BTRFS_SNAPSHOT_PLAN_SCHEMA = "echo.omv.btrfs-snapshot-plan.v1"
+BTRFS_SNAPSHOT_CONTROL_CAPABILITY = "shared-folder.snapshot.create.read-only.v1"
+BTRFS_SNAPSHOT_DELETE_DESIRED_SCHEMA = "echo.omv.btrfs-snapshot-delete-desired.v1"
+BTRFS_SNAPSHOT_DELETE_PLAN_SCHEMA = "echo.omv.btrfs-snapshot-delete-plan.v1"
+BTRFS_SNAPSHOT_DELETE_CONTROL_CAPABILITY = "shared-folder.snapshot.delete.v1"
+BTRFS_SNAPSHOT_RESTORE_COPY_DESIRED_SCHEMA = "echo.omv.btrfs-snapshot-restore-copy-desired.v1"
+BTRFS_SNAPSHOT_RESTORE_COPY_PLAN_SCHEMA = "echo.omv.btrfs-snapshot-restore-copy-plan.v1"
+BTRFS_SNAPSHOT_RESTORE_COPY_CONTROL_CAPABILITY = "shared-folder.snapshot.restore-copy.v1"
+BTRFS_SNAPSHOT_LOCK_DESIRED_SCHEMA = "echo.btrfs-snapshot-lock-desired.v1"
+BTRFS_SNAPSHOT_LOCK_PLAN_SCHEMA = "echo.btrfs-snapshot-lock-plan.v1"
+BTRFS_SNAPSHOT_LOCK_CONTROL_CAPABILITY = "shared-folder.snapshot.lock.v1"
 SHARE_PRIVILEGE_DESIRED_SCHEMA = "echo.omv.share-privilege-desired.v1"
 SHARE_PRIVILEGE_PLAN_SCHEMA = "echo.omv.share-privilege-plan.v1"
 SHARE_PRIVILEGE_CONTROL_CAPABILITY = "shared-folder.privilege.simple.v1"
 SMB_DESIRED_SCHEMA = "echo.omv.smb-share-desired.v1"
 SMB_PLAN_SCHEMA = "echo.omv.smb-share-plan.v1"
+TIME_MACHINE_DESIRED_SCHEMA = "echo.storage.time-machine-desired.v1"
+TIME_MACHINE_PLAN_SCHEMA = "echo.storage.time-machine-plan.v1"
+DLNA_DESIRED_SCHEMA = "echo.storage.dlna-desired.v1"
+DLNA_PLAN_SCHEMA = "echo.storage.dlna-plan.v1"
+DLNA_CONTROL_CAPABILITY = "media.dlna-share.desired.v1"
+WEBDAV_DESIRED_SCHEMA = "echo.storage.webdav-desired.v1"
+WEBDAV_PLAN_SCHEMA = "echo.storage.webdav-plan.v1"
+WEBDAV_CONTROL_CAPABILITY = "sharing.webdav.gateway.desired.v1"
 SMB_CONTROL_CAPABILITY = "smb.share.desired.v1"
 NFS_DESIRED_SCHEMA = "echo.omv.nfs-share-desired.v1"
 NFS_PLAN_SCHEMA = "echo.omv.nfs-share-plan.v1"
 NFS_CONTROL_CAPABILITY = "nfs.share.private-network.v1"
+NFS_REMOVE_DESIRED_SCHEMA = "echo.omv.nfs-share-remove-desired.v1"
+NFS_REMOVE_PLAN_SCHEMA = "echo.omv.nfs-share-remove-plan.v1"
+NFS_REMOVE_CONTROL_CAPABILITY = "nfs.share.remove.safe.v1"
 QUOTA_DESIRED_SCHEMA = "echo.omv.filesystem-quota-desired.v1"
 QUOTA_PLAN_SCHEMA = "echo.omv.filesystem-quota-plan.v1"
 QUOTA_CONTROL_CAPABILITY = "filesystem.quota.user-group.v1"
@@ -32,8 +64,52 @@ USER_CONTROL_CAPABILITY = "account.user.create.v1"
 USER_PASSWORD_DESIRED_SCHEMA = "echo.omv.user-password-desired.v1"  # nosec B105
 USER_PASSWORD_PLAN_SCHEMA = "echo.omv.user-password-plan.v1"  # nosec B105
 USER_PASSWORD_CONTROL_CAPABILITY = "account.user.password.reset.v1"  # nosec B105
+ZFS_MIRROR_DESIRED_SCHEMA = "echo.omv.zfs-mirror-desired.v1"
+ZFS_MIRROR_PLAN_SCHEMA = "echo.omv.zfs-mirror-plan.v1"
+ZFS_MIRROR_CONTROL_CAPABILITY = "storage.pool.zfs-mirror.create.v1"
+MDRAID1_DESIRED_SCHEMA = "echo.omv.mdraid1-desired.v1"
+MDRAID1_PLAN_SCHEMA = "echo.omv.mdraid1-plan.v1"
+MDRAID1_CONTROL_CAPABILITY = "storage.array.mdraid1.create.v1"
+MDRAID1_REPLACE_DESIRED_SCHEMA = "echo.omv.mdraid1-replace-desired.v1"
+MDRAID1_REPLACE_PLAN_SCHEMA = "echo.omv.mdraid1-replace-plan.v1"
+MDRAID1_REPLACE_CONTROL_CAPABILITY = "storage.array.mdraid1.replace-failed.blank.v1"
+MDRAID_CHECK_DESIRED_SCHEMA = "echo.omv.mdraid-check-desired.v1"
+MDRAID_CHECK_PLAN_SCHEMA = "echo.omv.mdraid-check-plan.v1"
+MDRAID_CHECK_CONTROL_CAPABILITY = "storage.array.mdraid.check.start.v1"
+EXT4_VOLUME_DESIRED_SCHEMA = "echo.omv.ext4-volume-desired.v1"
+EXT4_VOLUME_PLAN_SCHEMA = "echo.omv.ext4-volume-plan.v1"
+EXT4_VOLUME_CONTROL_CAPABILITY = "storage.volume.ext4.create-mount.v1"
+EXT4_CHECK_DESIRED_SCHEMA = "echo.omv.ext4-check-desired.v1"
+EXT4_CHECK_PLAN_SCHEMA = "echo.omv.ext4-check-plan.v1"
+EXT4_CHECK_CONTROL_CAPABILITY = "storage.volume.ext4.offline-check.v1"
+BTRFS_RAID1_DESIRED_SCHEMA = "echo.omv.btrfs-raid1-desired.v1"
+BTRFS_RAID1_PLAN_SCHEMA = "echo.omv.btrfs-raid1-plan.v1"
+BTRFS_RAID1_CONTROL_CAPABILITY = "storage.volume.btrfs-raid1.create-mount.v1"
+BTRFS_SCRUB_DESIRED_SCHEMA = "echo.omv.btrfs-scrub-desired.v1"
+BTRFS_SCRUB_PLAN_SCHEMA = "echo.omv.btrfs-scrub-plan.v1"
+BTRFS_SCRUB_CONTROL_CAPABILITY = "storage.volume.btrfs.scrub.start.v1"
+BTRFS_REPLACE_DESIRED_SCHEMA = "echo.omv.btrfs-replace-desired.v1"
+BTRFS_REPLACE_PLAN_SCHEMA = "echo.omv.btrfs-replace-plan.v1"
+BTRFS_REPLACE_CONTROL_CAPABILITY = "storage.volume.btrfs-raid1.replace-missing.blank.v1"
+ZFS_POOL_EXPORT_DESIRED_SCHEMA = "echo.omv.zfs-pool-export-desired.v1"
+ZFS_POOL_EXPORT_PLAN_SCHEMA = "echo.omv.zfs-pool-export-plan.v1"
+ZFS_POOL_EXPORT_CONTROL_CAPABILITY = "storage.pool.zfs.export.safe.v1"
+ZFS_POOL_IMPORT_DESIRED_SCHEMA = "echo.omv.zfs-pool-import-desired.v1"
+ZFS_POOL_IMPORT_PLAN_SCHEMA = "echo.omv.zfs-pool-import-plan.v1"
+ZFS_POOL_IMPORT_CONTROL_CAPABILITY = "storage.pool.zfs.import.echo-root.v1"
+ZFS_MIRROR_REPLACE_DESIRED_SCHEMA = "echo.omv.zfs-mirror-replace-desired.v1"
+ZFS_MIRROR_REPLACE_PLAN_SCHEMA = "echo.omv.zfs-mirror-replace-plan.v1"
+ZFS_MIRROR_REPLACE_CONTROL_CAPABILITY = "storage.pool.zfs-mirror.replace.blank.v1"
+ZFS_SCRUB_DESIRED_SCHEMA = "echo.omv.zfs-scrub-desired.v1"
+ZFS_SCRUB_PLAN_SCHEMA = "echo.omv.zfs-scrub-plan.v1"
+ZFS_SCRUB_CONTROL_CAPABILITY = "storage.pool.zfs.scrub.start.v1"
+SMART_SELF_TEST_DESIRED_SCHEMA = "echo.omv.smart-self-test-desired.v1"
+SMART_SELF_TEST_PLAN_SCHEMA = "echo.omv.smart-self-test-plan.v1"
+SMART_SELF_TEST_CONTROL_CAPABILITY = "storage.smart.self-test.start.v1"
 HMAC_SAFETY_CONTRACT = "hmacBoundNeverReturnedOrAudited"
 MAX_QUOTA_BYTES = 2**63 - 1
+MIN_TIME_MACHINE_BYTES = 64 * 1024**3
+MAX_TIME_MACHINE_BYTES = 1024**5
 _DEVICEFILE_PATTERN = re.compile(r"/dev/[A-Za-z0-9._/+:-]+")
 _OMV_UUID_PATTERN = re.compile(
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
@@ -66,6 +142,11 @@ _WINDOWS_RESERVED_NAMES = {
     *(f"com{index}" for index in range(1, 10)),
     *(f"lpt{index}" for index in range(1, 10)),
 }
+_ZFS_POOL_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_-]{0,31}")
+_ZFS_WHOLE_DISK_PATTERN = re.compile(r"/dev/(?:sd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)")
+_MDRAID_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_-]{0,26}")
+_EXT4_VOLUME_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_-]{0,15}")
+_MD_UUID_PATTERN = re.compile(r"[0-9a-f]{8}(?::[0-9a-f]{8}){3}")
 
 
 class OmvUnavailable(RuntimeError):
@@ -109,6 +190,350 @@ def validate_devicefile(devicefile: str) -> str:
     ):
         raise ValueError("invalid OMV device path")
     return devicefile
+
+
+def validate_smart_self_test_desired(value: Any) -> dict[str, str]:
+    expected = {"schema", "devicefile", "test"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("SMART self-test desired state has unexpected fields")
+    if value.get("schema") != SMART_SELF_TEST_DESIRED_SCHEMA:
+        raise ValueError("SMART self-test desired-state schema is unsupported")
+    test = value.get("test")
+    if test not in {"short", "long"}:
+        raise ValueError("SMART self-test must be short or long")
+    return {
+        "schema": SMART_SELF_TEST_DESIRED_SCHEMA,
+        "devicefile": validate_devicefile(value.get("devicefile")),
+        "test": test,
+    }
+
+
+def validate_zfs_mirror_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "devices", "dataLossConfirmed"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("ZFS mirror desired state has unexpected fields")
+    if value.get("schema") != ZFS_MIRROR_DESIRED_SCHEMA:
+        raise ValueError("ZFS mirror desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _ZFS_POOL_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError("ZFS pool name must be a lowercase portable name of at most 32 characters")
+    if name.startswith(("mirror", "raidz", "draid", "spare", "log")) or re.match(r"c\d", name):
+        raise ValueError("ZFS pool name uses a reserved OpenZFS prefix")
+    devices = value.get("devices")
+    if not isinstance(devices, list) or len(devices) != 2:
+        raise ValueError("ZFS mirror creation requires exactly two whole disks")
+    if not all(isinstance(device, str) for device in devices):
+        raise ValueError("ZFS mirror devices must be device paths")
+    normalized = sorted(devices)
+    if len(set(normalized)) != 2 or any(
+        _ZFS_WHOLE_DISK_PATTERN.fullmatch(device) is None for device in normalized
+    ):
+        raise ValueError("ZFS mirror devices must be two distinct supported whole disks")
+    if value.get("dataLossConfirmed") is not True:
+        raise ValueError("ZFS mirror creation requires dataLossConfirmed=true")
+    return {
+        "schema": ZFS_MIRROR_DESIRED_SCHEMA,
+        "name": name,
+        "devices": normalized,
+        "dataLossConfirmed": True,
+    }
+
+
+def validate_mdraid1_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "devices", "dataLossConfirmed"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("md RAID1 desired state has unexpected fields")
+    if value.get("schema") != MDRAID1_DESIRED_SCHEMA:
+        raise ValueError("md RAID1 desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _MDRAID_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError("md RAID1 name must be a lowercase portable name of at most 27 characters")
+    devices = value.get("devices")
+    if not isinstance(devices, list) or len(devices) != 2:
+        raise ValueError("md RAID1 creation requires exactly two whole disks")
+    if not all(isinstance(device, str) for device in devices):
+        raise ValueError("md RAID1 devices must be device paths")
+    normalized = sorted(devices)
+    if len(set(normalized)) != 2 or any(
+        _ZFS_WHOLE_DISK_PATTERN.fullmatch(device) is None for device in normalized
+    ):
+        raise ValueError("md RAID1 devices must be two distinct supported whole disks")
+    if value.get("dataLossConfirmed") is not True:
+        raise ValueError("md RAID1 creation requires dataLossConfirmed=true")
+    return {
+        "schema": MDRAID1_DESIRED_SCHEMA,
+        "name": name,
+        "devices": normalized,
+        "dataLossConfirmed": True,
+    }
+
+
+def validate_mdraid1_replace_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "arrayUuid", "replacementDevice", "dataPreserved"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("md RAID1 replacement desired state has unexpected fields")
+    if value.get("schema") != MDRAID1_REPLACE_DESIRED_SCHEMA:
+        raise ValueError("md RAID1 replacement desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _MDRAID_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError("md RAID1 name must be a lowercase portable name of at most 27 characters")
+    array_uuid = value.get("arrayUuid")
+    if not isinstance(array_uuid, str) or _MD_UUID_PATTERN.fullmatch(array_uuid) is None:
+        raise ValueError("md RAID1 replacement requires a canonical managed array UUID")
+    replacement = value.get("replacementDevice")
+    if not isinstance(replacement, str) or _ZFS_WHOLE_DISK_PATTERN.fullmatch(replacement) is None:
+        raise ValueError("md RAID1 replacement must be a supported whole-disk path")
+    if value.get("dataPreserved") is not True:
+        raise ValueError("md RAID1 replacement requires dataPreserved=true")
+    return {
+        "schema": MDRAID1_REPLACE_DESIRED_SCHEMA,
+        "name": name,
+        "arrayUuid": array_uuid,
+        "replacementDevice": replacement,
+        "dataPreserved": True,
+    }
+
+
+def validate_mdraid_check_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "arrayUuid", "operation"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("md RAID1 consistency desired state has unexpected fields")
+    if value.get("schema") != MDRAID_CHECK_DESIRED_SCHEMA:
+        raise ValueError("md RAID1 consistency desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _MDRAID_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError("md RAID1 name must be a lowercase portable name of at most 27 characters")
+    array_uuid = value.get("arrayUuid")
+    if not isinstance(array_uuid, str) or _MD_UUID_PATTERN.fullmatch(array_uuid) is None:
+        raise ValueError("md RAID1 consistency check requires a canonical managed array UUID")
+    if value.get("operation") != "start":
+        raise ValueError("md RAID1 consistency operation must be start")
+    return {
+        "schema": MDRAID_CHECK_DESIRED_SCHEMA,
+        "name": name,
+        "arrayUuid": array_uuid,
+        "operation": "start",
+    }
+
+
+def validate_ext4_volume_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "arrayUuid", "name", "dataLossConfirmed"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("EXT4 volume desired state has unexpected fields")
+    if value.get("schema") != EXT4_VOLUME_DESIRED_SCHEMA:
+        raise ValueError("EXT4 volume desired-state schema is unsupported")
+    array_uuid = value.get("arrayUuid")
+    if not isinstance(array_uuid, str) or _MD_UUID_PATTERN.fullmatch(array_uuid) is None:
+        raise ValueError("EXT4 volume requires a canonical managed md RAID UUID")
+    name = value.get("name")
+    if not isinstance(name, str) or _EXT4_VOLUME_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError(
+            "EXT4 volume name must be a lowercase portable name of at most 16 characters"
+        )
+    if value.get("dataLossConfirmed") is not True:
+        raise ValueError("EXT4 volume creation requires dataLossConfirmed=true")
+    return {
+        "schema": EXT4_VOLUME_DESIRED_SCHEMA,
+        "arrayUuid": array_uuid,
+        "name": name,
+        "dataLossConfirmed": True,
+    }
+
+
+def validate_ext4_check_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "filesystemUuid", "operation"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("EXT4 offline check desired state has unexpected fields")
+    if value.get("schema") != EXT4_CHECK_DESIRED_SCHEMA:
+        raise ValueError("EXT4 offline check desired-state schema is unsupported")
+    filesystem_uuid = value.get("filesystemUuid")
+    if not isinstance(filesystem_uuid, str):
+        raise ValueError("EXT4 offline check filesystem UUID is invalid")
+    if value.get("operation") != "check":
+        raise ValueError("EXT4 offline check operation must be check")
+    return {
+        "schema": EXT4_CHECK_DESIRED_SCHEMA,
+        "filesystemUuid": validate_omv_uuid(filesystem_uuid).lower(),
+        "operation": "check",
+    }
+
+
+def validate_btrfs_raid1_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "devices", "dataLossConfirmed"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs RAID1 desired state has unexpected fields")
+    if value.get("schema") != BTRFS_RAID1_DESIRED_SCHEMA:
+        raise ValueError("Btrfs RAID1 desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _EXT4_VOLUME_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError(
+            "Btrfs RAID1 volume name must be a lowercase portable name of at most 16 characters"
+        )
+    devices = value.get("devices")
+    if not isinstance(devices, list) or len(devices) != 2:
+        raise ValueError("Btrfs RAID1 creation requires exactly two whole disks")
+    if not all(isinstance(device, str) for device in devices):
+        raise ValueError("Btrfs RAID1 devices must be device paths")
+    normalized = sorted(devices)
+    if len(set(normalized)) != 2 or any(
+        _ZFS_WHOLE_DISK_PATTERN.fullmatch(device) is None for device in normalized
+    ):
+        raise ValueError("Btrfs RAID1 devices must be two distinct supported whole disks")
+    if value.get("dataLossConfirmed") is not True:
+        raise ValueError("Btrfs RAID1 creation requires dataLossConfirmed=true")
+    return {
+        "schema": BTRFS_RAID1_DESIRED_SCHEMA,
+        "name": name,
+        "devices": normalized,
+        "dataLossConfirmed": True,
+    }
+
+
+def validate_btrfs_scrub_desired(value: Any) -> dict[str, str]:
+    expected = {"schema", "filesystemUuid", "operation"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs scrub desired state has unexpected fields")
+    if value.get("schema") != BTRFS_SCRUB_DESIRED_SCHEMA:
+        raise ValueError("Btrfs scrub desired-state schema is unsupported")
+    filesystem_uuid = value.get("filesystemUuid")
+    if not isinstance(filesystem_uuid, str) or _OMV_UUID_PATTERN.fullmatch(filesystem_uuid) is None:
+        raise ValueError("Btrfs scrub requires a canonical filesystem UUID")
+    if value.get("operation") != "start":
+        raise ValueError("Btrfs scrub operation must be start")
+    return {
+        "schema": BTRFS_SCRUB_DESIRED_SCHEMA,
+        "filesystemUuid": filesystem_uuid.lower(),
+        "operation": "start",
+    }
+
+
+def validate_btrfs_replace_desired(value: Any) -> dict[str, Any]:
+    expected = {
+        "schema",
+        "filesystemUuid",
+        "missingDevid",
+        "replacementDevice",
+        "dataPreserved",
+    }
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs replacement desired state has unexpected fields")
+    if value.get("schema") != BTRFS_REPLACE_DESIRED_SCHEMA:
+        raise ValueError("Btrfs replacement desired-state schema is unsupported")
+    filesystem_uuid = value.get("filesystemUuid")
+    if not isinstance(filesystem_uuid, str) or _OMV_UUID_PATTERN.fullmatch(filesystem_uuid) is None:
+        raise ValueError("Btrfs replacement requires a canonical filesystem UUID")
+    missing_devid = value.get("missingDevid")
+    if (
+        isinstance(missing_devid, bool)
+        or not isinstance(missing_devid, int)
+        or not 1 <= missing_devid <= 2**32 - 1
+    ):
+        raise ValueError("Btrfs replacement requires a positive numeric missing device ID")
+    replacement = value.get("replacementDevice")
+    if not isinstance(replacement, str) or _ZFS_WHOLE_DISK_PATTERN.fullmatch(replacement) is None:
+        raise ValueError("Btrfs replacement requires one supported whole disk")
+    if value.get("dataPreserved") is not True:
+        raise ValueError("Btrfs replacement requires dataPreserved=true")
+    return {
+        "schema": BTRFS_REPLACE_DESIRED_SCHEMA,
+        "filesystemUuid": filesystem_uuid.lower(),
+        "missingDevid": missing_devid,
+        "replacementDevice": replacement,
+        "dataPreserved": True,
+    }
+
+
+def _validate_zfs_pool_identity(value: Any, schema: str) -> tuple[str, str]:
+    if not isinstance(value, dict) or value.get("schema") != schema:
+        raise ValueError("ZFS pool lifecycle desired-state schema is unsupported")
+    name = value.get("name")
+    if not isinstance(name, str) or _ZFS_POOL_NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError("ZFS pool name must be a lowercase portable name of at most 32 characters")
+    raw_guid = value.get("poolGuid")
+    if not isinstance(raw_guid, str) or re.fullmatch(r"[1-9][0-9]{0,19}", raw_guid) is None:
+        raise ValueError("ZFS pool GUID must be a canonical unsigned decimal identifier")
+    if int(raw_guid) > 2**64 - 1:
+        raise ValueError("ZFS pool GUID is outside the unsigned 64-bit range")
+    return name, raw_guid
+
+
+def validate_zfs_pool_export_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "poolGuid", "dataPreserved"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("ZFS pool export desired state has unexpected fields")
+    name, pool_guid = _validate_zfs_pool_identity(value, ZFS_POOL_EXPORT_DESIRED_SCHEMA)
+    if value.get("dataPreserved") is not True:
+        raise ValueError("ZFS pool export requires dataPreserved=true")
+    return {
+        "schema": ZFS_POOL_EXPORT_DESIRED_SCHEMA,
+        "name": name,
+        "poolGuid": pool_guid,
+        "dataPreserved": True,
+    }
+
+
+def validate_zfs_pool_import_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "poolGuid", "mountPolicy"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("ZFS pool import desired state has unexpected fields")
+    name, pool_guid = _validate_zfs_pool_identity(value, ZFS_POOL_IMPORT_DESIRED_SCHEMA)
+    if value.get("mountPolicy") != "echoDataRootOnly":
+        raise ValueError("ZFS pool import requires the Echo data-root-only mount policy")
+    return {
+        "schema": ZFS_POOL_IMPORT_DESIRED_SCHEMA,
+        "name": name,
+        "poolGuid": pool_guid,
+        "mountPolicy": "echoDataRootOnly",
+    }
+
+
+def validate_zfs_mirror_replace_desired(value: Any) -> dict[str, Any]:
+    expected = {
+        "schema",
+        "name",
+        "poolGuid",
+        "oldVdevGuid",
+        "replacementDevice",
+        "dataPreserved",
+    }
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("ZFS mirror replacement desired state has unexpected fields")
+    name, pool_guid = _validate_zfs_pool_identity(value, ZFS_MIRROR_REPLACE_DESIRED_SCHEMA)
+    old_vdev_guid = value.get("oldVdevGuid")
+    if (
+        not isinstance(old_vdev_guid, str)
+        or re.fullmatch(r"[1-9][0-9]{0,19}", old_vdev_guid) is None
+        or int(old_vdev_guid) > 2**64 - 1
+    ):
+        raise ValueError("ZFS old vdev GUID must be a canonical unsigned decimal identifier")
+    replacement = value.get("replacementDevice")
+    if not isinstance(replacement, str) or _ZFS_WHOLE_DISK_PATTERN.fullmatch(replacement) is None:
+        raise ValueError("ZFS replacement must be a supported whole-disk path")
+    if value.get("dataPreserved") is not True:
+        raise ValueError("ZFS mirror replacement requires dataPreserved=true")
+    return {
+        "schema": ZFS_MIRROR_REPLACE_DESIRED_SCHEMA,
+        "name": name,
+        "poolGuid": pool_guid,
+        "oldVdevGuid": old_vdev_guid,
+        "replacementDevice": replacement,
+        "dataPreserved": True,
+    }
+
+
+def validate_zfs_scrub_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "name", "poolGuid", "operation"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("ZFS scrub desired state has unexpected fields")
+    name, pool_guid = _validate_zfs_pool_identity(value, ZFS_SCRUB_DESIRED_SCHEMA)
+    if value.get("operation") != "start":
+        raise ValueError("ZFS scrub operation must be start")
+    return {
+        "schema": ZFS_SCRUB_DESIRED_SCHEMA,
+        "name": name,
+        "poolGuid": pool_guid,
+        "operation": "start",
+    }
 
 
 def validate_omv_uuid(value: str) -> str:
@@ -256,6 +681,189 @@ def validate_shared_folder_desired(value: Any) -> dict[str, Any]:
     }
 
 
+def validate_shared_folder_detach_desired(value: Any) -> dict[str, Any]:
+    """Validate the explicit, data-preserving shared-folder detach request."""
+    expected = {"schema", "sharedFolderRef", "preserveData"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("shared folder detach desired state has unexpected fields")
+    if value.get("schema") != SHARED_FOLDER_DETACH_DESIRED_SCHEMA:
+        raise ValueError("shared folder detach desired-state schema is unsupported")
+    if value.get("preserveData") is not True:
+        raise ValueError("shared folder detach requires preserveData=true")
+    shared_folder_ref = value.get("sharedFolderRef")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    return {
+        "schema": SHARED_FOLDER_DETACH_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(shared_folder_ref).lower(),
+        "preserveData": True,
+    }
+
+
+def validate_shared_folder_delete_desired(value: Any) -> dict[str, Any]:
+    """Validate the explicit empty-directory-only shared-folder deletion."""
+    expected = {"schema", "sharedFolderRef", "emptyOnly"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("shared folder delete desired state has unexpected fields")
+    if value.get("schema") != SHARED_FOLDER_DELETE_DESIRED_SCHEMA:
+        raise ValueError("shared folder delete desired-state schema is unsupported")
+    if value.get("emptyOnly") is not True:
+        raise ValueError("shared folder delete requires emptyOnly=true")
+    shared_folder_ref = value.get("sharedFolderRef")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    return {
+        "schema": SHARED_FOLDER_DELETE_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(shared_folder_ref).lower(),
+        "emptyOnly": True,
+    }
+
+
+def validate_shared_folder_rename_desired(value: Any) -> dict[str, Any]:
+    """Validate a same-volume, single-component shared-folder rename."""
+    expected = {"schema", "sharedFolderRef", "name"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("shared folder rename desired state has unexpected fields")
+    if value.get("schema") != SHARED_FOLDER_RENAME_DESIRED_SCHEMA:
+        raise ValueError("shared folder rename desired-state schema is unsupported")
+    shared_folder_ref = value.get("sharedFolderRef")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    name = value.get("name")
+    if (
+        not isinstance(name, str)
+        or _PORTABLE_SHARE_NAME_PATTERN.fullmatch(name) is None
+        or ".." in name
+        or name.casefold() in _WINDOWS_RESERVED_NAMES
+    ):
+        raise ValueError("shared folder name is not portable across network clients")
+    return {
+        "schema": SHARED_FOLDER_RENAME_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(shared_folder_ref).lower(),
+        "name": name,
+    }
+
+
+def validate_btrfs_snapshot_desired(value: Any) -> dict[str, Any]:
+    """Validate a portable name for one read-only share snapshot."""
+    expected = {"schema", "sharedFolderRef", "name"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs snapshot desired state has unexpected fields")
+    if value.get("schema") != BTRFS_SNAPSHOT_DESIRED_SCHEMA:
+        raise ValueError("Btrfs snapshot desired-state schema is unsupported")
+    shared_folder_ref = value.get("sharedFolderRef")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    name = value.get("name")
+    if not isinstance(name, str) or re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", name) is None:
+        raise ValueError(
+            "snapshot name must start with a lowercase letter and contain only "
+            "lowercase letters, digits, underscores, or hyphens"
+        )
+    if name.startswith("auto-"):
+        raise ValueError("snapshot names beginning with auto- are reserved for the scheduler")
+    return {
+        "schema": BTRFS_SNAPSHOT_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(shared_folder_ref).lower(),
+        "name": name,
+    }
+
+
+def validate_btrfs_snapshot_delete_desired(value: Any) -> dict[str, Any]:
+    """Validate selection of one managed snapshot by opaque public UUID."""
+    expected = {"schema", "sharedFolderRef", "snapshotId"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs snapshot delete desired state has unexpected fields")
+    if value.get("schema") != BTRFS_SNAPSHOT_DELETE_DESIRED_SCHEMA:
+        raise ValueError("Btrfs snapshot delete desired-state schema is unsupported")
+    shared_folder_ref = value.get("sharedFolderRef")
+    snapshot_id = value.get("snapshotId")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    if not isinstance(snapshot_id, str):
+        raise ValueError("snapshotId must be an OMV UUID")
+    try:
+        normalized_shared_folder_ref = validate_omv_uuid(shared_folder_ref).lower()
+    except ValueError as exc:
+        raise ValueError("sharedFolderRef must be an OMV UUID") from exc
+    try:
+        normalized_snapshot_id = validate_omv_uuid(snapshot_id).lower()
+    except ValueError as exc:
+        raise ValueError("snapshotId must be an OMV UUID") from exc
+    return {
+        "schema": BTRFS_SNAPSHOT_DELETE_DESIRED_SCHEMA,
+        "sharedFolderRef": normalized_shared_folder_ref,
+        "snapshotId": normalized_snapshot_id,
+    }
+
+
+def validate_btrfs_snapshot_restore_copy_desired(value: Any) -> dict[str, Any]:
+    """Validate a non-destructive restore into a new same-volume share."""
+    expected = {"schema", "sharedFolderRef", "snapshotId", "name"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs snapshot restore-copy desired state has unexpected fields")
+    if value.get("schema") != BTRFS_SNAPSHOT_RESTORE_COPY_DESIRED_SCHEMA:
+        raise ValueError("Btrfs snapshot restore-copy desired-state schema is unsupported")
+    shared_folder_ref = value.get("sharedFolderRef")
+    snapshot_id = value.get("snapshotId")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    if not isinstance(snapshot_id, str):
+        raise ValueError("snapshotId must be an OMV UUID")
+    name = validate_shared_folder_desired(
+        {
+            "schema": SHARED_FOLDER_DESIRED_SCHEMA,
+            "mountPointRef": "11111111-2222-4333-8444-555555555555",
+            "name": value.get("name"),
+            "comment": "",
+        }
+    )["name"]
+    try:
+        normalized_shared_folder_ref = validate_omv_uuid(shared_folder_ref).lower()
+    except ValueError as exc:
+        raise ValueError("sharedFolderRef must be an OMV UUID") from exc
+    try:
+        normalized_snapshot_id = validate_omv_uuid(snapshot_id).lower()
+    except ValueError as exc:
+        raise ValueError("snapshotId must be an OMV UUID") from exc
+    return {
+        "schema": BTRFS_SNAPSHOT_RESTORE_COPY_DESIRED_SCHEMA,
+        "sharedFolderRef": normalized_shared_folder_ref,
+        "snapshotId": normalized_snapshot_id,
+        "name": name,
+    }
+
+
+def validate_btrfs_snapshot_lock_desired(value: Any) -> dict[str, Any]:
+    expected = {"schema", "sharedFolderRef", "snapshotId", "locked"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Btrfs snapshot lock desired state has unexpected fields")
+    if value.get("schema") != BTRFS_SNAPSHOT_LOCK_DESIRED_SCHEMA:
+        raise ValueError("Btrfs snapshot lock desired-state schema is unsupported")
+    if not isinstance(value.get("locked"), bool):
+        raise ValueError("Btrfs snapshot locked field must be boolean")
+    shared_folder_ref = value.get("sharedFolderRef")
+    snapshot_id = value.get("snapshotId")
+    if not isinstance(shared_folder_ref, str):
+        raise ValueError("sharedFolderRef must be an OMV UUID")
+    if not isinstance(snapshot_id, str):
+        raise ValueError("snapshotId must be an OMV UUID")
+    try:
+        normalized_shared_folder_ref = validate_omv_uuid(shared_folder_ref).lower()
+    except ValueError as exc:
+        raise ValueError("sharedFolderRef must be an OMV UUID") from exc
+    try:
+        normalized_snapshot_id = validate_omv_uuid(snapshot_id).lower()
+    except ValueError as exc:
+        raise ValueError("snapshotId must be an OMV UUID") from exc
+    return {
+        "schema": BTRFS_SNAPSHOT_LOCK_DESIRED_SCHEMA,
+        "sharedFolderRef": normalized_shared_folder_ref,
+        "snapshotId": normalized_snapshot_id,
+        "locked": value["locked"],
+    }
+
+
 def validate_share_privilege_desired(value: Any) -> dict[str, Any]:
     expected = {
         "schema",
@@ -324,6 +932,70 @@ def validate_smb_desired(value: Any) -> dict[str, Any]:
     }
 
 
+def validate_time_machine_desired(value: Any) -> dict[str, Any]:
+    """Validate one dedicated, authenticated Time Machine destination."""
+    expected = {"schema", "sharedFolderRef", "enabled", "owner", "maximumBytes"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Time Machine desired state has unexpected fields")
+    if value.get("schema") != TIME_MACHINE_DESIRED_SCHEMA:
+        raise ValueError("Time Machine desired-state schema is unsupported")
+    folder_ref = value.get("sharedFolderRef")
+    if not isinstance(folder_ref, str):
+        raise ValueError("Time Machine shared folder UUID is invalid")
+    if not isinstance(value.get("enabled"), bool):
+        raise ValueError("Time Machine desired field enabled must be boolean")
+    maximum_bytes = value.get("maximumBytes")
+    if (
+        isinstance(maximum_bytes, bool)
+        or not isinstance(maximum_bytes, int)
+        or not MIN_TIME_MACHINE_BYTES <= maximum_bytes <= MAX_TIME_MACHINE_BYTES
+        or maximum_bytes % 1024**3 != 0
+    ):
+        raise ValueError("Time Machine maximumBytes must be a whole GiB between 64 GiB and 1 PiB")
+    return {
+        "schema": TIME_MACHINE_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(folder_ref).lower(),
+        "enabled": value["enabled"],
+        "owner": validate_account_name(value.get("owner"), "Time Machine owner"),
+        "maximumBytes": maximum_bytes,
+    }
+
+
+def validate_dlna_desired(value: Any) -> dict[str, Any]:
+    """Validate one read-only ReadyMedia publication for a registered share."""
+    expected = {"schema", "sharedFolderRef", "enabled", "mediaType"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("DLNA desired state has unexpected fields")
+    if value.get("schema") != DLNA_DESIRED_SCHEMA:
+        raise ValueError("DLNA desired-state schema is unsupported")
+    folder_ref = value.get("sharedFolderRef")
+    if not isinstance(folder_ref, str):
+        raise ValueError("DLNA shared folder UUID is invalid")
+    if not isinstance(value.get("enabled"), bool):
+        raise ValueError("DLNA desired field enabled must be boolean")
+    media_type = value.get("mediaType")
+    if media_type not in {"all", "audio", "video", "pictures"}:
+        raise ValueError("DLNA mediaType must be all, audio, video or pictures")
+    return {
+        "schema": DLNA_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(folder_ref).lower(),
+        "enabled": value["enabled"],
+        "mediaType": media_type,
+    }
+
+
+def validate_webdav_desired(value: Any) -> dict[str, Any]:
+    """Validate the explicit global WebDAV publication decision."""
+
+    if not isinstance(value, dict) or set(value) != {"schema", "enabled"}:
+        raise ValueError("WebDAV desired state has unexpected fields")
+    if value.get("schema") != WEBDAV_DESIRED_SCHEMA:
+        raise ValueError("WebDAV desired-state schema is unsupported")
+    if not isinstance(value.get("enabled"), bool):
+        raise ValueError("WebDAV desired field enabled must be boolean")
+    return {"schema": WEBDAV_DESIRED_SCHEMA, "enabled": value["enabled"]}
+
+
 def validate_private_network(value: Any) -> str:
     text = _bounded_text(value, 64)
     if text is None:
@@ -364,6 +1036,23 @@ def validate_nfs_desired(value: Any) -> dict[str, Any]:
         "clientCidr": validate_private_network(value.get("clientCidr")),
         "readOnly": value["readOnly"],
         "comment": comment,
+    }
+
+
+def validate_nfs_remove_desired(value: Any) -> dict[str, Any]:
+    """Validate removal of one Echo-managed private-network export."""
+    expected = {"schema", "sharedFolderRef", "clientCidr"}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("NFS remove desired state has unexpected fields")
+    if value.get("schema") != NFS_REMOVE_DESIRED_SCHEMA:
+        raise ValueError("NFS remove desired-state schema is unsupported")
+    folder_ref = value.get("sharedFolderRef")
+    if not isinstance(folder_ref, str):
+        raise ValueError("NFS shared folder UUID is invalid")
+    return {
+        "schema": NFS_REMOVE_DESIRED_SCHEMA,
+        "sharedFolderRef": validate_omv_uuid(folder_ref).lower(),
+        "clientCidr": validate_private_network(value.get("clientCidr")),
     }
 
 

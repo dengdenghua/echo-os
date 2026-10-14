@@ -48,6 +48,8 @@ describe("Coder Codex API", () => {
         compatible: true,
         compatibility_reason: null,
         provider: "openai",
+        execution_available: false,
+        execution_unavailable_reason: "account_required",
       }),
     );
 
@@ -55,6 +57,8 @@ describe("Coder Codex API", () => {
       source: "codex_account",
       effective_model: "gpt-5.6-codex",
       compatible: true,
+      execution_available: false,
+      execution_unavailable_reason: "account_required",
     });
   });
 
@@ -88,6 +92,31 @@ describe("Coder Codex API", () => {
         }),
       }),
     );
+  });
+
+  it("keeps Codex control-plane writes on the page origin that holds the session cookie", async () => {
+    // Golden path 2026-10: in dev the model-profile PUT was sent to the
+    // "other" loopback host (localhost <-> 127.0.0.1). The HttpOnly session
+    // cookie belongs to the page host only, so picking a model answered 401.
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        mode: "follow_system",
+        effective_model: "echo-offline-demo",
+        compatible: true,
+      }),
+    );
+
+    await updateCoderModelProfile({
+      source: "follow_system",
+      model: "echo-offline-demo",
+    });
+    fetchMock.mockResolvedValue(jsonResponse({ state: "idle" }));
+    await checkCoderUpstreamUpdate();
+    await approveCoderUpstreamUpdate("1.2.3");
+
+    for (const [url] of fetchMock.mock.calls as [string][]) {
+      expect(url).toMatch(/^\/api\/coder\/codex\//);
+    }
   });
 
   it("submits an API key only in the request body and never browser storage or URL", async () => {
@@ -209,5 +238,13 @@ describe("Coder Codex API", () => {
         "codex",
       ),
     ).toEqual({});
+    expect(
+      applyCoderModelProfileBoundary(
+        "custom-coder",
+        { model_name: "chatgpt/gpt-5.6-sol", reasoning_effort: "high" },
+        "codex",
+        true,
+      ),
+    ).toEqual({ model_name: "chatgpt/gpt-5.6-sol", reasoning_effort: "high" });
   });
 });

@@ -111,6 +111,23 @@ export interface CoderModelProfile {
   compatibility_reason: string | null;
   provider: string | null;
   proxy_required: boolean;
+  /** Additive readiness fields; older gateways may omit them. */
+  execution_available?: boolean;
+  execution_unavailable_reason?: string | null;
+}
+
+/**
+ * Whether this device has a Codex App Server at all. Account, login and quota
+ * calls all start that server, so on a device without it they can only fail;
+ * the profile already says so and the UI shows its reason instead.
+ */
+export function codexRuntimeInstalled(
+  profile: CoderModelProfile | undefined,
+): boolean {
+  return (
+    profile !== undefined &&
+    profile.execution_unavailable_reason !== "executable_unavailable"
+  );
 }
 
 export interface UpdateCoderModelProfile {
@@ -305,31 +322,11 @@ export async function getCoderModelProfile(
   return normalizeModelProfile(await response.json());
 }
 
-function getCoderMutationBaseURL(): string {
-  const configured = getBackendBaseURL();
-  if (configured || !import.meta.env.DEV || typeof window === "undefined") {
-    return configured;
-  }
-
-  // Dev pages share localhost's HTTP/1.1 connection pool with several SSE
-  // streams. Use the equivalent loopback host for small control-plane writes
-  // so a model selection cannot sit behind those long-lived connections.
-  const { protocol, hostname, port } = window.location;
-  const alternateHost =
-    hostname === "localhost"
-      ? "127.0.0.1"
-      : hostname === "127.0.0.1"
-        ? "localhost"
-        : null;
-  if (!alternateHost) return configured;
-  return `${protocol}//${alternateHost}${port ? `:${port}` : ""}`;
-}
-
 export async function updateCoderModelProfile(
   input: UpdateCoderModelProfile,
 ): Promise<CoderModelProfile> {
   const response = await fetch(
-    `${getCoderMutationBaseURL()}/api/coder/codex/model-profile`,
+    `${getBackendBaseURL()}/api/coder/codex/model-profile`,
     {
       method: "PUT",
       headers: jsonAuthHeaders(),
@@ -369,7 +366,7 @@ export async function getCoderUpstreamUpdate(
 
 export async function checkCoderUpstreamUpdate(): Promise<CoderUpstreamUpdate> {
   const response = await fetch(
-    `${getCoderMutationBaseURL()}/api/coder/codex/upstream-update/check`,
+    `${getBackendBaseURL()}/api/coder/codex/upstream-update/check`,
     { method: "POST", headers: authHeaders() },
   );
   if (!response.ok) {
@@ -385,7 +382,7 @@ export async function approveCoderUpstreamUpdate(
   version: string,
 ): Promise<CoderUpstreamUpdate> {
   const response = await fetch(
-    `${getCoderMutationBaseURL()}/api/coder/codex/upstream-update/approve`,
+    `${getBackendBaseURL()}/api/coder/codex/upstream-update/approve`,
     {
       method: "POST",
       headers: jsonAuthHeaders(),
@@ -404,6 +401,11 @@ export async function approveCoderUpstreamUpdate(
 function normalizeModelProfile(payload: unknown): CoderModelProfile {
   const row = (payload ?? {}) as Record<string, unknown>;
   const rawModelSource = row.model_source;
+  const compatible = row.compatible === true;
+  const executionAvailable =
+    typeof row.execution_available === "boolean"
+      ? row.execution_available
+      : compatible;
   return {
     source: row.mode === "chatgpt" ? "codex_account" : "follow_system",
     selected_model:
@@ -421,13 +423,18 @@ function normalizeModelProfile(payload: unknown): CoderModelProfile {
       rawModelSource === "codex_default"
         ? rawModelSource
         : "codex_default",
-    compatible: row.compatible === true,
+    compatible,
     compatibility_reason:
       typeof row.compatibility_reason === "string"
         ? row.compatibility_reason
         : null,
     provider: typeof row.provider === "string" ? row.provider : null,
     proxy_required: row.proxy_required === true,
+    execution_available: executionAvailable,
+    execution_unavailable_reason:
+      typeof row.execution_unavailable_reason === "string"
+        ? row.execution_unavailable_reason
+        : null,
   };
 }
 
@@ -442,9 +449,15 @@ export function applyCoderModelProfileBoundary<
 >(
   agentId: string | null | undefined,
   context: T,
-  executionEngine?: "echo" | "codex",
+  executionEngine?: "echo" | "codex" | "opencode",
+  allowTaskOverride = false,
 ): T {
-  if (executionEngine !== "codex" && agentId !== "coder") return context;
+  if (
+    allowTaskOverride ||
+    (executionEngine !== "codex" && agentId !== "coder")
+  ) {
+    return context;
+  }
   const next = { ...context };
   delete next.model_name;
   delete next.reasoning_effort;

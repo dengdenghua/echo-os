@@ -26,6 +26,7 @@ vi.mock("@/core/config", () => ({
 
 vi.mock("@/core/auth/api", () => ({
   authHeaders: () => ({ Authorization: "Bearer test-token" }),
+  currentActorId: () => "test-actor",
 }));
 
 const APP = WORKBENCH_BUILTIN_APPS.find(
@@ -193,6 +194,10 @@ describe("RemoteWorkbenchSurface", () => {
       await screen.findByRole("heading", { name: "叙事工坊暂时不可用" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/尚未安装/)).toBeInTheDocument();
+    // Not installed is not a risk: no amber warning badge.
+    const badge = document.querySelector("[data-issue-tone]");
+    expect(badge).toHaveAttribute("data-issue-tone", "neutral");
+    expect(badge?.querySelector(".lucide-package")).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /重新检查/ }));
     await waitFor(() =>
@@ -246,6 +251,10 @@ describe("RemoteWorkbenchSurface", () => {
       await screen.findByText(/安装包损坏或完整性校验失败/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/digest mismatch/)).not.toBeInTheDocument();
+    expect(document.querySelector("[data-issue-tone]")).toHaveAttribute(
+      "data-issue-tone",
+      "warning",
+    );
     expect(
       screen.getByRole("button", { name: "前往重新安装" }),
     ).toBeInTheDocument();

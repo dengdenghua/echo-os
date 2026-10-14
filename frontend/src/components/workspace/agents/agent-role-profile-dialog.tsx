@@ -4,19 +4,27 @@ import {
   Bot,
   ChevronRight,
   CircuitBoard,
+  ClipboardList,
   ImagePlus,
   Link,
+  ListTree,
   Loader2,
   Plus,
+  Radar,
   Save,
   Shield,
   Sparkles,
+  TrendingUp,
   Upload,
   Wrench,
   X,
 } from "lucide-react";
 import type { EvolutionStoryChange } from "@/core/evolution/api";
-import { useEvolutionOverview, useSkillPerformance, useEvolutionStory } from "@/core/evolution/hooks";
+import {
+  useEvolutionOverview,
+  useSkillPerformance,
+  useEvolutionStory,
+} from "@/core/evolution/hooks";
 import {
   calculateLevel,
   calculateXP,
@@ -30,9 +38,10 @@ import { GrowthTimeline } from "@/components/workspace/evolution-dashboard/growt
 import type { TimelineEvent } from "@/components/workspace/evolution-dashboard/growth-timeline";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { AuthenticatedImage } from "@/components/ui/authenticated-image";
 import { Button } from "@/components/ui/button";
-import { withAgentAvatarVersion } from "@/core/agents/avatar";
+import { isEchoAgentId, withAgentAvatarVersion } from "@/core/agents/avatar";
 import {
   Dialog,
   DialogContent,
@@ -595,9 +604,12 @@ function AgentCoreVisual({
   );
   const visualUrls = agent.visual_urls ?? {};
   const activeGeneratedVisual = visualUrls[view] ?? null;
-  const activeAvatar = agent.avatar_url
-    ? withAgentAvatarVersion(agent.avatar_url)
-    : null;
+  // The default Echo agent's portrait is the ECHO mark, never an image.
+  const isEchoAgent = isEchoAgentId(agent.name) || isEchoAgentId(agent.id);
+  const activeAvatar =
+    agent.avatar_url && !isEchoAgent
+      ? withAgentAvatarVersion(agent.avatar_url)
+      : null;
   const activeVisual = activeGeneratedVisual ?? activeAvatar;
   const isAvatarOnly = Boolean(activeVisual && !activeGeneratedVisual);
   const switchAgents = agents.length > 0 ? agents : [agent];
@@ -692,8 +704,8 @@ function AgentCoreVisual({
             className={cn(
               "group relative h-[74px] w-[62px] rounded-sm border bg-black/18 p-1 text-left transition xl:h-[92px] xl:w-[78px]",
               view === key
-                ? "border-[#f4e86f] shadow-[0_0_18px_rgba(244,232,111,0.16)]"
-                : "border-white/10 opacity-45 hover:opacity-85",
+                ? "border-core"
+                : "border-border opacity-45 hover:opacity-85",
             )}
             type="button"
             onClick={() => setView(key)}
@@ -732,7 +744,7 @@ function AgentCoreVisual({
           )}
         </Button>
       </div>
-      <div className="absolute left-4 top-4 z-20 hidden items-center gap-2 rounded-sm border border-white/10 bg-black/15 px-3 py-2">
+      <div className="absolute left-4 top-4 z-20 hidden items-center gap-2 rounded-sm border border-border bg-black/15 px-3 py-2">
         <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary)/0.75)]" />
         <span className="font-mono text-xs uppercase tracking-eyebrow text-muted-foreground">
           {t.agentConfig.visualTitle}
@@ -740,8 +752,8 @@ function AgentCoreVisual({
       </div>
       <div className="relative z-10 h-full min-h-[520px] px-4 pb-8 pt-8 xl:min-h-[620px] xl:px-6 xl:pb-10 xl:pt-10">
         <div className="relative flex h-full min-h-0 items-end justify-center overflow-hidden pr-20 xl:pr-24">
-          <div className="absolute bottom-[60px] h-16 w-[62%] rounded-[50%] border border-[#f4e86f]/25 bg-[#f4e86f]/10 shadow-[0_0_34px_rgba(244,232,111,0.12)]" />
-          <div className="absolute bottom-[100px] left-[10%] right-[18%] h-px bg-white/10" />
+          <div className="absolute bottom-[60px] h-16 w-[62%] rounded-[50%] border border-white/15 bg-white/[0.06]" />
+          <div className="absolute bottom-[100px] left-[10%] right-[18%] h-px bg-card/10" />
           <div className="relative z-10 flex h-[500px] w-full max-w-[460px] items-end justify-center xl:h-[640px] xl:max-w-[580px]">
             {activeVisual ? (
               <div
@@ -756,37 +768,44 @@ function AgentCoreVisual({
                   className={cn(
                     "object-contain drop-shadow-2xl",
                     isAvatarOnly
-                      ? "h-[300px] w-[300px] rounded-md border border-white/10 bg-white/95 object-center p-0 mix-blend-normal xl:h-[360px] xl:w-[360px]"
+                      ? "h-[300px] w-[300px] rounded-md border border-border bg-card/95 object-center p-0 mix-blend-normal xl:h-[360px] xl:w-[360px]"
                       : "max-h-full w-full object-center",
                   )}
                   fallback={
-                    <div className="mb-24 flex size-32 items-center justify-center rounded-sm border border-primary/35 bg-background text-6xl shadow-[var(--shadow-xs)]">
-                      {agent.icon || (
-                        <Bot className="size-16 text-muted-foreground" />
-                      )}
-                    </div>
+                    <AgentAvatarTile
+                      agentId={agent.name}
+                      name={agent.display_name}
+                      avatar={agent.icon}
+                      className="mb-24 size-32 rounded-lg"
+                    />
                   }
                   src={activeVisual}
                 />
               </div>
             ) : (
               <div className="mb-28 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                <div className="flex size-32 items-center justify-center rounded-sm border border-primary/35 bg-background text-6xl shadow-[var(--shadow-xs)]">
-                  {agent.icon || <Bot className="size-16" />}
-                </div>
-                <span className="font-mono text-xs uppercase tracking-eyebrow">
-                  {t.agentConfig.visualMissing}
-                </span>
+                <AgentAvatarTile
+                  agentId={agent.name}
+                  name={agent.display_name}
+                  avatar={agent.icon}
+                  label={agent.display_name}
+                  className="size-32 rounded-lg"
+                />
+                {isEchoAgent ? null : (
+                  <span className="font-mono text-xs uppercase tracking-eyebrow">
+                    {t.agentConfig.visualMissing}
+                  </span>
+                )}
               </div>
             )}
-            <div className="absolute bottom-[52px] left-[6%] right-[6%] h-9 border-y border-[#111]/30 bg-[#f4e86f] text-center font-mono text-xs font-semibold uppercase tracking-[0.55em] text-[#232323] shadow-[0_0_24px_rgba(244,232,111,0.18)]">
+            <div className="absolute bottom-[52px] left-[6%] right-[6%] h-9 border-y border-[#111]/30 bg-white text-center font-mono text-xs font-semibold uppercase tracking-[0.55em] text-[#232323]">
               <div className="flex h-full items-center justify-center gap-4">
                 <span className="h-px w-10 bg-[#232323]/50" />
                 {t.agentConfig.visualSystemOnline}
                 <span className="h-px w-10 bg-[#232323]/50" />
               </div>
             </div>
-            <div className="absolute -bottom-2 left-1/2 z-30 flex max-w-[92%] -translate-x-1/2 scroll-px-3 items-center gap-2 overflow-x-auto rounded-sm border border-white/10 bg-black/35 px-2 py-2 shadow-[0_12px_34px_rgba(0,0,0,0.28)] backdrop-blur [scrollbar-width:none]">
+            <div className="absolute -bottom-2 left-1/2 z-30 flex max-w-[92%] -translate-x-1/2 scroll-px-3 items-center gap-2 overflow-x-auto rounded-sm border border-border bg-black/35 px-2 py-2 shadow-[0_12px_34px_rgba(0,0,0,0.28)] backdrop-blur [scrollbar-width:none]">
               <span
                 aria-hidden="true"
                 className="block shrink-0"
@@ -800,6 +819,8 @@ function AgentCoreVisual({
                 const avatar = candidate.avatar_url
                   ? withAgentAvatarVersion(candidate.avatar_url)
                   : null;
+                const candidateIsEcho =
+                  isEchoAgentId(candidate.name) || isEchoAgentId(candidate.id);
                 return (
                   <button
                     key={candidate.id}
@@ -812,26 +833,29 @@ function AgentCoreVisual({
                     className={cn(
                       "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-sm border bg-white/[0.04] text-sm transition",
                       active
-                        ? "border-[#f4e86f] shadow-[0_0_18px_rgba(244,232,111,0.22)]"
-                        : "border-white/12 opacity-68 hover:border-white/28 hover:opacity-100",
+                        ? "border-core"
+                        : "border-border opacity-68 hover:border-border hover:opacity-100",
                     )}
                     onClick={() => {
                       if (!active) onSelectAgent?.(candidate);
                     }}
                   >
-                    {avatar ? (
+                    {avatar && !candidateIsEcho ? (
                       <AuthenticatedImage
                         alt={candidate.display_name}
-                        className="size-full bg-white object-cover object-top"
+                        className="size-full bg-card object-cover object-top"
                         src={avatar}
                       />
                     ) : (
-                      <span className="text-lg leading-none">
-                        {candidate.icon || <Bot className="size-4" />}
-                      </span>
+                      <AgentAvatarTile
+                        agentId={candidate.name}
+                        name={candidate.display_name}
+                        avatar={candidate.icon}
+                        className="size-full rounded-none"
+                      />
                     )}
                     {active ? (
-                      <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-[#f4e86f]" />
+                      <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-core" />
                     ) : null}
                   </button>
                 );
@@ -841,7 +865,7 @@ function AgentCoreVisual({
                   type="button"
                   aria-label={t.agentWorld.newAgent}
                   title={t.agentWorld.newAgent}
-                  className="group relative flex size-11 shrink-0 items-center justify-center rounded-sm border border-dashed border-[#f4e86f]/45 bg-[#f4e86f]/8 text-[#f4e86f] transition hover:border-[#f4e86f]/85 hover:bg-[#f4e86f]/14"
+                  className="group relative flex size-11 shrink-0 items-center justify-center rounded-sm border border-dashed border-white/25 bg-white/[0.04] text-white/72 transition hover:border-white/50 hover:bg-white/[0.08] hover:text-white"
                   onClick={onCreateAgent}
                 >
                   <Plus className="size-4 transition-transform group-hover:scale-110" />
@@ -860,8 +884,11 @@ function AgentCoreVisual({
         </div>
       </div>
       <Dialog open={visualPromptOpen} onOpenChange={setVisualPromptOpen}>
-        <DialogContent className="max-h-[88vh] overflow-hidden rounded-sm border-white/10 bg-[#191919] p-0 text-white shadow-2xl sm:max-w-2xl">
-          <div className="relative overflow-hidden border-b border-white/10 bg-[#202020]/92 px-5 py-4">
+        <DialogContent
+          data-echo-theme="graphite"
+          className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-2xl"
+        >
+          <div className="relative overflow-hidden border-b border-border bg-[#202020]/92 px-5 py-4">
             <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:28px_28px]" />
             <DialogTitle className="relative flex items-center gap-2 text-base">
               <ImagePlus className="size-4 text-primary" />
@@ -877,7 +904,7 @@ function AgentCoreVisual({
               {visualPromptGroups.map((group) => (
                 <div
                   key={group.id}
-                  className="rounded-sm border border-white/8 bg-black/18 p-3"
+                  className="rounded-sm border border-border bg-black/18 p-3"
                 >
                   <div className="mb-2 font-mono text-xs uppercase tracking-eyebrow text-white/44">
                     {group.label}
@@ -894,15 +921,15 @@ function AgentCoreVisual({
                           className={cn(
                             "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs leading-5 transition",
                             active
-                              ? "border-[#f4e86f]/45 bg-[#f4e86f]/12 text-white"
-                              : "border-white/10 bg-white/[0.025] text-white/52 hover:border-white/22 hover:text-white/82",
+                              ? "border-core/45 bg-core/12 text-white"
+                              : "border-border bg-white/[0.025] text-white/52 hover:border-border hover:text-white/82",
                           )}
                           onClick={() => toggleVisualPromptOption(option.id)}
                         >
                           <span
                             className={cn(
                               "size-1.5 rounded-full",
-                              active ? "bg-[#f4e86f]" : "bg-white/18",
+                              active ? "bg-core" : "bg-card/18",
                             )}
                           />
                           {option.label}
@@ -913,12 +940,12 @@ function AgentCoreVisual({
                 </div>
               ))}
 
-              <div className="rounded-sm border border-white/8 bg-black/18 p-3">
+              <div className="rounded-sm border border-border bg-black/18 p-3">
                 <div className="mb-2 font-mono text-xs uppercase tracking-eyebrow text-white/44">
                   {t.agentRoleProfile.customAdditions}
                 </div>
                 <Textarea
-                  className="min-h-[92px] resize-none border-white/10 bg-black/24 text-sm leading-6 text-white placeholder:text-white/28"
+                  className="min-h-[92px] resize-none border-border bg-black/24 text-sm leading-6 text-white placeholder:text-white/28"
                   placeholder={t.agentRoleProfile.customPromptPlaceholder}
                   value={customVisualPrompt}
                   onChange={(event) =>
@@ -927,7 +954,7 @@ function AgentCoreVisual({
                 />
               </div>
 
-              <div className="rounded-sm border border-white/8 bg-black/18 p-3">
+              <div className="rounded-sm border border-border bg-black/18 p-3">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="font-mono text-xs uppercase tracking-eyebrow text-white/44">
                     {t.agentRoleProfile.referenceImages}
@@ -940,7 +967,7 @@ function AgentCoreVisual({
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                   <Textarea
-                    className="min-h-[58px] resize-none border-white/10 bg-black/24 text-xs leading-5 text-white placeholder:text-white/28"
+                    className="min-h-[58px] resize-none border-border bg-black/24 text-xs leading-5 text-white placeholder:text-white/28"
                     placeholder={
                       t.agentRoleProfile.referenceImageUrlPlaceholder
                     }
@@ -949,7 +976,7 @@ function AgentCoreVisual({
                       setReferenceImageInput(event.target.value)
                     }
                   />
-                  <label className="inline-flex h-[58px] cursor-pointer items-center justify-center gap-2 rounded-sm border border-white/12 bg-white/[0.04] px-3 text-xs text-white/72 transition hover:border-[#f4e86f]/45 hover:text-white">
+                  <label className="inline-flex h-[58px] cursor-pointer items-center justify-center gap-2 rounded-sm border border-border bg-white/[0.04] px-3 text-xs text-white/72 transition hover:border-white/40 hover:text-white">
                     <Upload className="size-3.5" />
                     {t.agentRoleProfile.upload}
                     <input
@@ -968,7 +995,7 @@ function AgentCoreVisual({
                     {referenceImages.map((image, index) => (
                       <div
                         key={`${image.slice(0, 48)}-${index}`}
-                        className="relative size-16 shrink-0 overflow-hidden rounded-sm border border-white/10 bg-white/[0.035]"
+                        className="relative size-16 shrink-0 overflow-hidden rounded-sm border border-border bg-white/[0.035]"
                       >
                         <img
                           alt={t.agentRoleProfile.referenceImageAlt(index)}
@@ -994,12 +1021,12 @@ function AgentCoreVisual({
                 ) : null}
               </div>
 
-              <div className="rounded-sm border border-white/8 bg-white/[0.025] p-3">
+              <div className="rounded-sm border border-border bg-white/[0.025] p-3">
                 <div className="mb-2 font-mono text-xs uppercase tracking-eyebrow text-white/36">
                   Prompt Preview
                 </div>
                 {referenceImages.length > 0 ? (
-                  <div className="mb-2 text-xs text-[#f4e86f]/78">
+                  <div className="mb-2 text-xs text-white/60">
                     {t.agentRoleProfile.referenceImagesGenerateHint(
                       referenceImages.length,
                     )}
@@ -1012,9 +1039,9 @@ function AgentCoreVisual({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-[#202020]/92 px-5 py-3">
+          <div className="flex items-center justify-between gap-3 border-t border-border bg-[#202020]/92 px-5 py-3">
             <Button
-              className="h-8 rounded-sm border-white/12 bg-black/20 px-3 text-xs text-white/76 hover:bg-white/8 hover:text-white"
+              className="h-8 rounded-sm border-border bg-black/20 px-3 text-xs text-white/76 hover:bg-card/8 hover:text-white"
               type="button"
               variant="outline"
               onClick={() => {
@@ -1028,7 +1055,7 @@ function AgentCoreVisual({
             </Button>
             <div className="flex items-center gap-2">
               <Button
-                className="h-8 rounded-sm border-white/12 bg-black/20 px-3 text-xs text-white/76 hover:bg-white/8 hover:text-white"
+                className="h-8 rounded-sm border-border bg-black/20 px-3 text-xs text-white/76 hover:bg-card/8 hover:text-white"
                 type="button"
                 variant="outline"
                 onClick={() => setVisualPromptOpen(false)}
@@ -1036,7 +1063,7 @@ function AgentCoreVisual({
                 {t.agentRoleProfile.cancel}
               </Button>
               <Button
-                className="h-8 rounded-sm bg-[#f4e86f] px-4 text-xs text-[#232323] hover:bg-[#fff27c]"
+                className="h-8 rounded-sm px-4 text-xs"
                 disabled={generateVisuals.isPending}
                 type="button"
                 onClick={() => void handleGenerateVisuals()}
@@ -1115,22 +1142,32 @@ export function AgentRoleProfileDialog({
     if (!evolutionData || !skillPerformances) return null;
 
     const skills = transformToSkills(skillPerformances);
-    const abilityScores = calculateAbilityScores(evolutionData, skillPerformances, "general");
+    const abilityScores = calculateAbilityScores(
+      evolutionData,
+      skillPerformances,
+      "general",
+    );
 
     // Generate timeline events from evolution story
     const timelineEvents: TimelineEvent[] = [];
 
     if (evolutionStory?.changes) {
-      evolutionStory.changes.slice(0, 10).forEach((change: EvolutionStoryChange, idx: number) => {
-        timelineEvents.push({
-          id: `event-${idx}`,
-          type: change.kind === 'skill' ? 'skill' :
-                change.kind === 'rule' ? 'rule' : 'achievement',
-          timestamp: new Date(Date.now() - idx * 86400000).toISOString(),
-          title: change.title || '未知事件',
-          description: change.content || change.kind,
+      evolutionStory.changes
+        .slice(0, 10)
+        .forEach((change: EvolutionStoryChange, idx: number) => {
+          timelineEvents.push({
+            id: `event-${idx}`,
+            type:
+              change.kind === "skill"
+                ? "skill"
+                : change.kind === "rule"
+                  ? "rule"
+                  : "achievement",
+            timestamp: new Date(Date.now() - idx * 86400000).toISOString(),
+            title: change.title || "未知事件",
+            description: change.content || change.kind,
+          });
         });
-      });
     }
 
     return {
@@ -1356,8 +1393,9 @@ export function AgentRoleProfileDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          data-echo-theme="graphite"
           className={cn(
-            "!h-[min(760px,86vh)] !w-[min(1180px,92vw)] !max-w-none overflow-hidden border-white/12 bg-[#2a2a2a] p-0 text-white shadow-2xl sm:rounded-lg",
+            "!h-[min(760px,86vh)] !w-[min(1180px,92vw)] !max-w-none overflow-hidden border-border bg-[#2a2a2a] p-0 text-white shadow-2xl sm:rounded-lg",
             "data-[state=open]:duration-base",
           )}
           showCloseButton={false}
@@ -1382,7 +1420,7 @@ export function AgentRoleProfileDialog({
                   >
                     <ChevronRight className="size-5 rotate-180" />
                   </Button>
-                  <div className="flex items-center gap-2 rounded-sm border border-white/8 bg-white/[0.025] px-2 py-1 font-mono text-xs uppercase tracking-eyebrow text-muted-foreground">
+                  <div className="flex items-center gap-2 rounded-sm border border-border bg-white/[0.025] px-2 py-1 font-mono text-xs uppercase tracking-eyebrow text-muted-foreground">
                     <span
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
@@ -1411,49 +1449,61 @@ export function AgentRoleProfileDialog({
                       <h1 className="mt-4 truncate text-5xl font-semibold leading-none text-white">
                         {agent.display_name}
                       </h1>
-                      <p className="mt-3 text-xl font-medium leading-7 text-[#f4e86f]">
+                      <p className="mt-3 text-xl font-medium leading-7 text-white/72">
                         {characterProfile.epithet}
                       </p>
 
                       {/* Evolution Level Display */}
-                      {evolutionData && (() => {
-                        const level = calculateLevel(evolutionData.learning_events);
-                        const stars = calculateStars(level);
-                        const { progress } = calculateXP(evolutionData.learning_events);
-                        const getStars = (count: number) => "⭐".repeat(count);
-                        const getTitle = (lvl: number) => {
-                          if (lvl <= 5) return "新手";
-                          if (lvl <= 10) return "学徒";
-                          if (lvl <= 20) return "熟手";
-                          if (lvl <= 35) return "专家";
-                          if (lvl <= 50) return "大师";
-                          if (lvl <= 75) return "宗师";
-                          return "传奇";
-                        };
+                      {evolutionData &&
+                        (() => {
+                          const level = calculateLevel(
+                            evolutionData.learning_events,
+                          );
+                          const stars = calculateStars(level);
+                          const { progress } = calculateXP(
+                            evolutionData.learning_events,
+                          );
+                          const getStars = (count: number) =>
+                            "⭐".repeat(count);
+                          const getTitle = (lvl: number) => {
+                            if (lvl <= 5) return "新手";
+                            if (lvl <= 10) return "学徒";
+                            if (lvl <= 20) return "熟手";
+                            if (lvl <= 35) return "专家";
+                            if (lvl <= 50) return "大师";
+                            if (lvl <= 75) return "宗师";
+                            return "传奇";
+                          };
 
-                        return (
-                          <div className="mt-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="font-semibold text-primary">Lv.{level}</span>
-                              <span className="text-xs">{getStars(stars)}</span>
-                              <span className="text-white/60">· 🎯 {getTitle(level)}</span>
-                            </div>
-                            <div className="mt-2">
-                              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                                <div
-                                  className="h-full rounded-full bg-[#f4e86f] transition-all duration-500"
-                                  style={{ width: `${progress}%` }}
-                                />
+                          return (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold text-primary">
+                                  Lv.{level}
+                                </span>
+                                <span className="text-xs">
+                                  {getStars(stars)}
+                                </span>
+                                <span className="text-white/60">
+                                  · 🎯 {getTitle(level)}
+                                </span>
                               </div>
-                              <p className="mt-1 text-xs text-white/50">
-                                {progress}% → Lv.{level + 1}
-                              </p>
+                              <div className="mt-2">
+                                <div className="h-1.5 overflow-hidden rounded-full bg-card/10">
+                                  <div
+                                    className="h-full rounded-full bg-core transition-all duration-500"
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                                <p className="mt-1 text-xs text-white/50">
+                                  {progress}% → Lv.{level + 1}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
 
-                      <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-sm border border-white/10 bg-white/10">
+                      <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-sm border border-border bg-card/10">
                         {identityRows.map(([label, value]) => (
                           <div
                             key={`${label}-${value}`}
@@ -1470,7 +1520,7 @@ export function AgentRoleProfileDialog({
                       </div>
                     </div>
 
-                    <div className="mt-6 border-l-2 border-[#f4e86f] bg-[#f4e86f]/[0.045] px-4 py-3">
+                    <div className="mt-6 border-l-2 border-white/30 bg-white/[0.04] px-4 py-3">
                       <p className="text-base font-medium leading-7 text-white/95">
                         &ldquo;{characterProfile.quote}&rdquo;
                       </p>
@@ -1479,7 +1529,7 @@ export function AgentRoleProfileDialog({
                     <div className="mt-6">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-eyebrow text-muted-foreground">
-                          <span className="h-px w-4 bg-white/18" />
+                          <span className="h-px w-4 bg-card/18" />
                           PERSONA
                         </div>
                         <span className="font-mono text-xs uppercase tracking-eyebrow text-white/32">
@@ -1493,7 +1543,7 @@ export function AgentRoleProfileDialog({
 
                     <div className="mt-5">
                       <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-eyebrow text-muted-foreground">
-                        <span className="h-px w-4 bg-white/18" />
+                        <span className="h-px w-4 bg-card/18" />
                         {t.agentConfig.characterBackgroundLabel}
                       </div>
                       <p className="line-clamp-4 text-xs leading-6 text-white/68">
@@ -1531,7 +1581,7 @@ export function AgentRoleProfileDialog({
                         {personaTags.slice(0, 4).map((tag) => (
                           <span
                             key={tag}
-                            className="truncate rounded-sm border border-white/10 bg-white/[0.035] px-2 py-1 text-xs leading-4 text-white/66"
+                            className="truncate rounded-sm border border-border bg-white/[0.035] px-2 py-1 text-xs leading-4 text-white/66"
                             title={tag}
                           >
                             {tag}
@@ -1562,16 +1612,16 @@ export function AgentRoleProfileDialog({
                         </div>
                       </div>
 
-                      <div className="rounded-sm border border-white/10 bg-black/10 px-3 py-2.5">
+                      <div className="rounded-sm border border-border bg-black/10 px-3 py-2.5">
                         <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-eyebrow text-white/48">
-                          <span className="h-px w-4 bg-white/18" />
+                          <span className="h-px w-4 bg-card/18" />
                           {t.agentConfig.characterBoundaryLabel}
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {boundaryTags.map((item) => (
                             <span
                               key={item}
-                              className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-xs leading-5 text-white/62"
+                              className="rounded-full border border-border bg-white/[0.035] px-2.5 py-1 text-xs leading-5 text-white/62"
                             >
                               {item}
                             </span>
@@ -1611,12 +1661,12 @@ export function AgentRoleProfileDialog({
                 {/* Bottom Tabs Section */}
                 <div className="mt-3 shrink-0 space-y-2">
                   {/* Tab Navigation */}
-                  <div className="flex items-center gap-1 border-b border-white/10 pb-0">
+                  <div className="flex items-center gap-1 border-b border-border pb-0">
                     {[
-                      { id: "overview", label: "概览", icon: "📋" },
-                      { id: "growth", label: "成长数据", icon: "📈" },
-                      { id: "radar", label: "能力雷达", icon: "🎯" },
-                      { id: "skills", label: "技能树", icon: "🌳" },
+                      { id: "overview", label: "概览", icon: ClipboardList },
+                      { id: "growth", label: "成长数据", icon: TrendingUp },
+                      { id: "radar", label: "能力雷达", icon: Radar },
+                      { id: "skills", label: "技能树", icon: ListTree },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -1625,11 +1675,19 @@ export function AgentRoleProfileDialog({
                           "relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition",
                           activeBottomTab === tab.id
                             ? "text-primary"
-                            : "text-white/50 hover:text-white/80"
+                            : "text-white/50 hover:text-white/80",
                         )}
-                        onClick={() => setActiveBottomTab(tab.id as "overview" | "growth" | "radar" | "skills")}
+                        onClick={() =>
+                          setActiveBottomTab(
+                            tab.id as
+                              | "overview"
+                              | "growth"
+                              | "radar"
+                              | "skills",
+                          )
+                        }
                       >
-                        <span>{tab.icon}</span>
+                        <tab.icon className="size-4" aria-hidden />
                         <span>{tab.label}</span>
                         {activeBottomTab === tab.id && (
                           <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
@@ -1639,20 +1697,20 @@ export function AgentRoleProfileDialog({
                   </div>
 
                   {/* Tab Content */}
-                  <div className="max-h-[180px] overflow-y-auto rounded-sm border border-white/10 bg-black/10 p-3 [scrollbar-width:thin]">
+                  <div className="max-h-[180px] overflow-y-auto rounded-sm border border-border bg-black/10 p-3 [scrollbar-width:thin]">
                     {activeBottomTab === "overview" && (
                       <div className="space-y-2">
                         <div className="font-mono text-xs uppercase tracking-eyebrow text-white/48">
                           角色概览
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="rounded-sm border border-white/8 bg-white/[0.025] p-2">
+                          <div className="rounded-sm border border-border bg-white/[0.025] p-2">
                             <div className="text-white/50">总任务数</div>
                             <div className="mt-1 text-lg font-semibold text-white">
                               {evolutionData?.learning_events || 0}
                             </div>
                           </div>
-                          <div className="rounded-sm border border-white/8 bg-white/[0.025] p-2">
+                          <div className="rounded-sm border border-border bg-white/[0.025] p-2">
                             <div className="text-white/50">成功率</div>
                             <div className="mt-1 text-lg font-semibold text-primary">
                               {evolutionData?.skills?.avg_success_rate
@@ -1660,13 +1718,13 @@ export function AgentRoleProfileDialog({
                                 : "N/A"}
                             </div>
                           </div>
-                          <div className="rounded-sm border border-white/8 bg-white/[0.025] p-2">
+                          <div className="rounded-sm border border-border bg-white/[0.025] p-2">
                             <div className="text-white/50">技能数</div>
                             <div className="mt-1 text-lg font-semibold text-white">
                               {skillPerformances?.length || 0}
                             </div>
                           </div>
-                          <div className="rounded-sm border border-white/8 bg-white/[0.025] p-2">
+                          <div className="rounded-sm border border-border bg-white/[0.025] p-2">
                             <div className="text-white/50">规则数</div>
                             <div className="mt-1 text-lg font-semibold text-white">
                               {evolutionData?.memory?.categories?.rules || 0}
@@ -1681,7 +1739,8 @@ export function AgentRoleProfileDialog({
                         <div className="font-mono text-xs uppercase tracking-eyebrow text-white/48">
                           成长时间线
                         </div>
-                        {tabData?.timelineEvents && tabData.timelineEvents.length > 0 ? (
+                        {tabData?.timelineEvents &&
+                        tabData.timelineEvents.length > 0 ? (
                           <GrowthTimeline
                             events={tabData.timelineEvents}
                             className="max-h-[120px]"
@@ -1699,7 +1758,8 @@ export function AgentRoleProfileDialog({
                         <div className="font-mono text-xs uppercase tracking-eyebrow text-white/48">
                           六维能力图
                         </div>
-                        {tabData?.abilityScores && tabData.abilityScores.length > 0 ? (
+                        {tabData?.abilityScores &&
+                        tabData.abilityScores.length > 0 ? (
                           <AbilityRadarChart
                             data={tabData.abilityScores}
                             size={140}
@@ -1733,7 +1793,7 @@ export function AgentRoleProfileDialog({
                   </div>
                 </div>
 
-                <div className="mt-3 shrink-0 border-t border-white/10 bg-[#2a2a2a]/94 pt-2 shadow-[0_-14px_28px_rgba(0,0,0,0.16)] backdrop-blur">
+                <div className="mt-3 shrink-0 border-t border-border bg-[#2a2a2a]/94 pt-2 shadow-[0_-14px_28px_rgba(0,0,0,0.16)] backdrop-blur">
                   <div className="max-w-[360px]">
                     <div className="flex items-center gap-1.5">
                       <div className="mr-1 flex min-w-0 items-center gap-1.5 font-mono text-xs uppercase tracking-caps text-white/48">
@@ -1751,7 +1811,7 @@ export function AgentRoleProfileDialog({
                               type="button"
                               aria-label={action.label}
                               title={`${action.label} · ${action.hint}`}
-                              className="group flex h-10 min-w-0 items-center gap-1 rounded-sm border border-white/8 bg-white/[0.025] px-1.5 text-white/78 transition hover:border-primary/28 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                              className="group flex h-10 min-w-0 items-center gap-1 rounded-sm border border-border bg-white/[0.025] px-1.5 text-white/78 transition hover:border-primary/28 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                               onClick={action.onClick}
                             >
                               <Icon className="size-3.5 shrink-0 text-primary/82" />
@@ -1770,7 +1830,7 @@ export function AgentRoleProfileDialog({
                       <button
                         aria-expanded={configExpanded}
                         aria-label={t.agentConfig.configDockTitle}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-white/8 bg-white/[0.025] text-white/52 transition hover:border-primary/28 hover:text-primary"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-white/[0.025] text-white/52 transition hover:border-primary/28 hover:text-primary"
                         type="button"
                         onClick={() => setConfigExpanded((value) => !value)}
                       >
@@ -1783,7 +1843,7 @@ export function AgentRoleProfileDialog({
                       </button>
                     </div>
                     {configExpanded ? (
-                      <div className="mt-2 space-y-2 border-t border-white/8 pt-2">
+                      <div className="mt-2 space-y-2 border-t border-border pt-2">
                         <div className="grid grid-cols-2 gap-1.5">
                           {configActions.map((action) => {
                             const Icon = action.icon;
@@ -1795,7 +1855,7 @@ export function AgentRoleProfileDialog({
                                 className="group flex min-h-[40px] min-w-0 items-start gap-2 rounded-sm px-1.5 py-1 text-left transition hover:bg-white/[0.055] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                                 onClick={action.onClick}
                               >
-                                <span className="flex size-5 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-white/[0.04] text-primary/85 transition group-hover:border-primary/35 group-hover:bg-primary/10">
+                                <span className="flex size-5 shrink-0 items-center justify-center rounded-sm border border-border bg-white/[0.04] text-primary/85 transition group-hover:border-primary/35 group-hover:bg-primary/10">
                                   <Icon className="size-3" />
                                 </span>
                                 <span className="min-w-0 flex-1">
@@ -1834,8 +1894,11 @@ export function AgentRoleProfileDialog({
       </Dialog>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="max-h-[88vh] overflow-hidden rounded-sm border-white/10 bg-[#191919] p-0 text-white shadow-2xl sm:max-w-3xl">
-          <div className="relative overflow-hidden border-b border-white/10 bg-[#202020]/90 px-5 py-4">
+        <DialogContent
+          data-echo-theme="graphite"
+          className="max-h-[88vh] overflow-hidden rounded-sm border-border bg-[#191919] p-0 text-white shadow-2xl sm:max-w-3xl"
+        >
+          <div className="relative overflow-hidden border-b border-border bg-[#202020]/90 px-5 py-4">
             <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:28px_28px]" />
             <DialogTitle className="relative">
               {t.agentConfig.configureProfileAction}
@@ -1848,7 +1911,7 @@ export function AgentRoleProfileDialog({
             <div>
               <FieldLabel label={t.agentConfig.descriptionLabel} />
               <Textarea
-                className="mt-1 min-h-[96px] border-white/10 bg-black/25 text-sm text-white"
+                className="mt-1 min-h-[96px] border-border bg-black/25 text-sm text-white"
                 disabled={isLoading || isSaving}
                 value={form.description}
                 onChange={(event) =>
@@ -1862,7 +1925,7 @@ export function AgentRoleProfileDialog({
                 hint={t.agentConfig.modelHint}
               />
               <Input
-                className="mt-1 h-9 border-white/10 bg-black/25 text-white"
+                className="mt-1 h-9 border-border bg-black/25 text-white"
                 disabled={isLoading || isSaving}
                 placeholder={t.agentConfig.modelPlaceholder}
                 value={form.model}
@@ -1872,14 +1935,14 @@ export function AgentRoleProfileDialog({
             <div>
               <FieldLabel label={t.agentConfig.promptTitle} />
               <Textarea
-                className="mt-1 min-h-[260px] border-white/10 bg-black/25 font-mono text-xs leading-5 text-white"
+                className="mt-1 min-h-[260px] border-border bg-black/25 font-mono text-xs leading-5 text-white"
                 disabled={isLoading || isSaving}
                 placeholder={t.agentConfig.soulPlaceholder}
                 value={form.soul}
                 onChange={(event) => setField("soul", event.target.value)}
               />
             </div>
-            <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button
                 className="rounded-sm"
                 variant="ghost"

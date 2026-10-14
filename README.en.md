@@ -42,19 +42,27 @@ Echo OS does not duplicate document indexing. It talks to the sibling
 
 ## Quick Start
 
+The 10-minute path (first boot → login → first task → approval → result) is
+[docs/GOLDEN_PATH.md](docs/GOLDEN_PATH.md). You need
+[uv](https://docs.astral.sh/uv/) 0.11.25 and Node.js 20+ with corepack; do not
+use `pip` or a bare `python`.
+
 ```bash
 # Install the unified development environment from this repository.
-make install
+git submodule update --init
+uv sync --locked --extra dev --extra serve --extra tracing --extra web --extra local-auth
+cd frontend && corepack pnpm install --frozen-lockfile
 
-# Build a source-verified Agent bundle, then start the appliance stack.
-make agent-bundle
-make up
+# Start the Agent backend (127.0.0.1:8000) and the desktop (localhost:3000).
+corepack pnpm dev:with-agent
 
-# Run the appliance contract and integration tests.
-make test
+# Tests: plain `uv run pytest` collects only tests/appliance; CI runs the whole tree.
+uv run pytest tests/ -q --timeout=60 -p no:cacheprovider
 ```
 
-For local QA snapshots, device deployment, and recovery procedures, see the
+The Docker appliance stack (Linux host with Docker and GNU make) is built from a
+clean checkout with `make agent-bundle && make up`. For local QA snapshots,
+device deployment, and recovery procedures, see the
 [NAS deployment guide](deploy/appliance/README.md).
 
 ## CLI
@@ -72,15 +80,9 @@ all live inside this repository and release as one Echo OS version.
 Echo OS is distributed under Apache-2.0. Bundled OpenAI components retain their
 own notices and license files in the release artifacts.
 
-To run the embedded workbench with the OS backend:
-
-```bash
-cd frontend
-pnpm dev:with-agent
-```
-
-This starts the Agent backend on `127.0.0.1:8000` and the only frontend on port
-3000. The full setup is documented in
+`corepack pnpm dev:with-agent` (from `frontend/`) runs the embedded workbench
+with the OS backend: the Agent backend on `127.0.0.1:8000` and the only
+frontend on port 3000. The full setup is documented in
 [Echo Agent workbench integration](docs/ECHO_AGENT_INTEGRATION.md).
 
 Start with the [documentation ownership map](docs/README.md), the

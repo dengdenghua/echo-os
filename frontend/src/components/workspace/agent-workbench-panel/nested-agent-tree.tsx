@@ -80,11 +80,11 @@ function AgentNodeRow({
   const indent = node.depth * 16;
 
   const statusColor = {
-    running: "text-blue-500",
-    waiting_approval: "text-yellow-500",
-    done: "text-green-500",
-    pending: "text-gray-400",
-    error: "text-red-500",
+    running: "text-core",
+    waiting_approval: "text-warning",
+    done: "text-core",
+    pending: "text-muted-foreground",
+    error: "text-breach",
   }[node.tile.status];
 
   return (
@@ -127,12 +127,17 @@ function AgentNodeRow({
           <span className="w-4 flex-shrink-0" />
         )}
 
-        <span className="text-base flex-shrink-0">{node.tile.avatar ?? "🤖"}</span>
+        <span className="text-base flex-shrink-0">
+          {node.tile.avatar ?? "🤖"}
+        </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <span className="truncate font-medium">
-              {node.tile.codename || node.tile.roleDisplayName || node.tile.role || node.tile.name}
+              {node.tile.codename ||
+                node.tile.roleDisplayName ||
+                node.tile.role ||
+                node.tile.name}
             </span>
             {node.tile.iterationCount !== undefined && (
               <span className="text-xs text-muted-foreground">
@@ -205,9 +210,7 @@ function NestedAgentTreeImpl({
   }
 
   return (
-    <div className="flex flex-col gap-0.5 py-1">
-      {tree.map(renderNode)}
-    </div>
+    <div className="flex flex-col gap-0.5 py-1">{tree.map(renderNode)}</div>
   );
 }
 

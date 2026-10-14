@@ -217,9 +217,7 @@ describe("device link panel", () => {
       "href",
       "https://echo-os.example.ts.net",
     );
-    expect(
-      screen.getByText(/Tentacle 控制端口仍只在局域网/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/手机控制端口仍只在局域网/)).toBeInTheDocument();
     expect(screen.getByText(/WireGuard \+ HTTPS/)).toBeInTheDocument();
   });
 
@@ -249,5 +247,60 @@ describe("device link panel", () => {
       true,
       "approved",
     );
+  });
+
+  it("triggers onOpenPhoneMirror when clicking 多屏协同 button on an online phone", async () => {
+    const user = userEvent.setup();
+    const onOpenPhoneMirror = vi.fn();
+    render(
+      <DeviceLinkPanel
+        open
+        onClose={vi.fn()}
+        onOpenPhoneMirror={onOpenPhoneMirror}
+      />,
+    );
+
+    await screen.findByText("Echo Pocket");
+    const mirrorBtn = screen.getByRole("button", {
+      name: /多屏协同 Echo Pocket/,
+    });
+    expect(mirrorBtn).toBeInTheDocument();
+
+    await user.click(mirrorBtn);
+    expect(onOpenPhoneMirror).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "phone-1" }),
+    );
+  });
+
+  it("says there is no paired phone when opened from 手机镜像", async () => {
+    vi.mocked(fetchDeviceLinkStatus).mockResolvedValue({
+      ...status,
+      pairedDeviceCount: 0,
+      onlineDeviceCount: 0,
+      devices: [],
+    });
+    render(<DeviceLinkPanel open intent="phone-mirror" onClose={vi.fn()} />);
+
+    const notice = await screen.findByRole("status", { name: "手机镜像" });
+    expect(notice).toHaveTextContent("还没有配对的手机");
+    expect(notice).toHaveTextContent("在上方添加设备");
+  });
+
+  it("points at 多屏协同 when a paired phone is online", async () => {
+    render(<DeviceLinkPanel open intent="phone-mirror" onClose={vi.fn()} />);
+
+    await screen.findByText("Echo Pocket");
+    expect(screen.getByRole("status", { name: "手机镜像" })).toHaveTextContent(
+      "选择一台手机开始镜像",
+    );
+  });
+
+  it("shows no phone-mirror notice when opened as 设备连接", async () => {
+    render(<DeviceLinkPanel open onClose={vi.fn()} />);
+
+    await screen.findByText("Echo Pocket");
+    expect(
+      screen.queryByRole("status", { name: "手机镜像" }),
+    ).not.toBeInTheDocument();
   });
 });

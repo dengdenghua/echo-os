@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 MAX_JSON_BYTES = 8 * 1024 * 1024
 MAX_SIGNATURE_BYTES = 1024 * 1024
 MAX_PLUGIN_BYTES = 32 * 1024 * 1024
@@ -75,6 +75,12 @@ CANDIDATE_RUNNER_POLICIES = {
     "realOmvX86": "github-hosted-only",
     "appliance": "github-hosted-only",
 }
+NAS_RUNTIME_PROFILE = {
+    "product": "echo-nas-appliance",
+    "host": "debian-13-openmediavault-8",
+    "deployment": "oci-compose",
+    "echoOsImageRole": "separate-native-desktop-artifact",
+}
 CANDIDATE_ATTESTATIONS = {
     "osImageManifest": ("osImage", "refs/heads/os-main"),
     "osImageSignature": ("osImage", "refs/heads/os-main"),
@@ -103,9 +109,11 @@ def _reject_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _read_regular(path: Path, maximum: int, label: str) -> bytes:
-    flags = os.O_RDONLY | os.O_CLOEXEC
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    if path.is_symlink():
+        raise ReleaseEvidenceError(f"{label} is unavailable")
+    flags = os.O_RDONLY
+    for flag_name in ("O_CLOEXEC", "O_NOFOLLOW", "O_BINARY"):
+        flags |= getattr(os, flag_name, 0)
     try:
         descriptor = os.open(path, flags)
     except OSError as exc:
@@ -848,6 +856,7 @@ def build_index(
                 for name, run in candidate["runs"].items()
             },
         },
+        "nasRuntimeProfile": dict(NAS_RUNTIME_PROFILE),
         "osImage": {
             "manifestSha256": _sha256(raw_bytes),
             "signatureSha256": raw_signature["signatureSha256"],
@@ -912,17 +921,23 @@ def _write_new(path: Path, payload: Mapping[str, Any]) -> None:
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
-        os.chmod(temporary, 0o444)
+        if os.name != "nt":
+            os.chmod(temporary, 0o444)
         try:
             os.link(temporary, target, follow_symlinks=False)
         except FileExistsError as exc:
             raise ReleaseEvidenceError("output must remain a new path") from exc
         temporary.unlink()
-        directory = os.open(parent, os.O_RDONLY)
         try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
+            directory = os.open(parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        except OSError:
+            pass
+        if os.name == "nt":
+            target.chmod(0o444)
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise

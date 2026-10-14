@@ -47,11 +47,11 @@ export function FeedbackStats({
     return (
       <div className={cn("flex items-center gap-3 text-sm", className)}>
         <div className="flex items-center gap-1.5">
-          <ThumbsUpIcon className="text-green-600 dark:text-green-400 size-3.5" />
+          <ThumbsUpIcon className="text-core size-3.5" />
           <span className="text-muted-foreground">{stats.thumbs_up}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <ThumbsDownIcon className="text-red-600 dark:text-red-400 size-3.5" />
+          <ThumbsDownIcon className="text-breach size-3.5" />
           <span className="text-muted-foreground">{stats.thumbs_down}</span>
         </div>
         {totalMessages > 0 && (
@@ -79,7 +79,7 @@ export function FeedbackStats({
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
-              <ThumbsUpIcon className="text-green-600 dark:text-green-400 size-4" />
+              <ThumbsUpIcon className="text-core size-4" />
               <span className="text-sm font-medium">{stats.thumbs_up}</span>
             </div>
             <p className="text-muted-foreground text-xs">Positive</p>
@@ -87,14 +87,16 @@ export function FeedbackStats({
 
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
-              <ThumbsDownIcon className="text-red-600 dark:text-red-400 size-4" />
+              <ThumbsDownIcon className="text-breach size-4" />
               <span className="text-sm font-medium">{stats.thumbs_down}</span>
             </div>
             <p className="text-muted-foreground text-xs">Negative</p>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm font-medium">{positiveRatio.toFixed(0)}%</div>
+            <div className="text-sm font-medium">
+              {positiveRatio.toFixed(0)}%
+            </div>
             <p className="text-muted-foreground text-xs">Positive Rate</p>
           </div>
         </div>
@@ -119,7 +121,9 @@ export function FeedbackStats({
         {/* Top tags */}
         {topTags.length > 0 && (
           <div className="space-y-2">
-            <p className="text-muted-foreground text-xs font-medium">Top Tags</p>
+            <p className="text-muted-foreground text-xs font-medium">
+              Top Tags
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {topTags.map(([tag, count]) => (
                 <span

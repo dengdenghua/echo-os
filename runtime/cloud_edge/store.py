@@ -486,7 +486,7 @@ class CloudEdgeStore:
             rows = conn.execute(
                 f"""SELECT share_id, source_thread_id, snapshot_json, created_at, expires_at
                 FROM public_thread_shares WHERE {where}
-                ORDER BY created_at DESC, share_id DESC LIMIT ?""",
+                ORDER BY created_at DESC, share_id DESC LIMIT ?""",  # nosec B608 # static where with parameterized inputs
                 params,
             ).fetchall()
         result: list[dict[str, Any]] = []

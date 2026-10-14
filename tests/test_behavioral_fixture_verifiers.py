@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
+
+import pytest
 
 from benchmarks.trusted_verifier_controller import UnsafeLocalWorkerLauncher
 from benchmarks.verifiers import verify_concurrent_cache, verify_path_boundary
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+pytestmark = pytest.mark.skipif(
+    os.name != "posix", reason="trusted tree observation requires POSIX directory descriptors"
+)
 
 
 def _verify(script: str, workspace: Path) -> dict[str, object]:
@@ -195,4 +201,3 @@ class FileService:
     result = _verify("verify_path_boundary.py", workspace)
 
     assert result["passed"] is True, result
-

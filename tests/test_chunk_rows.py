@@ -10,6 +10,8 @@ JSONL write/read integration, fail-loud decode, and the rollback knob.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
+from itertools import count
 from pathlib import Path
 from uuid import uuid4
 
@@ -30,9 +32,17 @@ from runtime.memory.journal._chunk_rows import (
 )
 from runtime.memory.journal._journal_models import UserMessageEvent
 
+_TICKS = count()
+
+
+def _timestamp() -> datetime:
+    """Packing requires increasing timestamps; OS clocks may repeat a tick."""
+    return datetime(2026, 1, 1, tzinfo=UTC) + timedelta(microseconds=next(_TICKS))
+
 
 def _chunk(delta: str, *, iteration: int = 1, kind: str = "text-delta") -> AssistantChunkEvent:
     return AssistantChunkEvent(
+        ts=_timestamp(),
         event_id=uuid4(),
         iteration=iteration,
         kind=kind,
@@ -75,6 +85,7 @@ class TestClassify:
         def _sd(delta: str, session_id: str) -> dict:
             entry = classify_chunk(
                 SubTextDeltaEvent(
+                    ts=_timestamp(),
                     event_id=uuid4(),
                     role_id="r",
                     round=1,
@@ -254,7 +265,7 @@ class TestJSONLIntegration:
 
         journal = JSONLJournal(tmp_path / "j.jsonl")
         for delta in ("a", "b", "c", "d"):
-            journal.write(SubTextDeltaEvent(role_id="r", round=1, delta=delta))
+            journal.write(SubTextDeltaEvent(ts=_timestamp(), role_id="r", round=1, delta=delta))
         journal.write(UserMessageEvent(text="flush"))
 
         lines = (tmp_path / "j.jsonl").read_text().strip().splitlines()
@@ -304,4 +315,3 @@ class TestReasoningLanePacking:
             "text-delta",
             "text-delta",
         ]
-

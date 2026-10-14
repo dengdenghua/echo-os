@@ -1,0 +1,23 @@
+/* ECHO display + telemetry faces (SIL OFL 1.1, see fonts/OFL-*.txt). Copy fonts/*.woff2 next to this file's
+   referencing stylesheet and fix the url() paths for each product. Inter stays as each product already ships it. */
+@font-face {
+  font-family: "Michroma";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/michroma-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2");
+}

@@ -9,6 +9,12 @@ from typing import Any
 
 import pytest
 
+if os.name == "nt":
+    pytest.skip(
+        "power state recovery lab requires Linux device and service semantics",
+        allow_module_level=True,
+    )
+
 from deploy.appliance import operations_bundle, operations_systemd_lab
 from deploy.appliance import operations_systemd as systemd
 from deploy.appliance import power_state_recovery_lab as lab
@@ -22,7 +28,7 @@ BOOT_B = "22222222-2222-4222-8222-222222222222"
 
 def _candidate_index(tmp_path: Path, report: dict[str, Any]) -> Path:
     value: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
             "repository": "dengdenghua/echo-os",
@@ -33,6 +39,12 @@ def _candidate_index(tmp_path: Path, report: dict[str, Any]) -> Path:
         },
         "evidence": {
             "candidatePreflight": {"reportId": "4" * 64},
+            "nasRuntimeProfile": {
+                "product": "echo-nas-appliance",
+                "host": "debian-13-openmediavault-8",
+                "deployment": "oci-compose",
+                "echoOsImageRole": "separate-native-desktop-artifact",
+            },
             "appliance": {
                 "manifestSha256": "5" * 64,
                 "immutableReference": TARGET_IMAGE,

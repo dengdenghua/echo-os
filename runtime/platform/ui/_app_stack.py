@@ -403,11 +403,13 @@ def wire_stack(
         cowork_runtime = create_cowork_runtime(
             thread_store=thread_store,
             enable_runner=stack is not None,
+            registry=stack.executor.registry if stack is not None else None,
         )
         app.state.cowork_runtime = cowork_runtime
         app.state.cowork_group_store = cowork_runtime.group_store
         app.state.cowork_async_store = cowork_runtime.async_store
         app.state.collaboration_store = cowork_runtime.collaboration_store
+        cowork_runtime.coordination.logs_root = ctx.paths.data_dir / "threads"
         if (
             stack is not None
             and cowork_runtime.runner_enabled

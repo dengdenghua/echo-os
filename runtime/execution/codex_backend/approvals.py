@@ -101,7 +101,9 @@ class CodexApprovalBroker:
         if not item_id:
             return self._denial(request.method)
         args_preview = self._args_preview(request)
-        detail = str(request.params.get("reason") or "Codex requested approval")[:1000]
+        # Only Codex's own reason. Inventing one put "Codex requested approval"
+        # in front of a Chinese UI, which has its own wording for a bare request.
+        detail = str(request.params.get("reason") or "")[:1000]
         outer_request = EchoApprovalRequest(
             thread_id=self._outer_thread_id,
             tool_name=tool_name,

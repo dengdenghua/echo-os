@@ -73,9 +73,9 @@ _CODENAME_POOL: tuple[str, ...] = (
     "Frost",
 )
 
-# Role → emoji avatar. Falls back to 🐙 (echo mascot) for unknown
-# roles. Kept short so the UI doesn't have to ship an icon library
-# just for sub-agent tiles.
+# Role → avatar hint. The UI draws every role as a monogram tile and
+# never prints these emoji; they stay for API compatibility. Unknown roles
+# fall back to the "echo" token, which the UI renders as the ECHO mark.
 _ROLE_AVATAR: dict[str, str] = {
     "researcher": "🔍",
     "research": "🔍",
@@ -102,7 +102,7 @@ _ROLE_AVATAR: dict[str, str] = {
     "evaluator": "⚖️",
     "generator": "✨",
 }
-_DEFAULT_AVATAR = "🐙"
+_DEFAULT_AVATAR = "echo"
 
 
 def _codename_for_role(role: str) -> str:

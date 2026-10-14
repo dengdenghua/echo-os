@@ -111,8 +111,12 @@ assert_equal "$distribution_version" 13 "container distribution version"
 
 assert_equal "$(dpkg-deb -f "$source_package" Package)" openmediavault-echo-os \
   "source package identity"
-assert_equal "$(dpkg-deb -f "$source_package" Version)" 0.2.0-1 \
-  "source package version"
+# The package version follows the product version (frontend/package.json);
+# the source package is always its first Debian revision.
+source_version=$(dpkg-deb -f "$source_package" Version)
+upstream_version=${source_version%-1}
+[ -n "$upstream_version" ] && [ "$upstream_version-1" = "$source_version" ] ||
+  fail "source package version must be <upstream>-1: $source_version"
 assert_equal "$(dpkg-deb -f "$source_package" Architecture)" all \
   "source package architecture"
 
@@ -201,18 +205,18 @@ export ECHO_LIFECYCLE_GROUP_STATE=$group_state
 
 omv8_package=$work_directory/openmediavault_8.3.1-1_all.deb
 omv9_package=$work_directory/openmediavault_9.0.0-1_all.deb
-plugin_upgrade=$work_directory/openmediavault-echo-os_0.2.0-2_all.deb
-plugin_candidate=$work_directory/openmediavault-echo-os_0.2.0-3_all.deb
-plugin_failed_upgrade=$work_directory/openmediavault-echo-os_0.2.0-4_all.deb
+plugin_upgrade=$work_directory/openmediavault-echo-os_${upstream_version}-2_all.deb
+plugin_candidate=$work_directory/openmediavault-echo-os_${upstream_version}-3_all.deb
+plugin_failed_upgrade=$work_directory/openmediavault-echo-os_${upstream_version}-4_all.deb
 build_omv_fixture 8.3.1-1 "$omv8_package"
 build_omv_fixture 9.0.0-1 "$omv9_package"
-build_plugin_variant 0.2.0-2 "$plugin_upgrade" false
-build_plugin_variant 0.2.0-3 "$plugin_candidate" false
-build_plugin_variant 0.2.0-4 "$plugin_failed_upgrade" true
+build_plugin_variant "$upstream_version-2" "$plugin_upgrade" false
+build_plugin_variant "$upstream_version-3" "$plugin_candidate" false
+build_plugin_variant "$upstream_version-4" "$plugin_failed_upgrade" true
 
 dpkg --install "$omv8_package" >/dev/null
 install_plugin "$source_package"
-assert_installed_version 0.2.0-1
+assert_installed_version "$upstream_version-1"
 assert_file /usr/lib/systemd/system/echo-omv-bridge.service
 assert_file /usr/lib/echo-os/omv-bridge/appliance/omv_bridge.py
 assert_file /usr/lib/echo-os/omv-bridge/platform_preflight.py
@@ -225,16 +229,16 @@ assert_file "$group_state"
 assert_sentinel
 
 install_plugin "$plugin_upgrade"
-assert_installed_version 0.2.0-2
+assert_installed_version "$upstream_version-2"
 assert_sentinel
 
 if ECHO_LIFECYCLE_INJECT_POSTINST_FAILURE=1 install_plugin "$plugin_failed_upgrade"; then
   fail "injected postinst failure unexpectedly succeeded"
 fi
-assert_equal "$(package_status)" "install ok half-configured|0.2.0-4" \
+assert_equal "$(package_status)" "install ok half-configured|$upstream_version-4" \
   "failed upgrade state"
 install_plugin "$plugin_upgrade"
-assert_installed_version 0.2.0-2
+assert_installed_version "$upstream_version-2"
 assert_sentinel
 
 mkdir -p /var/lib/echo-os/omv-host
@@ -242,7 +246,7 @@ mkdir -p /var/lib/echo-os/omv-host
 if install_plugin "$plugin_candidate"; then
   fail "manual installer conflict unexpectedly succeeded"
 fi
-assert_installed_version 0.2.0-2
+assert_installed_version "$upstream_version-2"
 unlink /var/lib/echo-os/omv-host/install-state.json
 assert_sentinel
 
@@ -250,7 +254,7 @@ dpkg --force-depends --install "$omv9_package" >/dev/null
 if install_plugin "$plugin_candidate"; then
   fail "OMV 9 upgrade unexpectedly passed the preinst support gate"
 fi
-assert_installed_version 0.2.0-2
+assert_installed_version "$upstream_version-2"
 DEBIAN_FRONTEND=noninteractive PATH="$shim_directory:/usr/sbin:/usr/bin:/sbin:/bin" \
   dpkg --remove openmediavault-echo-os >/dev/null
 assert_absent /usr/lib/systemd/system/echo-omv-bridge.service
@@ -263,7 +267,7 @@ assert_sentinel
 
 dpkg --force-downgrade --force-depends --install "$omv8_package" >/dev/null
 install_plugin "$plugin_upgrade"
-assert_installed_version 0.2.0-2
+assert_installed_version "$upstream_version-2"
 DEBIAN_FRONTEND=noninteractive PATH="$shim_directory:/usr/sbin:/usr/bin:/sbin:/bin" \
   dpkg --purge openmediavault-echo-os >/dev/null
 assert_absent /usr/lib/systemd/system/echo-omv-bridge.service

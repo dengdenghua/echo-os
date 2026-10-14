@@ -15,13 +15,13 @@ Display (HDMI)                                  ← P2.5
   ↑ Full-screen rendering
 kiosk (cage + Chromium or Electron)             ← Host process, needs GPU
   ↑
-Desktop Shell (Next.js, modified frontend/)      ← Chat / Window manager / File manager / App launcher
+Desktop Shell (React + Vite, frontend/)          ← Chat / Window manager / File manager / App launcher
   ↑ JSON-RPC WebSocket
 Agent Runtime (runtime/)                         ← Agent OS: skills/approval/memory/model routing (incl. ollama)
   ↑ docker.sock + reverse proxy
 Docker container runtime                         ← Third-party app ecosystem (CasaOS compatible)
   ↑
-NAS base (Debian + OMV storage packages)         ← P3; P1/P2 hosted on existing NAS systems
+NAS base (Debian + native Linux storage plane)   ← P3; P1/P2 can remain hosted on existing NAS systems
 ```
 
 ### Appliance Module (`appliance/`)
@@ -115,10 +115,10 @@ User asks about private contract
 
 ## Deployment
 
-- **P1**: Docker app on existing NAS (CasaOS / OMV / 飞牛)
+- **P1**: Docker app on existing NAS (CasaOS / OMV / 参考 NAS)
 - **P2**: Windowed desktop + app skills + semantic index
 - **P2.5**: HDMI local desktop (kiosk mode)
-- **P3**: Full OS image (Debian + OMV, immutable system + A/B atomic updates)
+- **P3**: Full OS image (Debian + native Linux storage plane, immutable system + A/B atomic updates)
 
 ---
 

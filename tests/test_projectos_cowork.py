@@ -223,16 +223,20 @@ def test_concurrent_group_runs_execute_only_the_cas_winners_task(
     ]
     bind_barrier = Barrier(2)
     claim_barrier = Barrier(2)
+    # The barriers only line the two runs up; 5 s was short enough to break
+    # (BrokenBarrierError) when the full suite loaded the CI runner. The suite's
+    # per-test timeout (60 s) still bounds a genuine hang.
+    barrier_timeout = 20
     for store in stores:
         original_bind = store.bind_thread_if_absent_versioned
         original_claim = store.claim_task
 
         def synchronized_bind(*args, _bind=original_bind, **kwargs):
-            bind_barrier.wait(timeout=5)
+            bind_barrier.wait(timeout=barrier_timeout)
             return _bind(*args, **kwargs)
 
         def synchronized_claim(*args, _claim=original_claim, **kwargs):
-            claim_barrier.wait(timeout=5)
+            claim_barrier.wait(timeout=barrier_timeout)
             return _claim(*args, **kwargs)
 
         monkeypatch.setattr(store, "bind_thread_if_absent_versioned", synchronized_bind)
@@ -799,4 +803,3 @@ def test_production_team_cluster_propagates_trusted_project_session(monkeypatch)
 
     assert output.startswith("# 集群交付")
     _assert_team_scope(calls, explicit_runner)
-

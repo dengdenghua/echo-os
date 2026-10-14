@@ -299,6 +299,7 @@ def build_anthropic_tool_specs(
     agent: Any = None,
     user_context: dict[str, Any] | None = None,
     goal: str = "",
+    tool_ceiling: frozenset[str] | None = None,
 ) -> list[ToolSpec]:
     """Translate an Echo ``SkillRegistry`` into a list of
     ``ToolSpec`` the Anthropic ``tools`` param can accept.
@@ -449,4 +450,6 @@ def build_anthropic_tool_specs(
                 input_schema=input_schema,
             )
         )
+    if tool_ceiling is not None:
+        specs = [spec for spec in specs if spec.name in tool_ceiling]
     return specs

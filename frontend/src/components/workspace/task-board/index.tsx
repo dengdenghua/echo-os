@@ -28,6 +28,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -600,13 +601,10 @@ export function TaskBoard({
 
       {/* Loading state */}
       {tasksLoading && tasks.length === 0 && viewMode !== "schedules" && (
-        <div
-          role="status"
-          className="flex items-center justify-center rounded-lg border border-border-subtle bg-card/40 py-20"
-        >
-          <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-          <span className="sr-only">{t.common.loading}</span>
-        </div>
+        <PanelLoading
+          label={t.common.loading}
+          className="min-h-40 overflow-hidden rounded-lg border border-border-subtle bg-card/40"
+        />
       )}
 
       {/* Empty state */}
@@ -626,10 +624,7 @@ export function TaskBoard({
         <div className="flex-1 min-h-0 overflow-auto">
           <Suspense
             fallback={
-              <div className="flex items-center justify-center py-20">
-                <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-                <span className="sr-only">{t.common.loading}</span>
-              </div>
+              <PanelLoading label={t.common.loading} className="min-h-40" />
             }
           >
             <CronSettingsPage />

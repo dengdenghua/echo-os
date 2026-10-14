@@ -16,10 +16,10 @@ import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STATUS_DOT: Record<string, string> = {
-  planning: "bg-amber-500",
-  running: "bg-emerald-500",
-  blocked: "bg-amber-500",
-  done: "bg-sky-500",
+  planning: "bg-warning",
+  running: "bg-core",
+  blocked: "bg-warning",
+  done: "bg-primary",
   failed: "bg-destructive",
 };
 
@@ -70,7 +70,7 @@ export function ProjectGroupHeaderBadge({
         onClick={onOpenWorkbench}
         aria-label={`${copy.openWorkbench}：${safeName}`}
         title={`${copy.openWorkbench}：${safeName}`}
-        className="inline-flex h-7 min-w-0 max-w-52 items-center gap-1.5 rounded-l-md px-2 text-[11px] font-medium transition-colors hover:bg-primary/10"
+        className="inline-flex h-7 min-w-0 max-w-52 items-center gap-1.5 rounded-l-md px-2 text-xs font-medium transition-colors hover:bg-primary/10"
       >
         <FolderKanbanIcon
           data-slot="project-capability-icon"

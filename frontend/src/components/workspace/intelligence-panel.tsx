@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -37,6 +38,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getBackendBaseURL } from "@/core/config";
+import {
+  intelligenceReportsQueryKey,
+  intelligenceSubscriptionsQueryKey,
+} from "@/core/intelligence/query-keys";
 import { useI18n } from "@/core/i18n/hooks";
 import type { Translations } from "@/core/i18n/locales/types";
 import { cn } from "@/lib/utils";
@@ -91,8 +96,6 @@ type SubscriptionDraft = {
   sources: string[];
 };
 
-const subscriptionsKey = ["intelligence", "subscriptions"] as const;
-const reportsKey = ["intelligence", "reports"] as const;
 const EMPTY_SUBSCRIPTIONS: IntelligenceSubscription[] = [];
 const EMPTY_REPORTS: IntelligenceReport[] = [];
 const MONTHDAY_OPTIONS = Array.from({ length: 31 }, (_, index) =>
@@ -443,6 +446,8 @@ function ReportTimelineItem({
 export function IntelligencePanel() {
   const { locale, t } = useI18n();
   const queryClient = useQueryClient();
+  const subscriptionsKey = intelligenceSubscriptionsQueryKey();
+  const reportsKey = intelligenceReportsQueryKey();
   const [goal, setGoal] = useState("");
   const [draft, setDraft] = useState<SubscriptionDraft | null>(null);
   const [builderOpen, setBuilderOpen] = useState(true);
@@ -694,13 +699,11 @@ export function IntelligencePanel() {
 
   if (loading) {
     return (
-      <div
-        role="status"
-        className="flex min-h-64 items-center justify-center gap-2 text-muted-foreground"
-      >
-        <Loader2Icon className="size-5 animate-spin" />
-        <span>{t.common.loading}</span>
-      </div>
+      <PanelLoading
+        label={t.common.loading}
+        caption={t.common.loading}
+        className="min-h-64"
+      />
     );
   }
 

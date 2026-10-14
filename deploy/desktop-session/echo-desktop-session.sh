@@ -11,8 +11,37 @@ NATIVE_APP_IPC_READY_FILE="$DEFAULT_RUNTIME_DIR/native-app-ipc-ready"
 LOCK_SERVICE=/usr/lib/echo-os/echo-session-lock
 KWIN_BRIDGE_SERVICE=/usr/lib/echo-os/echo-kwin-window-bridge
 KWIN_BRIDGE_SOCKET="$DEFAULT_RUNTIME_DIR/kwin-window-bridge.sock"
-POLKIT_AGENT=/usr/lib/x86_64-linux-gnu/libexec/polkit-kde-authentication-agent-1
-POWERDEVIL=/usr/lib/x86_64-linux-gnu/libexec/org_kde_powerdevil
+# KDE helper binaries live under the Debian multiarch triplet, which differs per
+# architecture (x86_64-linux-gnu vs aarch64-linux-gnu). Resolve it instead of
+# hardcoding the x86_64 path, otherwise an arm64 device fails the -x checks
+# below and the session refuses to start.
+ECHO_MULTIARCH="${ECHO_MULTIARCH:-$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || true)}"
+if [[ -z "$ECHO_MULTIARCH" ]]; then
+  case "$(uname -m)" in
+    x86_64) ECHO_MULTIARCH=x86_64-linux-gnu ;;
+    aarch64|arm64) ECHO_MULTIARCH=aarch64-linux-gnu ;;
+    armv7l) ECHO_MULTIARCH=arm-linux-gnueabihf ;;
+    *) ECHO_MULTIARCH="$(uname -m)-linux-gnu" ;;
+  esac
+fi
+
+# Newer KDE ships these in /usr/libexec; accept either location.
+resolve_kde_libexec() {
+  local name="$1" candidate
+  for candidate in \
+    "/usr/lib/$ECHO_MULTIARCH/libexec/$name" \
+    "/usr/libexec/$name" \
+    "/usr/lib/$ECHO_MULTIARCH/libexec/kf6/$name"; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  printf '%s' "/usr/lib/$ECHO_MULTIARCH/libexec/$name"
+}
+
+POLKIT_AGENT="$(resolve_kde_libexec polkit-kde-authentication-agent-1)"
+POWERDEVIL="$(resolve_kde_libexec org_kde_powerdevil)"
 NOTIFICATION_SERVICE=/usr/lib/echo-os/echo-notification-service
 NOTIFICATION_SOCKET="$DEFAULT_RUNTIME_DIR/notifications.sock"
 INPUT_METHOD=/usr/bin/fcitx5
@@ -34,6 +63,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 
 # Flatpak exports application launchers and icons outside the immutable root's
 # ordinary /usr/share tree. Keep both installation scopes visible to the Echo
@@ -355,7 +388,7 @@ if [[ -n "${CREDENTIALS_DIRECTORY:-}" && \
   NATIVE_APP_IPC_TEST=1
   NATIVE_APP_IPC_BASELINE_IDS="$(
     wmctrl -l -x -p 2>/dev/null | \
-      awk 'tolower($5) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
+      awk 'tolower($4) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
   )"
   rm -f -- "$NATIVE_APP_IPC_READY_FILE"
   export ECHO_NATIVE_APP_SMOKE_ID=org.kde.kcalc
@@ -393,9 +426,12 @@ SHELL_PID=$!
 
 # Keep the interactive shell below native applications. Electron also marks it
 # skip-taskbar; EWMH here makes the session behavior explicit at the WM layer.
+# Electron's X11 WM_CLASS is the app name, i.e. package.json "name"
+# ("echo-frontend.echo-frontend"), not --class; the Liquid Glass background
+# window is excluded by title.
 for _attempt in $(seq 1 100); do
   SHELL_WINDOW_ID="$(
-    wmctrl -lx | awk 'tolower($0) ~ /echo-shell|echo-os-desktop/ { print $1; exit }'
+    wmctrl -lx | awk 'tolower($0) ~ /echo-shell|echo-os-desktop|echo-frontend/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
   )"
   if [[ -n "$SHELL_WINDOW_ID" ]]; then
     wmctrl -ir "$SHELL_WINDOW_ID" -b remove,above,fullscreen || true
@@ -419,7 +455,7 @@ done
 }
 timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$SHELL_PID" \
-  --required-name "Echo OS 桌面" \
+  --required-name "ECHO OS 桌面" \
   --timeout-seconds 15
 printf 'provider=ewmh-x11 window=%s auth=ready power=ready notifications=ready input=ready clipboard=ready accessibility=ready\n' \
   "$SHELL_WINDOW_ID" >"$READY_TEMP_FILE"
@@ -459,9 +495,9 @@ if [[ -n "${CREDENTIALS_DIRECTORY:-}" && \
         -v baseline="$NATIVE_APP_IPC_BASELINE_IDS" '
           BEGIN {
             count = split(baseline, ids, "\n")
-            for (index = 1; index <= count; index++) seen[tolower(ids[index])] = 1
+            for (i = 1; i <= count; i++) seen[tolower(ids[i])] = 1
           }
-          tolower($5) ~ /(^|[.])kcalc([.]|$)/ &&
+          tolower($4) ~ /(^|[.])kcalc([.]|$)/ &&
           $3 ~ /^[1-9][0-9]*$/ && !seen[tolower($1)] { print tolower($1) }
         '
     )"

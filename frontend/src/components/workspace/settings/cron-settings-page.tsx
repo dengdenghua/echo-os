@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { authHeaders, jsonAuthHeaders } from "@/core/auth/api";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
@@ -227,13 +228,11 @@ export function CronSettingsPage() {
 
         <div className="space-y-2">
           {loading && jobs.length === 0 ? (
-            <div
-              role="status"
-              className="flex items-center justify-center rounded-lg border border-border-default bg-card/40 py-8 text-sm text-muted-foreground"
-            >
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
-              {t.common.loading}
-            </div>
+            <PanelLoading
+              label={t.common.loading}
+              caption={t.common.loading}
+              className="min-h-24 overflow-hidden rounded-lg border border-border-default bg-card/40"
+            />
           ) : needsAuth ? (
             <div
               role="alert"

@@ -53,7 +53,7 @@ export function WorkspaceHeader({ className }: { className?: string }) {
   // SidebarTrigger. Both keep the same toggle behavior.
   const logoItem = collapsed ? (
     <SidebarMenuItem className="group-data-[collapsible=icon]:px-0 px-2">
-      <SidebarMenuButton asChild className={iconTileClass} tooltip="EchoAI">
+      <SidebarMenuButton asChild className={iconTileClass} tooltip="ECHO OS">
         <button
           type="button"
           onClick={() => toggleSidebar()}

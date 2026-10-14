@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient } from "@tanstack/react-query";
 
 import { renderWithProviders } from "@/test/harness";
 import {
@@ -164,6 +165,89 @@ describe("custom model selection identity", () => {
 });
 
 describe("ModelSettingsPage · custom-model list rendering", () => {
+  it("does not probe optional services that this device does not have", async () => {
+    // Golden path 2026-10: every visit logged a 404 from the oct gateway's
+    // model catalog and a 503 from Echo Storage's model list on a device that
+    // has neither.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/auth/providers")) {
+        return jsonOk({ providers: [{ id: "local" }] });
+      }
+      if (url.includes("/api/local-brain/storage/start")) {
+        return jsonOk({
+          ok: false,
+          status: "not_found",
+          base_url: "/api/storage",
+          auth_token: null,
+        });
+      }
+      return jsonOk({ default: "", models: [] });
+    });
+
+    renderWithProviders(<ModelSettingsPage />, { locale: "zh-CN" });
+
+    expect(
+      await screen.findByText(/本地图片理解需要 Echo Storage 服务/),
+    ).toBeInTheDocument();
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls.some((url) => url.includes("/api/oct/openai/v1/models"))).toBe(
+      false,
+    );
+    expect(urls.some((url) => url.includes("/v1/models"))).toBe(false);
+    expect(screen.getByRole("button", { name: "下载并启用" })).toBeDisabled();
+  });
+
+  it("refreshes the composer's cached model catalog once connections load", async () => {
+    // Golden path 2026-10: a model added in 系统设置 stayed missing from the
+    // workbench picker for up to five minutes (stale ["models"] query).
+    mockModelSettingsFetch({
+      models: [
+        {
+          id: "echo-offline-demo",
+          name: "echo-offline-demo",
+          display_name: "离线演示模型",
+          models: ["echo-offline-demo"],
+          provider: "openai",
+          base_url: "http://127.0.0.1:18650/v1",
+          has_api_key: true,
+          supports_thinking: false,
+          supports_vision: false,
+        },
+      ],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    });
+    queryClient.setQueryData(["models", "actor-a"], []);
+    queryClient.setQueryData(
+      ["coder", "codex", "unobserved", "model-profile"],
+      {
+        system_model: "claude-haiku-4-5-20251001",
+      },
+    );
+
+    renderWithProviders(<ModelSettingsPage />, {
+      locale: "zh-CN",
+      queryClient,
+    });
+
+    await waitFor(() => {
+      expect(
+        queryClient.getQueryState(["models", "actor-a"])?.isInvalidated,
+      ).toBe(true);
+    });
+    // The Codex panel re-reads the system model the connection now provides.
+    expect(
+      queryClient.getQueryState([
+        "coder",
+        "codex",
+        "unobserved",
+        "model-profile",
+      ])?.isInvalidated,
+    ).toBe(true);
+  });
+
   it("renders the full models list for an entry with multiple slots", async () => {
     mockModelSettingsFetch({
       models: [
@@ -857,7 +941,9 @@ describe("ModelSettingsPage · custom-model list rendering", () => {
     );
 
     renderWithProviders(<ModelSettingsPage />, { locale: "zh-CN" });
-    expect((await screen.findAllByText("Disposable")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Disposable")).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getByText("系统默认")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "删除: Disposable" }));

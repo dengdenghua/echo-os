@@ -27,7 +27,7 @@ import {
   ZapIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import {
 } from "@/components/workspace/workspace-container";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 // RecipeForge prompt-evolution subsystem · lives in gepa-panel.tsx
 // for historical reasons (original branch branding); the file is
@@ -120,6 +121,7 @@ const POLL_INTERVAL_MS = 2000;
 
 export function ReflexMonitorContent() {
   const { t } = useI18n();
+  const { search } = useLocation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [series, setSeries] = useState<Timeseries | null>(null);
@@ -234,7 +236,12 @@ export function ReflexMonitorContent() {
                     endpoint isn't available (older backends). */}
             <GeneLockBadge />
             <Button asChild variant="outline" size="sm">
-              <Link to="/workspace/reflex/edit">
+              <Link
+                to={preserveWorkbenchPresentation(
+                  "/workspace/reflex/edit",
+                  search,
+                )}
+              >
                 <EditIcon className="mr-2 size-4" />
                 {t.reflexPage.editRulesButton}
               </Link>
@@ -527,7 +534,8 @@ function Sparkline({ buckets }: { buckets: TimeseriesBucket[] }) {
     if (!buckets.length || totalHits === 0) return;
     const max = Math.max(1, ...buckets.map((b) => b.count));
     const bw = w / buckets.length;
-    ctx.fillStyle = "#34d399";
+    ctx.fillStyle =
+      getComputedStyle(c).getPropertyValue("--echo-core").trim() || "#08788a";
     for (let i = 0; i < buckets.length; i += 1) {
       const bucket = buckets[i];
       if (!bucket) continue;

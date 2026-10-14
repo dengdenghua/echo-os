@@ -8,7 +8,7 @@
   "module_id": "evolution",
   "version": "1.0.0",
   "release_summary": "1.0.0：提供候选基因、双螺旋演进、治理与审计界面。",
-  "host_api": ">=0.2,<0.3",
+  "host_api": ">=0.2,<0.4",
   "dependencies": [],
   "entry": "dist/index.html",
   "isolation": "iframe",

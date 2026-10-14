@@ -37,6 +37,7 @@ export interface UserMessageItem extends ItemBase {
   type: "userMessage";
   text: string;
   attachments?: Record<string, unknown>[];
+  contextFiles?: Record<string, unknown>[];
 }
 
 export interface SteeringUserMessageItem extends ItemBase {
@@ -377,6 +378,7 @@ export interface Turn {
   phases?: AgentPhaseSnapshot[];
   workspaceFocus?: WorkspaceFocus | null;
   workbenchSnapshot?: WorkbenchSnapshotV2 | null;
+  execution?: Record<string, unknown> | null;
   /** Human-readable reason the turn was interrupted (null if not interrupted). */
   interruptReason?: string | null;
   objectiveId?: string | null;

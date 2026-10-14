@@ -8,7 +8,7 @@
   "name": "Coder",
   "icon": "💻",
   "did": "DID-DB9653-765527",
-  "description": "Coding-focused agent — writes, debugs, refactors, and reviews code.",
+  "description": "编程助手：编写、调试、重构与审查代码。",
   "avatar": "avatar.png",
   "model": {
     "provider": "auto",

@@ -5,13 +5,13 @@ import {
   CircleHelpIcon,
   ExternalLinkIcon,
   Globe2Icon,
-  Loader2Icon,
   MonitorIcon,
   RefreshCwIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { isMac, isWindows } from "@/components/electron-title-bar";
 import { getBrowserConfig, updateBrowserConfig } from "@/core/browser/api";
 import { useI18n } from "@/core/i18n/hooks";
 import {
@@ -243,8 +244,8 @@ export function BrowserAutomationSettingsPage() {
   const relayReconnectHelp =
     relayState === "offline"
       ? zh
-        ? "打开 Chrome 扩展页，确认 EchoAI Browser Relay 已启用；再打开扩展侧栏重连。"
-        : "Enable EchoAI Browser Relay in Chrome extensions, then open its side panel to reconnect."
+        ? "打开 Chrome 扩展页，确认 ECHO Browser Relay 已启用；再打开扩展侧栏重连。"
+        : "Enable ECHO Browser Relay in Chrome extensions, then open its side panel to reconnect."
       : "";
   const relayDetail = [relayVersion, relayReconnectHelp]
     .filter(Boolean)
@@ -317,21 +318,23 @@ export function BrowserAutomationSettingsPage() {
                 : "Refreshes every 2 seconds and turns offline within 10 seconds of disconnecting."}
             </p>
           </div>
-          {relayState !== "online" ? <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={relay.isFetching}
-            onClick={() => void relay.refetch()}
-          >
-            <RefreshCwIcon
-              className={cn(
-                "mr-1.5 size-3.5",
-                relay.isFetching && "animate-spin",
-              )}
-            />
-            {zh ? "重新连接浏览器扩展" : "Reconnect browser extension"}
-          </Button> : null}
+          {relayState !== "online" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={relay.isFetching}
+              onClick={() => void relay.refetch()}
+            >
+              <RefreshCwIcon
+                className={cn(
+                  "mr-1.5 size-3.5",
+                  relay.isFetching && "animate-spin",
+                )}
+              />
+              {zh ? "重新连接浏览器扩展" : "Reconnect browser extension"}
+            </Button>
+          ) : null}
         </div>
         <StatusRow
           label={zh ? "Relay" : "Relay"}
@@ -463,6 +466,22 @@ export function BrowserAutomationSettingsPage() {
   );
 }
 
+type DesktopOs = "mac" | "windows" | "linux";
+
+/**
+ * Screen recording / Accessibility grants exist only on macOS. The desktop
+ * shell reports its OS; the web build runs next to the backend, so the
+ * browser's own platform is the best hint there.
+ */
+function resolveDesktopOs(reported: string | undefined): DesktopOs {
+  if (reported === "darwin") return "mac";
+  if (reported === "win32") return "windows";
+  if (reported === "linux") return "linux";
+  if (isMac()) return "mac";
+  if (isWindows()) return "windows";
+  return "linux";
+}
+
 export function DesktopAutomationSettingsPage() {
   const zh = useChineseCopy();
   const { query, mutation, setCapability } = useCapabilitySettings();
@@ -472,6 +491,8 @@ export function DesktopAutomationSettingsPage() {
     refetchInterval: 4_000,
   });
   const data = permissions.data;
+  const desktopOs = resolveDesktopOs(data?.platform);
+  const osName = desktopOs === "windows" ? "Windows" : "Linux";
 
   const toggle = async (enabled: boolean) => {
     try {
@@ -524,9 +545,13 @@ export function DesktopAutomationSettingsPage() {
         icon={<MonitorIcon className="size-5" />}
         title={zh ? "桌面自动化" : "Desktop automation"}
         description={
-          zh
-            ? "让 Echo 读取屏幕并操作本机应用。Web 端只展示能力状态，macOS 桌面端负责真实权限探测。"
-            : "Let Echo read the screen and operate local apps. The macOS desktop app performs the real permission checks."
+          desktopOs === "mac"
+            ? zh
+              ? "让 Echo 读取屏幕并操作本机应用。Web 端只展示能力状态，macOS 桌面端负责真实权限探测。"
+              : "Let Echo read the screen and operate local apps. The macOS desktop app performs the real permission checks."
+            : zh
+              ? "让 Echo 读取屏幕并操作本机应用。"
+              : "Let Echo read the screen and operate local apps."
         }
       />
       <CapabilitySwitchCard
@@ -541,73 +566,88 @@ export function DesktopAutomationSettingsPage() {
         onCheckedChange={(value) => void toggle(value)}
       />
 
-      <section className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold">
-            {zh ? "macOS 系统权限" : "macOS permissions"}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {data?.supported
-              ? zh
-                ? "权限改变后会自动刷新。"
-                : "Permission changes refresh automatically."
-              : zh
-                ? "请在 Echo macOS 桌面端查看并授权。"
-                : "Open the Echo macOS desktop app to inspect and grant permissions."}
-          </p>
-        </div>
-        <StatusRow
-          label={zh ? "屏幕录制" : "Screen recording"}
-          value={permissionValue(data?.screenRecording ?? "unknown")}
-          tone={
-            data?.screenRecording === "granted"
-              ? "success"
-              : data?.supported
-                ? "danger"
-                : "neutral"
-          }
-          action={
-            data?.supported && data.screenRecording !== "granted" ? (
-              <PermissionButton
-                permission="screen-recording"
-                label={zh ? "打开设置" : "Open settings"}
-              />
-            ) : undefined
-          }
-        />
-        <StatusRow
-          label={zh ? "辅助功能" : "Accessibility"}
-          value={permissionValue(data?.accessibility ?? "unknown")}
-          tone={
-            data?.accessibility === "granted"
-              ? "success"
-              : data?.supported
-                ? "danger"
-                : "neutral"
-          }
-          action={
-            data?.supported && data.accessibility !== "granted" ? (
-              <PermissionButton
-                permission="accessibility"
-                label={zh ? "打开设置" : "Open settings"}
-              />
-            ) : undefined
-          }
-        />
-      </section>
+      {desktopOs === "mac" ? (
+        <>
+          <section className="space-y-3">
+            <div>
+              <h3 className="text-sm font-semibold">
+                {zh ? "macOS 系统权限" : "macOS permissions"}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {data?.supported
+                  ? zh
+                    ? "权限改变后会自动刷新。"
+                    : "Permission changes refresh automatically."
+                  : zh
+                    ? "请在 Echo macOS 桌面端查看并授权。"
+                    : "Open the Echo macOS desktop app to inspect and grant permissions."}
+              </p>
+            </div>
+            <StatusRow
+              label={zh ? "屏幕录制" : "Screen recording"}
+              value={permissionValue(data?.screenRecording ?? "unknown")}
+              tone={
+                data?.screenRecording === "granted"
+                  ? "success"
+                  : data?.supported
+                    ? "danger"
+                    : "neutral"
+              }
+              action={
+                data?.supported && data.screenRecording !== "granted" ? (
+                  <PermissionButton
+                    permission="screen-recording"
+                    label={zh ? "打开设置" : "Open settings"}
+                  />
+                ) : undefined
+              }
+            />
+            <StatusRow
+              label={zh ? "辅助功能" : "Accessibility"}
+              value={permissionValue(data?.accessibility ?? "unknown")}
+              tone={
+                data?.accessibility === "granted"
+                  ? "success"
+                  : data?.supported
+                    ? "danger"
+                    : "neutral"
+              }
+              action={
+                data?.supported && data.accessibility !== "granted" ? (
+                  <PermissionButton
+                    permission="accessibility"
+                    label={zh ? "打开设置" : "Open settings"}
+                  />
+                ) : undefined
+              }
+            />
+          </section>
 
-      <div className="flex items-start gap-2 rounded-xl border border-border-subtle bg-muted/20 px-3 py-3 text-xs leading-5 text-muted-foreground">
-        {data?.supported ? (
-          <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-success" />
-        ) : (
-          <CircleHelpIcon className="mt-0.5 size-4 shrink-0" />
-        )}
-        <span>
-          {zh
-            ? "系统权限与 Echo 总开关是两层控制：两者都就绪时桌面操控才可用。"
-            : "System permissions and the Echo capability switch are separate gates; both must be ready."}
-        </span>
-      </div>
+          <div className="flex items-start gap-2 rounded-xl border border-border-subtle bg-muted/20 px-3 py-3 text-xs leading-5 text-muted-foreground">
+            {data?.supported ? (
+              <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-success" />
+            ) : (
+              <CircleHelpIcon className="mt-0.5 size-4 shrink-0" />
+            )}
+            <span>
+              {zh
+                ? "系统权限与 Echo 总开关是两层控制：两者都就绪时桌面操控才可用。"
+                : "System permissions and the Echo capability switch are separate gates; both must be ready."}
+            </span>
+          </div>
+        </>
+      ) : (
+        <section className="space-y-1">
+          <h3 className="text-sm font-semibold">
+            {zh ? "系统权限" : "System permissions"}
+          </h3>
+          <p className="text-xs leading-5 text-muted-foreground">
+            {zh
+              ? `屏幕录制和辅助功能授权只在 macOS 上需要。在 ${osName} 上，桌面操控由上方开关和执行审批控制。`
+              : `Screen recording and Accessibility grants are only needed on macOS. On ${osName}, desktop control is governed by the switch above and execution approvals.`}
+          </p>
+        </section>
+      )}
     </div>
   );
 }
@@ -634,13 +674,5 @@ function PermissionButton({
 }
 
 function LoadingState({ label }: { label: string }) {
-  return (
-    <div
-      role="status"
-      className="flex items-center py-8 text-sm text-muted-foreground"
-    >
-      <Loader2Icon className="mr-2 size-4 animate-spin" />
-      {label}
-    </div>
-  );
+  return <PanelLoading label={label} caption={label} className="min-h-40" />;
 }

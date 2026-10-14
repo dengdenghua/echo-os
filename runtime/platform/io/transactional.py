@@ -73,7 +73,6 @@ def _os_lock(target: Path) -> Iterator[None]:
 
                 if os.fstat(fd).st_size == 0:
                     os.write(fd, b"\0")
-                    os.fsync(fd)
                 os.lseek(fd, 0, os.SEEK_SET)
                 msvcrt.locking(fd, msvcrt.LK_LOCK, 1)  # type: ignore[attr-defined]
             except (ImportError, OSError) as exc:

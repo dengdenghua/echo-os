@@ -1,7 +1,6 @@
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { Badge } from "@/components/ui/badge";
 import { getBackendBaseURL } from "@/core/config";
-import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
 
 interface AgentMessageHeaderProps {
   agentDisplayName: string;
@@ -12,11 +11,13 @@ interface AgentMessageHeaderProps {
 
 export function AgentAvatar({
   agentDisplayName,
+  agentId,
   avatarUrl,
   icon,
   className = "h-6 w-6 rounded-lg",
 }: {
   agentDisplayName: string;
+  agentId?: string | null;
   avatarUrl?: string;
   icon?: string | null;
   className?: string;
@@ -27,37 +28,15 @@ export function AgentAvatar({
       ? avatarUrl
       : `${backendBase}${avatarUrl}`
     : null;
-  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
-  useEffect(() => {
-    setFailedAvatarUrl(null);
-  }, [fullAvatarUrl]);
-  const showImage = Boolean(fullAvatarUrl && failedAvatarUrl !== fullAvatarUrl);
-  const emoji = icon?.trim() || "";
-  const initial = (agentDisplayName || "?").trim().charAt(0).toUpperCase();
-
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border border-border-default bg-muted text-sm leading-none",
-        !showImage &&
-          !emoji &&
-          "text-xs font-semibold text-muted-foreground",
-        className,
-      )}
-    >
-      {showImage && fullAvatarUrl ? (
-        <img
-          src={fullAvatarUrl}
-          alt={agentDisplayName}
-          className="h-full w-full object-cover"
-          onError={() => setFailedAvatarUrl(fullAvatarUrl)}
-        />
-      ) : emoji ? (
-        emoji
-      ) : (
-        initial
-      )}
-    </div>
+    <AgentAvatarTile
+      agentId={agentId}
+      name={agentDisplayName}
+      avatar={icon}
+      imageUrl={fullAvatarUrl}
+      className={className}
+      label={agentDisplayName}
+    />
   );
 }
 

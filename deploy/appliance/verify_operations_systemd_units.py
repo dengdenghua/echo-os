@@ -28,6 +28,7 @@ except ModuleNotFoundError:
 
 MAX_TOOL_BYTES = 64 * 1024 * 1024
 GIT_ID = re.compile(r"^[0-9a-f]{40}$")
+EXEC_DIRECTIVE = re.compile(r"^Exec[A-Za-z]*=[-+!:@]*(\S+)", re.MULTILINE)
 
 
 class NativeSystemdVerificationError(RuntimeError):
@@ -104,10 +105,6 @@ def verify_native_systemd_units(
         root = Path(temporary)
         bundle = root / "bundle"
         bundle.mkdir(mode=0o755)
-        for name in ("backup-state.sh", "export-audit-evidence.sh"):
-            script = bundle / name
-            script.write_text("#!/bin/sh\nexit 0\n")
-            script.chmod(0o755)
         backup_mount = root / "backup"
         backup_directory = backup_mount / "echo-os"
         backup_directory.mkdir(parents=True, mode=0o700)
@@ -132,6 +129,21 @@ def verify_native_systemd_units(
             audit_credential=audit_credential,
         )
         rendered = _units(config)
+        # systemd-analyze verify requires every Exec*= program to exist and be
+        # executable. Stage a placeholder for each bundle program the rendered
+        # units actually reference, so a newly added unit cannot drift past
+        # this fixture (the upgrade-recovery unit once did).
+        bundle_programs = {
+            Path(match.group(1))
+            for payload in rendered.values()
+            for match in EXEC_DIRECTIVE.finditer(payload.decode("utf-8"))
+            if Path(match.group(1)).parent == config.bundle_root
+        }
+        if not bundle_programs:
+            raise NativeSystemdVerificationError("generated units reference no bundle program")
+        for program in sorted(bundle_programs):
+            program.write_text("#!/bin/sh\nexit 0\n")
+            program.chmod(0o755)
         unit_paths: list[str] = []
         docker_unit = root / "docker.service"
         docker_unit.write_text(

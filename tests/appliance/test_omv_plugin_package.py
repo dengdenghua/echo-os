@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,10 @@ plugin = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = plugin
 _SPEC.loader.exec_module(plugin)
 
+POSIX_SHELL_TEST = pytest.mark.skipif(
+    os.name == "nt", reason="native OMV maintainer scripts require a POSIX shell"
+)
+
 
 def test_native_plugin_build_is_deterministic_and_self_verifying(
     tmp_path: Path,
@@ -30,7 +35,8 @@ def test_native_plugin_build_is_deterministic_and_self_verifying(
     second_path = Path(second["path"])
 
     assert first["package"] == "openmediavault-echo-os"
-    assert first["version"] == "0.2.0-1"
+    product = json.loads((_REPOSITORY / "frontend" / "package.json").read_text(encoding="utf-8"))
+    assert first["version"] == f"{product['version']}-1"
     assert first["architecture"] == "all"
     assert first["pluginArchitectures"] == ["amd64", "arm64"]
     assert first["supportMatrix"] == "debian-13+omv-8"
@@ -58,7 +64,7 @@ def test_native_plugin_build_is_deterministic_and_self_verifying(
     sbom = json.loads(Path(first["sbomPath"]).read_text())
     assert sbom["spdxVersion"] == "SPDX-2.3"
     assert sbom["packages"][0]["name"] == "openmediavault-echo-os"
-    assert sbom["packages"][0]["versionInfo"] == "0.2.0-1"
+    assert sbom["packages"][0]["versionInfo"] == first["version"]
     assert len(sbom["files"]) == first["dataFileCount"]
 
 
@@ -277,6 +283,7 @@ def test_native_plugin_is_accepted_by_system_debian_archive_tools(
     assert "usr/lib/systemd/system/echo-omv-bridge.service" in contents.stdout
 
 
+@POSIX_SHELL_TEST
 def test_native_plugin_maintainer_scripts_are_shell_valid_and_lifecycle_is_bounded(
     tmp_path: Path,
 ) -> None:
@@ -355,6 +362,7 @@ def test_native_plugin_maintainer_scripts_are_shell_valid_and_lifecycle_is_bound
     assert "groupdel" not in commands
 
 
+@POSIX_SHELL_TEST
 def test_native_plugin_postinst_platform_failure_has_no_service_side_effects(
     tmp_path: Path,
 ) -> None:
@@ -411,6 +419,7 @@ def test_native_plugin_postinst_platform_failure_has_no_service_side_effects(
         ("debian", "13", "9.0.0-1", 1),
     ],
 )
+@POSIX_SHELL_TEST
 def test_native_plugin_preinst_enforces_support_matrix_before_install(
     tmp_path: Path,
     distribution: str,
@@ -451,6 +460,7 @@ def test_native_plugin_preinst_enforces_support_matrix_before_install(
         assert "supports only" in result.stderr
 
 
+@POSIX_SHELL_TEST
 def test_native_plugin_preinst_abort_upgrade_remains_available_off_matrix(
     tmp_path: Path,
 ) -> None:

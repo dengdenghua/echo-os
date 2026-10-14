@@ -38,6 +38,7 @@
 | `code_edit_diff` | code_intel |  | — | — |
 | `code_find_symbol` | code_intel | ✅ | — | admin, coder, desktop_operator, general |
 | `code_search` | code_intel | ✅ | — | admin, coder, desktop_operator, general |
+| `collaboration` | agent_meta | ✅ | — | admin, coder, desktop_operator, general |
 | `computer_execute_token` | computer |  | desktop_operator | admin, desktop_operator, general |
 | `computer_observe` | computer |  | desktop_operator | admin, desktop_operator, general |
 | `computer_plan_next` | computer |  | desktop_operator | admin, desktop_operator, general |

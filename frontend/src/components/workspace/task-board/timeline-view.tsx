@@ -9,10 +9,11 @@
  *   - Zoom in/out on timeline via buttons
  */
 
-import { ClockIcon, Loader2Icon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
+import { ClockIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import type {
   TaskBoardTimelineResponse,
   TimelineTask,
@@ -39,7 +40,7 @@ const STATUS_COLORS: Record<string, { fill: string; stroke: string }> = {
   queued: { fill: "#94a3b8", stroke: "#64748b" },
   running: { fill: "#f59e0b", stroke: "#d97706" },
   paused: { fill: "#fbbf24", stroke: "#f59e0b" },
-  completed: { fill: "#10b981", stroke: "#059669" },
+  completed: { fill: "#08788a", stroke: "#065f6c" },
   failed: { fill: "#ef4444", stroke: "#dc2626" },
   cancelled: { fill: "#9ca3af", stroke: "#6b7280" },
 };
@@ -248,12 +249,7 @@ export function TimelineView({
   );
 
   if (loading) {
-    return (
-      <div role="status" className="flex items-center justify-center py-20">
-        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-        <span className="sr-only">{t.common.loading}</span>
-      </div>
-    );
+    return <PanelLoading label={t.common.loading} className="min-h-40" />;
   }
 
   if (tasks.length === 0 || !layout) {
@@ -385,7 +381,7 @@ export function TimelineView({
                     y={PADDING_TOP - 10}
                     textAnchor="middle"
                     className="fill-muted-foreground text-xs"
-                    style={{ fontSize: "10px" }}
+                    style={{ fontSize: "12px" }}
                   >
                     {tick.label}
                   </text>
@@ -441,13 +437,13 @@ export function TimelineView({
                   y={y + BAR_HEIGHT / 2 + 1}
                   dominantBaseline="middle"
                   className="fill-foreground text-xs"
-                  style={{ fontSize: "11px" }}
+                  style={{ fontSize: "12px" }}
                 >
                   <tspan className="fill-muted-foreground">
                     {TYPE_ICON_EMOJI[task.type] ?? ""}{" "}
                   </tspan>
-                  {task.name.length > 18
-                    ? task.name.slice(0, 18) + "..."
+                  {task.name.length > 11
+                    ? task.name.slice(0, 11) + "..."
                     : task.name}
                 </text>
 

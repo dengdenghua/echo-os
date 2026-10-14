@@ -40,6 +40,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,6 +62,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useEchoDesktopWindowChrome } from "../embedded-window-bridge";
 import {
   Select,
   SelectContent,
@@ -69,9 +71,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ACTIVE_AGENT_KEY, useActiveAgentId } from "@/core/agents/active";
+import { activeAgentStorageKey, useActiveAgentId } from "@/core/agents/active";
 import { emitAgentChanged } from "@/core/events";
 import { taskWorkspaceRoute } from "@/core/router/task-workspace-route";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import {
   taskCollaboratorRouteForLeader,
   writeTaskCollaboratorPreset,
@@ -153,6 +156,7 @@ const ECHO_CHARACTER_DISPLAY_NAMES = new Set([
 ]);
 
 const BUILTIN_APP_ICONS = {
+  database: FolderKanbanIcon,
   projects: FolderKanbanIcon,
   trading: TrendingUpIcon,
   design: PaletteIcon,
@@ -162,19 +166,16 @@ const BUILTIN_APP_ICONS = {
   community: CompassIcon,
 } satisfies Record<WorkbenchBuiltinIcon, typeof LayoutGridIcon>;
 
+// ECHO: apps are told apart by glyph, not colour — one neutral tile for all.
 const BUILTIN_APP_ICON_STYLES = {
-  projects: "bg-blue-500/10 text-blue-600 ring-blue-500/15 dark:text-blue-400",
-  trading:
-    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/15 dark:text-emerald-400",
-  design:
-    "bg-violet-500/10 text-violet-600 ring-violet-500/15 dark:text-violet-400",
-  narrative:
-    "bg-fuchsia-500/10 text-fuchsia-600 ring-fuchsia-500/15 dark:text-fuchsia-400",
-  evolution:
-    "bg-violet-500/10 text-violet-600 ring-violet-500/15 dark:text-violet-400",
-  intelligence: "bg-sky-500/10 text-sky-600 ring-sky-500/15 dark:text-sky-400",
-  community:
-    "bg-amber-500/10 text-amber-600 ring-amber-500/15 dark:text-amber-400",
+  database: "bg-muted text-foreground ring-border",
+  projects: "bg-muted text-foreground ring-border",
+  trading: "bg-muted text-foreground ring-border",
+  design: "bg-muted text-foreground ring-border",
+  narrative: "bg-muted text-foreground ring-border",
+  evolution: "bg-muted text-foreground ring-border",
+  intelligence: "bg-muted text-foreground ring-border",
+  community: "bg-muted text-foreground ring-border",
 } satisfies Record<WorkbenchBuiltinIcon, string>;
 
 function normalizeAgentNameKey(value: string): string {
@@ -339,8 +340,7 @@ export function AgentsTab({
             "aoi",
           ],
           domains: ["general", "automation"],
-          accent:
-            "from-violet-100/90 via-fuchsia-50/70 to-background dark:from-violet-950/55 dark:via-fuchsia-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "product-lab",
@@ -348,8 +348,7 @@ export function AgentsTab({
           description: "从需求拆解、架构实现到桌面验收，组成一支小型交付团队。",
           memberIds: ["coder", "desktop_operator", "general"],
           domains: ["coding", "automation"],
-          accent:
-            "from-sky-100/90 via-cyan-50/70 to-background dark:from-sky-950/55 dark:via-cyan-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "investment-room",
@@ -358,8 +357,7 @@ export function AgentsTab({
             "聚合市场研究、信息验证与商业判断，形成可执行的投资结论。",
           memberIds: ["market_researcher", "general", "ecommerce_mind"],
           domains: ["research", "finance"],
-          accent:
-            "from-emerald-100/90 via-teal-50/70 to-background dark:from-emerald-950/55 dark:via-teal-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "growth-studio",
@@ -367,8 +365,7 @@ export function AgentsTab({
           description: "把用户洞察、内容创意与商业转化串成一条完整增长链路。",
           memberIds: ["vibe_selling", "general", "ecommerce_mind"],
           domains: ["creative", "ecommerce"],
-          accent:
-            "from-amber-100/90 via-orange-50/70 to-background dark:from-amber-950/55 dark:via-orange-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
         {
           id: "automation-cell",
@@ -376,8 +373,7 @@ export function AgentsTab({
           description: "代码、桌面和流程三线并行，适合批量操作与长链路任务。",
           memberIds: ["desktop_operator", "coder", "aoi"],
           domains: ["automation", "coding"],
-          accent:
-            "from-slate-200/90 via-blue-50/60 to-background dark:from-slate-800/80 dark:via-blue-950/20",
+          accent: "from-muted/70 via-background to-background",
         },
       ]
         .filter(
@@ -407,7 +403,12 @@ export function AgentsTab({
       label: scenario.title,
       openPicker: false,
     });
-    navigate(taskCollaboratorRouteForLeader(leader.name));
+    navigate(
+      preserveWorkbenchPresentation(
+        taskCollaboratorRouteForLeader(leader.name),
+        location.search,
+      ),
+    );
   };
 
   useEffect(() => {
@@ -605,7 +606,7 @@ export function AgentsTab({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 rounded-lg border-violet-500/25 bg-violet-500/5 px-2.5 text-xs font-medium text-violet-700 shadow-none hover:bg-violet-500/10 dark:text-violet-300"
+                className="h-8 rounded-lg border-core/30 bg-core/5 px-2.5 text-xs font-medium text-core shadow-none hover:bg-core/10"
                 onClick={() => setSmartTeamOpen(true)}
               >
                 <SparklesIcon className="mr-1.5 size-3.5" />
@@ -690,9 +691,7 @@ export function AgentsTab({
             >
               精选场景
             </h3>
-            <span className="text-[11px] text-muted-foreground">
-              选择即组队
-            </span>
+            <span className="text-xs text-muted-foreground">选择即组队</span>
           </div>
           <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
             {featuredScenarios.map((scenario) => (
@@ -725,23 +724,19 @@ export function AgentsTab({
                       key={member.id}
                       className="flex items-center gap-2 text-xs font-medium text-foreground/90"
                     >
-                      <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-background/80 bg-background/70 text-[11px]">
-                        {member.avatar_url ? (
-                          <img
-                            src={member.avatar_url}
-                            alt=""
-                            className="size-full object-cover"
-                          />
-                        ) : (
-                          member.icon || "·"
-                        )}
-                      </span>
+                      <AgentAvatarTile
+                        agentId={member.name}
+                        name={member.display_name}
+                        avatar={member.icon}
+                        imageUrl={member.avatar_url}
+                        className="size-6 rounded-full"
+                      />
                       <span className="truncate">{member.display_name}</span>
                     </div>
                   ))}
                 </div>
                 {scenario.members.length > 3 ? (
-                  <span className="absolute bottom-4 right-4 text-[11px] text-muted-foreground">
+                  <span className="absolute bottom-4 right-4 text-xs text-muted-foreground">
                     +{scenario.members.length - 3} 位成员
                   </span>
                 ) : null}
@@ -755,7 +750,7 @@ export function AgentsTab({
         <>
           <div className="flex items-center justify-between pt-1">
             <h3 className="text-sm font-semibold text-foreground">全部角色</h3>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {visibleAgents.length} 位
             </span>
           </div>
@@ -1331,6 +1326,8 @@ export function AgentWorldUnified() {
   );
   const [hubSmartTeamOpen, setHubSmartTeamOpen] = useState(false);
   const hudOnly = new URLSearchParams(location.search).get("hud") === "1";
+  // Echo OS overlays its 64px window controls on the top-left corner.
+  const echoDesktopOwnsChrome = useEchoDesktopWindowChrome();
   const requestedAgentName =
     new URLSearchParams(location.search).get("agent")?.trim() || "";
 
@@ -1577,7 +1574,7 @@ export function AgentWorldUnified() {
     if (selectedAgent) return;
     let activeName = "";
     try {
-      activeName = window.localStorage.getItem(ACTIVE_AGENT_KEY) ?? "";
+      activeName = window.localStorage.getItem(activeAgentStorageKey()) ?? "";
     } catch (e) {
       swallow(e, "storage");
     }
@@ -1603,9 +1600,14 @@ export function AgentWorldUnified() {
     void fetchAgents();
   }, [fetchAgents, queryClient]);
 
-  const chatRouteForAgent = useCallback((agent: AgentWorldAgent | null) => {
-    return taskWorkspaceRoute({ agentId: agent?.name });
-  }, []);
+  const chatRouteForAgent = useCallback(
+    (agent: AgentWorldAgent | null) =>
+      preserveWorkbenchPresentation(
+        taskWorkspaceRoute({ agentId: agent?.name }),
+        location.search,
+      ),
+    [location.search],
+  );
 
   const navigateToHubSection = useCallback(
     (section: HubMarketSection) => {
@@ -1621,9 +1623,13 @@ export function AgentWorldUnified() {
       }
       if (section === "skills") params.set("tab", "skills");
       const query = params.toString();
-      navigate(`/workspace/agents${query ? `?${query}` : ""}`, {
-        replace: true,
-      });
+      navigate(
+        preserveWorkbenchPresentation(
+          `/workspace/agents${query ? `?${query}` : ""}`,
+          location.search,
+        ),
+        { replace: true },
+      );
     },
     [location.search, navigate],
   );
@@ -1635,9 +1641,13 @@ export function AgentWorldUnified() {
       params.set("view", view);
       params.delete("connect");
       const query = params.toString();
-      navigate(`/workspace/agents${query ? `?${query}` : ""}`, {
-        replace: true,
-      });
+      navigate(
+        preserveWorkbenchPresentation(
+          `/workspace/agents${query ? `?${query}` : ""}`,
+          location.search,
+        ),
+        { replace: true },
+      );
     },
     [location.search, navigate],
   );
@@ -1647,7 +1657,12 @@ export function AgentWorldUnified() {
   return (
     <div className="relative flex size-full flex-col px-2 pb-2 pt-2 md:px-3">
       {!hudOnly ? (
-        <div className="-mx-2 -mt-2 flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle bg-background/95 px-2 md:hidden">
+        <div
+          className={cn(
+            "-mx-2 -mt-2 flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle bg-background/95 px-2 md:hidden",
+            echoDesktopOwnsChrome && "pl-16",
+          )}
+        >
           <SidebarTrigger
             className="size-9 shrink-0"
             aria-label={t.common.openSidebarMenu}
@@ -1711,7 +1726,7 @@ export function AgentWorldUnified() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-8 rounded-md border-violet-500/25 bg-violet-500/5 px-2.5 text-xs text-violet-700 shadow-none hover:bg-violet-500/10 dark:text-violet-300"
+                  className="h-8 rounded-md border-core/30 bg-core/5 px-2.5 text-xs text-core shadow-none hover:bg-core/10"
                   onClick={() => setHubSmartTeamOpen(true)}
                 >
                   <SparklesIcon className="mr-1.5 size-3.5" />
@@ -1731,7 +1746,14 @@ export function AgentWorldUnified() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuItem
-                      onSelect={() => navigate("/workspace/agents/new")}
+                      onSelect={() =>
+                        navigate(
+                          preserveWorkbenchPresentation(
+                            "/workspace/agents/new",
+                            location.search,
+                          ),
+                        )
+                      }
                     >
                       <BotIcon className="size-4" />
                       创建 AI 成员
@@ -1750,7 +1772,14 @@ export function AgentWorldUnified() {
                 onSelectAgent={handleSelectAgent}
                 onInstallChange={handleInstallChange}
                 onRetry={() => void fetchAgents()}
-                onCreateAgent={() => navigate("/workspace/agents/new")}
+                onCreateAgent={() =>
+                  navigate(
+                    preserveWorkbenchPresentation(
+                      "/workspace/agents/new",
+                      location.search,
+                    ),
+                  )
+                }
                 showManagementActions={false}
                 sceneOnly
               />
@@ -1859,7 +1888,12 @@ export function AgentWorldUnified() {
                             disabled={isMutating}
                             onClick={() => {
                               if (isInstalled && isRuntimeEnabled) {
-                                navigate(app.workspaceRoute);
+                                navigate(
+                                  preserveWorkbenchPresentation(
+                                    app.workspaceRoute,
+                                    location.search,
+                                  ),
+                                );
                               } else if (
                                 isInstalled &&
                                 !isBroken &&
@@ -1888,7 +1922,7 @@ export function AgentWorldUnified() {
                               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                                 {app.description}
                               </span>
-                              <span className="mt-0.5 block text-micro text-fuchsia-600 dark:text-fuchsia-300">
+                              <span className="mt-0.5 block text-micro text-muted-foreground">
                                 {APP_PRESENTATION_LABELS[app.presentation]}
                               </span>
                               {isBroken || isIncompatible ? (
@@ -1902,11 +1936,11 @@ export function AgentWorldUnified() {
                                   有可用更新
                                 </span>
                               ) : isInstalled && !isRuntimeEnabled ? (
-                                <span className="mt-0.5 block text-micro text-amber-600 dark:text-amber-300">
+                                <span className="mt-0.5 block text-micro text-warning">
                                   已停用 · 点击重新启用
                                 </span>
                               ) : !isInstalled && recoveries.length > 0 ? (
-                                <span className="mt-0.5 block text-micro text-emerald-600 dark:text-emerald-300">
+                                <span className="mt-0.5 block text-micro text-core">
                                   有可恢复的作品
                                 </span>
                               ) : null}
@@ -2150,7 +2184,14 @@ export function AgentWorldUnified() {
               }
             }}
             onSelectAgent={handleSwitchAgent}
-            onCreateAgent={() => navigate("/workspace/agents/new?return=hud")}
+            onCreateAgent={() =>
+              navigate(
+                preserveWorkbenchPresentation(
+                  "/workspace/agents/new?return=hud",
+                  location.search,
+                ),
+              )
+            }
           />
         </Suspense>
       ) : null}
@@ -2168,7 +2209,7 @@ export function AgentWorldUnified() {
               检测到此前卸载时保存的作品。应用代码会重新下载，作品是否恢复由你决定。
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/8 p-3 text-sm">
+          <div className="rounded-xl border border-core/30 bg-core/8 p-3 text-sm">
             <span className="font-medium text-foreground">
               可恢复内容已保留
             </span>
@@ -2241,7 +2282,7 @@ export function AgentWorldUnified() {
               className={cn(
                 "w-full rounded-xl border p-3 text-left transition",
                 uninstallDataPolicy === "trash"
-                  ? "border-amber-500 bg-amber-500/8"
+                  ? "border-warning/30 bg-warning/8"
                   : "border-border hover:bg-muted/40",
               )}
             >

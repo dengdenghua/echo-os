@@ -17,10 +17,23 @@ vi.mock("@/core/threads/hooks", () => ({
   useRenameThread: () => ({ isPending: false, mutate: vi.fn() }),
 }));
 
+vi.mock("@/core/agents", () => ({
+  useAgents: () => ({
+    agents: [{ name: "general" }],
+    isLoading: false,
+    isFetching: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 describe("ChatsDrawer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.setItem("echo.active-agent", "installed_researcher");
+    window.localStorage.setItem(
+      "echo.active-agent.v2:anonymous",
+      "installed_researcher",
+    );
   });
 
   it("migrates an on-demand identity selection to the default fixed persona", () => {
@@ -72,7 +85,7 @@ describe("ChatsDrawer", () => {
       "href",
       "/workspace/community",
     );
-    expect(screen.getByRole("link", { name: "订阅" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "自动化" })).toHaveAttribute(
       "href",
       "/workspace/intelligence?surface=chat",
     );
@@ -83,6 +96,15 @@ describe("ChatsDrawer", () => {
     expect(screen.getByRole("link", { name: "本地数据库" })).toHaveAttribute(
       "href",
       "/workspace/storage?surface=company&library=docs",
+    );
+
+    expect(screen.getByRole("link", { name: "项目管理" })).toHaveAttribute(
+      "href",
+      "/workspace/projects",
+    );
+    expect(screen.getByRole("link", { name: "知识库" })).toHaveAttribute(
+      "href",
+      "/workspace/knowledge?surface=chat",
     );
 
     await user.click(screen.getByRole("link", { name: "本地数据库" }));

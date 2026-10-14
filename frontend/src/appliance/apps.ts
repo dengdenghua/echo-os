@@ -165,7 +165,7 @@ const POLL_MS = 30_000;
 
 /** 拉取应用列表;30s 轮询保持状态新鲜。API 不可用(母体模式 /
  * 未开 appliance profile / 无 Docker)时静默返回空列表。 */
-export function useApplianceApps(): {
+export function useApplianceApps(enabled = true): {
   apps: ApplianceApp[];
   available: boolean;
   refresh: () => void;
@@ -186,10 +186,12 @@ export function useApplianceApps(): {
   }, []);
 
   useEffect(() => {
+    // Signed out (lock screen) the route answers 401; do not poll it.
+    if (!enabled) return;
     refresh();
     const timer = window.setInterval(refresh, POLL_MS);
     return () => window.clearInterval(timer);
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   return { apps, available, refresh };
 }

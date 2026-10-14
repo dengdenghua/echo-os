@@ -31,23 +31,54 @@ from appliance.agent_api.auth import (
     verify_jwt_hs256,
     verify_password,
 )
+from appliance.agent_api.authorization import authorization_token, websocket_token
 from appliance.approval import HighRiskApprovalService, consume_request_approval
 from appliance.audit import ApplianceAudit, AuditIntegrityError
 from appliance.auth import (
     ACCOUNT_SESSION_NOT_BEFORE_KEY,
     ACCOUNTS_KEY,
     ADMIN_USERNAME,
+    OWNER_SETUP_PENDING_KEY,
     SESSION_NOT_BEFORE_KEY,
     auth_store_path,
     normalized_accounts,
+    owner_setup_pending,
     read_auth_store,
     write_auth_store,
 )
 from appliance.security import ApplianceAuthenticator, resolve_authenticator
+from appliance.totp import AdministratorTotp
 
 AUTH_HASH_ENV = "ECHO_APPLIANCE_ADMIN_PASSWORD_HASH"
 MIN_PASSWORD_CHARACTERS = 12
 MAX_PASSWORD_BYTES = 72  # bcrypt's portable input limit
+OWNER_PASSWORD_MIN_CHARACTER_KINDS = 3
+OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS = 6
+
+
+def owner_password_problem(password: str) -> str | None:
+    """Return why a first owner password is too weak, or ``None``.
+
+    The rule mirrors the first-boot form: at least 12 characters, at most 72
+    UTF-8 bytes (bcrypt), at least three of lowercase / uppercase / digits /
+    other characters, and no long runs of the same few characters.
+    """
+
+    if len(password) < MIN_PASSWORD_CHARACTERS:
+        return "password_too_short"
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return "password_too_long"
+    kinds = (
+        any(char.islower() for char in password),
+        any(char.isupper() for char in password),
+        any(char.isdigit() for char in password),
+        any(not char.isalnum() or not char.isascii() for char in password),
+    )
+    if sum(kinds) < OWNER_PASSWORD_MIN_CHARACTER_KINDS:
+        return "password_too_simple"
+    if len(set(password.casefold())) < OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS:
+        return "password_too_repetitive"
+    return None
 
 
 class AccountSecurityError(RuntimeError):
@@ -64,6 +95,15 @@ class PasswordRotationBody(BaseModel):
         min_length=MIN_PASSWORD_CHARACTERS,
         max_length=256,
     )
+
+
+class TotpEnrollmentConfirmBody(BaseModel):
+    enrollment_id: str = Field(..., alias="enrollmentId", min_length=20, max_length=128)
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class TotpDisableBody(BaseModel):
+    factor: str = Field(..., min_length=6, max_length=64)
 
 
 class ApplianceAccountSecurity:
@@ -87,6 +127,11 @@ class ApplianceAccountSecurity:
         self._sleeper = sleeper
         self._path = auth_store_path()
         self._lock = threading.RLock()
+        self._totp = AdministratorTotp(
+            jwt_secret=auth_config.jwt_secret,
+            path=self._path.with_name("appliance-totp.json"),
+            clock=clock,
+        )
 
         payload = read_auth_store(self._path)
         raw_floor = payload.get(SESSION_NOT_BEFORE_KEY, 0)
@@ -105,6 +150,7 @@ class ApplianceAccountSecurity:
             for username, account in normalized_accounts(payload).items()
             if account["active"]
         }
+        self._owner_setup_pending = owner_setup_pending(payload)
 
     def _validated_account_floors(self, payload: dict[str, Any]) -> dict[str, int]:
         raw = payload.get(ACCOUNT_SESSION_NOT_BEFORE_KEY, {})
@@ -180,6 +226,46 @@ class ApplianceAccountSecurity:
                 raise AccountSecurityError(503, "session revocation clock did not advance")
             self._sleeper(0.025)
 
+    def verify_login_second_factor(
+        self,
+        username: str,
+        factor: str | None,
+        request: Request,
+    ) -> None:
+        self._totp.verify_login_factor(username, factor, request)
+
+    def totp_status(self) -> dict[str, Any]:
+        return self._totp.status()
+
+    def begin_totp_enrollment(self, *, actor: str) -> dict[str, Any]:
+        self._record(actor=actor, action="credentials.totp.enroll", outcome="attempted")
+        enrollment = self._totp.begin_enrollment()
+        self._record(actor=actor, action="credentials.totp.enroll", outcome="succeeded")
+        return enrollment
+
+    def confirm_totp_enrollment(
+        self,
+        *,
+        actor: str,
+        enrollment_id: str,
+        code: str,
+    ) -> int:
+        with self._lock:
+            self._record(actor=actor, action="credentials.totp.enable", outcome="attempted")
+            self._totp.confirm_enrollment(enrollment_id=enrollment_id, code=code)
+            floor = self.revoke_all(actor=actor)
+            self._record(actor=actor, action="credentials.totp.enable", outcome="succeeded")
+            return floor
+
+    def disable_totp(self, *, actor: str, factor: str) -> int:
+        with self._lock:
+            self._totp.verify_management_factor(factor)
+            self._record(actor=actor, action="credentials.totp.disable", outcome="attempted")
+            floor = self.revoke_all(actor=actor)
+            self._totp.disable()
+            self._record(actor=actor, action="credentials.totp.disable", outcome="succeeded")
+            return floor
+
     def _record(self, *, actor: str, action: str, outcome: str) -> None:
         try:
             self._audit.record(
@@ -252,6 +338,9 @@ class ApplianceAccountSecurity:
         payload = read_auth_store(self._path)
         payload[SESSION_NOT_BEFORE_KEY] = floor
         if password_hash is not None:
+            # A password the owner chose (rotation or first-boot setup) ends
+            # the generated-password state and closes the first-boot flow.
+            payload.pop(OWNER_SETUP_PENDING_KEY, None)
             payload["password_hash"] = password_hash
             accounts = payload.get(ACCOUNTS_KEY)
             if isinstance(accounts, dict) and isinstance(accounts.get(ADMIN_USERNAME), dict):
@@ -295,7 +384,45 @@ class ApplianceAccountSecurity:
             os.environ[AUTH_HASH_ENV] = new_hash
             self._session_not_before = floor
             self._approval.update_password_hash(new_hash)
+            self._owner_setup_pending = False
             self._record(actor=actor, action="credentials.rotate", outcome="succeeded")
+            return floor
+
+    @property
+    def owner_setup_pending(self) -> bool:
+        """True while the administrator password is still the generated one."""
+
+        with self._lock:
+            return self._owner_setup_pending
+
+    def establish_owner_password(self, *, actor: str, new_password: str) -> int:
+        """Set the first owner password exactly once, then close the setup flow.
+
+        Every session minted with the generated password is revoked; the live
+        login config and step-up approvals switch to the new hash at once.
+        """
+
+        problem = owner_password_problem(new_password)
+        if problem is not None:
+            raise AccountSecurityError(422, problem)
+        with self._lock:
+            payload = read_auth_store(self._path)
+            if not self._owner_setup_pending or not owner_setup_pending(payload):
+                self._owner_setup_pending = False
+                raise AccountSecurityError(409, "owner_already_set")
+            new_hash = hash_password(new_password)
+            self._record(actor=actor, action="owner.setup", outcome="attempted")
+            floor = self._next_floor()
+            write_auth_store(
+                self._updated_payload(floor=floor, password_hash=new_hash),
+                self._path,
+            )
+            self._config.users[ADMIN_USERNAME] = new_hash
+            os.environ[AUTH_HASH_ENV] = new_hash
+            self._session_not_before = floor
+            self._approval.update_password_hash(new_hash)
+            self._owner_setup_pending = False
+            self._record(actor=actor, action="owner.setup", outcome="succeeded")
             return floor
 
 
@@ -319,7 +446,11 @@ class ApplianceLocalAuthMiddleware:
         self._security = account_security
         auth_app = FastAPI()
         auth_app.include_router(
-            create_local_auth_router(config=auth_config, identity_store=identity_store)
+            create_local_auth_router(
+                config=auth_config,
+                identity_store=identity_store,
+                second_factor_verifier=account_security.verify_login_second_factor,
+            )
         )
         self._auth_app = auth_app
 
@@ -359,33 +490,15 @@ def _cookie_without_stale_session(raw: str, security: ApplianceAccountSecurity) 
 
 def _scope_token(scope: dict[str, Any]) -> str:
     """Match Agent principal resolution order for an attached WebSocket JWT."""
-
-    header_map = {key.lower(): value.decode("latin-1") for key, value in scope.get("headers") or ()}
-    authorization = header_map.get(b"authorization", "")
-    if authorization.lower().startswith("bearer "):
-        return authorization[7:].strip()
-    protocol = header_map.get(b"sec-websocket-protocol", "")
-    if protocol:
-        parts = [part.strip() for part in protocol.split(",") if part.strip()]
-        if len(parts) >= 2 and parts[0].lower() == "bearer":
-            return parts[1]
-    for key, value in parse_qsl(
-        (scope.get("query_string") or b"").decode("latin-1"),
-        keep_blank_values=True,
-    ):
-        if key == "token" and value:
-            return value
-    parsed = SimpleCookie()
-    with contextlib.suppress(Exception):
-        parsed.load(header_map.get(b"cookie", ""))
-    session = parsed.get(SESSION_COOKIE_NAME) or parsed.get(LEGACY_SESSION_COOKIE_NAME)
-    return session.value if session is not None else ""
+    return authorization_token(scope)
 
 
 def _strip_stale_credentials(
     scope: dict[str, Any], security: ApplianceAccountSecurity
 ) -> dict[str, Any]:
-    changed = False
+    protocol_token = websocket_token(scope) if scope.get("type") == "websocket" else None
+    stale_protocol = bool(protocol_token and security.token_is_stale(protocol_token))
+    changed = stale_protocol
     headers: list[tuple[bytes, bytes]] = []
     for key, value in scope.get("headers") or ():
         lowered = key.lower()
@@ -406,12 +519,7 @@ def _strip_stale_credentials(
                     continue
                 replacement = fresh.encode("latin-1")
         elif lowered == b"sec-websocket-protocol":
-            parts = [part.strip() for part in value.decode("latin-1").split(",")]
-            if (
-                len(parts) >= 2
-                and parts[0].lower() == "bearer"
-                and security.token_is_stale(parts[1])
-            ):
+            if stale_protocol:
                 changed = True
                 continue
         headers.append((key, replacement))
@@ -431,6 +539,10 @@ def _strip_stale_credentials(
     updated = dict(scope)
     updated["headers"] = headers
     updated["query_string"] = urlencode(filtered_query, doseq=True).encode("latin-1")
+    if stale_protocol:
+        # Agent reads the parsed ASGI protocols before the raw header. Both
+        # representations must lose a revoked token, including bearer.b64.
+        updated["subprotocols"] = []
     return updated
 
 
@@ -555,6 +667,69 @@ def create_account_security_router(
         )
         try:
             floor = service.rotate_password(actor=actor, new_password=body.new_password)
+            service.wait_for_login_window()
+        except AccountSecurityError as exc:
+            _raise(exc)
+        clear_session_cookie(response, request)
+        return {"success": True, "sessionsRevoked": True, "sessionNotBefore": floor}
+
+    @router.get("/credentials/totp")
+    def totp_status(actor: str = Depends(require_operator)) -> dict[str, Any]:
+        del actor
+        return service.totp_status()
+
+    @router.post("/credentials/totp/enroll")
+    def begin_totp_enrollment(
+        request: Request,
+        actor: str = Depends(require_operator),
+    ) -> dict[str, Any]:
+        consume_request_approval(
+            request,
+            approval,
+            actor=actor,
+            action="credentials.totp.enroll",
+            target=ADMIN_USERNAME,
+        )
+        try:
+            return service.begin_totp_enrollment(actor=actor)
+        except AccountSecurityError as exc:
+            _raise(exc)
+
+    @router.post("/credentials/totp/confirm")
+    def confirm_totp_enrollment(
+        body: TotpEnrollmentConfirmBody,
+        request: Request,
+        response: Response,
+        actor: str = Depends(require_operator),
+    ) -> dict[str, Any]:
+        try:
+            floor = service.confirm_totp_enrollment(
+                actor=actor,
+                enrollment_id=body.enrollment_id,
+                code=body.code,
+            )
+            service.wait_for_login_window()
+        except AccountSecurityError as exc:
+            _raise(exc)
+        clear_session_cookie(response, request)
+        return {"success": True, "sessionsRevoked": True, "sessionNotBefore": floor}
+
+    @router.post("/credentials/totp/disable")
+    def disable_totp(
+        body: TotpDisableBody,
+        request: Request,
+        response: Response,
+        actor: str = Depends(require_operator),
+    ) -> dict[str, Any]:
+        consume_request_approval(
+            request,
+            approval,
+            actor=actor,
+            action="credentials.totp.disable",
+            target=ADMIN_USERNAME,
+        )
+        try:
+            floor = service.disable_totp(actor=actor, factor=body.factor)
             service.wait_for_login_window()
         except AccountSecurityError as exc:
             _raise(exc)

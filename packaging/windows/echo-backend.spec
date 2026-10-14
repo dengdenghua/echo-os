@@ -9,6 +9,13 @@ repo_root = Path(SPECPATH).parents[1]
 entry = repo_root / "packaging" / "windows" / "echo_backend_entry.py"
 
 hiddenimports = collect_submodules("runtime") + [
+    "runtime.execution.misc.document_extraction",
+    "runtime.execution.misc.document_worker",
+    "runtime.execution.misc.document_process_limits",
+    "runtime.execution.misc.document_text_extractor",
+    "runtime.execution.misc.notebook_extractor",
+    "pypdf",
+    "defusedxml",
     "uvicorn.logging",
     "uvicorn.loops",
     "uvicorn.loops.auto",
@@ -21,6 +28,17 @@ hiddenimports = collect_submodules("runtime") + [
     "uvicorn.lifespan.on",
     "multipart",
     "python_multipart",
+    # Electron starts the packaged backend with
+    # ECHO_APP_EXTENSIONS=appliance.native_extension and requires it
+    # (frontend/electron/backend-runtime.cjs). It is imported by name at
+    # runtime, so PyInstaller cannot discover it from the entry script.
+    "appliance.native_extension",
+    "appliance.agent_api.contract",
+    "appliance.agent_api.storage",
+    "appliance.agent_ui",
+    "appliance.files",
+    "appliance.security",
+    "appliance.task_projection",
 ]
 
 datas = collect_data_files("runtime", include_py_files=False)

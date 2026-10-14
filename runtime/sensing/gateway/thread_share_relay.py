@@ -99,7 +99,7 @@ class ThreadShareRelayClient:
             data = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
         request = Request(f"{self.origin}{path}", data=data, headers=headers, method=method)
         try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:  # noqa: S310
+            with urlopen(request, timeout=self.timeout_seconds) as response:  # nosec B310 # noqa: S310
                 raw = response.read(2_000_001)
                 if len(raw) > 2_000_000:
                     raise ThreadShareRelayError("public share relay response is too large")

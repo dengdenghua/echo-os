@@ -10,8 +10,37 @@ SESSION_RUNTIME="${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is required}/echo-os"
 READY_FILE="$SESSION_RUNTIME/desktop-ready"
 READY_TEMP_FILE="$READY_FILE.$$"
 RENDERER_READY_FILE="$SESSION_RUNTIME/renderer-ready"
-POLKIT_AGENT=/usr/lib/x86_64-linux-gnu/libexec/polkit-kde-authentication-agent-1
-POWERDEVIL=/usr/lib/x86_64-linux-gnu/libexec/org_kde_powerdevil
+# KDE helper binaries live under the Debian multiarch triplet, which differs per
+# architecture (x86_64-linux-gnu vs aarch64-linux-gnu). Resolve it instead of
+# hardcoding the x86_64 path, otherwise an arm64 device fails the -x checks
+# below and the session refuses to start.
+ECHO_MULTIARCH="${ECHO_MULTIARCH:-$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || true)}"
+if [[ -z "$ECHO_MULTIARCH" ]]; then
+  case "$(uname -m)" in
+    x86_64) ECHO_MULTIARCH=x86_64-linux-gnu ;;
+    aarch64|arm64) ECHO_MULTIARCH=aarch64-linux-gnu ;;
+    armv7l) ECHO_MULTIARCH=arm-linux-gnueabihf ;;
+    *) ECHO_MULTIARCH="$(uname -m)-linux-gnu" ;;
+  esac
+fi
+
+# Newer KDE ships these in /usr/libexec; accept either location.
+resolve_kde_libexec() {
+  local name="$1" candidate
+  for candidate in \
+    "/usr/lib/$ECHO_MULTIARCH/libexec/$name" \
+    "/usr/libexec/$name" \
+    "/usr/lib/$ECHO_MULTIARCH/libexec/kf6/$name"; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  printf '%s' "/usr/lib/$ECHO_MULTIARCH/libexec/$name"
+}
+
+POLKIT_AGENT="$(resolve_kde_libexec polkit-kde-authentication-agent-1)"
+POWERDEVIL="$(resolve_kde_libexec org_kde_powerdevil)"
 NOTIFICATION_SERVICE=/usr/lib/echo-os/echo-notification-service
 NOTIFICATION_SOCKET="$SESSION_RUNTIME/notifications.sock"
 INPUT_METHOD=/usr/bin/fcitx5
@@ -36,6 +65,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 unset ECHO_SMOKE ECHO_NATIVE_APP_SMOKE_ID \
   ECHO_NATIVE_APP_IPC_READY_FILE
 
@@ -433,7 +466,7 @@ done
 }
 timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$SHELL_PID" \
-  --required-name "Echo OS 桌面" \
+  --required-name "ECHO OS 桌面" \
   --timeout-seconds 15
 if [[ "$WAYLAND_NATIVE_APP_IPC_REQUESTED" -eq 1 ]]; then
   for _attempt in $(seq 1 300); do

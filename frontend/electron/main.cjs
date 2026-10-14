@@ -13,6 +13,7 @@ const {
   net,
   protocol,
   safeStorage,
+  screen,
   shell,
   session,
   systemPreferences,
@@ -24,6 +25,10 @@ const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { spawnBackend, killBackend } = require("./backend-runtime.cjs");
+const {
+  isSameAppLocation,
+  safeOpenExternal,
+} = require("./safe-external-url.cjs");
 const desktopUpdater = require("./desktop-updater.cjs");
 const desktopProtocol = require("./desktop-protocol.cjs");
 const shellProfile = require("./shell-profile.cjs");
@@ -101,6 +106,9 @@ if (process.platform === "win32") {
 }
 
 let mainWindow = null;
+// URL the main window's renderer is served from (packaged entry or dev server).
+// IPC and main-frame navigation are only trusted on this location.
+let appRendererUrl = null;
 let nativeLiquidGlassController = null;
 let nativeLiquidGlassSmokeLogged = false;
 const BROWSER_PARTITION = "persist:echo-browser";
@@ -155,6 +163,8 @@ function installDesktopRendererProtocol() {
     fetchImpl: (url, init) => net.fetch(url, init),
     onProxyError: (error) =>
       console.warn("[echo] desktop backend proxy unavailable:", error.message),
+    onAssetError: (error) =>
+      console.warn("[echo] desktop asset unavailable:", error.message),
   });
   protocol.handle(desktopProtocol.DESKTOP_APP_SCHEME, handler);
 }
@@ -172,6 +182,13 @@ function backendProgress({ stage, message }) {
 
 // ── first-launch config (packaging/desktop/config.desktop.yaml) ──
 function ensureDesktopConfig() {
+  // 桌面图标来自 ~/Desktop。精简装机(无桌面环境)首次开机时该目录不存在,
+  // listDesktopItems 会抛 ENOENT,桌面图标区显示「读取失败」。启动时预创建。
+  try {
+    fs.mkdirSync(DESKTOP_DIR, { recursive: true });
+  } catch (err) {
+    console.warn("[echo] 预创建桌面目录失败:", err.message);
+  }
   const bundled = app.isPackaged
     ? path.join(process.resourcesPath, "config.desktop.yaml")
     : path.join(
@@ -200,21 +217,28 @@ function ensurePackagedResources() {
 // ── desktop organizer (the 桌面助手 backend) ───────────────────
 const journalFile = () =>
   path.join(app.getPath("userData"), "desktop-organizer-journal.json");
-
-function readJournal() {
-  try {
-    return JSON.parse(fs.readFileSync(journalFile(), "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeJournal(entries) {
-  fs.writeFileSync(journalFile(), JSON.stringify(entries, null, 2));
-}
+const { createDesktopOrganizer } = require("./desktop-organizer-moves.cjs");
+const desktopOrganizer = createDesktopOrganizer({
+  desktopDir: DESKTOP_DIR,
+  journalPath: journalFile(),
+});
 
 async function listDesktopItems() {
-  const names = await fsp.readdir(DESKTOP_DIR);
+  // 桌面图标来自 ~/Desktop。精简镜像/新用户可能还没有这个目录,
+  // 这里自愈创建(首次开机即建好),避免前端拿到 ENOENT 报"读取失败"。
+  try {
+    await fsp.mkdir(DESKTOP_DIR, { recursive: true });
+  } catch (err) {
+    console.warn("[echo] 无法创建桌面目录,返回空列表:", err.message);
+    return [];
+  }
+  let names;
+  try {
+    names = await fsp.readdir(DESKTOP_DIR);
+  } catch (err) {
+    console.warn("[echo] 读取桌面目录失败,返回空列表:", err.message);
+    return [];
+  }
   const items = [];
   for (const name of names) {
     if (name.startsWith(".")) continue;
@@ -240,17 +264,7 @@ async function listDesktopItems() {
 }
 
 async function moveDesktopItem(srcPath, destDir) {
-  const dest = path.isAbsolute(destDir)
-    ? destDir
-    : path.join(DESKTOP_DIR, destDir);
-  await fsp.mkdir(dest, { recursive: true });
-  const target = path.join(dest, path.basename(srcPath));
-  if (fs.existsSync(target)) return { ok: true, skipped: true };
-  await fsp.rename(srcPath, target);
-  const journal = readJournal();
-  journal.push({ from: srcPath, to: target, ts: Date.now() });
-  writeJournal(journal);
-  return { ok: true, destPath: target };
+  return desktopOrganizer.moveItem(srcPath, destDir);
 }
 
 function sampleSystemInfo() {
@@ -681,12 +695,23 @@ async function loadEnabledExtensions() {
 
 // ── IPC wiring ─────────────────────────────────────────────────
 function registerIpc() {
+  // The preload bridge exposes shell-level capabilities (openPath, file moves,
+  // system actions). Only the app's own renderer may reach them — never a
+  // foreign page the main frame was steered to, nor another webContents.
   const handle = (channel, fn) =>
-    ipcMain.handle(channel, async (_event, ...args) => fn(...args));
+    ipcMain.handle(channel, async (event, ...args) => {
+      if (
+        event.sender !== mainWindow?.webContents ||
+        !isSameAppLocation(event.senderFrame?.url, appRendererUrl)
+      ) {
+        throw new Error(`[echo] IPC ${channel} rejected: untrusted sender`);
+      }
+      return fn(...args);
+    });
 
   // app
   handle("app:getVersion", () => app.getVersion());
-  handle("app:openExternal", (url) => shell.openExternal(url));
+  handle("app:openExternal", (url) => safeOpenExternal(shell, url));
   handle("app:getPlatform", () => process.platform);
 
   // macOS 26+: only bounded surface geometry crosses this bridge. The renderer
@@ -873,6 +898,31 @@ function registerIpc() {
     ok: true,
     fullScreen: mainWindow?.isFullScreen() ?? false,
   }));
+  handle("window:getScreenBounds", () => {
+    try {
+      if (!mainWindow) {
+        const primary = screen.getPrimaryDisplay();
+        return {
+          ok: true,
+          bounds: primary.bounds,
+          workArea: primary.workArea,
+          scaleFactor: primary.scaleFactor,
+        };
+      }
+      const winBounds = mainWindow.getBounds();
+      const display = screen.getDisplayMatching(winBounds);
+      return {
+        ok: true,
+        windowBounds: winBounds,
+        contentBounds: mainWindow.getContentBounds(),
+        bounds: display.bounds,
+        workArea: display.workArea,
+        scaleFactor: display.scaleFactor,
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
 
   // desktop organizer
   handle("desktop:getAutomationPermissions", () => {
@@ -943,36 +993,12 @@ function registerIpc() {
       return { ok: false, error: err.message };
     }
   });
-  handle("desktop:moveItemsBatch", async (items) => {
-    let moved = 0;
-    let skipped = 0;
-    try {
-      for (const { srcPath, category } of items) {
-        const res = await moveDesktopItem(srcPath, category);
-        if (res.skipped) skipped += 1;
-        else moved += 1;
-      }
-      return { ok: true, moved, skipped };
-    } catch (err) {
-      return { ok: false, moved, skipped, error: err.message };
-    }
-  });
-  handle("desktop:undoMoves", async () => {
-    const journal = readJournal();
-    let undone = 0;
-    for (const entry of journal.reverse()) {
-      try {
-        if (fs.existsSync(entry.to) && !fs.existsSync(entry.from)) {
-          await fsp.rename(entry.to, entry.from);
-          undone += 1;
-        }
-      } catch {
-        /* keep undoing the rest */
-      }
-    }
-    writeJournal([]);
-    return { ok: true, undone };
-  });
+  handle("desktop:moveItemsBatch", (items) =>
+    desktopOrganizer.moveItemsBatch(items),
+  );
+  handle("desktop:undoMoves", (operationId) =>
+    desktopOrganizer.undoMoves(operationId),
+  );
   handle("desktop:getSystemInfo", () => sampleSystemInfo());
   handle("desktop:installContextMenu", () => ({
     ok: false,
@@ -1467,8 +1493,21 @@ function createMainWindow() {
     win.webContents.send("window:fullscreen-changed", { fullScreen: false });
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    safeOpenExternal(shell, url);
     return { action: "deny" };
+  });
+  // Leaving the app location would hand `window.echo` to foreign content, so
+  // keep the main frame on the renderer and send ordinary links outward.
+  win.webContents.on("will-navigate", (event, url) => {
+    const target = event.url ?? url;
+    if (isSameAppLocation(target, appRendererUrl)) return;
+    event.preventDefault();
+    void safeOpenExternal(shell, target);
+  });
+  win.webContents.on("will-redirect", (event, url) => {
+    if (!isSameAppLocation(event.url ?? url, appRendererUrl)) {
+      event.preventDefault();
+    }
   });
   if (DESKTOP_SESSION) {
     win.webContents.once("did-finish-load", () => {
@@ -1496,10 +1535,12 @@ function createMainWindow() {
     const entry = DESKTOP_SESSION
       ? `${desktopProtocol.DESKTOP_APP_ENTRY_URL}#/desktop`
       : desktopProtocol.DESKTOP_APP_ENTRY_URL;
+    appRendererUrl = entry;
     win.loadURL(entry).catch((error) => {
       console.error("[echo] desktop renderer failed to load:", error);
     });
   } else {
+    appRendererUrl = DEV_URL;
     win.loadURL(DEV_URL);
     win.webContents.on("did-fail-load", (_e, code, desc) => {
       console.error(

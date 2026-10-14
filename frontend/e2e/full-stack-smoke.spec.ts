@@ -1,7 +1,21 @@
 import type { Page } from "@playwright/test";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "./fixtures";
+import {
+  desktop,
+  dock,
+  expect,
+  expectApiFailure,
+  lockScreenPassword,
+  ownerPassword,
+  signIn,
+  test,
+} from "./fixtures";
+
+/**
+ * Full-stack golden smoke: FastAPI (booted through the appliance entrypoint)
+ * plus Vite, driven like a device owner: lock screen, desktop, sign out.
+ */
 
 const backendPort = process.env.GATEWAY_PORT || "18000";
 const backendBase = `http://127.0.0.1:${backendPort}`;
@@ -30,294 +44,189 @@ async function fetchFromPage(page: Page, path: string) {
   }, path);
 }
 
-async function reactFill(page: Page, selector: string, text: string) {
-  const el = page.locator(selector).filter({ visible: true }).first();
-  await el.waitFor({ state: "visible", timeout: 15_000 });
-  await el.evaluate((node: Element, value: string) => {
-    const proto =
-      node instanceof HTMLTextAreaElement
-        ? HTMLTextAreaElement.prototype
-        : HTMLInputElement.prototype;
-    const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
-    if (!setter) throw new Error("no native value setter");
-    setter.call(node, value);
-    node.dispatchEvent(new Event("input", { bubbles: true }));
-  }, text);
-}
-
-async function inputValue(page: Page, selector: string) {
-  return page.evaluate((targetSelector) => {
-    const node = document.querySelector(targetSelector);
-    if (
-      node instanceof HTMLInputElement ||
-      node instanceof HTMLTextAreaElement
-    ) {
-      return node.value;
-    }
-    return null;
-  }, selector);
-}
-
-async function waitForThreadState(
-  page: Page,
-  threadId: string,
-  predicate: (state: Record<string, unknown>) => boolean,
-) {
-  return expect
-    .poll(
-      async () => {
-        const response = await page.request.get(
-          `${backendBase}/api/threads/${encodeURIComponent(threadId)}/state`,
-        );
-        if (!response.ok()) {
-          return null;
-        }
-        const state = (await response.json()) as Record<string, unknown>;
-        return predicate(state) ? state : null;
-      },
-      { intervals: [500, 1000, 1500, 2000], timeout: 30_000 },
-    )
-    .not.toBeNull();
-}
-
-async function waitForRealtimeThreadId(
-  page: Page,
-  timeoutMs: number,
-): Promise<string | null> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      return extractRealtimeThreadId(page.url());
-    } catch {
-      await page.waitForTimeout(250);
-    }
-  }
-  return null;
-}
-
-async function submitRealtimePrompt(
-  page: Page,
-  prompt: string,
-): Promise<string> {
-  const input = page.locator('[data-testid="chat-composer-input"]').first();
-  const sendButton = page.getByTestId("chat-send-button");
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    await input.waitFor({ state: "visible", timeout: 15_000 });
-    if (
-      (await inputValue(page, '[data-testid="chat-composer-input"]')) !== prompt
-    ) {
-      await reactFill(page, '[data-testid="chat-composer-input"]', prompt);
-    }
-    await expect(sendButton).toBeEnabled({ timeout: 10_000 });
-    if (attempt === 1) {
-      await sendButton.click();
-    } else {
-      await input.press("Enter");
-    }
-    const threadId = await waitForRealtimeThreadId(
-      page,
-      attempt === 3 ? 45_000 : 15_000,
-    );
-    if (threadId) return threadId;
-  }
-  throw new Error(
-    `realtime prompt did not create a thread; url=${page.url()} input=${String(
-      await inputValue(page, '[data-testid="chat-composer-input"]'),
-    )}`,
-  );
-}
-
-function threadStateMessages(state: Record<string, unknown>): unknown[] {
-  const values = state.values;
-  if (
-    values &&
-    typeof values === "object" &&
-    Array.isArray((values as { messages?: unknown }).messages)
-  ) {
-    return (values as { messages: unknown[] }).messages;
-  }
-  return Array.isArray(state.messages) ? state.messages : [];
-}
-
-function extractRealtimeThreadId(url: string): string {
-  const match = /#\/workspace\/realtime\/([^/?#]+)/.exec(url);
-  if (!match?.[1] || match[1] === "new") {
-    throw new Error(`expected realtime thread URL, got ${url}`);
-  }
-  return decodeURIComponent(match[1]);
-}
-
 function normalizedPath(value: unknown): string {
   return String(value || "").replace(/\\/g, "/");
 }
 
 test.describe("Full-stack golden smoke", () => {
-  test("backend, Vite proxy, and workspace shell are all live", async ({
+  test("backend, Vite proxy and the appliance session agree on both loopback origins", async ({
     page,
     request,
   }) => {
-    const directStatus = await request.get(`${backendBase}/api/status`);
-    expect(directStatus.ok()).toBeTruthy();
-    const directBody = await directStatus.json();
-    expect(directBody.version).toBeTruthy();
-    expect(directBody.capabilities.fastapi).toBe(true);
+    const health = await request.get(`${backendBase}/api/health`);
+    expect(health.ok()).toBeTruthy();
+    const ready = await request.get(`${backendBase}/readyz`);
+    expect(ready.ok()).toBeTruthy();
 
-    const originSnapshots: Array<{
-      origin: string;
-      status: Record<string, unknown>;
-      auth: Record<string, unknown>;
-      agentNames: string[];
-    }> = [];
+    // Appliance mode: the Agent control plane is behind the device login.
+    const authStatus = await request.get(`${backendBase}/api/auth/status`);
+    expect(await authStatus.json()).toMatchObject({
+      enabled: true,
+      jwt_available: true,
+      allow_registration: false,
+    });
+    const signedOut = await request.get(
+      `${backendBase}/api/appliance/auth/status`,
+    );
+    expect(await signedOut.json()).toEqual({
+      authRequired: true,
+      authenticated: false,
+      role: null,
+    });
+    const anonymousStatus = await request.get(`${backendBase}/api/status`);
+    expect(anonymousStatus.status()).toBe(401);
 
     for (const origin of frontendOrigins) {
-      const directProxyStatus = await request.get(`${origin}/api/status`);
-      expect(directProxyStatus.ok()).toBeTruthy();
-      const directProxyBody = await directProxyStatus.json();
-      expect(directProxyBody.version).toBe(directBody.version);
-
-      await page.goto(`${origin}/`);
-      const proxiedStatus = await fetchFromPage(page, "/api/status");
-      expect(proxiedStatus.ok).toBe(true);
-      expect(proxiedStatus.body.version).toBe(directBody.version);
-
-      const authStatus = await fetchFromPage(page, "/api/auth/status");
-      expect(authStatus.ok).toBe(true);
-      expect(typeof authStatus.body.enabled).toBe("boolean");
-
-      const selfCheck = await fetchFromPage(page, "/api/runtime/self-check");
-      expect(selfCheck.ok).toBe(true);
-      expect(selfCheck.body.frontend).toMatchObject({
-        canonical_origin: `http://localhost:${frontendPort}`,
-        proxy_target: backendBase,
-        proxy_targets_backend: true,
-      });
-      expect(normalizedPath(selfCheck.body.paths?.runtime_root)).toBe(
-        normalizedPath(e2eStateRoot),
-      );
-      expect(normalizedPath(selfCheck.body.paths?.data_dir)).toBe(
-        normalizedPath(e2eDataDir),
-      );
-      expect(normalizedPath(selfCheck.body.paths?.echo_home_env)).toBe(
-        normalizedPath(e2eStateRoot),
-      );
-      expect(normalizedPath(selfCheck.body.paths?.echo_data_dir_env)).toBe(
-        normalizedPath(e2eDataDir),
-      );
-
-      const agents = await fetchFromPage(page, "/api/agents");
-      expect(agents.ok).toBe(true);
-      expect(Array.isArray(agents.body)).toBe(true);
-      expect(
-        agents.body.some(
-          (agent: { name?: string }) => agent.name === "general",
-        ),
-      ).toBe(true);
-      originSnapshots.push({
-        origin,
-        status: proxiedStatus.body,
-        auth: authStatus.body,
-        agentNames: agents.body
-          .map((agent: { name?: string }) => agent.name)
-          .filter(Boolean)
-          .sort(),
-      });
-
-      await page.goto(`${origin}/#/workspace/agents?surface=chat`);
-      await page.waitForLoadState("domcontentloaded");
-      await expect(
-        page.getByPlaceholder(
-          /搜索角色、应用或 Skills|Search roles, apps or Skills/i,
-        ),
-      ).toBeVisible({ timeout: 20_000 });
-
-      await page.goto(`${origin}/#/workspace/intelligence?surface=chat`);
-      await page.waitForLoadState("domcontentloaded");
-      const intelligenceSurface = page.getByTestId("intelligence-panel").or(
-        page.getByRole("heading", {
-          name: /订阅暂时不可用|Subscriptions unavailable/i,
-        }),
-      );
-      await expect(intelligenceSurface).toBeVisible({ timeout: 20_000 });
+      const proxiedHealth = await request.get(`${origin}/api/health`);
+      expect(proxiedHealth.ok()).toBeTruthy();
+      const proxiedAuth = await request.get(`${origin}/api/auth/status`);
+      expect(proxiedAuth.ok()).toBeTruthy();
+      expect((await proxiedAuth.json()).enabled).toBe(true);
     }
-    expect(originSnapshots).toHaveLength(2);
-    expect(originSnapshots[1].status).toMatchObject({
-      version: originSnapshots[0].status.version,
-    });
-    expect(originSnapshots[1].auth).toEqual(originSnapshots[0].auth);
-    expect(originSnapshots[1].agentNames).toEqual(
-      originSnapshots[0].agentNames,
-    );
 
-    await page.goto(
-      `${frontendOrigins[0]}/#/workspace/agents/general/chats/new`,
-    );
-    await page.waitForLoadState("domcontentloaded");
+    // Browser storage and the HttpOnly session are origin-partitioned, so the
+    // SPA moves a 127.0.0.1 visit to the canonical localhost origin before
+    // the lock screen renders.
+    await page.goto(`${frontendOrigins[0]}/`);
     await expect(page).toHaveURL(
-      new RegExp(
-        `^http://localhost:${frontendPort}/#\\/workspace\\/realtime\\/new$`,
-      ),
+      new RegExp(`^http://localhost:${frontendPort}/#/desktop$`),
     );
-    await expect(page.getByTestId("chat-composer-input")).toBeVisible({
-      timeout: 20_000,
+    await signIn(page, `http://localhost:${frontendPort}/`);
+
+    const status = await fetchFromPage(page, "/api/status");
+    expect(status.ok).toBe(true);
+    expect(status.body.version).toBeTruthy();
+    expect(status.body.capabilities.fastapi).toBe(true);
+
+    const session = await fetchFromPage(page, "/api/appliance/auth/status");
+    expect(session.body).toMatchObject({
+      authRequired: true,
+      authenticated: true,
     });
 
-    await page.getByTestId("chat-tools-trigger").click();
-    await page.getByTestId("chat-commands-submenu").hover();
-    await expect(page.getByTestId("chat-insert-codex-plan")).toBeVisible();
-    await page.getByTestId("chat-insert-codex-plan").click();
-    await expect(page.getByTestId("composer-command-prefix")).toHaveText(
-      "Plan",
+    const selfCheck = await fetchFromPage(page, "/api/runtime/self-check");
+    expect(selfCheck.ok).toBe(true);
+    expect(selfCheck.body.frontend).toMatchObject({
+      canonical_origin: `http://localhost:${frontendPort}`,
+      proxy_target: backendBase,
+      proxy_targets_backend: true,
+    });
+    expect(normalizedPath(selfCheck.body.paths?.runtime_root)).toBe(
+      normalizedPath(e2eStateRoot),
     );
-    await expect(page.getByTestId("chat-composer-input")).toHaveValue("");
-    await expect(page.getByTestId("chat-send-button")).toBeDisabled();
+    expect(normalizedPath(selfCheck.body.paths?.data_dir)).toBe(
+      normalizedPath(e2eDataDir),
+    );
 
-    const agents = await request.get(`${backendBase}/api/agents`);
-    expect(agents.ok()).toBeTruthy();
-    const agentsBody = await agents.json();
-    expect(Array.isArray(agentsBody)).toBe(true);
+    const agents = await fetchFromPage(page, "/api/agents");
+    expect(agents.ok).toBe(true);
+    const agentNames = (agents.body as Array<{ name?: string }>)
+      .map((agent) => agent.name)
+      .filter((name): name is string => Boolean(name))
+      .sort();
+    expect(agentNames).toContain("general");
+
+    // The other loopback origin proxies to the same backend once it carries
+    // its own owner session.
+    const otherOrigin = frontendOrigins[0];
+    const login = await request.post(`${otherOrigin}/api/auth/local/login`, {
+      data: { username: "admin", password: ownerPassword() },
+    });
+    expect(login.ok()).toBeTruthy();
+    const otherStatus = await request.get(`${otherOrigin}/api/status`);
+    expect(otherStatus.ok()).toBeTruthy();
+    expect((await otherStatus.json()).version).toBe(status.body.version);
+    const otherAgents = await request.get(`${otherOrigin}/api/agents`);
+    expect(otherAgents.ok()).toBeTruthy();
     expect(
-      agentsBody.some((agent: { name?: string }) => agent.name === "general"),
-    ).toBe(true);
+      ((await otherAgents.json()) as Array<{ name?: string }>)
+        .map((agent) => agent.name)
+        .filter((name): name is string => Boolean(name))
+        .sort(),
+    ).toEqual(agentNames);
   });
 
-  test("realtime new thread sends, persists, and resumes after refresh", async ({
+  test("the lock screen refuses a wrong password and lets the owner in", async ({
     page,
   }) => {
-    test.setTimeout(90_000);
-    const origin = frontendOrigins[0];
-    const prompt = `Reply directly with one short sentence: full-stack realtime smoke ${Date.now()}`;
+    expectApiFailure(page, {
+      method: "POST",
+      path: "/api/auth/local/login",
+      status: 401,
+    });
+    await page.goto("/");
+    await expect(page).toHaveTitle("ECHO OS");
+    await expect(page).toHaveURL(/#\/desktop$/);
+    await expect(lockScreenPassword(page)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("heading", { name: "ECHO" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "用户名" })).toHaveValue(
+      "admin",
+    );
+    await expect(dock(page)).toHaveCount(0);
 
-    await page.goto(`${origin}/#/workspace/realtime/new`);
-    await page.waitForLoadState("domcontentloaded");
-    const chatModeToggle = page.getByTestId("chat-mode-toggle");
-    await expect(chatModeToggle).toBeVisible({ timeout: 20_000 });
-    if ((await chatModeToggle.getAttribute("aria-pressed")) !== "true") {
-      await chatModeToggle.click();
+    await lockScreenPassword(page).fill(`${ownerPassword()}-wrong`);
+    await page.getByRole("button", { name: "进入桌面" }).click();
+    await expect(page.getByText("用户名或密码错误")).toBeVisible();
+    await expect(dock(page)).toHaveCount(0);
+
+    await lockScreenPassword(page).fill(ownerPassword());
+    await page.getByRole("button", { name: "进入桌面" }).click();
+    await expect(desktop(page)).toBeVisible({ timeout: 30_000 });
+    await expect(dock(page)).toBeVisible();
+    for (const app of ["应用库", "任务空间", "审批收件箱", "系统设置"]) {
+      await expect(
+        dock(page).getByRole("button", { name: app, exact: true }),
+      ).toBeVisible();
     }
-    await expect(chatModeToggle).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      desktop(page).getByRole("textbox", { name: "输入意图" }),
+    ).toBeVisible();
 
-    await reactFill(page, '[data-testid="chat-composer-input"]', prompt);
-    const threadId = await submitRealtimePrompt(page, prompt);
-
-    await waitForThreadState(page, threadId, (state) => {
-      const messages = threadStateMessages(state);
-      return messages.some((message) =>
-        JSON.stringify(message).includes(prompt),
-      );
-    });
-
-    await waitForThreadState(page, threadId, (state) => {
-      const messages = threadStateMessages(state);
-      return messages.length >= 2;
-    });
-
+    // The session survives a reload: the desktop, not the lock screen.
     await page.reload();
-    await page.waitForLoadState("domcontentloaded");
-    await expect(page.getByTestId("chat-composer-input")).toBeVisible({
-      timeout: 20_000,
+    await expect(dock(page)).toBeVisible({ timeout: 30_000 });
+    await expect(lockScreenPassword(page)).toHaveCount(0);
+  });
+
+  test("signing out from the Echo menu returns to the lock screen", async ({
+    desktopPage: page,
+  }) => {
+    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "退出登录…" }).click();
+    const confirm = page.getByRole("alertdialog", {
+      name: "退出这个浏览器里的 ECHO OS？",
     });
-    await expect(page.getByText(prompt, { exact: true })).toBeVisible({
-      timeout: 20_000,
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole("button", { name: "取消" }).click();
+    await expect(confirm).toHaveCount(0);
+    await expect(dock(page)).toBeVisible();
+
+    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "退出登录…" }).click();
+    await confirm.getByRole("button", { name: "退出登录" }).click();
+    await expect(lockScreenPassword(page)).toBeVisible({ timeout: 15_000 });
+    await expect(dock(page)).toHaveCount(0);
+
+    // The browser session is gone, not just hidden.
+    const session = await fetchFromPage(page, "/api/appliance/auth/status");
+    expect(session.body).toMatchObject({ authenticated: false });
+    await page.reload();
+    await expect(lockScreenPassword(page)).toBeVisible({ timeout: 30_000 });
+    await expect(dock(page)).toHaveCount(0);
+  });
+
+  test("a workspace deep link opens the 工作台 window after sign-in", async ({
+    page,
+  }) => {
+    await signIn(page, "/#/workspace/realtime/new");
+    await expect(page).toHaveURL(/#\/desktop/);
+    const workbench = page.getByRole("dialog", { name: "工作台" });
+    await expect(workbench).toBeVisible({ timeout: 30_000 });
+    await expect(workbench.getByTestId("chat-composer-input")).toBeVisible({
+      timeout: 30_000,
     });
+    await expect(page.locator('[data-window-id^="agent-window:"]')).toHaveCount(
+      1,
+    );
   });
 });

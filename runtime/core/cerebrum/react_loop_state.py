@@ -52,6 +52,9 @@ class _LoopState:
     agent: Any = None
     thread_id: str = ""
     approval_provider: Any = None
+    # The turn's ``NetworkDenialMemory``, built lazily by the action review:
+    # network access refused once stays refused, whichever tool asks next.
+    network_denials: Any = None
     output_chunk_sink: Any = None
     router: Any = None
     metadata: dict = field(default_factory=dict)

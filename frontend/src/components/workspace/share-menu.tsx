@@ -242,7 +242,7 @@ export function ShareMenu({
             <p className="text-sm font-semibold text-foreground">
               {t.share.shareTask}
             </p>
-            <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+            <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
               {t.share.shareDescription}
             </p>
           </div>
@@ -252,23 +252,23 @@ export function ShareMenu({
               disabled={busy !== null}
               onSelect={() => handleQr("wechat")}
               icon={
-                <MessageCircleMoreIcon className="size-[18px] text-white" />
+                <MessageCircleMoreIcon className="size-[18px] text-foreground" />
               }
-              iconClassName="bg-[#07c160]"
+              iconClassName="bg-muted"
             />
             <ShareChannelItem
               label={t.share.moments}
               disabled={busy !== null}
               onSelect={() => handleQr("moments")}
-              icon={<ApertureIcon className="size-[18px] text-white" />}
-              iconClassName="bg-[#22a447]"
+              icon={<ApertureIcon className="size-[18px] text-foreground" />}
+              iconClassName="bg-muted"
             />
             <ShareChannelItem
               label={t.share.copyLink}
               disabled={busy !== null}
               onSelect={handleCopyLink}
-              icon={<LinkIcon className="size-[18px] text-[#3976f6]" />}
-              iconClassName="bg-[#3976f6]/10"
+              icon={<LinkIcon className="size-[18px] text-foreground" />}
+              iconClassName="bg-muted"
             />
             <ShareChannelItem
               label={t.share.qrCode}
@@ -313,7 +313,7 @@ export function ShareMenu({
             <DialogTitle>{qrTitle}</DialogTitle>
             <DialogDescription>{qrHint}</DialogDescription>
           </DialogHeader>
-          <div className="flex min-h-[236px] items-center justify-center rounded-2xl border border-border-default bg-white p-5">
+          <div className="flex min-h-[236px] items-center justify-center rounded-2xl border border-border-default bg-card p-5">
             {qrUrl ? (
               <QRCodeSVG
                 value={qrUrl}
@@ -400,7 +400,7 @@ function ShareChannelItem({
       >
         {icon}
       </span>
-      <span className="w-full truncate text-[11px] leading-4 text-muted-foreground">
+      <span className="w-full truncate text-xs leading-4 text-muted-foreground">
         {label}
       </span>
     </DropdownMenuItem>

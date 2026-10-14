@@ -10,6 +10,11 @@ from pathlib import Path
 
 import pytest
 
+if os.name == "nt":
+    pytest.skip(
+        "operations systemd lab requires Linux uid and systemd semantics", allow_module_level=True
+    )
+
 from deploy.appliance import operations_systemd as systemd
 from deploy.appliance import operations_systemd_lab as lab
 from deploy.appliance import physical_acceptance_capture as capture
@@ -202,7 +207,7 @@ def _fixture(
 
 def _candidate_index(tmp_path: Path) -> Path:
     value = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
             "repository": "dengdenghua/echo-os",
@@ -213,6 +218,12 @@ def _candidate_index(tmp_path: Path) -> Path:
         },
         "evidence": {
             "candidatePreflight": {"reportId": "4" * 64},
+            "nasRuntimeProfile": {
+                "product": "echo-nas-appliance",
+                "host": "debian-13-openmediavault-8",
+                "deployment": "oci-compose",
+                "echoOsImageRole": "separate-native-desktop-artifact",
+            },
             "appliance": {
                 "manifestSha256": "5" * 64,
                 "immutableReference": IMAGE_REFERENCE,
@@ -901,6 +912,7 @@ def test_native_systemd_verifier_renders_all_units_for_real_parser(tmp_path: Pat
     tool.write_bytes(b"native-parser-fixture")
     tool.chmod(0o755)
     captured: dict[str, bytes] = {}
+    staged_programs: set[str] = set()
 
     def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
         if command[1:] == ["--version"]:
@@ -910,6 +922,14 @@ def test_native_systemd_verifier_renders_all_units_for_real_parser(tmp_path: Pat
             path = Path(raw_path)
             assert path.is_file()
             captured[path.name] = path.read_bytes()
+            # The real parser rejects a unit whose program is missing or not
+            # executable, so every referenced program must be staged.
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.startswith("ExecStart="):
+                    program = Path(line.removeprefix("ExecStart=").split()[0])
+                    assert program.is_file(), program
+                    assert os.access(program, os.X_OK), program
+                    staged_programs.add(program.name)
         return subprocess.CompletedProcess(command, 0, "", "")
 
     report = native_verify.verify_native_systemd_units(
@@ -930,6 +950,11 @@ def test_native_systemd_verifier_renders_all_units_for_real_parser(tmp_path: Pat
     assert set(captured) == {"docker.service", *systemd.UNIT_NAMES}
     assert set(report["units"]) == set(systemd.UNIT_NAMES)
     assert b"LoadCredentialEncrypted=" in captured["echo-state-backup.service"]
+    assert {
+        "backup-state.sh",
+        "export-audit-evidence.sh",
+        "recover-appliance-upgrade.sh",
+    } <= staged_programs
 
 
 def test_native_systemd_verifier_fails_closed_on_parser_error(tmp_path: Path) -> None:

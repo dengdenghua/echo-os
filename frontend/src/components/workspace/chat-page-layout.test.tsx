@@ -3,6 +3,7 @@ import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithProviders } from "@/test/harness";
+import { actorScopedStorageKey } from "@/core/auth/scoped-storage";
 
 import { ChatPageLayout } from "./chat-page-layout";
 
@@ -306,6 +307,58 @@ describe("ChatPageLayout", () => {
     expect(onSecondaryClose).toHaveBeenCalledOnce();
   });
 
+  test("a docked panel consumes Escape aimed at this layout only", () => {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1440,
+    });
+    layoutWidth = 1400;
+    const onSecondaryClose = vi.fn();
+    const desktopEscape = vi.fn();
+    window.addEventListener("keydown", desktopEscape);
+
+    try {
+      renderWithProviders(
+        <>
+          <ChatPageLayout
+            header={<div>Header</div>}
+            messageList={<div>Messages</div>}
+            inputArea={<div>Composer</div>}
+            secondaryPanel={<button type="button">Docked tab</button>}
+            onSecondaryClose={onSecondaryClose}
+          />
+          <button type="button">Other desktop window</button>
+        </>,
+      );
+      expect(
+        screen.queryByRole("dialog", { name: "Agent workbench" }),
+      ).not.toBeInTheDocument();
+
+      // Escape in another desktop surface is not the panel's to take.
+      const outside = screen.getByRole("button", {
+        name: "Other desktop window",
+      });
+      outside.focus();
+      fireEvent.keyDown(outside, { key: "Escape" });
+      expect(onSecondaryClose).not.toHaveBeenCalled();
+      expect(desktopEscape).toHaveBeenCalledOnce();
+
+      const tab = screen.getByRole("button", { name: "Docked tab" });
+      tab.focus();
+      fireEvent.keyDown(tab, { key: "Escape" });
+      expect(onSecondaryClose).toHaveBeenCalledOnce();
+      // The desktop's window-level Escape handlers never see it.
+      expect(desktopEscape).toHaveBeenCalledOnce();
+
+      // Plain text clicks leave focus on <body>; the last pointer decides.
+      fireEvent.pointerDown(screen.getByText("Messages"));
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      expect(onSecondaryClose).toHaveBeenCalledTimes(2);
+    } finally {
+      window.removeEventListener("keydown", desktopEscape);
+    }
+  });
+
   test("recovers focus after active utility unmount without stealing Radix portal focus", () => {
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -514,9 +567,14 @@ describe("ChatPageLayout", () => {
     layoutWidth = 1050;
     fireEvent(window, new Event("resize"));
     expect(workbench).toHaveStyle({ width: "430px" });
-    expect(window.localStorage.getItem("echo:chatSecondaryPanelWidth")).toBe(
-      "500",
-    );
+    expect(
+      window.localStorage.getItem(
+        actorScopedStorageKey("echo:chatSecondaryPanelWidth"),
+      ),
+    ).toBe("500");
+    expect(
+      window.localStorage.getItem("echo:chatSecondaryPanelWidth"),
+    ).toBeNull();
 
     layoutWidth = 1200;
     fireEvent(window, new Event("resize"));

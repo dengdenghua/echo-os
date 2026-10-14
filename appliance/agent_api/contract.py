@@ -27,11 +27,16 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "local_config", "runtime.adapters.integrations.local_auth.config", "LocalAuthConfig"
         ),
         _Symbol(
-            "password_hash", "runtime.adapters.integrations.local_auth.config", "hash_password"
+            "password_hash",
+            "runtime.adapters.integrations.local_auth.passwords",
+            "hash_password",
         ),
         _Symbol(
-            "password_verify", "runtime.adapters.integrations.local_auth.config", "verify_password"
+            "password_verify",
+            "runtime.adapters.integrations.local_auth.passwords",
+            "verify_password",
         ),
+        _Symbol("identity", "runtime.safety.auth.identity", "Identity"),
         _Symbol("jwt_error", "runtime.safety.auth.identity", "JWTError"),
         _Symbol("jwt_verify", "runtime.safety.auth.identity", "verify_jwt_hs256"),
         _Symbol("session_cookie", "runtime.safety.auth.principal", "SESSION_COOKIE_NAME"),
@@ -41,6 +46,23 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "LEGACY_SESSION_COOKIE_NAME",
         ),
         _Symbol("session_cookie_clear", "runtime.safety.auth.principal", "clear_session_cookie"),
+        _Symbol("websocket_token", "runtime.safety.auth.websocket", "websocket_bearer_token"),
+        _Symbol("current_session", "runtime.platform.process.session", "current_session"),
+        _Symbol(
+            "capability_scope",
+            "runtime.platform.capabilities.tenant_context",
+            "current_capability_scope",
+        ),
+        _Symbol(
+            "session_scope",
+            "runtime.safety.recovery.tenant_scope",
+            "trusted_scope_from_session",
+        ),
+        _Symbol(
+            "authoritative_scope",
+            "runtime.safety.recovery.tenant_scope",
+            "trusted_scope_from_user_context",
+        ),
     ),
     "audit": (
         _Symbol("audit_chain", "runtime.safety.audit.audit_chain", "AuditChain"),
@@ -50,9 +72,24 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
         _Symbol("lease_conflict", "runtime.platform.process.task_supervisor", "TaskLeaseConflict"),
         _Symbol("lease_health", "runtime.platform.process.task_supervisor", "task_lease_health"),
         _Symbol(
+            "execution_request",
+            "runtime.execution.request",
+            "current_execution_request",
+        ),
+        _Symbol(
             "resume_checkpoint",
             "runtime.sensing.gateway._realtime_turn_lifecycle_resume",
             "_resume_checkpoint_metadata",
+        ),
+        _Symbol(
+            "approval_request_version",
+            "runtime.platform.process._task_approval_identity",
+            "approval_request_version",
+        ),
+        _Symbol(
+            "approval_block_reason",
+            "runtime.platform.process._task_approval_identity",
+            "approval_block_reason",
         ),
     ),
     "catalog": (
@@ -111,6 +148,14 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             ("decide",),
         ),
         _Symbol("active_bridge", "runtime.tentacle.team_bridge", "set_active_coordinator"),
+        _Symbol("hello", "runtime.tentacle.transport.device_protocol", "normalize_hello"),
+        _Symbol("socket", "runtime.tentacle.transport.asgi", "serve_device_socket"),
+        _Symbol(
+            "task_workspace_router",
+            "runtime.tentacle.task_workspace_api",
+            "create_task_workspace_router",
+        ),
+        _Symbol("mirror_router", "runtime.tentacle.mirror_api", "create_mirror_router"),
     ),
     "skills": (
         _Symbol("skill", "runtime.execution.suckers.registry", "Skill"),
@@ -129,6 +174,41 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
         ),
         _Symbol("safe_mtime", "runtime.memory.hemolymph.image_semantic_index", "_mtime"),
     ),
+    "documents": (
+        _Symbol(
+            "extraction_budget",
+            "runtime.execution.misc.document_extraction",
+            "DocumentExtractionBudget",
+            ("from_environment",),
+        ),
+        _Symbol(
+            "extraction_cleanup_error",
+            "runtime.execution.misc.document_extraction",
+            "DocumentWorkerCleanupError",
+        ),
+        _Symbol(
+            "extract_text",
+            "runtime.execution.misc.document_text_extractor",
+            "extract_document_text",
+        ),
+        _Symbol(
+            "extract_isolated",
+            "runtime.execution.misc.document_extraction",
+            "extract_document_isolated",
+        ),
+    ),
+    "storage": (
+        _Symbol(
+            "storage_proxy_router",
+            "runtime.sensing.gateway.storage_proxy_router",
+            "create_storage_proxy_router",
+        ),
+        _Symbol(
+            "desktop_file_manager",
+            "runtime.storage.desktop_provider",
+            "desktop_file_manager",
+        ),
+    ),
 }
 ALL_AGENT_API_DOMAINS = tuple(_DOMAINS)
 
@@ -137,7 +217,7 @@ DEFAULT_REQUIRED_DOMAINS = (
     "audit",
     "tasks",
 )
-DEFAULT_OPTIONAL_DOMAINS = ("catalog", "devices", "skills", "images", "capabilities")
+DEFAULT_OPTIONAL_DOMAINS = ("catalog", "devices", "skills", "images", "capabilities", "documents")
 
 
 class AgentApiIncompatibleError(RuntimeError):

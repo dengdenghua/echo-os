@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { renderWithProviders } from "@/test/harness";
 
 import {
-  LAST_AGENT_WORKSPACE_ROUTE_KEY,
+  lastAgentWorkspaceRouteStorageKey,
   WorkspaceSurfaceSwitch,
 } from "./workspace-surface-switch";
 
@@ -41,28 +41,28 @@ describe("WorkspaceSurfaceSwitch", () => {
     );
   });
 
-  it("remembers the active EchoAI route without importing the workspace shell", async () => {
+  it("remembers the active agent route without importing the workspace shell", async () => {
     renderWithProviders(<WorkspaceSurfaceSwitch active="agent" />, {
       initialRoute: "/workspace/realtime/thread-42?mode=team",
     });
 
     await waitFor(() =>
-      expect(sessionStorage.getItem(LAST_AGENT_WORKSPACE_ROUTE_KEY)).toBe(
+      expect(sessionStorage.getItem(lastAgentWorkspaceRouteStorageKey())).toBe(
         "/workspace/realtime/thread-42?mode=team",
       ),
     );
   });
 
-  it("returns from the browser to the remembered EchoAI route", () => {
+  it("returns from the browser to the remembered agent route", () => {
     sessionStorage.setItem(
-      LAST_AGENT_WORKSPACE_ROUTE_KEY,
+      lastAgentWorkspaceRouteStorageKey(),
       "/workspace/realtime/thread-42?mode=team",
     );
     renderWithProviders(<WorkspaceSurfaceSwitch active="browser" />, {
       initialRoute: "/browser",
     });
 
-    expect(screen.getByRole("tab", { name: "EchoAI" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Workbench" })).toHaveAttribute(
       "href",
       "/workspace/realtime/thread-42?mode=team",
     );

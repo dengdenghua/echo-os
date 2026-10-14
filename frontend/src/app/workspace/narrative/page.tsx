@@ -130,7 +130,7 @@ function CandidateBadge({ compact = false }: { compact?: boolean }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/8 font-medium text-amber-700 dark:text-amber-300",
-        compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
+        compact ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs",
       )}
     >
       <CircleDotIcon className={compact ? "size-2.5" : "size-3"} />
@@ -983,7 +983,7 @@ export default function NarrativePage() {
           </div>
         ) : null}
         {notice ? (
-          <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-emerald-400/20 bg-emerald-500/8 px-4 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">
+          <div className="mb-3 flex items-center justify-between gap-4 rounded-xl border border-core/20 bg-core/8 px-4 py-2.5 text-sm text-core">
             <span className="flex items-center gap-2">
               <CheckIcon className="size-4" />
               {notice}
@@ -1098,7 +1098,7 @@ export default function NarrativePage() {
                 ) : (
                   volumes.map((volume) => (
                     <div key={volume.id} className="mb-3">
-                      <div className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                      <div className="px-2 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
                         {volume.title}
                       </div>
                       <div className="space-y-1">
@@ -1523,7 +1523,7 @@ export default function NarrativePage() {
                   className={cn(
                     "rounded-full px-2 py-1 text-micro font-medium",
                     status?.mcp?.enabled
-                      ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-300"
+                      ? "bg-core/12 text-core"
                       : "bg-amber-500/12 text-amber-700 dark:text-amber-300",
                   )}
                 >
@@ -1547,7 +1547,7 @@ export default function NarrativePage() {
 
             <div className="rounded-xl border border-border/70 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <ShieldCheckIcon className="size-4 text-emerald-500" />
+                <ShieldCheckIcon className="size-4 text-core" />
                 插件自带 Skills
               </div>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -1588,11 +1588,11 @@ export default function NarrativePage() {
         />
       ) : null}
 
-      <div className="pointer-events-none fixed bottom-3 left-1/2 z-30 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-border/70 bg-background/85 px-3 py-1.5 text-[11px] text-muted-foreground shadow-lg backdrop-blur md:flex">
+      <div className="pointer-events-none fixed bottom-3 left-1/2 z-30 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-border/70 bg-background/85 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur md:flex">
         <span
           className={cn(
             "size-1.5 rounded-full",
-            status?.ready ? "bg-emerald-500" : "bg-amber-500",
+            status?.ready ? "bg-core" : "bg-amber-500",
           )}
         />
         Narrative Engine {status?.version || "0.1"} · candidate only

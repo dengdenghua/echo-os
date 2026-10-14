@@ -23,6 +23,16 @@ import {
 } from "react";
 
 import { swallow } from "@/core/utils/log";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
+import {
+  readBrowserResearchLog,
+  writeBrowserResearchLog,
+  type BrowserResearchLogEntry,
+} from "@/core/browser/research-log";
 import { useThreadStream } from "@/core/threads/hooks";
 import { isAIMessage, isHumanMessage } from "@/core/api/types";
 import { useI18n } from "@/core/i18n/hooks";
@@ -54,6 +64,7 @@ import {
   recordBrowserAgentAudit,
   setBrowserAgentPermission,
 } from "@/core/browser/agent-permissions";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 
 import {
@@ -95,16 +106,10 @@ interface ResearchPlatform {
   hint: string;
 }
 
-interface ResearchLogEntry {
-  id: string;
-  createdAt: number;
-  platform: string;
-  title: string;
-  note: string;
-  url?: string;
-}
+type ResearchLogEntry = BrowserResearchLogEntry;
 
 export function AssistantPanel({ webviewHandle }: Props) {
+  const actor = currentActorId();
   const { t } = useI18n();
   const recorderPluginEnabled = useCapabilitySurface("browser.recorder");
   const { activeTab, state, setCopilotOpen, setCopilotWidth } =
@@ -120,8 +125,9 @@ export function AssistantPanel({ webviewHandle }: Props) {
   const [policyVersion, setPolicyVersion] = useState(0);
   const [recorderMode, setRecorderMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem("echo:browser-recorder-mode") === "1";
+    return readActorScopedStorageValue("echo:browser-recorder-mode") === "1";
   });
+  const [sessionActor, setSessionActor] = useState(actor);
   const [recorderProviderState, setRecorderProviderState] = useState<
     "idle" | "embedded" | "relay" | "agent-only"
   >("idle");
@@ -130,17 +136,21 @@ export function AssistantPanel({ webviewHandle }: Props) {
   }, [recorderPluginEnabled]);
   const [researchGoal, setResearchGoal] = useState("");
   const [researchLog, setResearchLog] = useState<ResearchLogEntry[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = sessionStorage.getItem("echo:browser-research-log");
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      swallow(e);
-      return [];
-    }
+    return readBrowserResearchLog(actor);
   });
   const [briefCopied, setBriefCopied] = useState(false);
+  useEffect(() => {
+    if (sessionActor === actor) return;
+    setSessionActor(actor);
+    setRecorderMode(
+      typeof window !== "undefined" &&
+        readActorScopedStorageValue("echo:browser-recorder-mode", actor) ===
+          "1",
+    );
+    setResearchLog(readBrowserResearchLog(actor));
+    setResearchGoal("");
+    setBriefCopied(false);
+  }, [actor, sessionActor]);
   const listRef = useRef<HTMLDivElement>(null);
 
   const researchPlatforms = useMemo<ResearchPlatform[]>(
@@ -362,24 +372,17 @@ export function AssistantPanel({ webviewHandle }: Props) {
   }, [activeTab?.id]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || sessionActor !== actor) return;
     localStorage.setItem(
-      "echo:browser-recorder-mode",
+      actorScopedStorageKey("echo:browser-recorder-mode", actor),
       recorderMode ? "1" : "0",
     );
-  }, [recorderMode]);
+  }, [actor, recorderMode, sessionActor]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      sessionStorage.setItem(
-        "echo:browser-research-log",
-        JSON.stringify(researchLog.slice(0, 80)),
-      );
-    } catch (e) {
-      swallow(e);
-    }
-  }, [researchLog]);
+    if (typeof window === "undefined" || sessionActor !== actor) return;
+    writeBrowserResearchLog(researchLog, actor);
+  }, [actor, researchLog, sessionActor]);
 
   useEffect(() => {
     if (recorderMode) {
@@ -438,9 +441,7 @@ export function AssistantPanel({ webviewHandle }: Props) {
       sessionId: `browser-${loopTabId || "active"}`,
       ownerId: "browser-assistant",
       ownerLabel: "Browser Assistant",
-      surface: window.echo?.isElectron
-        ? "electron_webview"
-        : "backend_preview",
+      surface: window.echo?.isElectron ? "electron_webview" : "backend_preview",
       targetId: loopTabId,
       getStopped: () =>
         stopRequestedRef.current || activeTabIdRef.current !== loopTabId,
@@ -1219,7 +1220,7 @@ export function AssistantPanel({ webviewHandle }: Props) {
                     <span className="truncate text-micro font-medium">
                       {entry.platform} · {entry.title}
                     </span>
-                    <span className="shrink-0 text-[9px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
@@ -1631,8 +1632,13 @@ function AgentPicker({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold transition-colors hover:bg-white/18"
       >
-        {activeAgent?.icon ? (
-          <span className="text-base leading-none">{activeAgent.icon}</span>
+        {activeAgent ? (
+          <AgentAvatarTile
+            agentId={activeAgent.name}
+            name={display}
+            avatar={activeAgent.icon}
+            className="size-4 rounded"
+          />
         ) : (
           <SparklesIcon className="size-4 text-primary" />
         )}
@@ -1666,13 +1672,12 @@ function AgentPicker({
                     active && "bg-white/24 font-semibold",
                   )}
                 >
-                  {a.icon ? (
-                    <span className="text-base leading-none">{a.icon}</span>
-                  ) : (
-                    <span className="grid size-4 place-items-center text-muted-foreground">
-                      <SparklesIcon className="size-3" />
-                    </span>
-                  )}
+                  <AgentAvatarTile
+                    agentId={a.name}
+                    name={a.display_name || a.name}
+                    avatar={a.icon}
+                    className="size-4 rounded"
+                  />
                   <span className="min-w-0 flex-1 truncate">
                     {a.display_name || a.name}
                   </span>

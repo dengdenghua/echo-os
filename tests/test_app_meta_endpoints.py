@@ -37,6 +37,7 @@ import io
 import json
 import zipfile
 from collections.abc import Iterator
+from importlib import import_module
 from pathlib import Path
 
 import httpx
@@ -542,6 +543,17 @@ parameters:
 
 
 class TestPlugins:
+    @pytest.fixture(autouse=True)
+    def bundled_plugins(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Exercise the committed plugin assets, independent of newer plugins
+        # installed in the developer's home directory.
+        bundled_root = Path(__file__).resolve().parents[1] / ".echo/plugins/codex"
+        monkeypatch.setattr(
+            import_module("runtime.platform.plugins.codex_discovery"),
+            "_default_plugin_roots",
+            lambda: [bundled_root],
+        )
+
     # Pin a plugin port that is actually committed to the repo
     # (.echo/plugins/codex/ whitelists product-design + remotion; the
     # other ~20 ports are gitignored local copies). Pinning "browser"
@@ -644,9 +656,7 @@ class TestAgentMarket:
         r = client.get("/api/agent-market/store?search=Pitch%20Agent&limit=20")
         assert r.status_code == 200
 
-        assert "financial_pitch_agent" not in {
-            agent["id"] for agent in r.json()["agents"]
-        }
+        assert "financial_pitch_agent" not in {agent["id"] for agent in r.json()["agents"]}
 
     def test_financial_services_agent_detail_uses_catalog_metadata(
         self,
@@ -761,6 +771,28 @@ class TestAuthProviders:
         local = next(p for p in data["providers"] if p["id"] == "local")
         # password_required reflects whether users dict is non-empty
         assert local["password_required"] is True
+
+    def test_auth_status_reports_whether_a_session_credential_was_sent(
+        self,
+        isolated_cwd: Path,
+    ) -> None:
+        # Golden path 2026-10: without this hint the signed-out lock screen
+        # probed /api/auth/me on every load and logged a 401.
+        from runtime.safety.auth.principal import SESSION_COOKIE_NAME
+
+        class _FakeLocal:
+            enabled = True
+            users = {"alice": "x"}
+            allow_any_username = True
+
+        app = create_app(local_auth_config=_FakeLocal())
+        c = TestClient(app)
+        assert c.get("/api/auth/status").json()["session_present"] is False
+        c.cookies.set(SESSION_COOKIE_NAME, "opaque")
+        assert c.get("/api/auth/status").json()["session_present"] is True
+        c.cookies.clear()
+        bearer = c.get("/api/auth/status", headers={"Authorization": "Bearer x"})
+        assert bearer.json()["session_present"] is True
 
 
 class TestAdminMetaMutations:

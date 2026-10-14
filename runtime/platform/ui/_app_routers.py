@@ -37,19 +37,13 @@ def mount_routers_a(
 
     from runtime.sensing.gateway.system_router import create_system_router
 
-    def _reset_runtime_memory() -> None:
-        clear_threads = getattr(ctx.thread_store, "clear", None)
-        if callable(clear_threads):
-            clear_threads()
-        clear_teams = getattr(ctx.team_rooms_router, "reset_state", None)
-        if callable(clear_teams):
-            clear_teams()
+    from ._app_reset import reset_runtime_memory
 
     app.include_router(
         create_system_router(
             project_root=ctx.project_root,
             identity_store=ctx.identity_store,
-            memory_reset_callback=_reset_runtime_memory,
+            memory_reset_callback=lambda: reset_runtime_memory(ctx),
             require_auth=ctx.require_auth,
             jwt_secret=ctx.jwt_secret,
             jwt_issuer=ctx.jwt_issuer,
@@ -181,6 +175,7 @@ def mount_routers_a(
             workspace_root=ctx.thread_workspace_root,
             model_router=project_model_router,
             subagent_runner=ctx.subagent_runner,
+            task_supervisor=getattr(state, "task_supervisor", None),
             identity_store=ctx.identity_store,
             require_auth=ctx.require_auth,
             jwt_secret=ctx.jwt_secret,
@@ -481,6 +476,7 @@ def mount_routers_a(
             jwt_secret=ctx.jwt_secret,
             jwt_issuer=ctx.jwt_issuer,
             jwt_audience=ctx.jwt_audience,
+            task_supervisor=getattr(state, "task_supervisor", None),
         )
     )
 
@@ -518,6 +514,10 @@ def mount_routers_a(
         create_observability_router(
             journal=state.journal,
             registry=state.registry,
+            thread_store=ctx.thread_store,
+            workspace_root=ctx.thread_workspace_root,
+            allow_local_workspace_access=ctx.allow_local_workspace_access,
+            task_supervisor=getattr(state, "task_supervisor", None),
             planner=getattr(stack, "planner", None) if stack is not None else None,
             effect_store=(
                 getattr(stack.executor, "effect_store", None)

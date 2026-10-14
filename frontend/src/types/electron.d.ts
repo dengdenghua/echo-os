@@ -12,6 +12,29 @@ import type {
   NativeLiquidGlassWallpaper,
 } from "@/appliance/liquid-glass-surfaces";
 
+export interface DesktopMoveOutcome {
+  srcPath: string;
+  destPath?: string;
+  status: "moved" | "skipped" | "conflict" | "failed" | "uncertain" | "undone";
+  code?: string;
+  committed?: boolean | null;
+  recoveryPaths?: string[];
+}
+
+export interface DesktopMoveResult {
+  ok: boolean;
+  operationId?: string;
+  moved?: number;
+  undone?: number;
+  skipped?: number | boolean;
+  failed?: number;
+  conflicts?: number;
+  uncertain?: number;
+  outcomes?: DesktopMoveOutcome[];
+  destPath?: string;
+  error?: string;
+}
+
 export interface BrowserExtensionInfo {
   id: string;
   name: string;
@@ -80,7 +103,11 @@ export interface SystemActionCapabilities {
 
 export interface SystemControlState {
   nativeShell: boolean;
-  wifi: { available: boolean; enabled: boolean | null; connection: string | null };
+  wifi: {
+    available: boolean;
+    enabled: boolean | null;
+    connection: string | null;
+  };
   bluetooth: {
     available: boolean;
     present: boolean;
@@ -365,10 +392,18 @@ export interface EchoElectronAPI {
 
   systemControls?: {
     getState: () => Promise<SystemControlState>;
-    setWifiEnabled: (enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-    setBluetoothEnabled: (enabled: boolean) => Promise<{ ok: boolean; error?: string }>;
-    setAudioVolume: (percentage: number) => Promise<{ ok: boolean; error?: string }>;
-    setDisplayBrightness: (percentage: number) => Promise<{ ok: boolean; error?: string }>;
+    setWifiEnabled: (
+      enabled: boolean,
+    ) => Promise<{ ok: boolean; error?: string }>;
+    setBluetoothEnabled: (
+      enabled: boolean,
+    ) => Promise<{ ok: boolean; error?: string }>;
+    setAudioVolume: (
+      percentage: number,
+    ) => Promise<{ ok: boolean; error?: string }>;
+    setDisplayBrightness: (
+      percentage: number,
+    ) => Promise<{ ok: boolean; error?: string }>;
   };
 
   notifications?: {
@@ -401,28 +436,11 @@ export interface EchoElectronAPI {
     openItem: (path: string) => Promise<{ ok: boolean; error?: string }>;
     installContextMenu: () => Promise<{ ok: boolean; error?: string }>;
     removeContextMenu: () => Promise<{ ok: boolean; error?: string }>;
-    moveItem: (
-      srcPath: string,
-      destDir: string,
-    ) => Promise<{
-      ok: boolean;
-      destPath?: string;
-      skipped?: boolean;
-      error?: string;
-    }>;
+    moveItem: (srcPath: string, destDir: string) => Promise<DesktopMoveResult>;
     moveItemsBatch: (
       items: Array<{ srcPath: string; category: string }>,
-    ) => Promise<{
-      ok: boolean;
-      moved: number;
-      skipped: number;
-      error?: string;
-    }>;
-    undoMoves: () => Promise<{
-      ok: boolean;
-      undone: number;
-      error?: string;
-    }>;
+    ) => Promise<DesktopMoveResult>;
+    undoMoves: (operationId?: string) => Promise<DesktopMoveResult>;
     getSystemInfo: () => Promise<{
       ok: boolean;
       cpu?: {
@@ -469,6 +487,16 @@ export interface EchoElectronAPI {
      * inspector button so the user can examine runtime errors). */
     openDevTools: () => Promise<{ ok: boolean; error?: string }>;
     isFullScreen: () => Promise<{ ok: boolean; fullScreen?: boolean }>;
+    getScreenBounds?: () => Promise<{
+      ok: boolean;
+      windowBounds?: { x: number; y: number; width: number; height: number };
+      /** 内容区（网页视口）在屏幕上的位置，用于把屏幕坐标换算成页面坐标。 */
+      contentBounds?: { x: number; y: number; width: number; height: number };
+      bounds?: { x: number; y: number; width: number; height: number };
+      workArea?: { x: number; y: number; width: number; height: number };
+      scaleFactor?: number;
+      error?: string;
+    }>;
   };
 
   /** Optional compatibility hook. Echo OS does not bundle the legacy pet

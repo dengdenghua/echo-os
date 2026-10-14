@@ -123,6 +123,7 @@ class RemoteAccessService:
         self._lock = threading.RLock()
         self._connected = False
         self._sync_available = False
+        self._device_link_available = False
         self._checked_at: int | None = None
         self._monitor_task: asyncio.Task[None] | None = None
 
@@ -143,6 +144,11 @@ class RemoteAccessService:
         with self._lock:
             self._sync_available = bool(available)
 
+    def set_device_link_available(self, available: bool) -> None:
+        """Device Link publishes readiness independently of gateway health."""
+        with self._lock:
+            self._device_link_available = bool(available)
+
     def status(self) -> dict[str, Any]:
         if not self.configured:
             return unavailable_remote_access_status()
@@ -150,6 +156,7 @@ class RemoteAccessService:
             connected = self._connected
             checked_at = self._checked_at
             sync_available = self._sync_available
+            device_link_available = self._device_link_available
         return {
             "schema": REMOTE_ACCESS_SCHEMA,
             "provider": "tailscale",
@@ -167,9 +174,7 @@ class RemoteAccessService:
             },
             "features": {
                 "desktopWeb": connected,
-                # The sidecar deliberately exposes only Echo's HTTPS surface.
-                # Tentacle's separate LAN WebSocket remains private.
-                "deviceLink": False,
+                "deviceLink": connected and device_link_available,
                 "fileSync": connected and sync_available,
                 "photoSync": connected and sync_available,
             },

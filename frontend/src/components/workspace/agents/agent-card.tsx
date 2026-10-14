@@ -6,7 +6,7 @@ import {
   UserPlusIcon,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { AuthenticatedImage } from "@/components/ui/authenticated-image";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,7 @@ import { useDeleteAgent } from "@/core/agents";
 import type { Agent } from "@/core/agents";
 import { useI18n } from "@/core/i18n/hooks";
 import { taskWorkspaceRoute } from "@/core/router/task-workspace-route";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import {
   DEFAULT_PRIMARY_AGENT_ID,
   isPrimaryPersonaAgentId,
@@ -67,13 +68,19 @@ export function AgentCard({
 }: AgentCardProps) {
   const { locale, t } = useI18n();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const activeAgentId = useActiveAgentId();
   const deleteAgent = useDeleteAgent();
   const { confirm, confirmDialog } = useConfirmDialog();
 
   function handleChat() {
     if (isPrimaryIdentity) {
-      navigate(taskWorkspaceRoute({ agentId: agent.name }));
+      navigate(
+        preserveWorkbenchPresentation(
+          taskWorkspaceRoute({ agentId: agent.name }),
+          search,
+        ),
+      );
       return;
     }
     const leaderId = isPrimaryPersonaAgentId(activeAgentId)
@@ -86,7 +93,12 @@ export function AgentCard({
       label: agent.display_name || agent.name,
       openPicker: true,
     });
-    navigate(taskCollaboratorRouteForLeader(leaderId));
+    navigate(
+      preserveWorkbenchPresentation(
+        taskCollaboratorRouteForLeader(leaderId),
+        search,
+      ),
+    );
   }
 
   async function handleDelete() {
@@ -122,34 +134,18 @@ export function AgentCard({
         >
           <CardHeader className="px-4 pb-2 pt-3.5">
             <div className="flex items-start gap-3">
-              <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-subtle bg-muted text-base leading-none">
-                {agent.avatar_url ? (
-                  <AuthenticatedImage
-                    src={withAgentAvatarVersion(agent.avatar_url)}
-                    alt={displayName}
-                    className="h-full w-full bg-muted object-cover [image-rendering:pixelated]"
-                    fallback={
-                      agent.icon ? (
-                        <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-foreground/80">
-                          {agent.icon}
-                        </span>
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                          <BotIcon className="h-4 w-4" />
-                        </span>
-                      )
-                    }
-                  />
-                ) : agent.icon ? (
-                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-foreground/80">
-                    {agent.icon}
-                  </span>
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <BotIcon className="h-4 w-4" />
-                  </span>
-                )}
-              </div>
+              <AgentAvatarTile
+                agentId={agent.name}
+                name={displayName}
+                avatar={agent.icon}
+                imageUrl={
+                  agent.avatar_url
+                    ? withAgentAvatarVersion(agent.avatar_url)
+                    : null
+                }
+                className="size-10 rounded-full"
+                imageClassName="[image-rendering:pixelated]"
+              />
               <div className="min-w-0 flex-1">
                 <CardTitle className="truncate text-sm font-semibold leading-5">
                   {displayName}
@@ -171,7 +167,7 @@ export function AgentCard({
                 {talentTags.map((tag) => (
                   <span
                     key={tag}
-                    className="max-w-32 truncate rounded-md bg-muted/60 px-2 py-0.5 text-[11px] font-normal text-muted-foreground"
+                    className="max-w-32 truncate rounded-md bg-muted/60 px-2 py-0.5 text-xs font-normal text-muted-foreground"
                   >
                     {tag}
                   </span>

@@ -60,13 +60,21 @@ if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "${XDG_RUNTIME_DIR:-}" ]]; then
   chmod 0700 "$XDG_RUNTIME_DIR"
   export XDG_RUNTIME_DIR
 fi
+# GitHub job containers run as root with HOME=/github/home owned by the runner
+# user; Firefox (the http core-app case) refuses to run as root in another
+# user's home. Give the session a private home when HOME is not ours.
+if [[ ! -O "${HOME:-/nonexistent}" ]]; then
+  export HOME="$LOG_DIR/home"
+  mkdir -p "$HOME"
+  chmod 0700 "$HOME"
+fi
 
 cleanup() {
   local status="$1"
   trap - EXIT INT TERM
   for process_id in "${NATIVE_APP_PID:-}" "${ECHO_PID:-}" \
     "${CLIPBOARD_SOURCE_PID:-}" "${CLIPBOARD_HOST_PID:-}" \
-    "${ACCESSIBILITY_BUS_PID:-}" \
+    "${ACCESSIBILITY_BUS_PID:-}" "${READYZ_STUB_PID:-}" \
     "${INPUT_METHOD_PID:-}" "${KWIN_PID:-}" "${KWIN_BRIDGE_PID:-}" "${XVFB_PID:-}"; do
     [[ -n "$process_id" ]] && kill "$process_id" 2>/dev/null || true
   done
@@ -123,6 +131,10 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export SDL_IM_MODULE=fcitx
 export QT_ACCESSIBILITY=1
+# Chromium (the Electron shell) bridges its accessibility tree to AT-SPI only
+# when platform accessibility is on; --force-renderer-accessibility alone is
+# not enough, and the shell's AT-SPI marker never appears.
+export ACCESSIBILITY_ENABLED=1
 KWIN_BRIDGE_SOCKET="$XDG_RUNTIME_DIR/echo-os/kwin-window-bridge.sock"
 "$KWIN_BRIDGE" --socket "$KWIN_BRIDGE_SOCKET" \
   >"$LOG_DIR/kwin-bridge.log" 2>&1 &
@@ -239,23 +251,51 @@ gdbus call --session \
 }
 
 CLIPBOARD_SENTINEL='echo-os-x11-clipboard-persistence-smoke'
+# The source keeps serving until Klipper has captured the sentinel and is then
+# terminated, like an application that copies and quits. (xclip -loops 1 cannot
+# model this on X11: Qt's clipboard reader first asks for TARGETS, which uses up
+# the single request before Klipper can fetch the text.) -quiet keeps xclip in
+# the foreground; by default it forks, so $! would not be the selection owner.
 printf '%s' "$CLIPBOARD_SENTINEL" | \
-  xclip -selection clipboard -in -loops 1 \
+  xclip -quiet -selection clipboard -in \
     >"$LOG_DIR/clipboard-source-x11.log" 2>&1 &
 CLIPBOARD_SOURCE_PID=$!
+CLIPBOARD_CAPTURED=0
 for _attempt in $(seq 1 100); do
-  if ! kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then break; fi
   kill -0 "$CLIPBOARD_HOST_PID" 2>/dev/null || {
     echo "Klipper host exited while capturing the X11 clipboard" >&2
     exit 1
   }
+  if [[ "$(gdbus call --session \
+         --dest org.kde.klipper \
+         --object-path /klipper \
+         --method org.kde.klipper.klipper.getClipboardContents \
+         2>/dev/null || true)" == "('$CLIPBOARD_SENTINEL',)" ]]; then
+    CLIPBOARD_CAPTURED=1
+    break
+  fi
   sleep 0.1
 done
-if kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then
+[[ "$CLIPBOARD_CAPTURED" -eq 1 ]] || {
   echo "Klipper never captured the X11 clipboard from its source owner" >&2
   exit 1
-fi
-wait "$CLIPBOARD_SOURCE_PID"
+}
+unset CLIPBOARD_CAPTURED
+# Klipper records the item text at once but writes the item's data file, which
+# it re-offers once the owner quits, asynchronously through KIO. Quit the source
+# only after that file exists, as a user would a moment after copying. Only the
+# file's presence is checked, never its content.
+CLIPBOARD_ITEM_DATA="${CLIPBOARD_DATABASE%/*}/data"
+for _attempt in $(seq 1 100); do
+  find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q . && break
+  sleep 0.1
+done
+find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q . || {
+  echo "Klipper never wrote the captured X11 item's data file" >&2
+  exit 1
+}
+kill "$CLIPBOARD_SOURCE_PID"
+wait "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
 unset CLIPBOARD_SOURCE_PID
 CLIPBOARD_VALUE=''
 for _attempt in $(seq 1 100); do
@@ -271,10 +311,59 @@ done
 unset CLIPBOARD_VALUE
 echo "✓ Klipper preserved the X11 clipboard after its source process exited without persistent-home storage"
 
+# In smoke mode the shell reports "SMOKE OK" only once its backend answers
+# /readyz (waitForSmokeBackendReady in frontend/electron/main.cjs). On a device
+# the Agent service answers it; this smoke covers the shell and KWin, not the
+# Agent, so a loopback responder stands in. It also reports authentication
+# disabled at /api/auth/status, as an Agent configured without auth does, so
+# the real desktop (and its "ECHO OS 桌面" AT-SPI landmark) renders instead of
+# the "system service unavailable" gate. Every other API path returns 404; the
+# appliance auth probe reads that as a non-appliance host.
+READYZ_PORT_FILE="$LOG_DIR/readyz-stub.port"
+rm -f -- "$READYZ_PORT_FILE"
+python3 -c '
+import http.server, os, sys
+
+ANSWERS = {
+    "/readyz": b"{\"status\":\"ready\"}",
+    "/api/auth/status": b"{\"enabled\":false,\"jwt_available\":false,\"allow_registration\":false,\"exempt_paths\":[],\"session_present\":false}",
+}
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # keep-alive: fewer sockets under load
+    def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        body = ANSWERS.get(path, b"{}")
+        self.send_response(200 if path in ANSWERS else 404)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args):
+        pass
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+with open(sys.argv[1] + ".tmp", "w", encoding="ascii") as stream:
+    stream.write(str(server.server_address[1]))
+os.replace(sys.argv[1] + ".tmp", sys.argv[1])
+server.serve_forever()
+' "$READYZ_PORT_FILE" >"$LOG_DIR/readyz-stub.log" 2>&1 &
+READYZ_STUB_PID=$!
+for _attempt in $(seq 1 50); do
+  [[ -s "$READYZ_PORT_FILE" ]] && break
+  sleep 0.1
+done
+[[ -s "$READYZ_PORT_FILE" ]] || {
+  echo "loopback readiness responder did not start" >&2
+  exit 1
+}
+export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
+
 NATIVE_APP_IPC_READY_FILE="$XDG_RUNTIME_DIR/echo-os/native-app-ipc-ready"
 NATIVE_APP_IPC_BASELINE_IDS="$(
   wmctrl -l -x -p 2>/dev/null | \
-    awk 'tolower($5) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
+    awk 'tolower($4) ~ /(^|[.])kcalc([.]|$)/ { print tolower($1) }'
 )"
 rm -f -- "$NATIVE_APP_IPC_READY_FILE"
 
@@ -294,10 +383,16 @@ ECHO_NATIVE_APP_IPC_READY_FILE="$NATIVE_APP_IPC_READY_FILE" \
 "$PACKAGED_BIN" "${ECHO_ARGUMENTS[@]}" >"$LOG_DIR/echo-desktop.log" 2>&1 &
 ECHO_PID=$!
 
-for _attempt in $(seq 1 150); do
+# On X11, Electron sets WM_CLASS to the app name, which for the packaged shell
+# is package.json "name" ("echo-frontend.echo-frontend"; electron-builder's
+# build.productName does not reach the app), and ignores --class. The Liquid
+# Glass background window shares that class and is excluded by its fixed title. The window maps
+# on ready-to-show, which under software rendering on a CI runner can take far
+# longer than on hardware.
+for _attempt in $(seq 1 600); do
   ECHO_WINDOW_ID="$(
     wmctrl -lx 2>/dev/null | awk \
-      'tolower($0) ~ /echo-shell|echo-os-desktop|echo desktop/ { print $1; exit }'
+      'tolower($0) ~ /echo-shell|echo-os-desktop|echo-frontend/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
   )"
   [[ -n "$ECHO_WINDOW_ID" ]] && break
   kill -0 "$ECHO_PID" 2>/dev/null || {
@@ -308,6 +403,18 @@ for _attempt in $(seq 1 150); do
 done
 [[ -n "${ECHO_WINDOW_ID:-}" ]] || {
   echo "packaged Echo Desktop did not register a KWin window" >&2
+  {
+    echo "--- wmctrl -lx"
+    wmctrl -lx 2>&1 || true
+    echo "--- top-level X11 windows (id, map state, WM_CLASS, WM_NAME)"
+    for window_id in $(xwininfo -root -children 2>/dev/null | awk '/^ +0x/ { print $1 }'); do
+      window_class="$(xprop -id "$window_id" WM_CLASS 2>/dev/null || true)"
+      [[ "$window_class" == *"="* ]] || continue
+      echo "$window_id" \
+        "$(xwininfo -id "$window_id" 2>/dev/null | awk -F: '/Map State/ { gsub(/ /, "", $2); print $2 }')" \
+        "${window_class#*= }" "$(xprop -id "$window_id" WM_NAME 2>/dev/null | sed 's/^[^=]*= //')"
+    done
+  } >"$LOG_DIR/x11-windows.log" 2>&1
   exit 1
 }
 echo "✓ packaged Echo Desktop registered as $ECHO_WINDOW_ID"
@@ -352,9 +459,9 @@ for _attempt in $(seq 1 300); do
       -v baseline="$NATIVE_APP_IPC_BASELINE_IDS" '
         BEGIN {
           count = split(baseline, ids, "\n")
-          for (index = 1; index <= count; index++) seen[tolower(ids[index])] = 1
+          for (i = 1; i <= count; i++) seen[tolower(ids[i])] = 1
         }
-        tolower($5) ~ /(^|[.])kcalc([.]|$)/ &&
+        tolower($4) ~ /(^|[.])kcalc([.]|$)/ &&
         $3 ~ /^[1-9][0-9]*$/ && !seen[tolower($1)] { print tolower($1) }
       '
   )"
@@ -384,10 +491,14 @@ wmctrl -l 2>/dev/null | awk '{ print tolower($1) }' | \
 rm -f -- "$NATIVE_APP_IPC_READY_FILE"
 echo "ECHO_NATIVE_APP_IPC_READY app=org.kde.kcalc path=preload-ipc-gio result=zero-exit cleanup=closed"
 
-timeout 20s python3 "$ACCESSIBILITY_PROBE" \
+# The real desktop needs its auth checks and lazily loaded chunks before the
+# landmark exists; on a loaded runner that has taken longer than 15 s. Stay
+# inside the shell's 45 s smoke hold (ECHO_SMOKE_HOLD_MS).
+timeout 45s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$ECHO_PID" \
-  --required-name "Echo OS 桌面" \
-  --timeout-seconds 15 \
+  --required-name "ECHO OS 桌面" \
+  --timeout-seconds 40 \
+  --report-on-failure \
   >"$LOG_DIR/accessibility-tree-x11.log"
 grep -q 'ECHO_ACCESSIBILITY_TREE_READY provider=at-spi2 application=echo' \
   "$LOG_DIR/accessibility-tree-x11.log"

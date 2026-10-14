@@ -16,11 +16,15 @@
 
 Echo OS 没有直接打包上述运行时，也没有复制其 shader 源码；实现基于公开原理重新编写，并保留 Chromium、reduced-motion、reduced-transparency 的降级路径。当前 Apple 模式优先使用一层原创 WebGL2 合成器：它用真实 DOM 边界建立 rounded-rect SDF，在同一遍 fragment shader 中完成 viewport 壁纸采样、边缘法线位移、RGB 色散、Fresnel 高光和指针焦散；WebGL 不可用时再退回原有 SVG/CSS 管线。
 
-## 可再分发的桌面构图资产
+## 桌面构图资产
 
 1. [appletechie/appletechie-macos](https://github.com/appletechie/appletechie-macos)（MIT）
-   - 提供 macOS 风格桌面构图、菜单栏、Dock 和壁纸基准。
-   - `wallpaper-day2.jpg` 已放入 `frontend/public/third-party/appletechie-macos/`，并附带 `NOTICE.txt`。
+   - 曾提供 macOS 风格桌面构图、菜单栏、Dock 和壁纸基准。
+   - 它的 `wallpaper-day2.jpg` 画面与 macOS 默认壁纸高度相似，第三方仓库的 MIT 许可无法覆盖 Apple 自身的权利，
+     已于 2026-10 移除。默认壁纸改为 Echo 原创的 "Echo"（`frontend/public/echo/`），由
+     `frontend/scripts/generate-echo-wallpaper.mjs` 从代码生成，不含第三方素材。
+   - 系统应用图标同期改为 Echo 原创的单色图形（`frontend/src/appliance/echo-app-artworks.tsx`），
+     不再复刻 Finder、Safari、照片等 Apple 图标。
 
 ## macOS 原生路线
 

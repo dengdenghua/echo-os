@@ -17,12 +17,12 @@ export function MarketCard({
   onBuy: (item: MarketItem) => void;
   onOpen?: (item: MarketItem) => void;
 }) {
-  const category = MARKET_CATEGORIES.find((entry) => entry.key === item.category);
+  const category = MARKET_CATEGORIES.find(
+    (entry) => entry.key === item.category,
+  );
 
   return (
-    <article
-      className="group/card relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-card transition-[border-color,transform,box-shadow] duration-base hover:-translate-y-0.5 hover:border-border-default hover:shadow-[var(--shadow-sm)]"
-    >
+    <article className="group/card relative flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-card transition-[border-color,transform,box-shadow] duration-base hover:-translate-y-0.5 hover:border-border-default hover:shadow-[var(--shadow-sm)]">
       <button
         type="button"
         onClick={() => onOpen?.(item)}
@@ -37,7 +37,7 @@ export function MarketCard({
         />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/35 to-transparent" />
         {category && (
-          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-md">
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-black/40 px-2 py-1 text-xs font-medium text-white shadow-sm backdrop-blur-md">
             <span
               className="size-1.5 rounded-full"
               style={{ backgroundColor: category.color }}
@@ -45,9 +45,9 @@ export function MarketCard({
             {category.label}
           </span>
         )}
-        <span className="absolute bottom-2 left-2.5 inline-flex max-w-[calc(100%-1.25rem)] items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] text-white/90 backdrop-blur-sm sm:hidden">
+        <span className="absolute bottom-2 left-2.5 inline-flex max-w-[calc(100%-1.25rem)] items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-xs text-white/90 backdrop-blur-sm sm:hidden">
           <span
-            className="flex size-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+            className="flex size-4 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ backgroundColor: item.sellerColor }}
           >
             {item.sellerInitial}
@@ -56,7 +56,7 @@ export function MarketCard({
         </span>
         {item.sold && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-            <span className="rotate-[-12deg] rounded border-2 border-white/80 px-4 py-1 text-sm font-bold tracking-widest text-white">
+            <span className="rotate-[-12deg] rounded border-2 border-border px-4 py-1 text-sm font-bold tracking-widest text-white">
               已售出
             </span>
           </div>
@@ -78,7 +78,7 @@ export function MarketCard({
             <span className="text-lg font-bold tracking-tight tabular-nums text-foreground sm:text-xl">
               {item.price}
             </span>
-            <span className="text-[11px] font-medium text-foreground/60">积分</span>
+            <span className="text-xs font-medium text-foreground/60">积分</span>
           </div>
           <button
             type="button"
@@ -88,7 +88,7 @@ export function MarketCard({
               "flex min-h-9 min-w-0 items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-[background-color,transform,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 active:scale-[0.97] sm:min-h-8 sm:min-w-[5.25rem] sm:px-3",
               item.sold || item.mine
                 ? "cursor-default bg-muted text-muted-foreground/60"
-                : "bg-rose-500 text-white shadow-sm hover:bg-rose-600 hover:shadow-md",
+                : "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md",
             )}
           >
             {item.mine ? (
@@ -103,9 +103,9 @@ export function MarketCard({
             )}
           </button>
         </div>
-        <div className="mt-3 hidden items-center gap-1.5 border-t border-border-subtle pt-2.5 text-[11px] text-muted-foreground sm:flex">
+        <div className="mt-3 hidden items-center gap-1.5 border-t border-border-subtle pt-2.5 text-xs text-muted-foreground sm:flex">
           <span
-            className="flex size-3.5 items-center justify-center rounded-full text-[9px] font-bold text-white"
+            className="flex size-4 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ backgroundColor: item.sellerColor }}
           >
             {item.sellerInitial}
@@ -128,8 +128,7 @@ export function MarketGrid({
   onOpen?: (item: MarketItem) => void;
 }) {
   const cols = useMemo(() => {
-    if (items.length >= 8)
-      return "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
+    if (items.length >= 8) return "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
     if (items.length >= 4) return "grid-cols-2 xl:grid-cols-3";
     return "grid-cols-1 min-[360px]:grid-cols-2 xl:grid-cols-3";
   }, [items.length]);

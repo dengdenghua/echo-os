@@ -10,7 +10,7 @@
 // unpackaged `--smoke-test-backend` workflow useful without becoming a hidden
 // network or host-tool fallback in a released installer.
 
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -509,7 +509,7 @@ const CORE_DEPS = [
   "python-docx>=1.2.0",
   "openpyxl>=3.1.5",
   "python-pptx>=1.0.2",
-  "pypdf>=6.15.0",
+  "pypdf>=6.19.0",
   "reportlab>=4.4.4",
 ];
 
@@ -532,12 +532,12 @@ const OPTIONAL_GROUPS = {
     "opencv-python-headless>=5.0.0.93",
     "rapidocr-onnxruntime>=1.3.0",
   ],
-  extract: ["trafilatura>=2.0", "pypdf>=6.15.0"],
+  extract: ["trafilatura>=2.0", "pypdf>=6.19.0"],
   office: [
     "python-docx>=1.2.0",
     "openpyxl>=3.1.5",
     "python-pptx>=1.0.2",
-    "pypdf>=6.15.0",
+    "pypdf>=6.19.0",
     "reportlab>=4.4.4",
   ],
   mcp: [
@@ -624,6 +624,14 @@ async function spawnBackend(configPath, onProgress) {
   const env = {
     ...process.env,
     ECHO_DESKTOP: "1",
+    // The desktop backend owns the native system application surface. Use the
+    // lightweight native extension so Electron does not start the NAS
+    // appliance's private-state lock and Docker control plane.
+    ECHO_NATIVE_OS: process.env.ECHO_NATIVE_OS || "1",
+    ECHO_APP_EXTENSIONS:
+      process.env.ECHO_APP_EXTENSIONS || "appliance.native_extension",
+    ECHO_REQUIRED_APP_EXTENSIONS:
+      process.env.ECHO_REQUIRED_APP_EXTENSIONS || "1",
     ECHO_DATA_DIR: path.join(app.getPath("userData"), "data"),
     ECHO_RESOURCES_DIR: path.join(app.getPath("userData"), "resources"),
     ECHO_PACKAGED_CODEX_VERSION: PACKAGED_CODEX_VERSION,
@@ -685,6 +693,22 @@ async function spawnBackend(configPath, onProgress) {
   return child;
 }
 
+// The packaged Windows backend is a PyInstaller one-file executable: its
+// bootloader runs Python in a child process. TerminateProcess on the
+// bootloader alone (what child.kill() does on Windows) orphans that child,
+// which keeps serving the port after Echo quits. Stop the whole tree there.
+function terminateBackendProcess(child) {
+  if (process.platform === "win32" && child.pid) {
+    const result = spawnSync(
+      "taskkill",
+      ["/PID", String(child.pid), "/T", "/F"],
+      { stdio: "ignore", windowsHide: true },
+    );
+    if (result.status === 0) return;
+  }
+  child.kill();
+}
+
 async function killBackend() {
   if (!backendChild) return;
   const child = backendChild;
@@ -703,7 +727,7 @@ async function killBackend() {
     child.once("exit", finish);
     child.once("error", finish);
     try {
-      child.kill();
+      terminateBackendProcess(child);
     } catch (err) {
       console.warn("[echo] backend kill failed:", err.message);
       finish();

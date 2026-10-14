@@ -1,6 +1,6 @@
 {
   "name": "echo-frontend",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Echo OS — personal Agent operating system frontend",
   "author": "Echo Project",
   "license": "Apache-2.0",
@@ -22,11 +22,13 @@
     "check": "tsc --noEmit",
     "dev": "pnpm build:workbenches && vite",
     "dev:backend": "node scripts/dev-appliance-backend.mjs",
-    "dev:with-agent": "concurrently -k -n BACKEND,OS -c green,blue \"pnpm dev:backend\" \"pnpm build:workbenches && vite --host 127.0.0.1 --port 3000\"",
-    "dev:full": "concurrently -k -n BACKEND,FRONTEND -c green,blue \"pnpm dev:backend\" \"pnpm dev\"",
+    "dev:with-agent": "pnpm build:workbenches && node scripts/dev-with-agent.mjs",
+    "dev:status": "node scripts/dev-with-agent.mjs --status",
+    "dev:check": "node scripts/dev-preflight.mjs --check",
+    "dev:full": "pnpm dev:with-agent",
     "dev:full:example": "cross-env ECHO_AGENT_CONFIG=../config.example.yaml pnpm dev:full",
     "electron": "electron electron/main.cjs",
-    "electron:dev": "concurrently -k -s first -n VITE,APP -c blue,magenta \"pnpm build:workbenches && vite\" \"wait-on tcp:127.0.0.1:3000 && electron electron/main.cjs\"",
+    "electron:dev": "pnpm build:workbenches && node scripts/dev-with-agent.mjs --electron",
     "codex:prepare:win": "node ../extras/desktop/prepare-codex-win.cjs",
     "codex:prepare:mac": "node ../extras/desktop/prepare-codex-mac.cjs",
     "codex:prepare:linux": "node ../extras/desktop/prepare-codex-linux.cjs",
@@ -47,13 +49,15 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:unit && pnpm test:electron",
     "test:unit": "vitest run --exclude 'electron/**/*.test.cjs' --exclude 'electron/**/*.node-test.cjs' && node --test scripts/*.test.mjs",
-    "test:electron": "node electron/dev-url.test.cjs && node electron/desktop-updater.test.cjs && node electron/shell-profile.test.cjs && node electron/agent-service.test.cjs && node electron/system-actions.test.cjs && node electron/system-update.test.cjs && node electron/system-controls.test.cjs && node electron/system-notifications.test.cjs && node electron/system-shell.test.cjs && node electron/native-liquid-glass.test.cjs && node electron/native-app-ipc-smoke.node-test.cjs && node ../packaging/image/verify-native-shell-package.test.cjs",
+    "test:electron": "node electron/safe-external-url.test.cjs && node electron/dev-url.test.cjs && node electron/desktop-updater.test.cjs && node electron/shell-profile.test.cjs && node electron/agent-service.test.cjs && node electron/system-actions.test.cjs && node electron/system-update.test.cjs && node electron/system-controls.test.cjs && node electron/system-notifications.test.cjs && node electron/system-shell.test.cjs && node electron/native-liquid-glass.test.cjs && node electron/native-app-ipc-smoke.node-test.cjs && node ../packaging/image/verify-native-shell-package.test.cjs",
     "test:native-glass": "electron electron/native-liquid-glass-addon.node-test.cjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "bench": "vitest bench",
     "e2e": "playwright test",
+    "e2e:full": "playwright test --config playwright.full.config.ts",
+    "e2e:full:mobile": "cross-env ECHO_E2E_TEST_MATCH=mobile-smoke.spec.ts playwright test --config playwright.full.config.ts --project chromium",
     "e2e:headed": "playwright test --headed",
     "e2e:ui": "playwright test --ui",
     "generate-types": "openapi-typescript ../docs/openapi-snapshot.json -o src/core/api/openapi-types.ts"
@@ -93,7 +97,7 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
-    "ai": "^6.0.33",
+    "ai": "^6.0.286",
     "best-effort-json-parser": "^1.2.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
@@ -102,23 +106,23 @@
     "codemirror": "^6.0.2",
     "date-fns": "^4.1.0",
     "diff": "^8.0.4",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.17",
     "electron-updater": "6.8.9",
     "embla-carousel-react": "^8.6.0",
     "gsap": "^3.15.0",
     "idb": "^8.0.3",
-    "katex": "^0.16.28",
+    "katex": "0.18.10",
     "lucide-react": "^0.562.0",
     "mermaid": "^11.16.1",
     "motion": "^12.26.2",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.16",
     "next-themes": "^0.4.6",
     "node-addon-api": "^8.9.2",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-resizable-panels": "^4.4.1",
-    "react-router-dom": "^7.14.0",
+    "react-router-dom": "^7.18.4",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
@@ -175,11 +179,6 @@
   "ct3aMetadata": {
     "initVersion": "7.40.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "electron"
-    ]
-  },
   "build": {
     "appId": "com.echo.os.desktop",
     "productName": "Echo OS Desktop",
@@ -200,12 +199,8 @@
         "to": "native-shell-profile.json"
       },
       {
-        "from": "public/third-party/appletechie-macos/wallpaper-day2.jpg",
-        "to": "liquid-glass/wallpaper-day2.jpg"
-      },
-      {
-        "from": "public/third-party/appletechie-macos/NOTICE.txt",
-        "to": "liquid-glass/NOTICE.txt"
+        "from": "public/echo/wallpaper-echo.jpg",
+        "to": "liquid-glass/wallpaper-echo.jpg"
       }
     ],
     "mac": {

@@ -4,11 +4,9 @@
 
 **Source**: `runtime/core/cerebrum/`
 
-## Exports
+## Package summary
 
-- `LLMPlanner`
-- `PlannerError`
-- `StaticPlanner`
+Native Echo planning exports, loaded only when requested.
 
 ## Modules
 
@@ -16,6 +14,7 @@
 | --- | --- |
 | `_planner_helpers.py` | Pure helper functions extracted from :mod:`runtime.core.cerebrum.llm_planner`. |
 | `_planner_parse.py` | Plan-JSON extraction + node validation for :class:`LLMPlanner`. |
+| `_react_action_review.py` | One approval gate shared by single actions and multi-action batches. |
 | `_react_context_attachments.py` | User-message content assembly (attachments, images, JSONL manifest), message checkpoint (de)serialization helpers, and related-file prefetching. |
 | `_react_context_code.py` | Compatibility exports for context builders moved out of the ReAct engine. |
 | `_react_context_helpers.py` | Token estimation, context-compression helpers, and skill-catalog formatting for the ReAct loop. |
@@ -57,6 +56,7 @@
 | `plugin_auto_load.py` | Auto-activate pinned plugins/skill-packs from user mentions. |
 | `prompt_persistence.py` | — |
 | `react_action_outcomes.py` | Action outcome bookkeeping for the ReAct loop. |
+| `react_approval_checkpoint.py` | Persist completed work before a server-held approval can outlive its worker. |
 | `react_auto_verify.py` | Runtime-side auto-verification salvage for final-answer guard deadlocks. |
 | `react_browser_guards.py` | Browser-interaction and mixed-mode completion guards. |
 | `react_browser_iteration.py` | Browser-surface gating and per-task iteration limits for the ReAct loop. |
@@ -114,7 +114,7 @@
 
 ## Who imports this
 
-**59** file(s) reference this package:
+**62** file(s) reference this package:
 
 - **`runtime/cli_code.py/`** · 1 file(s)
   - `runtime/cli_code.py`
@@ -131,11 +131,11 @@
 - **`runtime/core/`** · 1 file(s)
   - `runtime/core/graph_runtime/runtime.py`
 - **`runtime/execution/`** · 8 file(s)
-  - `runtime/execution/codex_backend/dynamic_tools.py`
   - `runtime/execution/loops/_controller_attempt.py`
   - `runtime/execution/misc/parallel_runner.py`
   - `runtime/execution/parallel_agents/_orchestrator_models.py`
   - `runtime/execution/parallel_agents/stack_runner.py`
+  - `runtime/execution/subagents/react_drive.py`
   - _… and 3 more_
 - **`runtime/memory/`** · 4 file(s)
   - `runtime/memory/cowork/turn_plan.py`
@@ -149,18 +149,20 @@
   - `runtime/platform/ui/_app_parallel.py`
   - `runtime/platform/ui/_app_stack.py`
   - _… and 2 more_
-- **`runtime/safety/`** · 4 file(s)
+- **`runtime/safety/`** · 6 file(s)
   - `runtime/safety/experiments/prompt_optimizer.py`
+  - `runtime/safety/privacy.py`
   - `runtime/safety/recovery/gepa_bridge.py`
   - `runtime/safety/recovery/workflow_applier.py`
+  - `runtime/safety/storage_privacy.py`
   - `runtime/safety/validation/trust_signal.py`
-- **`runtime/sensing/`** · 26 file(s)
+- **`runtime/sensing/`** · 27 file(s)
   - `runtime/sensing/gateway/_agents_endpoints.py`
   - `runtime/sensing/gateway/_agents_endpoints_conversations.py`
   - `runtime/sensing/gateway/_agents_endpoints_tasks.py`
   - `runtime/sensing/gateway/_config_endpoints_system.py`
   - `runtime/sensing/gateway/_observability_journal.py`
-  - _… and 21 more_
+  - _… and 22 more_
 - **`runtime/tentacle/`** · 2 file(s)
   - `runtime/tentacle/coordinator.py`
   - `runtime/tentacle/mobile/cerebrum_adapter.py`

@@ -72,6 +72,7 @@ export const koKR: Translations = {
       `${method} ${path}이(가) 스텁 데이터를 반환했습니다. 실제 백엔드 엔드포인트가 활성화되기 전까지 이 워크스페이스 상태는 개발용 fallback으로 간주하세요.`,
     openSidebarMenu: "사이드바 메뉴 열기",
     loadingWorkspace: "작업 공간 불러오는 중...",
+    startingSystem: "시스템 서비스를 시작하는 중입니다. 잠시 기다려 주세요...",
   },
 
   // Home
@@ -85,8 +86,7 @@ export const koKR: Translations = {
   // Echo OS landing page
   landing: {
     tagline: "자율 작업을 안전하게 감독하는 Agent OS",
-    subtitle:
-      "계획·실행·관찰·기억·개선을 하나의 로컬 작업 공간에서",
+    subtitle: "계획·실행·관찰·기억·개선을 하나의 로컬 작업 공간에서",
     getStarted: "시작하기",
     clickToEnter: "클릭하여 작업 공간으로 이동",
     capabilitiesPanel: "Agent와 운영자를 위한 핵심 실행 환경",
@@ -108,7 +108,7 @@ export const koKR: Translations = {
 
     createYourOwnSkill: "나만의 Agent 스킬 만들기",
     createYourOwnSkillDescription:
-      "나만의 스킬을 만들어 EchoAI의 힘을 발휘하세요. 커스텀 스킬로,\nEchoAI가 웹 검색, 데이터 분석, 슬라이드 및 웹 페이지 같은\n산출물 생성 등 거의 모든 작업을 수행할 수 있습니다.",
+      "나만의 스킬을 만들어 Echo의 힘을 발휘하세요. 커스텀 스킬로,\nEcho가 웹 검색, 데이터 분석, 슬라이드 및 웹 페이지 같은\n산출물 생성 등 거의 모든 작업을 수행할 수 있습니다.",
 
     scenes: {
       daily: "일상 업무",
@@ -293,6 +293,7 @@ export const koKR: Translations = {
     makeSimilar: "비슷한 것 만들기",
     makeSimilarHint: "같은 프롬프트로 새 작업 시작",
     retryTask: "재시도",
+    openModelSettings: "모델 설정",
     retryTaskHint: "같은 프롬프트로 새 작업 시작",
     taskFailedReason: "실패 사유",
     resultUrl: "결과 링크",
@@ -459,12 +460,12 @@ export const koKR: Translations = {
     maxSubagents: "최대 하위 에이전트 수",
     maxSearches: "최대 검색 수",
     permissionModeLabel: "권한",
-    permissionModeDefault: "기본",
+    permissionModeDefault: "승인 요청",
     permissionModeDefaultDesc:
-      "모든 쓰기 작업과 명령은 먼저 확인을 받습니다. 가장 안전합니다.",
-    permissionModeAcceptEdits: "편집 수락",
+      "작업 공간 편집과 일반 명령을 허용하고 네트워크 또는 경계 밖 작업은 확인합니다.",
+    permissionModeAcceptEdits: "자동 승인",
     permissionModeAcceptEditsDesc:
-      "파일 변경은 자동으로 실행되며, 명령 실행 전에는 확인합니다.",
+      "같은 작업 공간 경계를 유지하며 경계 밖 작업은 독립 검토 에이전트가 판단합니다.",
     permissionModeBypass: "완전 액세스",
     permissionModeBypassDesc:
       "모든 작업을 확인 없이 자동 실행합니다. 최대 권한입니다.",
@@ -488,8 +489,8 @@ export const koKR: Translations = {
     projectWriteAccess: "프로젝트 쓰기",
     projectReadOnly: "읽기 전용",
     permissionFullAccess: "완전 액세스",
-    permissionAcceptEdits: "편집 수락",
-    permissionConfirm: "기본",
+    permissionAcceptEdits: "자동 승인",
+    permissionConfirm: "승인 요청",
     addImage: "이미지 추가 (붙여넣기 / 드래그 / 선택)",
     addAppshot: "현재 창 스냅샷 첨부",
     capturingAppshot: "현재 창을 첨부하는 중…",
@@ -717,7 +718,7 @@ export const koKR: Translations = {
     readFile: "파일 확인",
     updateFile: "파일 업데이트",
     runAction: "작업 수행",
-    teammateTimeout: "팀원이 제시간에 응답하지 않아 EchoAI 가 인계받았습니다",
+    teammateTimeout: "팀원이 제시간에 응답하지 않아 Echo 가 인계받았습니다",
     factSummaryPath: (value: string) => `확인됨: ${value}`,
     factSummaryCount: (value: string) => `확인됨: ${value}개`,
     factSummaryStatus: (value: string) => `확인됨: ${value}`,
@@ -1058,7 +1059,7 @@ export const koKR: Translations = {
       idle: "REC: 이 대화를 녹화하고 재사용 가능한 리플레이 스킬로 학습",
     },
     replay: {
-      titleDefault: "EchoAI 실행 리플레이",
+      titleDefault: "ECHO OS 실행 리플레이",
       footer: "자체 포함 오프라인 리플레이",
     },
     composer: {
@@ -1826,6 +1827,13 @@ export const koKR: Translations = {
       "예: 3페이지를 위험 매트릭스로 바꾸고 현재 테마는 유지",
     officeEditHint:
       "수정 요청은 현재 작업으로 전송되며 완료 후 미리보기가 새로고침됩니다",
+    fileAccessDenied:
+      "파일을 읽을 수 없습니다. 로그인 상태와 이 작업의 디렉터리 접근 권한을 확인하세요.",
+    fileMissing:
+      "파일이 없거나 이동되었습니다. 원래 위치를 확인하고 다시 시도하세요.",
+    fileUnavailable: "지금은 파일을 읽을 수 없습니다. 다시 시도하세요.",
+    fileTooLarge:
+      "파일이 너무 커서 여기서 미리 보거나 다운로드할 수 없습니다. 파일 관리자에서 원본을 여세요.",
     previewError:
       "미리보기를 불러올 수 없습니다. 로그인 상태를 확인한 후 다시 시도하세요.",
     previewRetry: "미리보기 다시 불러오기",
@@ -1981,8 +1989,8 @@ export const koKR: Translations = {
     sectionChats: "채팅",
     sectionSessions: "세션",
     noChatsYet: "아직 채팅이 없습니다",
-    collapseSidebar: "사이드바 접기 (⌘B)",
-    expandSidebar: "사이드바 펼치기 (⌘B)",
+    collapseSidebar: (shortcut: string) => `사이드바 접기 (${shortcut})`,
+    expandSidebar: (shortcut: string) => `사이드바 펼치기 (${shortcut})`,
     collapseSection: (label: string) => `${label} 접기`,
     expandSection: (label: string) => `${label} 펼치기`,
     projectNamePlaceholder: "프로젝트 이름",
@@ -2127,8 +2135,8 @@ export const koKR: Translations = {
       "에이전트가 유지할 수 있는 탭 수를 제한합니다. retain=true로 열린 탭은 작업 종료 후 자동으로 닫히지 않습니다.",
     saveConfig: "구성 저장",
     configSaved: "구성이 저장되었습니다",
-    installExtensionTitle: "EchoAI Browser Relay 설치",
-    installExtensionDesc: "확장을 설치해 브라우저를 EchoAI에 연결하세요.",
+    installExtensionTitle: "ECHO Browser Relay 설치",
+    installExtensionDesc: "확장을 설치해 브라우저를 ECHO OS에 연결하세요.",
     step1Title: "Chrome 확장 페이지를 열고 개발자 모드 활성화",
     step1Desc: "브라우저에서 확장 관리 페이지 열기",
     step1Action: "chrome://extensions 열기",
@@ -2145,7 +2153,7 @@ export const koKR: Translations = {
     relayVersion: "버전",
     compareTitle: "연결 방식 선택",
     compareDesc:
-      "두 방식 모두 브라우저를 EchoAI에 연결합니다. 필요에 맞는 방식을 선택하세요.",
+      "두 방식 모두 브라우저를 ECHO OS에 연결합니다. 필요에 맞는 방식을 선택하세요.",
     compareFeature: "기능",
     compareExtension: "확장 방식",
     compareCdp: "CDP 직접 연결",
@@ -2178,7 +2186,7 @@ export const koKR: Translations = {
     allVersions: "모든 버전",
     // Page Agent integration
     pageAgentDesc:
-      "Page Agent는 Alibaba가 오픈 소스로 공개한 GUI Agent 프레임워크입니다. 텍스트 기반 DOM 조작으로 웹페이지를 제어하며 스크린샷이나 멀티모달 모델이 필요 없습니다. MCP 프로토콜로 EchoAI에 통합됩니다.",
+      "Page Agent는 Alibaba가 오픈 소스로 공개한 GUI Agent 프레임워크입니다. 텍스트 기반 DOM 조작으로 웹페이지를 제어하며 스크린샷이나 멀티모달 모델이 필요 없습니다. MCP 프로토콜로 ECHO OS에 통합됩니다.",
     pageAgentDocs: "문서 보기",
     pageAgentFeature1: "페이지 내 JS 통합",
     pageAgentFeature1Desc:
@@ -2223,7 +2231,7 @@ export const koKR: Translations = {
     extConNeedExtension: "Chrome 확장을 설치해야 합니다.",
     cdpProNoExtension: "확장을 설치할 필요가 없습니다.",
     cdpProChrome144: "Chrome 144+에서 사용 가능합니다.",
-    cdpConReAuth: "EchoAI를 재시작할 때마다 다시 인증해야 합니다.",
+    cdpConReAuth: "ECHO OS를 재시작할 때마다 다시 인증해야 합니다.",
     cdpConChrome144Only: "Chrome 144+만 지원합니다.",
   },
 
@@ -2481,7 +2489,7 @@ export const koKR: Translations = {
     loadoutReady: "능력 연결됨",
     saved: "Agent 구성이 저장되었습니다",
     saveFailed: (msg) => `저장 실패: ${msg}`,
-    officialFaction: "EchoAI 사령부",
+    officialFaction: "ECHO 사령부",
     authorFaction: (author) => `${author} Lab`,
     categoryRoles: {
       assistant: "지원",
@@ -2813,13 +2821,13 @@ export const koKR: Translations = {
     save: "에이전트 저장",
     saving: "에이전트 저장 중...",
     saveRequested:
-      "저장이 요청되었습니다. EchoAI가 지금 초기 버전을 생성하고 저장합니다.",
+      "저장이 요청되었습니다. Echo가 지금 초기 버전을 생성하고 저장합니다.",
     saveHint:
       "초안 단계여도 오른쪽 위 메뉴에서 언제든지 이 에이전트를 저장할 수 있습니다.",
     saveCommandMessage:
       "지금까지 논의한 모든 내용을 바탕으로 이 커스텀 에이전트를 지금 저장해 주세요. 이 메시지를 저장에 대한 나의 명시적 확인으로 간주하세요. 아직 빠진 세부 사항이 있다면 합리적으로 추정하고, 간결한 첫 SOUL.md를 영어로 생성한 다음, 추가 확인을 요청하지 말고 즉시 setup_agent를 호출하세요.",
     agentCreatedPendingRefresh:
-      "에이전트가 생성되었지만 EchoAI가 아직 불러오지 못했습니다. 잠시 후 이 페이지를 새로고침하세요.",
+      "에이전트가 생성되었지만 Echo가 아직 불러오지 못했습니다. 잠시 후 이 페이지를 새로고침하세요.",
     more: "더 보기",
     agentCreated: "에이전트가 생성되었습니다!",
     startChatting: "채팅 시작",
@@ -3069,13 +3077,13 @@ export const koKR: Translations = {
 
   // Workspace
   workspace: {
-    officialWebsite: "EchoAI 공식 웹사이트",
-    githubTooltip: "Github의 EchoAI",
+    officialWebsite: "ECHO OS 공식 웹사이트",
+    githubTooltip: "Github의 ECHO OS",
     settingsAndMore: "설정 및 더 보기",
-    visitGithub: "GitHub의 EchoAI",
+    visitGithub: "GitHub의 ECHO OS",
     reportIssue: "문제 보고",
     contactUs: "문의하기",
-    about: "EchoAI 정보",
+    about: "ECHO OS 정보",
     modes: {
       chat: "채팅",
       team: "팀",
@@ -3087,7 +3095,7 @@ export const koKR: Translations = {
       badge: "Agent OS 컨트롤 룸",
       headline: "에이전트에게 목표를 주고 작업을 감독하세요.",
       description:
-        "EchoAI는 목표를 계획으로 바꾸고, 범위가 지정된 런타임에서 도구를 실행하며, 추적을 기록하고, 다음 실행을 위해 유용한 메모리를 보존합니다.",
+        "Echo는 목표를 계획으로 바꾸고, 범위가 지정된 런타임에서 도구를 실행하며, 추적을 기록하고, 다음 실행을 위해 유용한 메모리를 보존합니다.",
       newTask: "새 작업",
       codeTask: "코드 작업",
       systemLoop: {
@@ -3214,7 +3222,7 @@ export const koKR: Translations = {
 
   // Page titles (document title)
   pages: {
-    appName: "EchoAI",
+    appName: "ECHO OS",
     chats: "Chats",
     newChat: "새 대화",
     untitled: "Untitled",
@@ -3240,7 +3248,7 @@ export const koKR: Translations = {
     writeFile: "파일 쓰기",
     clickToViewContent: "클릭하여 파일 내용 보기",
     writeTodos: "할 일 목록 업데이트",
-    skillInstallTooltip: "스킬을 설치하여 EchoAI에서 사용 가능하게 합니다",
+    skillInstallTooltip: "스킬을 설치하여 ECHO OS에서 사용 가능하게 합니다",
     toastSkillInstallFailed: "스킬 설치 실패",
     toastExportConversationFailed: "대화 내보내기 실패",
   },
@@ -3262,6 +3270,8 @@ export const koKR: Translations = {
       "이번 답변이 중단되었습니다. 대화를 계속하거나 재시도하세요.",
     networkLost:
       "네트워크 연결이 끊겼습니다. 작업이 자동으로 일시정지되었습니다 — 메시지를 보내 체크포인트에서 재개하세요.",
+    eventStreamOverloaded:
+      "이벤트 스트림이 일시적으로 혼잡합니다. 완료된 단계는 보존되었습니다. 재시도하여 계속하세요.",
     turnFailed:
       "이번 턴이 완료되기 전에 중지되었습니다. 대화를 계속하거나 재시도하세요.",
     guardBlocked:
@@ -3271,14 +3281,14 @@ export const koKR: Translations = {
     workspaceWriteRequired:
       "이 작업은 프로젝트 파일 변경이 필요하지만, 성공적인 파일 변경이 기록되지 않았습니다.",
     verificationRequired:
-      "코드 변경사항은 EchoAI가 이번 턴을 종료하기 전에 검증이 필요합니다. 테스트, lint, typecheck, 또는 빌드를 실행한 후 계속하세요.",
+      "코드 변경사항은 Echo가 이번 턴을 종료하기 전에 검증이 필요합니다. 테스트, lint, typecheck, 또는 빌드를 실행한 후 계속하세요.",
     environmentBlocked:
       "환경 제약으로 작업이 차단되었습니다 — 아래에 이유가 있습니다.",
     environmentBlockedAuthorizeCommon: '"공통 도메인" 승인 후 재시도',
     environmentBlockedAuthorizeFull: "전체 네트워크 승인 후 재시도",
     blockedOnUser: "계속하려면 사용자의 입력이 필요합니다.",
     streamEndpointUnavailable:
-      "백엔드 채팅/팀 스트림 엔드포인트가 활성화되지 않았거나 사용할 수 없습니다. 전체 EchoAI 백엔드를 시작하거나 프론트엔드 프록시를 확인하세요.",
+      "백엔드 채팅/팀 스트림 엔드포인트가 활성화되지 않았거나 사용할 수 없습니다. 전체 ECHO OS 백엔드를 시작하거나 프론트엔드 프록시를 확인하세요.",
     iteration: (count: number) => `${count}번째 라운드`,
     toolCalls: (count: number) => `${count}회 호출`,
     generating: "생성 중…",
@@ -3376,7 +3386,7 @@ export const koKR: Translations = {
     actions: "Actions",
     keyboardShortcuts: "키보드 단축키",
     keyboardShortcutsDescription:
-      "키보드 단축키로 EchoAI를 더 빠르게 사용하세요.",
+      "키보드 단축키로 ECHO OS를 더 빠르게 사용하세요.",
     openCommandPalette: "명령 팔레트 열기",
     commandPaletteDescription: "실행할 명령 검색...",
     toggleSidebar: "사이드바 전환",
@@ -3462,7 +3472,7 @@ export const koKR: Translations = {
   // Settings
   settings: {
     title: "설정",
-    description: "EchoAI의 모양과 동작을 조정합니다.",
+    description: "ECHO OS의 모양과 동작을 조정합니다.",
     sections: {
       account: "계정",
       subscription: "구독 및 결제",
@@ -3618,7 +3628,7 @@ export const koKR: Translations = {
     memory: {
       title: "메모리",
       description:
-        "저장된 사실과 대화 요약을 관리하고 EchoAI가 기록하고 사용하는 시점을 설정합니다.",
+        "저장된 사실과 대화 요약을 관리하고 Echo가 기록하고 사용하는 시점을 설정합니다.",
       empty: "표시할 메모리가 없습니다.",
       rawJson: "원본 JSON",
       exportButton: "메모리 내보내기",
@@ -3629,7 +3639,7 @@ export const koKR: Translations = {
         "선택한 JSON 백업으로 현재 메모리를 덮어씁니다.",
       importFileLabel: "선택한 파일",
       importInvalidFile:
-        "파일을 읽지 못했습니다. EchoAI에서 내보낸 올바른 JSON 파일을 선택하세요.",
+        "파일을 읽지 못했습니다. ECHO OS에서 내보낸 올바른 JSON 파일을 선택하세요.",
       importFileTooLarge: "메모리 파일은 5 MB 이하여야 합니다.",
       importSuccess: "메모리를 가져왔습니다",
       manualFactSource: "직접 추가",
@@ -3794,7 +3804,7 @@ export const koKR: Translations = {
       createSkill: "스킬 만들기",
       emptyTitle: "아직 에이전트 스킬이 없습니다",
       emptyDescription:
-        "에이전트 스킬 폴더를 EchoAI 루트 폴더 아래의 `/skills/custom` 폴더에 넣으세요.",
+        "에이전트 스킬 폴더를 ECHO OS 루트 폴더 아래의 `/skills/custom` 폴더에 넣으세요.",
       emptyButton: "첫 번째 스킬 만들기",
       enabledDescription:
         "활성화된 스킬은 에이전트 도구 카탈로그에 등록됩니다. 비활성화된 스킬은 모델에 표시되지 않으며 실행할 수 없습니다.",
@@ -3818,16 +3828,16 @@ export const koKR: Translations = {
     notification: {
       title: "알림",
       description:
-        "창이 비활성 상태일 때 EchoAI가 작업 완료를 알려 줍니다. 긴 작업 중 다른 업무로 전환할 때 유용합니다.",
+        "창이 비활성 상태일 때 Echo가 작업 완료를 알려 줍니다. 긴 작업 중 다른 업무로 전환할 때 유용합니다.",
       enableNotification: "알림 사용",
       permissionGranted: "권한 허용됨",
       permissionPrompt: "권한 필요",
       permissionDenied: "권한 거부됨",
       requestPermission: "알림 권한 요청",
       deniedHint:
-        "알림 권한이 거부되었습니다. 시스템 또는 브라우저 알림 설정에서 EchoAI 알림을 켜 주세요.",
+        "알림 권한이 거부되었습니다. 시스템 또는 브라우저 알림 설정에서 ECHO OS 알림을 켜 주세요.",
       testButton: "테스트 알림 보내기",
-      testTitle: "EchoAI",
+      testTitle: "ECHO OS",
       testBody: "테스트 알림입니다.",
       testSent: "테스트 알림을 보냈습니다",
       requestFailed: "알림 권한을 요청할 수 없습니다",
@@ -4080,16 +4090,16 @@ export const koKR: Translations = {
       },
     },
     echoMix: {
-      title: "EchoAI Mix · 멀티 모델 협업",
+      title: "Echo Mix · 멀티 모델 협업",
       description:
-        "2개 이상의 모델을 proposer(독립적으로 초안 작성, 도구 없음)로 선택하고, aggregator를 하나 선택해 최종 답변을 합칩니다. 채팅에서 “EchoAI Mix”를 선택하면 이 설정을 사용하며, proposer 풀이 비어 있으면 기본 모델 × 수량으로 동작합니다.",
+        "2개 이상의 모델을 proposer(독립적으로 초안 작성, 도구 없음)로 선택하고, aggregator를 하나 선택해 최종 답변을 합칩니다. 채팅에서 “Echo Mix”를 선택하면 이 설정을 사용하며, proposer 풀이 비어 있으면 기본 모델 × 수량으로 동작합니다.",
       proposersLabel: "Proposers(초안을 작성하는 모델)",
       noCandidates: "선택 가능한 모델이 없습니다",
       aggregatorLabel: "Aggregator",
       aggregatorDefault: "기본값",
       nLabel: "풀이 없을 때 수량",
       saveButton: "저장",
-      saveSuccess: "EchoAI Mix 설정이 저장되었습니다",
+      saveSuccess: "Echo Mix 설정이 저장되었습니다",
       saveFailed: (status: number) => `저장 실패 (${status})`,
       saveFailedFallback: "저장 실패",
     },
@@ -4225,7 +4235,7 @@ export const koKR: Translations = {
     approveExecute: "승인 및 실행",
     startQuest: "Quest 시작",
     questDesc:
-      "복잡한 작업을 설명하면 EchoAI가 자율적으로 계획, 실행, 검증합니다",
+      "복잡한 작업을 설명하면 Echo가 자율적으로 계획, 실행, 검증합니다",
     requirementPlaceholder: "수행하고 싶은 작업을 설명하세요...",
     executionPlan: "실행 계획",
     verificationPassed: "검증 통과",
@@ -4372,7 +4382,7 @@ export const koKR: Translations = {
       installFailed: "플러그인 설치 실패",
       statusFailed: "플러그인 상태 업데이트 실패",
       removeConfirm:
-        "EchoAI에서 이 플러그인을 제거하시겠습니까? 로컬 파일은 삭제되지 않습니다.",
+        "ECHO OS에서 이 플러그인을 제거하시겠습니까? 로컬 파일은 삭제되지 않습니다.",
       removeFailed: "플러그인 제거 실패",
       enabled: "Enabled",
       disabled: "Disabled",
@@ -4384,7 +4394,7 @@ export const koKR: Translations = {
         "localhost 미리보기는 Electron 플러그인 API에 접근할 수 없습니다.",
       placeholderTitle: "플러그인 카탈로그 자리표시자",
       placeholderDesc:
-        "로컬 플러그인을 설치하고 관리하려면 데스크톱 앱을 실행하세요. 미리보기에서는 EchoAI가 지원하는 플러그인 카테고리가 표시됩니다.",
+        "로컬 플러그인을 설치하고 관리하려면 데스크톱 앱을 실행하세요. 미리보기에서는 ECHO OS가 지원하는 플러그인 카테고리가 표시됩니다.",
       placeholderBrowserTitle: "브라우저 플러그인",
       placeholderBrowserDesc:
         "Agent가 페이지를 읽고, 컨트롤을 클릭하고, 스크린샷을 수집할 수 있게 하는 Chrome / Edge 확장 프로그램.",
@@ -4721,7 +4731,7 @@ export const koKR: Translations = {
 
     extensionMarketplace: {
       title: "확장",
-      subtitle: "EchoAI 브라우저 확장 기능 관리",
+      subtitle: "ECHO OS 브라우저 확장 기능 관리",
       installLocal: "로컬 확장 설치",
       refreshAriaLabel: "확장 새로 고침",
       closeAriaLabel: "확장 닫기",
@@ -4749,7 +4759,7 @@ export const koKR: Translations = {
       errorStatusFailed: "확장 상태 업데이트 실패",
       errorRemoveFailed: "확장 제거 실패",
       confirmRemove:
-        "EchoAI에서 이 확장을 제거하시겠습니까? 로컬 파일은 삭제되지 않습니다.",
+        "ECHO OS에서 이 확장을 제거하시겠습니까? 로컬 파일은 삭제되지 않습니다.",
       categoryFeatured: "추천",
       categoryEfficiency: "효율",
       categoryResearch: "리서치",
@@ -4776,17 +4786,17 @@ export const koKR: Translations = {
       openDirectory: "디렉터리 열기",
       extPluginTitle: "외부 브라우저 플러그인",
       extPluginDesc:
-        "Chrome / Edge용. 플러그인이 로컬 EchoAI에 연결되어 외부 페이지도 Agent가 읽고 조작할 수 있습니다.",
+        "Chrome / Edge용. 플러그인이 로컬 ECHO OS에 연결되어 외부 페이지도 Agent가 읽고 조작할 수 있습니다.",
       dragToBookmarks: "북마크 바로 드래그",
       dragToBookmarksDesc:
         "가벼운 Page Agent 모드로, 현재 페이지를 임시 연결하기에 적합합니다.",
       dragToBookmarksTitle: "Chrome/Edge 북마크 바로 드래그",
       step1Temporary:
-        "1. 임시 사용: 위의 EchoAI Agent를 북마크 바로 드래그한 뒤, 대상 페이지에서 클릭하세요.",
+        "1. 임시 사용: 위의 ECHO 버튼을 북마크 바로 드래그한 뒤, 대상 페이지에서 클릭하세요.",
       step2LongTerm:
         "2. 장기 사용: Chrome/Edge 확장 관리 페이지를 열고 '개발자 모드'를 활성화하세요.",
       step3LoadExtension:
-        "3. '압축 해제된 확장 프로그램 로드'를 클릭하고 EchoAI 플러그인 디렉터리를 선택하세요.",
+        "3. '압축 해제된 확장 프로그램 로드'를 클릭하고 ECHO Browser Relay 폴더를 선택하세요.",
       pluginDirectory: "플러그인 디렉터리",
       pluginDirectoryOpened: (path: string) =>
         `플러그인 디렉터리 열림: ${path}`,
@@ -4962,7 +4972,7 @@ export const koKR: Translations = {
       searchOrUrl: "검색 또는 URL 입력",
       siteInfo: "사이트 정보",
       siteInfoDesc:
-        "로그인 상태, 쿠키, 로컬 데이터는 EchoAI 브라우저에 유지되며 탭 간에 공유됩니다.",
+        "로그인 상태, 쿠키, 로컬 데이터는 ECHO OS 브라우저에 유지되며 탭 간에 공유됩니다.",
       clearData: "데이터 지우기",
       openExternally: "외부에서 열기",
       confirmClearSiteData:
@@ -5575,11 +5585,18 @@ export const koKR: Translations = {
     cancelledTasks: (count: number) => `${count}개 취소`,
     coordinationWarnings: (count: number) => `${count}개 조정 경고`,
     rerunnableTasks: (count: number) => `${count}개 재실행 가능한 작업`,
+    recoveryResume: "스냅샷에서 안전한 작업 다시 실행",
+    recoveryResuming: "다시 실행 중…",
+    recoveryResumeFailed:
+      "복구를 시작할 수 없습니다. 스냅샷을 새로 고친 후 다시 시도하세요",
     failedTasks: (count: number) => `${count}개 실패`,
     dependencyBlocked: (count: number) => `${count}개 의존성 차단`,
     checkpointSequence: (sequence: number) => `체크포인트 #${sequence}`,
     recoverySafe: "redacted",
     recoveryUnsafe: "원시 데이터 포함됨",
+    durableRecovery: "내구성 복구 보기",
+    durableRecoveryHint:
+      "재시작 후 워커 출력은 숨겨집니다. 재개하기 전에 복구 대기열을 확인하세요.",
     statusLabels: {
       pending: "Pending",
       running: "Running",
@@ -6034,13 +6051,13 @@ export const koKR: Translations = {
 
   intelligencePanel: {
     examplePrompts: [
-      "EchoAI Agent의 GitHub 릴리스, 이슈와 경쟁사 동향을 매일 추적하고 제품 결정에 필요한 변경만 남기기",
+      "Echo Agent의 GitHub 릴리스, 이슈와 경쟁사 동향을 매일 추적하고 제품 결정에 필요한 변경만 남기기",
       "AI Agent, 브라우저 자동화와 멀티 에이전트 프레임워크의 새 논문 및 오픈소스를 매주 요약하고 중복 뉴스 제거하기",
       "경쟁사 3곳의 가격, 플러그인 생태계와 기업 기능 변경을 추적하고 중요한 업데이트 알림 받기",
     ],
     goalLabel: "계속 추적할 내용 설명",
     goalPlaceholder:
-      "예: EchoAI Agent, browser-use와 OpenAI Agent SDK의 릴리스 및 주요 논의를 매일 추적하고 제품 로드맵에 영향을 주는 변경만 남기기.",
+      "예: Echo Agent, browser-use와 OpenAI Agent SDK의 릴리스 및 주요 논의를 매일 추적하고 제품 로드맵에 영향을 주는 변경만 남기기.",
     subscriptionName: "구독 이름",
     keywords: "키워드(쉼표로 구분)",
     cadence: "실행 빈도",
@@ -6339,10 +6356,10 @@ export const koKR: Translations = {
   // Onboarding
   onboarding: {
     title: "온보딩 가이드",
-    welcomeToEcho: "EchoAI에 오신 것을 환영합니다",
+    welcomeToEcho: "ECHO OS에 오신 것을 환영합니다",
     yourAIPlatform: "당신의 AI Agent 플랫폼",
     welcomeDesc:
-      "EchoAI는 오픈소스 슈퍼 Agent 플랫폼으로, 서브 Agent, 메모리, 샌드박스를 조율하여 거의 모든 작업을 수행합니다 — 확장 가능한 스킬로 구동됩니다.",
+      "ECHO OS는 오픈소스 슈퍼 Agent 플랫폼으로, 서브 Agent, 메모리, 샌드박스를 조율하여 거의 모든 작업을 수행합니다 — 확장 가능한 스킬로 구동됩니다.",
     chatModes: "작업 역량",
     chatModesDesc: "하나의 작업으로 시작한 후, 역량과 헬퍼를 추가하세요",
     modeChat: "Chat",
@@ -6547,6 +6564,8 @@ export const koKR: Translations = {
     readingGitDiff: (running) =>
       running ? "Git 차이점 읽는 중" : "Git 차이점 읽기 완료",
     committingGit: (running) => (running ? "Git 커밋 중" : "Git 커밋 완료"),
+    subagentUsage: (tokens, costUsd) =>
+      `거버넌스 사용량: ${tokens.toLocaleString()} tokens · $${costUsd.toFixed(4)}`,
   },
 
   // Store utilities
@@ -6565,7 +6584,7 @@ export const koKR: Translations = {
     },
     technicalDetails: "기술 세부 정보",
     createPluginPrompt:
-      "$plugin-creator를 사용하여 새로운 EchoAI 플러그인을 만드세요.\n먼저 플러그인 이름, 용도, skills/apps/MCP 포함 여부를 물어본 후, 개인 플러그인 디렉터리에 scaffold하고, manifest를 완성하고, 플러그인이 마켓플레이스에서 인식되는지 검증하세요.",
+      "$plugin-creator를 사용하여 새로운 ECHO OS 플러그인을 만드세요.\n먼저 플러그인 이름, 용도, skills/apps/MCP 포함 여부를 물어본 후, 개인 플러그인 디렉터리에 scaffold하고, manifest를 완성하고, 플러그인이 마켓플레이스에서 인식되는지 검증하세요.",
   },
 
   // Local skill directory panel
@@ -6731,7 +6750,7 @@ export const koKR: Translations = {
 
   // Bundle Info
   bundleInfo: {
-    appVersion: "EchoAI 버전",
+    appVersion: "ECHO OS 버전",
     license: "라이선스",
     title: "빌드 정보",
     environment: "환경",
@@ -6797,7 +6816,7 @@ export const koKR: Translations = {
     confirmDelete: "삭제 확인",
     factoryResetTitle: "초기화",
     factoryResetDescription:
-      "로컬 대화, 작업 공간, 메모리, 설치 상태 및 브라우저의 EchoAI 캐시를 삭제합니다. 소스 코드와 기본 역할은 유지됩니다.",
+      "로컬 대화, 작업 공간, 메모리, 설치 상태 및 브라우저의 ECHO OS 캐시를 삭제합니다. 소스 코드와 기본 역할은 유지됩니다.",
     factoryResetDialogDescription:
       "로컬 실행 데이터와 캐시가 삭제됩니다. 완료 후 앱을 다시 시작하거나 새로고침하세요. 소스 코드와 기본 역할 폴더는 삭제되지 않습니다.",
     factoryResetTypeToConfirm: "확인하려면 RESET ECHO 입력",
@@ -6835,7 +6854,7 @@ export const koKR: Translations = {
     totalCredits: (total) => `총 ${total} 크레딧`,
     billingUnavailableTitle: "요금제를 일시적으로 사용할 수 없습니다",
     billingUnavailableDescription:
-      "EchoAI 계정에는 로그인되어 있지만 결제 서비스가 연결되지 않았습니다. 다시 시도해 계정 연결과 요금제를 새로고침하세요.",
+      "ECHO 계정에는 로그인되어 있지만 결제 서비스가 연결되지 않았습니다. 다시 시도해 계정 연결과 요금제를 새로고침하세요.",
     subscriptionUnavailable: "구독 정보를 불러올 수 없습니다.",
     plansUnavailable: "요금제를 불러올 수 없습니다.",
     noPlans: "현재 구매 가능한 요금제가 없습니다.",
@@ -7086,7 +7105,7 @@ export const koKR: Translations = {
   appAuth: {
     pageTitle: "앱 인증",
     pageSubtitle:
-      "서드파티 플랫폼을 인증해 EchoAI가 사용자를 대신해 데이터에 접근하도록 합니다.",
+      "서드파티 플랫폼을 인증해 Echo가 사용자를 대신해 데이터에 접근하도록 합니다.",
     searchPlaceholder: "인증 검색...",
     connectedCount: (n: number) => `${n}개 연결됨`,
     tabAll: "전체",
@@ -7807,7 +7826,7 @@ export const koKR: Translations = {
   evolutionPanel: {
     title: "자가 진화 상태",
     description:
-      "EchoAI는 완료된 작업을 복기해 유용한 교훈을 다음 작업에 반영합니다. 여기서 학습한 내용과 다음 작업에 미칠 영향을 확인할 수 있습니다.",
+      "Echo는 완료된 작업을 복기해 유용한 교훈을 다음 작업에 반영합니다. 여기서 학습한 내용과 다음 작업에 미칠 영향을 확인할 수 있습니다.",
     summaryEmpty: "경험 축적 중",
     summaryReady: (learned: number, total: number) =>
       `${total}건 작업에서 ${learned}건 재사용 가능 교훈을 축적했습니다`,
@@ -7832,7 +7851,7 @@ export const koKR: Translations = {
     statAllTrajsTooltip: (total: number) =>
       `${total}개 과거 작업이 복기 풀에 있습니다. 샘플이 많을수록 교훈이 단발 결과가 아닌 안정적 규칙에 가까워집니다.`,
     statAllTrajsDesc:
-      "복기 풀에 들어간 과거 작업입니다. EchoAI는 이 샘플에서 안정적 방법과 리스크 패턴을 찾습니다.",
+      "복기 풀에 들어간 과거 작업입니다. Echo는 이 샘플에서 안정적 방법과 리스크 패턴을 찾습니다.",
     statAllTrajsPoints: (total: number, learned: number) => [
       `${total}개 샘플이 복기 풀에 들어갔습니다.`,
       `${learned}건 교훈이 비슷한 작업에 자동 적용될 준비가 되었습니다.`,
@@ -7858,7 +7877,7 @@ export const koKR: Translations = {
     consolidatedMemoriesDesc:
       "반복 검증된 효과적인 방법들로, 다음 비슷한 작업에서 자동으로 우선 참조됩니다.",
     noMitigationsHint:
-      "아직 반복되는 함정이 발견되지 않았습니다. 문제가 반복되면 EchoAI가 여기에 피해야 할 항목을 표시합니다.",
+      "아직 반복되는 함정이 발견되지 않았습니다. 문제가 반복되면 Echo가 여기에 피해야 할 항목을 표시합니다.",
     noMemoriesHint:
       "아직 충분히 안정적인 성공 방법이 없습니다. 비슷한 작업이 더 누적되면 재사용 가능한 방법이 여기 나타납니다.",
     linesSuffix: (n: number) => `${n}건`,
@@ -7898,7 +7917,7 @@ export const koKR: Translations = {
   privacySettings: {
     identityLockTitle: "아이덴티티 락",
     identityLockDesc:
-      "활성화하면 모델 응답의 벤더/모델 이름(Claude / Kimi / Anthropic / Moonshot 등)이 EchoAI로 재작성되며 사용자는 제품 정체성만 보게 됩니다. 비활성화하면 원본 LLM 정체가 그대로 표시되는 개발자 모드가 됩니다 — 프롬프트 튜닝이나 라우팅 확인에 유용합니다.",
+      "활성화하면 모델 응답의 벤더/모델 이름(Claude / Kimi / Anthropic / Moonshot 등)이 Echo로 재작성되며 사용자는 제품 정체성만 보게 됩니다. 비활성화하면 원본 LLM 정체가 그대로 표시되는 개발자 모드가 됩니다 — 프롬프트 튜닝이나 라우팅 확인에 유용합니다.",
     lockedTag: "LOCKED",
     unlockedTag: "UNLOCKED",
     sourceLabel: "source",
@@ -7937,9 +7956,10 @@ export const koKR: Translations = {
     aiModeRecommended: (label: string) => `이 디바이스에 권장: ${label}`,
     efficiencyMode: "효율 모드",
     efficiencyModeDesc:
-      "클우드 고성능 모델을 우선하여 더 빠르고 강력한 응답을 제공합니다.",
+      "클라우드 모델을 허용합니다. 작업 내용, 파일 발췌문 및 대화 기록이 선택한 서비스로 전송될 수 있습니다.",
     privacyMode: "프라이버시 모드",
-    privacyModeDesc: "로컬 모델을 우선하여 데이터가 이 디바이스에 유지됩니다.",
+    privacyModeDesc:
+      "이 기기의 모델만 사용하며 사용할 수 없으면 중지합니다. 네트워크 도구와 검증되지 않은 실행 방식은 차단됩니다.",
     detectButton: "감지",
     recommendedTag: "권장",
     enabledTag: "활성",
@@ -7979,7 +7999,7 @@ export const koKR: Translations = {
   sandboxSettings: {
     title: "샌드박스 및 실행 권한",
     description:
-      "실행 환경과 권한 수준은 독립적인 두 축으로 자유롭게 조합할 수 있습니다. 예: '샌드박스 + 완전 액세스'는 격리 환경에서 완전 자동, '로컬 + 편집 수락'은 이 머신에서 실행하되 명령은 확인을 요청합니다.",
+      "권한 수준이 실행 경계와 검토자를 결정합니다. '승인 요청'과 '자동 승인'은 작업 공간 샌드박스에서 실행하고 '완전 액세스'는 로컬에서 실행합니다. 네트워크는 별도로 설정합니다.",
     activeTag: "현재",
     scopeNote:
       "변경 사항은 로컬 설정에 저장되며 이후의 모든 새 작업에 적용됩니다. 실행 중인 작업에는 영향을 주지 않습니다.",
@@ -8019,14 +8039,14 @@ export const koKR: Translations = {
     },
     permission: {
       default: {
-        label: "기본",
+        label: "승인 요청",
         description:
-          "모든 쓰기 작업과 명령은 먼저 확인을 받습니다. 가장 안전합니다.",
+          "작업 공간 편집과 일반 명령을 허용하고 네트워크 또는 경계 밖 작업은 확인합니다.",
       },
       acceptEdits: {
-        label: "편집 수락",
+        label: "자동 승인",
         description:
-          "파일 변경은 자동으로 실행되며, 명령 실행 전에는 확인합니다.",
+          "같은 작업 공간 경계를 유지하며 경계 밖 작업은 독립 검토 에이전트가 판단합니다.",
       },
       bypassPermissions: {
         label: "완전 액세스",
@@ -8126,13 +8146,13 @@ export const koKR: Translations = {
   // Register page
   registerPage: {
     loadingText: "로드 중...",
-    badgeText: "EchoAI 계정 만들기",
+    badgeText: "ECHO 계정 만들기",
     heroTitleLine1: "가입 후 바로 시작하세요",
     heroTitleLine2: "멀티 에이전트 워크플로",
     heroDescription:
       "자신만의 워크스페이스를 설정하고 스킬, 도구, 모델을 연결하여 리서치, 협업, 자동화를 하나의 플랫폼에서 통합하세요.",
     cardTitle: "계정 만들기",
-    cardDescription: "EchoAI에 가입하여 에이전트 여정을 시작하세요",
+    cardDescription: "ECHO OS에 가입하여 에이전트 여정을 시작하세요",
     usernameLabel: "사용자 이름",
     usernamePlaceholder: "최소 3자",
     emailLabel: "이메일 (선택 사항)",
@@ -8213,7 +8233,7 @@ export const koKR: Translations = {
       privacyPolicy: "개인정보 처리방침",
     },
     page: {
-      title: "EchoAI 워크스페이스에 안전하게 액세스",
+      title: "ECHO OS 워크스페이스에 안전하게 액세스",
       subtitle: "계속하기",
       description:
         "컨텍스트, 스킬, 실행 결과를 관리하는 통합 워크스페이스에서 리서치, 코딩, 협업, 자동화 작업을 계속하세요.",
@@ -8313,8 +8333,8 @@ export const koKR: Translations = {
   },
 
   hero: {
-    releaseBadge: "EchoAI 2.0 출시",
-    withEcho: "EchoAI와 함께",
+    releaseBadge: "ECHO OS 2.0 출시",
+    withEcho: "Echo와 함께",
     heroDescription:
       "오픈소스 SuperAgent 프레임워크로 연구, 코딩, 콘텐츠 생성을 수행합니다. 샌드박스, 메모리, 도구, 스킬, 서브 Agent를 활용해 몇 분에서 몇 시간까지 다양한 작업을 처리합니다.",
   },
@@ -9064,13 +9084,13 @@ export const koKR: Translations = {
   desktop: {
     disabledTitle: "데스크톱 도우미가 꺼져 있어요",
     disabledDescription:
-      "EchoAI 는 기본적으로 환영, 로그인, 작업 공간 화면으로 들어갑니다. 시스템 데스크톱 파일을 관리하려면 투명 데스크톱 도우미를 켜세요.",
+      "ECHO OS 는 기본적으로 환영, 로그인, 작업 공간 화면으로 들어갑니다. 시스템 데스크톱 파일을 관리하려면 투명 데스크톱 도우미를 켜세요.",
     enableButton: "데스크톱 도우미 켜기",
     pluginSettingsButton: "플러그인 설정 열기",
     backToWorkspaceButton: "작업 공간으로 돌아가기",
     header: {
       workspaceTooltip: "작업 공간 열기",
-      brand: "EchoAI",
+      brand: "워크벤치",
       accountModels: "공식 모델",
       desktopAssistant: "데스크톱 도우미",
       desktopCount: (count) => `데스크톱 ${count || "--"}`,
@@ -9310,6 +9330,10 @@ export const koKR: Translations = {
     batchEventTitle: (status) => `배치 ${status}`,
     subagentEventTitle: (name, status) => `${name} ${status}`,
     subagentFallback: "서브에이전트",
+    durableRecovery: "내구성 복구 보기",
+    durableRecoveryHint:
+      "워커 출력은 숨겨져 있습니다. 재개하기 전에 복구 대기열을 확인하세요.",
+    recoveryRequired: "복구 검토 필요",
     statusComplete: "완료",
     statusUpdated: "업데이트됨",
     routeBlocked: "경로 차단됨",
@@ -9337,7 +9361,7 @@ export const koKR: Translations = {
       "현재 웹 환경이므로 우클릭 메뉴 설치/제거는 비활성화 상태로 유지됩니다. 데스크톱 버전으로 전환하면 두 항목이 실제로 적용됩니다.",
     contextMenuTitle: "시스템 우클릭 메뉴",
     contextMenuDescription:
-      'Windows 데스크톱 빈 공간을 우클릭하면 "EchoAI 한 번에 데스크톱 정리"가 표시됩니다.',
+      'Windows 데스크톱 빈 공간을 우클릭하면 "Echo 한 번에 데스크톱 정리"가 표시됩니다.',
     installButton: "우클릭 명령 설치",
     installingButton: "설치 중",
     removeButton: "제거",
@@ -9350,7 +9374,7 @@ export const koKR: Translations = {
     backToWorkspace: "워크스페이스로 돌아가기",
     confirmRemoveTitle: "시스템 우클릭 메뉴를 제거하시겠습니까?",
     confirmRemoveDescription:
-      "Windows 데스크톱 우클릭 메뉴에서 EchoAI 한 번에 정리 명령을 제거합니다.",
+      "Windows 데스크톱 우클릭 메뉴에서 Echo 한 번에 정리 명령을 제거합니다.",
   },
 
   // Knowledge page
@@ -9422,11 +9446,15 @@ export const koKR: Translations = {
         "로컬 지식 베이스가 실행 중이지만 연결 자격 증명이 만료되었습니다. 다시 연결하는 중…",
       notFound:
         "echo-storage를 찾을 수 없습니다. 로컬 지식 베이스 서비스를 설치하거나 ECHO_STORAGE_CMD를 설정한 후 다시 시도하세요.",
+      browseOnly:
+        "색인 서비스가 오프라인입니다. 로컬 파일은 계속 찾아보고 참조할 수 있습니다.",
       startFailed:
         "로컬 지식 베이스 서비스 시작에 실패했습니다. 백엔드 로그를 확인한 후 다시 시도하세요.",
       notConnected: "로컬 지식 베이스 서비스에 아직 연결되지 않았습니다: {url}",
       networkError:
         "로컬 지식 베이스 서비스에 연결할 수 없습니다. 서비스가 실행 중인지 확인한 후 다시 시도하세요.",
+      folderPickerUnavailable:
+        "시스템 폴더 선택기를 열 수 없습니다. 데스크톱 브리지 또는 로컬 백엔드를 확인한 후 다시 시도하세요.",
     },
     toolbar: {
       authorize: "승인",
@@ -9564,9 +9592,9 @@ export const koKR: Translations = {
       colType: "유형",
       colItems: "항목",
       footerOnline:
-        "자주 쓰는 위치가 EchoAI NAS에 연결되었습니다. 로컬 데이터베이스는 경로, 썸네일, OCR 텍스트, 벡터 인덱스만 저장합니다.",
+        "자주 쓰는 위치가 ECHO NAS에 연결되었습니다. 로컬 데이터베이스는 경로, 썸네일, OCR 텍스트, 벡터 인덱스만 저장합니다.",
       footerOffline:
-        "자주 쓰는 위치는 바로 탐색할 수 있으며, EchoAI NAS는 연결 대기 중입니다. 로컬 데이터베이스는 경로, 썸네일, OCR 텍스트, 벡터 인덱스만 저장합니다.",
+        "자주 쓰는 위치는 바로 탐색할 수 있으며, ECHO NAS는 연결 대기 중입니다. 로컬 데이터베이스는 경로, 썸네일, OCR 텍스트, 벡터 인덱스만 저장합니다.",
       folderType: "폴더",
     },
     sources: {

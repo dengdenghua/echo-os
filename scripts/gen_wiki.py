@@ -231,6 +231,29 @@ def _load_agents() -> dict[str, dict[str, Any]]:
 # ═══════════════════════════════════════════════════════════
 
 
+_STATEMENT_BLOCKS = ("body", "orelse", "finalbody", "handlers", "cases")
+
+
+def _iter_import_statements(tree: ast.Module):
+    """Yield every ``import``/``from ... import`` statement in ``tree``.
+
+    Imports are statements, so only statement blocks (including nested
+    function/class/if/try/with/match bodies) need visiting. Skipping the
+    expression subtrees that ``ast.walk`` would traverse keeps the
+    import-graph pass several times faster with identical results.
+    """
+    stack: list[ast.AST] = list(tree.body)
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            yield node
+            continue
+        for field_name in _STATEMENT_BLOCKS:
+            block = getattr(node, field_name, None)
+            if isinstance(block, list):
+                stack.extend(block)
+
+
 def _build_import_graph() -> dict[str, set[str]]:
     """Walk ``runtime/`` and index every ``from runtime.X.Y import ...``
     or ``import runtime.X.Y`` statement. Returns ``{target_subpkg:
@@ -259,7 +282,7 @@ def _build_import_graph() -> dict[str, set[str]]:
         self_mod = (
             "runtime" + "." + py.relative_to(runtime_dir).with_suffix("").as_posix().replace("/", ".")
         )
-        for node in ast.walk(tree):
+        for node in _iter_import_statements(tree):
             target: str | None = None
             if isinstance(node, ast.ImportFrom) and node.module:
                 if node.module.startswith("runtime."):
@@ -634,6 +657,11 @@ def page_skill_map(catalog: dict[str, dict[str, Any]], arm_to_skills: dict[str, 
     return "\n".join(lines) + "\n"
 
 
+_HOOK_DISPATCH_DEFINITIONS = frozenset(
+    {"runtime/safety/hooks/runner.py", "runtime/safety/hooks/__init__.py"}
+)
+
+
 def page_hook_surface() -> str:
     runtime_dir = ROOT / "runtime"
     dispatch_re = re.compile(
@@ -643,11 +671,9 @@ def page_hook_surface() -> str:
     for py in runtime_dir.rglob("*.py"):
         if "__pycache__" in py.parts:
             continue
-        if py.resolve() == (ROOT / "runtime/safety/hooks/runner.py").resolve():
-            continue
-        if py.resolve() == (ROOT / "runtime/safety/hooks/__init__.py").resolve():
-            continue
         rel = py.relative_to(ROOT).as_posix()
+        if rel in _HOOK_DISPATCH_DEFINITIONS:
+            continue
         try:
             text = py.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):

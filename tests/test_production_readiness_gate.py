@@ -58,6 +58,11 @@ def test_ci_python_jobs_use_exact_runners_and_locked_dependencies() -> None:
         steps = job.get("steps", [])
         if not any(step.get("uses") == ACTIONS_SETUP_PYTHON for step in steps):
             continue
+        if name == "untracked-source-guard":
+            assert not any(step.get("uses") == ASTRAL_SETUP_UV for step in steps)
+            commands = [step.get("run") for step in steps if step.get("run") is not None]
+            assert commands == ["python tools/lint/untracked_source_check.py"]
+            continue
         if not any(step.get("uses") == ASTRAL_SETUP_UV for step in steps):
             missing_lock_install.append(f"{name}:setup-uv")
         if not any("uv sync --locked" in str(step.get("run", "")) for step in steps):
@@ -778,6 +783,7 @@ def test_tag_release_requires_same_sha_evidence_before_build_and_push() -> None:
     }
     assert jobs["create-release"]["permissions"] == {
         "actions": "read",
+        "attestations": "read",
         "contents": "write",
     }
     assert jobs["create-release"]["needs"] == [
@@ -827,6 +833,12 @@ def test_tag_release_requires_same_sha_evidence_before_build_and_push() -> None:
     assert '[[ -z "${windows_run_id}" ]]' in lookup
     assert '[[ -z "${macos_run_id}" ]]' in lookup
     assert '[[ -z "${linux_run_id}" ]]' in lookup
+    # The standalone Linux/Windows runtime security contract must have passed
+    # on this exact commit as well; it is not invoked by the main CI workflow.
+    assert "actions/workflows/runtime-security-contract.yml/runs" in lookup
+    assert '.status == "completed" and .conclusion == "success"' in lookup
+    assert '[[ -z "${security_contract_run_id}" ]]' in lookup
+    assert (REPO_ROOT / ".github" / "workflows" / "runtime-security-contract.yml").is_file()
     assert "windows_run_id=${windows_run_id}" in lookup
     assert "exit 1" in lookup
     assert gate_job["outputs"]["windows-run-id"] == (
@@ -955,15 +967,20 @@ def test_tag_release_builds_and_publishes_commit_bound_python_distribution() -> 
     assert build_steps["Sync locked release validation tools"]["run"] == (
         "uv sync --locked --python 3.11.9 --extra release"
     )
-    assert build_steps["Build wheel and source distribution"]["run"] == (
-        "uv build --no-sources --out-dir dist"
-    )
+    build_command = build_steps["Build wheel and source distribution"]["run"]
+    assert "uv build --no-sources --sdist --out-dir dist" in build_command
+    assert "-name 'echo_os-*.tar.gz'" in build_command
+    assert 'uv build --no-sources --wheel --out-dir dist "${sdists[0]}"' in build_command
+    assert build_command.index("--sdist") < build_command.index("--wheel")
     validation = build_steps["Validate metadata and isolated wheel imports"]["run"]
     assert "twine check --strict dist/*" in validation
-    assert 'metadata["Name"] != "echo-agent-runtime"' in validation
+    assert 'metadata["Name"] != "echo-os"' in validation
     assert 'tomllib.load(handle)["project"]["version"]' in validation
     assert "uv pip install" in validation
     assert "--no-deps" in validation
+    assert "python -m compileall -q" in validation
+    assert "appliance.native_storage_broker" in validation
+    assert "appliance.native_webdav_control" in validation
     assert ".venv/bin/python -P" in validation
     assert "module escaped isolated wheel" in validation
     upload = build_steps["Upload commit-bound Python distribution"]
@@ -979,7 +996,7 @@ def test_tag_release_builds_and_publishes_commit_bound_python_distribution() -> 
     ]
     assert publish["environment"] == {
         "name": "pypi",
-        "url": "https://pypi.org/p/echo-agent-runtime",
+        "url": "https://pypi.org/p/echo-os",
     }
     assert publish["permissions"] == {"contents": "read", "id-token": "write"}
     publish_steps = {step.get("name"): step for step in publish["steps"] if step.get("name")}
@@ -1005,7 +1022,11 @@ def test_windows_artifact_workflow_is_signed_and_commit_bound() -> None:
     workflow_text = workflow_path.read_text(encoding="utf-8")
     workflow = yaml.safe_load(workflow_text)
 
-    assert workflow["permissions"] == {"contents": "read"}
+    assert workflow["permissions"] == {
+        "contents": "read",
+        "id-token": "write",
+        "attestations": "write",
+    }
     assert "secrets.GITHUB_TOKEN" not in workflow_text
     job = workflow["jobs"]["build-win"]
     assert job["runs-on"] == "windows-2025"

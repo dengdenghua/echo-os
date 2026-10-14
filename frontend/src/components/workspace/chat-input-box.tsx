@@ -2,6 +2,7 @@ import type { ChatStatus } from "ai";
 import { memo, useMemo, type ReactNode } from "react";
 
 import { getBackendBaseURL } from "@/core/config";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { withAgentAvatarVersion } from "@/core/agents/avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import type { Agent } from "@/core/agents/types";
@@ -15,7 +16,7 @@ import type {
   ResearchSourceKind,
 } from "@/core/research/api";
 import type { ReasoningEffort } from "@/core/threads";
-import type { UploadedFileInfo } from "@/core/uploads";
+import type { PromptInputContextFile, UploadedFileInfo } from "@/core/uploads";
 import type { ReasoningMode } from "./reasoning-mode";
 import {
   ModeSelector,
@@ -106,10 +107,12 @@ export interface ChatInputBoxProps {
    * independent of the selected role: roles change persona/capabilities, not
    * the user's Echo vs ChatGPT/Codex model source. */
   modelProfileControl?: boolean;
-  /** Execution kernel for this role. Model source remains independently
-   * selectable: Echo uses per-thread model_name, Codex uses its scoped
-   * server profile. */
-  executionEngine?: "echo" | "codex";
+  /** When true, the shared profile control edits only this task's model
+   * selection; the account-wide Codex profile remains unchanged. */
+  taskModelOverride?: boolean;
+  /** Execution kernel for this role. Echo serializes the thread model;
+   * Codex uses its server profile unless taskModelOverride is enabled. */
+  executionEngine?: "echo" | "codex" | "opencode";
   onPermissionModeChange?: (mode: PermissionMode) => void;
   onProjectAgentModeChange?: (mode: AgentModeName) => void;
   onAuditIntensityChange?: (intensity: AuditIntensity) => void;
@@ -138,6 +141,7 @@ export interface ChatInputBoxProps {
     text: string;
     images?: File[];
     files?: File[];
+    contextFiles?: PromptInputContextFile[];
     /** Server-side info for attachments already uploaded on attach. */
     uploaded?: UploadedFileInfo[];
   }) => void;
@@ -209,8 +213,6 @@ function ChatInputBoxImpl(props: ChatInputBoxProps) {
   }, [displayAgent?.avatar_url]);
   const displayAgentLabel =
     displayAgent?.display_name?.trim() || displayAgent?.name?.trim() || "Agent";
-  const displayAgentInitial =
-    displayAgentLabel.trim().charAt(0).toUpperCase() || "A";
   const displayAgentIcon = displayAgent?.icon?.trim() || "";
   // Surface the workspace-directory picker even in a fresh personal-space
   // conversation (no workDir yet). Previously this was gated on
@@ -299,19 +301,13 @@ function ChatInputBoxImpl(props: ChatInputBoxProps) {
                   className="inline-flex min-w-0 max-w-[124px] items-center gap-1.5 rounded-full px-2 py-1"
                   title={displayAgentLabel}
                 >
-                  <span className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                    {displayAgentAvatar ? (
-                      <img
-                        src={displayAgentAvatar}
-                        alt={displayAgentLabel}
-                        className="size-full object-cover"
-                      />
-                    ) : displayAgentIcon ? (
-                      displayAgentIcon
-                    ) : (
-                      displayAgentInitial
-                    )}
-                  </span>
+                  <AgentAvatarTile
+                    agentId={displayAgent?.name}
+                    name={displayAgentLabel}
+                    avatar={displayAgentIcon}
+                    imageUrl={displayAgentAvatar}
+                    className="size-4 rounded-full"
+                  />
                   <span className="truncate">{displayAgentLabel}</span>
                 </div>
                 {(showWorkDirSegment || showModeSegment) && (

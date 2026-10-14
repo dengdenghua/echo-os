@@ -50,7 +50,13 @@ PY
   else
     hostname_check=-checkhost
   fi
-  openssl x509 -in "$certificate_path" "$hostname_check" "$expected_host" -noout >/dev/null 2>&1 || fail "certificate SAN does not match ECHO_TLS_HOST"
+  # OpenSSL 3 exits 0 even when the host/IP does NOT match, so require the
+  # positive verdict in its output instead of trusting the exit status.
+  host_verdict=$(openssl x509 -in "$certificate_path" "$hostname_check" "$expected_host" -noout 2>/dev/null) || fail "certificate SAN does not match ECHO_TLS_HOST"
+  case "$host_verdict" in
+    *" does match certificate"*) ;;
+    *) fail "certificate SAN does not match ECHO_TLS_HOST" ;;
+  esac
 else
   # LibreSSL lacks OpenSSL's public -checkhost/-checkip flags. Keep the
   # portable fallback strict and SAN-only instead of accepting legacy CN.

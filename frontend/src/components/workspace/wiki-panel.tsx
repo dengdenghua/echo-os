@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   useGenerateWiki,
   useUpdateWiki,
@@ -116,11 +117,7 @@ export function WikiPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-        <Loader2Icon className="size-5 animate-spin" />
-      </div>
-    );
+    return <PanelLoading label="正在加载知识库" className="min-h-64" />;
   }
 
   if (failed) {
@@ -291,9 +288,7 @@ export function WikiPanel() {
               选择知识页查看
             </div>
           ) : selectedDoc.isLoading ? (
-            <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-              <Loader2Icon className="size-5 animate-spin" />
-            </div>
+            <PanelLoading label="正在加载知识页" className="min-h-64" />
           ) : selectedDoc.isError ? (
             <div className="flex min-h-64 flex-col items-center justify-center gap-2">
               <div className="text-sm font-medium">知识页读取失败</div>
@@ -312,11 +307,7 @@ export function WikiPanel() {
                   {selectedPath}
                 </div>
               </div>
-              <Suspense
-                fallback={
-                  <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-                }
-              >
+              <Suspense fallback={<PanelLoading label="正在渲染文档" />}>
                 <LazyStreamdown {...plugins} className="text-sm leading-7">
                   {selectedDoc.data?.content ?? ""}
                 </LazyStreamdown>

@@ -65,6 +65,14 @@ def create_tentacle_router(
     # opt into it by leaving ``require_auth`` disabled.
     _enforce_auth = require_auth
 
+    @router.websocket("/device/ws")
+    async def device_socket(websocket: WebSocket) -> None:
+        from .transport.asgi import serve_device_socket
+
+        # Device credentials are verified by device/hello, not dashboard JWTs.
+        await serve_device_socket(websocket, coordinator.ws_server)
+
+
     def _require_http_auth(request: FastAPIRequest) -> None:
         """FastAPI dependency: enforce auth on HTTP endpoints when enabled."""
         if not _enforce_auth:
@@ -85,10 +93,23 @@ def create_tentacle_router(
                 required_audience=jwt_audience,
             )
             if identity is not None:
+                request.state.device_workspace_actor = identity.actor_id
                 return
-        if identity_store.verify_api_key(token) is not None:
+        identity = identity_store.verify_api_key(token)
+        if identity is not None:
+            request.state.device_workspace_actor = identity.actor_id
             return
         raise HTTPException(401, "invalid tentacle auth token")
+
+    from .mirror_api import create_mirror_router
+
+    router.include_router(
+        create_mirror_router(lambda: coordinator), dependencies=[Depends(_require_http_auth)]
+    )
+
+    from .task_workspace_api import create_task_workspace_router
+
+    router.include_router(create_task_workspace_router(lambda: coordinator), dependencies=[Depends(_require_http_auth)])
 
     # 任务历史记录（内存，重启清空）
     _task_history: list[dict[str, Any]] = []
@@ -163,6 +184,11 @@ def create_tentacle_router(
                 }
             )
         return result
+
+    @router.get("/discovery", dependencies=[Depends(_require_http_auth)])
+    def discovery_status() -> dict[str, Any]:
+        discovery = getattr(coordinator, "discovery", None)
+        return discovery.snapshot() if discovery else {"available": False, "error": "", "devices": []}
 
     # ── 设备详情 ────────────────────────────────────────
 

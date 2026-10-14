@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { BotIcon, CheckIcon, CrownIcon, UsersRoundIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ import {
 import { useI18n } from "@/core/i18n/hooks";
 import { isIMEComposing } from "@/lib/ime";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function CreateProjectDialog({
 }: CreateProjectDialogProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const CATEGORY_PRESETS = useMemo(
     () => [
       {
@@ -145,14 +147,20 @@ export function CreateProjectDialog({
         onSuccess: ({ threadId }) => {
           resetForm();
           onOpenChange(false);
-          navigate(`/workspace/realtime/${encodeURIComponent(threadId)}`, {
-            state: {
-              openProjectWorkbench: true,
-              ...(invitePeopleAfterCreate
-                ? { openHumanInviteAfterCreate: true }
-                : {}),
+          navigate(
+            preserveWorkbenchPresentation(
+              `/workspace/realtime/${encodeURIComponent(threadId)}`,
+              search,
+            ),
+            {
+              state: {
+                openProjectWorkbench: true,
+                ...(invitePeopleAfterCreate
+                  ? { openHumanInviteAfterCreate: true }
+                  : {}),
+              },
             },
-          });
+          );
         },
         onError: () => toast.error("项目工作群创建失败，请重试"),
       },
@@ -172,7 +180,7 @@ export function CreateProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[var(--dialog-lg)]">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>{t.createProjectDialog.title}</DialogTitle>
           <DialogDescription>{t.createProjectDialog.hint}</DialogDescription>
@@ -325,7 +333,7 @@ export function CreateProjectDialog({
             </div>
 
             <div className="flex items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
-              <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                 <CrownIcon className="size-4" />
               </span>
               <div className="min-w-0">

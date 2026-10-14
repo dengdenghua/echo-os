@@ -5,38 +5,72 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import path from "path";
 import fs from "fs";
+import { devSettings, devInstancePlugin } from "./scripts/dev-instance.mjs";
+
+const devInstance = devSettings(
+  fileURLToPath(new URL("..", import.meta.url)),
+  "os",
+);
 
 import {
   rejectDefeatedCodeSplitting,
   rejectOversizedJavaScriptChunk,
 } from "./scripts/build-warning-policy.mjs";
-import { heavyDependencyChunk } from "./scripts/chunk-policy.mjs";
+import {
+  manualChunks as sharedManualChunks,
+  packageNameFromNodeModule,
+} from "./scripts/chunk-policy.mjs";
 
 const MAX_JS_CHUNK_KIB = 900;
+
+// The jsdom suite contains a few long lived, interaction-heavy appliance
+// fixtures. Letting Vitest fan out to every host core makes those fixtures
+// compete for timers and event-loop capacity, which turns otherwise isolated
+// tests into order-sensitive timeouts. Keep a conservative default while
+// allowing a CI/reference machine to tune it explicitly.
+const configuredTestWorkers = Number.parseInt(
+  process.env.ECHO_VITEST_MAX_WORKERS || "4",
+  10,
+);
+const testMaxWorkers = Number.isFinite(configuredTestWorkers)
+  ? Math.max(1, configuredTestWorkers)
+  : 4;
 
 const require = createRequire(import.meta.url);
 const vitePackage = require("vite/package.json");
 
 const gatewayTarget =
   process.env.ECHO_INTERNAL_GATEWAY_BASE_URL ||
-  `http://127.0.0.1:${process.env.GATEWAY_PORT || "8000"}`;
+  `http://127.0.0.1:${devInstance.ports.backend}`;
 
-function packageNameFromNodeModule(id: string): string | null {
-  const normalized = id.replace(/\\/g, "/");
-  const marker = "/node_modules/";
-  const markerIndex = normalized.lastIndexOf(marker);
-  if (markerIndex < 0) return null;
-  const rest = normalized.slice(markerIndex + marker.length);
-  const parts = rest.split("/");
-  if (parts[0]?.startsWith("@")) {
-    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : null;
-  }
-  return parts[0] || null;
+// While the dev backend is down or still booting, answer like the appliance's
+// nginx does (deploy/provision/base/echo-nginx.conf: 502/504 -> 503
+// appliance_starting with Retry-After). The desktop then shows
+// "系统服务正在启动" and reconnects by itself instead of a dead-end
+// "暂时无法连接系统服务" followed by the lock screen.
+function answerBackendStarting(proxy: any) {
+  proxy.on("error", (_err: unknown, _req: unknown, res: any) => {
+    if (!res || typeof res.writeHead !== "function" || res.headersSent) return;
+    res.writeHead(503, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "Retry-After": "3",
+    });
+    res.end(
+      JSON.stringify({
+        detail: {
+          code: "appliance_starting",
+          message: "ECHO OS 正在启动，请稍后重试",
+        },
+      }),
+    );
+  });
 }
 
 const proxyConfig = {
   "/api/files/stream": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     // Keep the browser's same-origin Host so the appliance trust middleware
     // can validate the request against the visible Echo OS origin.
     changeOrigin: false,
@@ -52,6 +86,7 @@ const proxyConfig = {
   },
   "/api/preview/stream": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     changeOrigin: false,
     secure: false,
     timeout: 0,
@@ -65,6 +100,7 @@ const proxyConfig = {
   },
   "/api": {
     target: gatewayTarget,
+    configure: answerBackendStarting,
     changeOrigin: false,
     secure: false,
     timeout: 0,
@@ -145,11 +181,19 @@ export default defineConfig({
     __VITE_VERSION__: JSON.stringify(vitePackage.version),
   },
   plugins: [
+    devInstancePlugin("os"),
     ...(process.env.ECHO_BUILD_TRACE === "1" ? [buildTracePlugin()] : []),
     chunkSizeGatePlugin(),
     react(),
   ],
   resolve: {
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+    ],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "motion/react": fileURLToPath(
@@ -171,12 +215,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: parseInt(process.env.FRONTEND_PORT || "3000"),
+    port: devInstance.ports.frontend,
     host: "0.0.0.0",
     proxy: proxyConfig,
   },
   preview: {
-    port: parseInt(process.env.FRONTEND_PORT || "3000"),
+    port: devInstance.ports.frontend,
     host: "0.0.0.0",
     proxy: proxyConfig,
   },
@@ -195,75 +239,14 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
+          const sharedChunk = sharedManualChunks(id);
+          if (sharedChunk) return sharedChunk;
+          const normalized = id.replace(/\\/g, "/");
           const pkg = packageNameFromNodeModule(id);
-
-          if (
-            id.includes("node_modules/react-dom") ||
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/react-router-dom")
-          ) {
-            return "react-vendor";
-          }
-          if (id.includes("node_modules/@radix-ui/")) {
-            return "ui-radix";
-          }
-
-          if (pkg === "@uiw/react-codemirror") {
-            return heavyDependencyChunk(pkg);
-          }
-          if (pkg?.startsWith("@uiw/codemirror-theme-")) {
-            return heavyDependencyChunk(pkg);
-          }
-          if (pkg?.startsWith("@codemirror/")) {
-            // Language packages are imported on demand by codemirror-config.
-            // A single vendor chunk defeats that split and makes opening any
-            // editor download every language grammar.
-            return heavyDependencyChunk(pkg);
-          }
-          if (pkg === "codemirror") {
-            return heavyDependencyChunk(pkg);
-          }
-          if (pkg?.startsWith("@lezer/")) {
-            return heavyDependencyChunk(pkg);
-          }
-          if (id.includes("node_modules/@tanstack/")) {
-            return "query-virtual";
-          }
-          if (pkg === "lodash-es") {
-            return "lodash-es";
-          }
-          if (pkg === "streamdown") {
-            return "markdown-streamdown";
-          }
-          if (
-            pkg?.startsWith("rehype-") ||
-            pkg?.startsWith("remark-") ||
-            pkg === "unified" ||
-            pkg === "hast" ||
-            pkg === "unist-util-visit"
-          ) {
-            return "markdown-plugins";
-          }
-          if (pkg === "mermaid") {
-            // Mermaid uses dynamic imports for individual diagram engines.
-            // Let Rollup retain those native boundaries; assigning the whole
-            // package to one manual chunk collapses them into ~3 MB.
-            return heavyDependencyChunk(pkg);
-          }
-          if (
-            pkg === "cytoscape" ||
-            pkg === "dagre-d3-es" ||
-            pkg === "elkjs" ||
-            pkg === "khroma"
-          ) {
-            return heavyDependencyChunk(pkg);
-          }
-          if (id.includes("node_modules/@xyflow/")) {
+          if (normalized.includes("node_modules/@xyflow/")) {
             return "xyflow";
           }
-          if (id.includes("node_modules/katex/")) {
-            return "katex";
-          }
+          return pkg === "katex" ? "katex" : undefined;
         },
       },
     },
@@ -272,6 +255,18 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    exclude: ["node_modules/**", "dist/**", "e2e/**", "scripts/**/*.test.mjs"],
+    // Electron tests execute with Node's test runner (and some require
+    // native-only globals), so running a bare `vitest` command must not try to
+    // collect them as jsdom suites. Keep the exclusion here as the source of
+    // truth instead of relying on every package script to repeat it.
+    exclude: [
+      "node_modules/**",
+      "dist/**",
+      "e2e/**",
+      "electron/**/*.test.cjs",
+      "electron/**/*.node-test.cjs",
+      "scripts/**/*.test.mjs",
+    ],
+    maxWorkers: testMaxWorkers,
   },
 });

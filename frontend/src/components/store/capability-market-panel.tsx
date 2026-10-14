@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { RoutedWebLink } from "@/components/ui/routed-web-link";
 import {
   deleteOAuthApp,
@@ -68,6 +69,11 @@ import {
   type CapabilitySource,
 } from "@/core/agents/agent-world-api";
 import { getBackendBaseURL } from "@/core/config";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import { CAPABILITY_SURFACE_QUERY_KEY } from "@/core/plugins/use-capability-surface";
 import { cn } from "@/lib/utils";
 
@@ -926,7 +932,7 @@ function ConnectDialog({
                   placeholder={modelProvider.base_url}
                   className="h-9 text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   留空使用默认地址；自托管服务请填写以 /v1 结尾的地址。
                 </p>
               </div>
@@ -939,7 +945,7 @@ function ConnectDialog({
                 {modelProvider.free_models.map((model) => (
                   <code
                     key={model}
-                    className="rounded bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                    className="rounded bg-background px-1.5 py-0.5 text-xs text-muted-foreground"
                   >
                     {model}
                   </code>
@@ -947,7 +953,7 @@ function ConnectDialog({
               </div>
             </div>
             {(modelProvider.privacy_notices_zh ?? []).length > 0 ? (
-              <div className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-2 text-[11px] leading-5 text-warning">
+              <div className="rounded-md border border-warning/30 bg-warning/5 px-2.5 py-2 text-xs leading-5 text-warning">
                 {(modelProvider.privacy_notices_zh ?? []).map((notice) => (
                   <p key={notice}>• {notice}</p>
                 ))}
@@ -1160,7 +1166,7 @@ function OAuthAppDialog({
             <div className="font-medium text-foreground">
               回调地址(注册 App 时填写)
             </div>
-            <code className="mt-0.5 block break-all text-[11px] text-muted-foreground">
+            <code className="mt-0.5 block break-all text-xs text-muted-foreground">
               {redirectUri}
             </code>
           </div>
@@ -1284,9 +1290,7 @@ function PermissionReviewDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex min-h-28 items-center justify-center text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-          </div>
+          <PanelLoading label="正在读取插件权限" className="min-h-28" />
         ) : plan ? (
           <div className="space-y-3 text-xs">
             <div className="rounded-md border border-border-default bg-muted/25 px-3 py-2 leading-5">
@@ -1316,7 +1320,7 @@ function PermissionReviewDialog({
                       className="flex items-center justify-between gap-3 rounded-md border border-border-subtle px-2.5 py-2"
                     >
                       <span>{PERMISSION_LABELS[permission] ?? permission}</span>
-                      <code className="text-[10px] text-muted-foreground">
+                      <code className="text-xs text-muted-foreground">
                         {permission}
                       </code>
                     </div>
@@ -1341,9 +1345,7 @@ function PermissionReviewDialog({
                       <span>{dependency.id}</span>
                       <span
                         className={
-                          dependency.ready
-                            ? "text-emerald-600"
-                            : "text-amber-600"
+                          dependency.ready ? "text-core" : "text-amber-600"
                         }
                       >
                         {dependency.ready ? "已验证" : "待安装"}
@@ -1412,6 +1414,16 @@ export interface CapabilityMarketPanelProps {
 const CAPABILITY_PAGE_SIZE = 60;
 const CAPABILITY_CATEGORY_STATE_KEY = "echoai.plugin-category-collapse.v1";
 
+function readCategoryState(actor: string) {
+  try {
+    return JSON.parse(
+      readActorScopedStorageValue(CAPABILITY_CATEGORY_STATE_KEY, actor) || "{}",
+    ) as Partial<Record<CapabilityCategoryId, boolean>>;
+  } catch {
+    return {};
+  }
+}
+
 function capabilityMatchesQuery(capability: CapabilityInfo, query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
@@ -1438,6 +1450,8 @@ export function CapabilityMarketPanel({
   compact = false,
 }: CapabilityMarketPanelProps = {}) {
   const queryClient = useQueryClient();
+  const actor = currentActorId();
+  const actorRef = useRef(actor);
   const [items, setItems] = useState<CapabilityInfo[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -1455,16 +1469,7 @@ export function CapabilityMarketPanel({
   const [showManual, setShowManual] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<
     Partial<Record<CapabilityCategoryId, boolean>>
-  >(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      return JSON.parse(
-        window.localStorage.getItem(CAPABILITY_CATEGORY_STATE_KEY) || "{}",
-      ) as Partial<Record<CapabilityCategoryId, boolean>>;
-    } catch {
-      return {};
-    }
-  });
+  >(() => readCategoryState(actor));
   const [connectTarget, setConnectTarget] = useState<CapabilityInfo | null>(
     null,
   );
@@ -1603,6 +1608,11 @@ export function CapabilityMarketPanel({
   }, [compact, maxItems, view, visibleItems]);
   const showCategorizedSections = categorizedSections.length > 0;
   const searchActive = Boolean(searchQuery.trim() || query.trim());
+  useEffect(() => {
+    if (actorRef.current === actor) return;
+    actorRef.current = actor;
+    setCollapsedCategories(readCategoryState(actor));
+  }, [actor]);
   const marketRows = useMemo(() => {
     if (!showCategorizedSections) {
       return visibleItems.map((capability) => ({
@@ -1636,7 +1646,10 @@ export function CapabilityMarketPanel({
       const next = { ...current, [category]: !current[category] };
       try {
         window.localStorage.setItem(
-          CAPABILITY_CATEGORY_STATE_KEY,
+          actorScopedStorageKey(
+            CAPABILITY_CATEGORY_STATE_KEY,
+            actorRef.current,
+          ),
           JSON.stringify(next),
         );
       } catch {
@@ -1959,7 +1972,7 @@ export function CapabilityMarketPanel({
       !window.echo?.isElectron
     ) {
       setError(
-        "该服务商使用桌面客户端回跳，请在 EchoAI 桌面版中完成授权。浏览器版无法安全接收授权结果。",
+        "该服务商使用桌面客户端回跳，请在 ECHO OS 桌面版中完成授权。浏览器版无法安全接收授权结果。",
       );
       return;
     }
@@ -2118,9 +2131,7 @@ export function CapabilityMarketPanel({
       ) : null}
 
       {loading ? (
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
+        <PanelLoading label="正在加载能力市场" className="min-h-[200px]" />
       ) : (
         <div
           className={cn(
@@ -2196,7 +2207,7 @@ export function CapabilityMarketPanel({
                       {compact
                         ? cap.description_zh || cap.description
                         : isFeaturedView
-                          ? `来自 ${cap.author || "EchoOS"}`
+                          ? `来自 ${cap.author || "ECHO"}`
                           : `${cap.id} · ${AUTH_LABEL[cap.auth_mode] ?? cap.auth_mode}`}
                     </CardDescription>
                   </div>
@@ -2208,22 +2219,19 @@ export function CapabilityMarketPanel({
                   )}
                 >
                   <Badge
-                    className={cn(
-                      "border-transparent text-[11px]",
-                      typeMeta.badge,
-                    )}
+                    className={cn("border-transparent text-xs", typeMeta.badge)}
                   >
                     {typeMeta.label}
                   </Badge>
                   {isPlugin ? (
-                    <Badge className="border-transparent bg-sky-500/10 text-[11px] text-sky-600 dark:text-sky-300">
+                    <Badge className="border-transparent bg-sky-500/10 text-xs text-sky-600 dark:text-sky-300">
                       Codex
                     </Badge>
                   ) : null}
                   {isCodexMarketplace && cap.marketplace_name ? (
                     <Badge
                       variant="outline"
-                      className="text-[11px] font-normal text-muted-foreground"
+                      className="text-xs font-normal text-muted-foreground"
                     >
                       {cap.marketplace_name}
                     </Badge>
@@ -2231,7 +2239,7 @@ export function CapabilityMarketPanel({
                   {!isFeaturedView &&
                     (cap.oauth_supported || cap.has_cli_auth) && (
                       <Badge
-                        className="border-transparent bg-sky-500/15 text-[11px] text-sky-600 dark:text-sky-400"
+                        className="border-transparent bg-sky-500/15 text-xs text-sky-600 dark:text-sky-400"
                         title="支持跳转网页登录授权,无需手动填 token"
                       >
                         🔗 网页登录
@@ -2240,7 +2248,7 @@ export function CapabilityMarketPanel({
                   {!isFeaturedView ? (
                     <Badge
                       variant="outline"
-                      className="text-[11px] font-normal text-muted-foreground"
+                      className="text-xs font-normal text-muted-foreground"
                     >
                       技能 ×{cap.skill_count}
                     </Badge>
@@ -2248,7 +2256,7 @@ export function CapabilityMarketPanel({
                   {!isFeaturedView && cap.mcp_servers.length > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-[11px] font-normal text-muted-foreground"
+                      className="text-xs font-normal text-muted-foreground"
                     >
                       MCP ×{cap.mcp_servers.length}
                     </Badge>
@@ -2256,9 +2264,9 @@ export function CapabilityMarketPanel({
                   {cap.installed && (
                     <Badge
                       className={cn(
-                        "border-transparent text-[11px]",
+                        "border-transparent text-xs",
                         connected
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          ? "bg-core/15 text-core"
                           : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                       )}
                     >
@@ -2266,7 +2274,7 @@ export function CapabilityMarketPanel({
                     </Badge>
                   )}
                   {cap.permission_review_required ? (
-                    <Badge className="border-transparent bg-amber-500/15 text-[11px] text-amber-700 dark:text-amber-300">
+                    <Badge className="border-transparent bg-amber-500/15 text-xs text-amber-700 dark:text-amber-300">
                       待确认权限
                     </Badge>
                   ) : null}
@@ -2282,7 +2290,7 @@ export function CapabilityMarketPanel({
                     {cap.description_zh || cap.description}
                   </p>
                   {cap.author && !isFeaturedView ? (
-                    <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+                    <p className="mt-0.5 text-xs text-muted-foreground/70">
                       作者:{cap.author}
                     </p>
                   ) : null}
@@ -2317,9 +2325,7 @@ export function CapabilityMarketPanel({
                     </Button>
                   ) : isCodexMarketplace ? (
                     <>
-                      <span className="px-1 text-xs text-emerald-600 dark:text-emerald-400">
-                        已安装
-                      </span>
+                      <span className="px-1 text-xs text-core">已安装</span>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -2353,15 +2359,15 @@ export function CapabilityMarketPanel({
                             : cap.model_provider &&
                                 cap.permission_review_required
                               ? "配置模型服务并确认权限"
-                            : cap.permission_review_required
-                              ? "查看并确认签名权限"
-                              : "启用"
+                              : cap.permission_review_required
+                                ? "查看并确认签名权限"
+                                : "启用"
                         }
                       >
                         {busy ? (
                           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                         ) : cap.enabled ? (
-                          <PlugZap className="mr-1 h-3 w-3 text-emerald-500" />
+                          <PlugZap className="mr-1 h-3 w-3 text-core" />
                         ) : cap.model_provider &&
                           cap.permission_review_required ? (
                           <KeyRound className="mr-1 h-3 w-3" />
@@ -2370,12 +2376,11 @@ export function CapabilityMarketPanel({
                         )}
                         {cap.enabled
                           ? "启用中"
-                          : cap.model_provider &&
-                              cap.permission_review_required
+                          : cap.model_provider && cap.permission_review_required
                             ? "配置并启用"
-                          : cap.permission_review_required
-                            ? "确认权限"
-                            : "已禁用"}
+                            : cap.permission_review_required
+                              ? "确认权限"
+                              : "已禁用"}
                       </Button>
                       {!(
                         cap.model_provider && cap.permission_review_required

@@ -1,3 +1,4 @@
+import { queueComposerFiles } from "@/core/composer-file-inbox";
 import {
   act,
   fireEvent,
@@ -486,7 +487,7 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     expect(screen.getByTestId("chat-status-strip")).toBeInTheDocument();
     expect(screen.getByTestId("permission-mode-trigger")).toHaveAccessibleName(
-      "Permissions: Default",
+      "Permissions: Ask for approval",
     );
     expect(
       screen.getByRole("button", { name: "Insert into input" }),
@@ -578,7 +579,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
 
     // Scope the negative assertions to the menu: the composer status strip
-    // always renders a permission-mode label ("Default"), so a document-wide
+    // always renders a permission-mode label ("Ask for approval"), so a document-wide
     // queryByText would fail on chrome that has nothing to do with the menu.
     const menu = await openToolsMenu();
     const inMenu = within(menu);
@@ -592,9 +593,9 @@ describe("<ChatInputBox /> cowork materials", () => {
     await user.hover(screen.getByTestId("chat-commands-submenu"));
     expect(await screen.findByText("Spec")).toBeInTheDocument();
     expect(screen.getByText("Plan")).toBeInTheDocument();
-    expect(
-      screen.getByText("Goal").closest('[role="menuitem"]'),
-    ).toHaveTextContent("🎯Goal");
+    const goalItem = screen.getByText("Goal").closest('[role="menuitem"]');
+    expect(goalItem).toHaveTextContent("Goal");
+    expect(goalItem?.querySelector("svg.lucide-target")).not.toBeNull();
     expect(screen.getByText("Milestone")).toBeInTheDocument();
     expect(screen.getByText("Browser")).toBeInTheDocument();
     expect(screen.getByText("Chrome")).toBeInTheDocument();
@@ -602,7 +603,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     expect(
       screen.queryByText("Add image (paste / drag / select)"),
     ).not.toBeInTheDocument();
-    expect(inMenu.queryByText("Default")).not.toBeInTheDocument();
+    expect(inMenu.queryByText("Ask for approval")).not.toBeInTheDocument();
     expect(inMenu.queryByText("Web search")).not.toBeInTheDocument();
     expect(inMenu.queryByText("Create PPT")).not.toBeInTheDocument();
     expect(inMenu.queryByText("Create page")).not.toBeInTheDocument();
@@ -637,7 +638,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-sky-600",
+      "text-core",
     );
     expect(onModeChange).not.toHaveBeenCalled();
 
@@ -652,12 +653,14 @@ describe("<ChatInputBox /> cowork materials", () => {
     expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
       "Goal",
     );
-    expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
-      "🎯",
-    );
+    expect(
+      screen
+        .getByTestId("composer-command-prefix")
+        .querySelector("svg.lucide-target"),
+    ).not.toBeNull();
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-violet-600",
+      "text-core",
     );
     expect(screen.getByTestId("composer-long-task-indicator")).toHaveAttribute(
       "aria-label",
@@ -667,8 +670,10 @@ describe("<ChatInputBox /> cowork materials", () => {
       "text-muted-foreground",
     );
     expect(
-      screen.getByTestId("composer-long-task-indicator"),
-    ).toHaveTextContent("🎯");
+      screen
+        .getByTestId("composer-long-task-indicator")
+        .querySelector("svg.lucide-target"),
+    ).not.toBeNull();
     const longTaskIndicator = screen.getByTestId(
       "composer-long-task-indicator",
     );
@@ -724,7 +729,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     );
     expect(screen.getByTestId("composer-command-prefix")).toHaveClass(
       "font-bold",
-      "text-rose-600",
+      "text-core",
     );
     expect(textarea()).toHaveClass("pl-[7.5rem]");
     expect(screen.getByTitle("Send")).toBeDisabled();
@@ -751,7 +756,7 @@ describe("<ChatInputBox /> cowork materials", () => {
     expect(screen.queryByTestId("composer-command-prefix")).toBeNull();
   });
 
-  it("lazily exposes plugins and skills as removable colored references", async () => {
+  it("lazily exposes plugins and skills as removable references", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     renderWithProviders(
@@ -773,7 +778,7 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     expect(
       screen.getByTestId("composer-capability-plugin-seedance"),
-    ).toHaveClass("text-violet-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(screen.getByTitle("Send")).toBeDisabled();
 
     fireEvent.change(textarea(), { target: { value: "Create launch clip" } });
@@ -805,10 +810,10 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     expect(
       screen.getByTestId("composer-capability-skill-video-generate"),
-    ).toHaveClass("text-blue-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(
       screen.getByTestId("composer-capability-surface-browser"),
-    ).toHaveClass("text-cyan-700");
+    ).toHaveClass("bg-muted", "text-foreground");
     expect(screen.getByTestId("composer-command-prefix")).toHaveTextContent(
       "Goal",
     );
@@ -955,10 +960,39 @@ describe("<ChatInputBox /> cowork materials", () => {
 
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({
-        text: expect.stringContaining(
-          "path=src/app.tsx workspace=/repo/echo",
-        ),
+        text: expect.stringContaining("path=src/app.tsx workspace=/repo/echo"),
       }),
+    );
+  });
+
+  it("preserves a server resource identity in the turn context", async () => {
+    const onSubmit = vi.fn();
+    renderWithProviders(
+      <ChatInputBox mode="react" threadId="thread-1" onSubmit={onSubmit} />,
+    );
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("echo:open-file", {
+          detail: {
+            threadId: "thread-1",
+            path: "/docs/report.pdf",
+            resourceId: "storage-file:v1:c291cmNl:L2RvY3MvcmVwb3J0LnBkZg",
+          },
+        }),
+      );
+    });
+    fireEvent.click(await screen.findByTitle("Send"));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contextFiles: [
+            expect.objectContaining({
+              path: "/docs/report.pdf",
+              resourceId: "storage-file:v1:c291cmNl:L2RvY3MvcmVwb3J0LnBkZg",
+            }),
+          ],
+        }),
+      ),
     );
   });
 
@@ -1646,4 +1680,22 @@ describe("<ChatInputBox /> upload on attach", () => {
     await waitFor(() => expect(sendButton()).toBeDisabled());
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
+});
+
+it("receives database references queued before the target composer mounts without auto-sending", async () => {
+  const onSubmit = vi.fn();
+  queueComposerFiles("echo-assistant", [
+    { path: "C:/资料/工作计划.md", sourceLabel: "本地数据库" },
+  ]);
+  renderWithProviders(
+    <ChatInputBox mode="react" threadId="echo-assistant" onSubmit={onSubmit} />,
+  );
+  expect(await screen.findByText("工作计划.md")).toBeInTheDocument();
+  expect(onSubmit).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByTitle("Send"));
+  await waitFor(() =>
+    expect(onSubmit).toHaveBeenCalledWith({
+      text: expect.stringContaining("C:/资料/工作计划.md"),
+    }),
+  );
 });

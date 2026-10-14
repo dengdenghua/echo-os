@@ -1,9 +1,7 @@
 import {
   SearchIcon,
   RefreshCwIcon,
-  Loader2Icon,
   NetworkIcon,
-  PaletteIcon,
   SlidersHorizontalIcon,
   TagsIcon,
   EyeIcon,
@@ -23,6 +21,7 @@ import {
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
+import { ProgressLine } from "@/components/ui/progress-line";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -30,7 +29,17 @@ import { authHeaders } from "@/core/auth/api";
 import { useI18n } from "@/core/i18n/hooks";
 import { globalControlPlaneUrl } from "@/core/observability/api";
 import { swallow } from "@/core/utils/log";
+import { useScopedDarkMode } from "@/hooks/use-scoped-dark-mode";
 import { cn } from "@/lib/utils";
+
+import {
+  entityTypeStyle,
+  paletteTone,
+  readGraphPalette,
+  tokenVar,
+  type EntityShape,
+  type GraphPalette,
+} from "./knowledge-graph-style";
 
 interface ApiNode {
   id: string;
@@ -106,7 +115,6 @@ interface GraphNodeRecord {
   sources: string[];
   firstSeen: string | null;
   lastSeen: string | null;
-  color: string;
 }
 
 interface GraphEdgeRecord {
@@ -157,31 +165,6 @@ interface GraphFilters {
 
 type DisplayToggleKey = "showLabels" | "showLinks" | "showStars" | "autoRotate";
 
-const LINK_COLOR = "#9aa8ba";
-const ACTIVE_LINK_COLOR = "#7dd3fc";
-const SPACE_BG = "#05070d";
-
-const ENTITY_COLORS: Record<string, string> = {
-  center: "#f472b6",
-  subject: "#22d3ee",
-  object: "#a3e635",
-  neighbor: "#f59e0b",
-  other: "#94a3b8",
-};
-
-const TYPE_PALETTE = [
-  "#22d3ee",
-  "#a3e635",
-  "#f472b6",
-  "#f59e0b",
-  "#818cf8",
-  "#34d399",
-  "#fb7185",
-  "#c084fc",
-  "#67e8f9",
-  "#fda4af",
-];
-
 const DEFAULT_DISPLAY_SETTINGS: GraphDisplaySettings = {
   showLabels: true,
   showLinks: true,
@@ -210,13 +193,28 @@ function seededUnit(value: string): number {
   return hashString(value) / 0xffffffff;
 }
 
-function colorForEntityType(entityType?: string): string {
-  const key = entityType?.trim() || "other";
-  return (
-    ENTITY_COLORS[key] ??
-    TYPE_PALETTE[hashString(key) % TYPE_PALETTE.length] ??
-    "#94a3b8"
-  );
+/** A solid per entity shape, so 3D types read apart without a hue. */
+function geometryForShape(
+  shape: EntityShape,
+  size: number,
+  sphereDetail: number,
+): THREE.BufferGeometry {
+  switch (shape) {
+    case "square":
+      return new THREE.BoxGeometry(size * 1.5, size * 1.5, size * 1.5);
+    case "diamond":
+      return new THREE.OctahedronGeometry(size * 1.25);
+    case "triangle":
+      return new THREE.TetrahedronGeometry(size * 1.35);
+    case "hexagon":
+      return new THREE.CylinderGeometry(size * 1.1, size * 1.1, size, 6);
+    default:
+      return new THREE.SphereGeometry(
+        size,
+        sphereDetail,
+        Math.max(10, sphereDetail - 4),
+      );
+  }
 }
 
 function nodeVisualSize(
@@ -487,26 +485,28 @@ function makeGlowTexture(): THREE.CanvasTexture {
   return texture;
 }
 
-function makeLabelTexture(text: string): THREE.CanvasTexture {
+function makeLabelTexture(
+  text: string,
+  palette: GraphPalette,
+): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 128;
   const ctx = canvas.getContext("2d");
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font =
-      "500 28px Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.font = `500 28px ${palette.fontSans}`;
     const metrics = ctx.measureText(text);
     const width = clamp(metrics.width + 42, 96, 500);
     const x = (canvas.width - width) / 2;
-    ctx.fillStyle = "rgba(5, 8, 16, 0.74)";
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.26)";
+    ctx.fillStyle = palette.surfaceRaised;
+    ctx.strokeStyle = palette.lineStrong;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(x, 38, width, 48, 14);
+    ctx.roundRect(x, 38, width, 48, 8);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "rgba(241, 245, 249, 0.92)";
+    ctx.fillStyle = palette.ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, 256, 62, 444);
@@ -516,10 +516,9 @@ function makeLabelTexture(text: string): THREE.CanvasTexture {
   return texture;
 }
 
-function makeStarField(count: number): THREE.Points {
+/** Faint telemetry dust behind the graph; its colour follows ink-faint. */
+function makeStarField(count: number, color: string): THREE.Points {
   const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const color = new THREE.Color();
   for (let i = 0; i < count; i++) {
     const radius = 900 + seededUnit(`star:${i}:r`) * 1400;
     const theta = seededUnit(`star:${i}:theta`) * Math.PI * 2;
@@ -527,19 +526,14 @@ function makeStarField(count: number): THREE.Points {
     positions[i * 3] = Math.sin(phi) * Math.cos(theta) * radius;
     positions[i * 3 + 1] = Math.cos(phi) * radius * 0.8;
     positions[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * radius;
-    color.setHSL(0.55 + seededUnit(`star:${i}:h`) * 0.14, 0.5, 0.62);
-    colors[i * 3] = color.r;
-    colors[i * 3 + 1] = color.g;
-    colors[i * 3 + 2] = color.b;
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: 2.2,
-    vertexColors: true,
+    size: 2,
+    color: new THREE.Color(color),
     transparent: true,
-    opacity: 0.74,
+    opacity: 0.5,
     depthWrite: false,
   });
   return new THREE.Points(geometry, material);
@@ -585,9 +579,9 @@ function RangeControl({
 }) {
   return (
     <label className="grid gap-1.5">
-      <span className="flex items-center justify-between text-xs text-foreground/80">
+      <span className="flex items-center justify-between text-caption text-foreground/80">
         <span>{label}</span>
-        <span className="font-mono text-xs text-muted-foreground/70">
+        <span className="font-mono text-caption text-muted-foreground">
           {format(value)}
         </span>
       </span>
@@ -598,7 +592,7 @@ function RangeControl({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-1.5 w-full cursor-pointer accent-sky-300"
+        className="h-1.5 w-full cursor-pointer accent-foreground"
       />
     </label>
   );
@@ -614,9 +608,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2 border-t border-white/10 pt-3 first:border-t-0 first:pt-0">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps text-muted-foreground">
-        <Icon className="size-3.5" />
+    <section className="space-y-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
+      <div className="flex items-center gap-2 text-caption font-semibold text-muted-foreground">
+        <Icon className="size-3.5" strokeWidth={1.5} />
         {title}
       </div>
       {children}
@@ -650,12 +644,28 @@ function KnowledgeGraph3DContent() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(true);
-  const [graphTheme, setGraphTheme] = useState<"nebula" | "aurora">("nebula");
   const [displaySettings, setDisplaySettings] = useState(
     DEFAULT_DISPLAY_SETTINGS,
   );
   const expandedRef = useRef<Set<string>>(new Set());
   const glowTextureRef = useRef<THREE.CanvasTexture | null>(null);
+
+  // WebGL and canvas need concrete colours: read the --echo-* tokens off the
+  // graph's own element and re-read whenever its theme scope flips.
+  const [themeScopeRef, scopedDark] = useScopedDarkMode<HTMLDivElement>();
+  const [rootNode, setRootNode] = useState<HTMLDivElement | null>(null);
+  const rootRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setRootNode(node);
+      themeScopeRef(node);
+    },
+    [themeScopeRef],
+  );
+  const palette = useMemo(
+    () => readGraphPalette(rootNode, scopedDark),
+    [rootNode, scopedDark],
+  );
+  const paletteRef = useRef(palette);
 
   useEffect(() => {
     displaySettingsRef.current = displaySettings;
@@ -701,12 +711,9 @@ function KnowledgeGraph3DContent() {
   }, [baseNodes, baseEdges, displaySettings, filters]);
 
   const entityGroups = useMemo(() => {
-    const groups = new Map<string, { count: number; color: string }>();
+    const groups = new Map<string, { count: number }>();
     for (const node of baseNodes) {
-      const current = groups.get(node.entityType) ?? {
-        count: 0,
-        color: node.color,
-      };
+      const current = groups.get(node.entityType) ?? { count: 0 };
       current.count += 1;
       groups.set(node.entityType, current);
     }
@@ -771,7 +778,6 @@ function KnowledgeGraph3DContent() {
           sources: entity.sources ?? [],
           firstSeen: entity.first_seen ?? null,
           lastSeen: entity.last_seen ?? null,
-          color: colorForEntityType(entity.entity_type),
         })),
       );
       setBaseEdges(
@@ -839,7 +845,6 @@ function KnowledgeGraph3DContent() {
               sources: [],
               firstSeen: null,
               lastSeen: null,
-              color: colorForEntityType(node.entity_type || "neighbor"),
             };
           });
         return [...previous, ...additions];
@@ -888,11 +893,15 @@ function KnowledgeGraph3DContent() {
       return;
     }
 
+    const initialPalette = paletteRef.current;
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(new THREE.Color(SPACE_BG), 0.00042);
+    scene.fog = new THREE.FogExp2(
+      new THREE.Color(initialPalette.surfaceSunken),
+      0.00042,
+    );
     const camera = new THREE.PerspectiveCamera(48, 1, 1, 5000);
     camera.position.set(0, 160, 880);
-    renderer.setClearColor(graphTheme === "aurora" ? "#071a1d" : SPACE_BG, 1);
+    renderer.setClearColor(new THREE.Color(initialPalette.surfaceSunken), 1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     // Cap supersampling so large Retina canvases do not multiply GPU work.
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -922,14 +931,14 @@ function KnowledgeGraph3DContent() {
 
     const graphGroup = new THREE.Group();
     scene.add(graphGroup);
-    const ambient = new THREE.AmbientLight(0xb8d8ff, 0.95);
-    const coreLight = new THREE.PointLight(0x7dd3fc, 550, 2400, 1.45);
-    coreLight.position.set(0, 120, 420);
-    const warmLight = new THREE.PointLight(0xf59e0b, 170, 1500, 1.35);
-    warmLight.position.set(-340, -160, -360);
-    scene.add(ambient, coreLight, warmLight);
+    // Neutral white light only: shading separates the facets of each shape,
+    // the material carries the token colour.
+    const ambient = new THREE.AmbientLight("white", 1.6);
+    const keyLight = new THREE.DirectionalLight("white", 1.4);
+    keyLight.position.set(240, 420, 520);
+    scene.add(ambient, keyLight);
 
-    const starField = makeStarField(1200);
+    const starField = makeStarField(1200, initialPalette.inkFaint);
     scene.add(starField);
     glowTextureRef.current = makeGlowTexture();
 
@@ -1033,7 +1042,20 @@ function KnowledgeGraph3DContent() {
       starFieldRef.current = null;
       nodeMeshesRef.current = new Map();
     };
-  }, [expandNode, graphTheme]);
+  }, [expandNode]);
+
+  // Theme switch: repaint the backdrop in place instead of rebuilding WebGL.
+  useEffect(() => {
+    paletteRef.current = palette;
+    const background = new THREE.Color(palette.surfaceSunken);
+    rendererRef.current?.setClearColor(background, 1);
+    const fog = sceneRef.current?.fog;
+    if (fog) fog.color.copy(background);
+    const starMaterial = starFieldRef.current?.material;
+    if (starMaterial instanceof THREE.PointsMaterial) {
+      starMaterial.color.set(palette.inkFaint);
+    }
+  }, [palette]);
 
   useEffect(() => {
     const group = graphGroupRef.current;
@@ -1067,6 +1089,7 @@ function KnowledgeGraph3DContent() {
           edge.targetNode.position.z,
         );
       }
+      // Normal blending: additive light vanishes on the Snow backdrop.
       if (regularPositions.length) {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute(
@@ -1077,10 +1100,11 @@ function KnowledgeGraph3DContent() {
           new THREE.LineSegments(
             geometry,
             new THREE.LineBasicMaterial({
-              color: LINK_COLOR,
+              color: new THREE.Color(palette.inkFaint),
               transparent: true,
-              opacity: activeNodeId ? 0.12 : 0.42 * displaySettings.linkScale,
-              blending: THREE.AdditiveBlending,
+              opacity: activeNodeId
+                ? 0.14
+                : clamp(0.42 * displaySettings.linkScale, 0.1, 1),
               depthWrite: false,
             }),
           ),
@@ -1096,10 +1120,9 @@ function KnowledgeGraph3DContent() {
           new THREE.LineSegments(
             geometry,
             new THREE.LineBasicMaterial({
-              color: ACTIVE_LINK_COLOR,
+              color: new THREE.Color(palette.core),
               transparent: true,
-              opacity: 0.96,
-              blending: THREE.AdditiveBlending,
+              opacity: 0.9,
               depthWrite: false,
             }),
           ),
@@ -1107,53 +1130,56 @@ function KnowledgeGraph3DContent() {
       }
     }
 
-    const glowTexture = glowTextureRef.current ?? makeGlowTexture();
-    glowTextureRef.current = glowTexture;
+    const coreColor = new THREE.Color(palette.core);
     const sphereDetail = renderedGraph.nodes.length > 160 ? 14 : 22;
     for (const node of renderedGraph.nodes) {
       const active = activeNeighbors.has(node.id);
       const isSelected = selectedId === node.id;
       const isHovered = hoverId === node.id;
+      const focused = isSelected || isHovered;
       const size =
-        nodeVisualSize(node.degree, displaySettings) *
-        (isSelected || isHovered ? 1.28 : 1);
-      const color = new THREE.Color(
-        activeNodeId && !active ? "#475569" : node.color,
-      );
+        nodeVisualSize(node.degree, displaySettings) * (focused ? 1.28 : 1);
+      const typeStyle = entityTypeStyle(node.entityType);
+      // Ink ramp per type; core cyan is reserved for the focused entity.
+      const color = focused
+        ? coreColor
+        : new THREE.Color(paletteTone(palette, typeStyle.tone));
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(
-          size,
-          sphereDetail,
-          Math.max(10, sphereDetail - 4),
-        ),
+        geometryForShape(typeStyle.shape, size, sphereDetail),
         new THREE.MeshStandardMaterial({
           color,
           emissive: color,
-          emissiveIntensity: activeNodeId ? (active ? 1.35 : 0.24) : 0.9,
-          roughness: 0.42,
-          metalness: 0.08,
+          emissiveIntensity: focused ? 0.55 : 0.3,
+          roughness: 0.6,
+          metalness: 0,
           transparent: true,
-          opacity: activeNodeId ? (active ? 1 : 0.38) : 0.96,
+          opacity: activeNodeId ? (active ? 1 : 0.3) : 0.95,
         }),
       );
       mesh.position.copy(node.position);
       mesh.userData.nodeId = node.id;
-
-      const glow = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glowTexture,
-          color,
-          transparent: true,
-          opacity: activeNodeId ? (active ? 0.6 : 0.12) : 0.36,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        }),
-      );
-      glow.scale.setScalar(size * (active ? 8.2 : 5.2));
-      glow.position.copy(node.position);
-
-      group.add(glow, mesh);
+      mesh.userData.entityShape = typeStyle.shape;
+      group.add(mesh);
       nodeMeshesRef.current.set(node.id, mesh);
+
+      // The single core halo on screen: only the entity under focus.
+      if (node.id === activeNodeId) {
+        const glowTexture: THREE.CanvasTexture =
+          glowTextureRef.current ?? makeGlowTexture();
+        glowTextureRef.current = glowTexture;
+        const glow = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: glowTexture,
+            color: coreColor,
+            transparent: true,
+            opacity: 0.32,
+            depthWrite: false,
+          }),
+        );
+        glow.scale.setScalar(size * 5);
+        glow.position.copy(node.position);
+        group.add(glow);
+      }
 
       const showLabel =
         displaySettings.showLabels &&
@@ -1163,12 +1189,12 @@ function KnowledgeGraph3DContent() {
           node.degree >= 3 ||
           size > 16);
       if (showLabel) {
-        const labelTexture = makeLabelTexture(node.label);
+        const labelTexture = makeLabelTexture(node.label, palette);
         const label = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: labelTexture,
             transparent: true,
-            opacity: activeNodeId ? (active ? 0.96 : 0.28) : 0.82,
+            opacity: activeNodeId ? (active ? 0.96 : 0.28) : 0.86,
             depthWrite: false,
           }),
         );
@@ -1181,7 +1207,7 @@ function KnowledgeGraph3DContent() {
 
     const starField = starFieldRef.current;
     if (starField) starField.visible = displaySettings.showStars;
-  }, [renderedGraph, displaySettings, hoverId, selectedId]);
+  }, [renderedGraph, displaySettings, hoverId, selectedId, palette]);
 
   const updateDisplaySettings = useCallback(
     (patch: Partial<GraphDisplaySettings>) => {
@@ -1211,30 +1237,29 @@ function KnowledgeGraph3DContent() {
   }, []);
 
   return (
-    <div className="relative h-[var(--panel-height-2xl)] min-h-[var(--panel-height-xl)] overflow-hidden bg-[#05070d] shadow-[inset_0_0_120px_rgba(14,165,233,0.12)]">
+    <div
+      ref={rootRef}
+      className="relative h-[var(--panel-height-2xl,720px)] min-h-[var(--panel-height-xl,560px)] overflow-hidden bg-[var(--echo-surface-sunken)]"
+      data-knowledge-graph-3d
+    >
       <div
         ref={containerRef}
         className="absolute inset-0"
         data-knowledge-graph3d-container="true"
         data-knowledge-graph-3d-container
       />
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0",
-          graphTheme === "aurora"
-            ? "bg-[radial-gradient(circle_at_18%_20%,rgba(45,212,191,0.24),transparent_32%),radial-gradient(circle_at_78%_72%,rgba(59,130,246,0.2),transparent_36%),linear-gradient(180deg,rgba(6,78,59,0.18),rgba(2,44,54,0.5))]"
-            : "bg-[radial-gradient(circle_at_24%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_74%_68%,rgba(163,230,53,0.12),transparent_34%),linear-gradient(180deg,rgba(2,6,23,0.16),rgba(2,6,23,0.52))]",
-        )}
-      />
 
       {!loading && !webglError && renderedGraph.nodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6 text-center">
-          <div className="max-w-xs rounded-lg border border-white/10 bg-black/25 px-5 py-4 backdrop-blur-sm">
-            <NetworkIcon className="mx-auto size-6 text-white/45" />
-            <div className="mt-2 text-sm font-medium text-white/80">
+          <div className="max-w-xs rounded-lg border border-border bg-background/90 px-5 py-4 backdrop-blur-sm">
+            <NetworkIcon
+              className="mx-auto size-6 text-muted-foreground"
+              strokeWidth={1.5}
+            />
+            <div className="mt-2 text-sm font-medium text-foreground">
               暂无图谱数据
             </div>
-            <div className="mt-1 text-xs leading-5 text-white/50">
+            <div className="mt-1 text-caption leading-5 text-muted-foreground">
               先扫描本地文档，生成实体与关系后会显示在这里。
             </div>
           </div>
@@ -1242,9 +1267,9 @@ function KnowledgeGraph3DContent() {
       )}
 
       {(loading || webglError) && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05070d]/80">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--echo-surface-sunken)]/80">
           {loading ? (
-            <Loader2Icon className="size-6 animate-spin text-foreground/80" />
+            <ProgressLine className="absolute inset-x-0 top-0" />
           ) : (
             <div className="max-w-sm rounded-lg border border-destructive/30 bg-destructive/20 px-4 py-3 text-sm text-destructive">
               {webglError}
@@ -1255,9 +1280,9 @@ function KnowledgeGraph3DContent() {
 
       <div className="absolute left-3 right-3 top-3 z-10 flex flex-wrap items-center gap-2 sm:left-4 sm:right-auto sm:top-4 sm:max-w-[calc(100%-324px)]">
         <div className="relative min-w-0 flex-1 sm:min-w-[260px]">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
+          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="h-9 border-border-default bg-background/90 pl-9 text-xs text-foreground placeholder:text-muted-foreground/70 focus-visible:ring-primary/30"
+            className="h-9 border-border-default bg-background/90 pl-9 text-caption text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/30"
             placeholder={t.knowledgePanel.searchPlaceholder}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -1272,7 +1297,7 @@ function KnowledgeGraph3DContent() {
         >
           <RefreshCwIcon className="size-4" />
         </Button>
-        <div className="rounded-md border border-border-default bg-background/90 px-2.5 py-1.5 text-xs text-muted-foreground">
+        <div className="rounded-md border border-border-default bg-background/90 px-2.5 py-1.5 text-caption text-muted-foreground">
           {t.knowledgePanel.nodeAndEdgeStats(
             renderedGraph.nodes.length,
             renderedGraph.edges.length,
@@ -1290,56 +1315,45 @@ function KnowledgeGraph3DContent() {
         >
           <SlidersHorizontalIcon className="size-4" />
         </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-9 border-border-default bg-background/90 text-foreground/90 hover:bg-muted hover:text-foreground"
-          onClick={() =>
-            setGraphTheme((theme) => (theme === "nebula" ? "aurora" : "nebula"))
-          }
-          aria-label="切换图谱主题"
-        >
-          <PaletteIcon className="size-4" />
-        </Button>
       </div>
 
       {showSettings && (
-        <aside className="absolute bottom-3 left-3 right-3 z-10 max-h-[42vh] space-y-3 overflow-y-auto rounded-lg border border-border-default bg-background/80 p-3 text-foreground shadow-2xl backdrop-blur-md sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:max-h-[calc(100%-2rem)] sm:w-[250px]">
+        <aside className="absolute bottom-3 left-3 right-3 z-10 max-h-[42vh] space-y-3 overflow-y-auto rounded-lg border border-border-default bg-background/80 p-3 text-foreground shadow-[var(--echo-shadow-raised)] backdrop-blur-md sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:max-h-[calc(100%-2rem)] sm:w-[250px]">
           {focusNode && (
             <Section icon={InfoIcon} title={controls.focus}>
-              <div className="space-y-2 rounded-md border border-white/10 bg-background/40 p-2">
+              <div className="space-y-2 rounded-md border border-border bg-background/40 p-2">
                 <div className="min-w-0">
-                  <div className="truncate text-xs font-semibold text-foreground">
+                  <div className="truncate text-caption font-semibold text-foreground">
                     {focusNode.label}
                   </div>
                   {focusNode.fullName !== focusNode.label && (
-                    <div className="mt-0.5 break-words text-xs leading-4 text-muted-foreground/70">
+                    <div className="mt-0.5 break-words text-caption leading-4 text-muted-foreground">
                       {shortText(focusNode.fullName, 96)}
                     </div>
                   )}
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 text-center">
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
-                    <div className="text-xs text-muted-foreground/70">
+                  <div className="rounded border border-border bg-muted/50 px-1.5 py-1">
+                    <div className="text-caption text-muted-foreground">
                       {controls.degree}
                     </div>
-                    <div className="font-mono text-xs text-foreground/90">
+                    <div className="font-mono text-caption text-foreground/90">
                       {focusNode.backendDegree || focusEdges.length}
                     </div>
                   </div>
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
-                    <div className="text-xs text-muted-foreground/70">
+                  <div className="rounded border border-border bg-muted/50 px-1.5 py-1">
+                    <div className="text-caption text-muted-foreground">
                       {controls.confidence}
                     </div>
-                    <div className="font-mono text-xs text-foreground/90">
+                    <div className="font-mono text-caption text-foreground/90">
                       {formatConfidence(focusNode.confidenceAvg)}
                     </div>
                   </div>
-                  <div className="rounded border border-white/10 bg-white/[0.03] px-1.5 py-1">
-                    <div className="text-xs text-muted-foreground/70">
+                  <div className="rounded border border-border bg-muted/50 px-1.5 py-1">
+                    <div className="text-caption text-muted-foreground">
                       {controls.updated}
                     </div>
-                    <div className="font-mono text-xs text-foreground/90">
+                    <div className="font-mono text-caption text-foreground/90">
                       {formatDateTime(focusNode.lastSeen)}
                     </div>
                   </div>
@@ -1349,7 +1363,7 @@ function KnowledgeGraph3DContent() {
                     {focusNode.sources.slice(0, 3).map((source) => (
                       <span
                         key={source}
-                        className="max-w-full truncate rounded bg-info/10 px-1.5 py-0.5 text-xs text-info"
+                        className="max-w-full truncate rounded bg-info/10 px-1.5 py-0.5 text-caption text-info"
                       >
                         {shortText(source, 28)}
                       </span>
@@ -1357,8 +1371,8 @@ function KnowledgeGraph3DContent() {
                   </div>
                 )}
                 {focusEdges.length > 0 && (
-                  <div className="space-y-1 border-t border-white/10 pt-2">
-                    <div className="text-xs font-semibold uppercase tracking-caps text-muted-foreground/70">
+                  <div className="space-y-1 border-t border-border pt-2">
+                    <div className="text-caption font-semibold text-muted-foreground">
                       {controls.evidence}
                     </div>
                     {focusEdges.map((edge) => {
@@ -1367,22 +1381,22 @@ function KnowledgeGraph3DContent() {
                       return (
                         <div
                           key={edge.id}
-                          className="rounded border border-white/10 bg-white/[0.025] px-2 py-1.5"
+                          className="rounded border border-border bg-muted/40 px-2 py-1.5"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="truncate text-xs text-foreground/80">
+                            <span className="truncate text-caption text-foreground/80">
                               {outbound ? "->" : "<-"}{" "}
                               {shortText(edge.label, 24)}
                             </span>
-                            <span className="font-mono text-xs text-muted-foreground/70">
+                            <span className="font-mono text-caption text-muted-foreground">
                               {formatConfidence(edge.confidence)}
                             </span>
                           </div>
-                          <div className="mt-0.5 truncate text-xs text-muted-foreground/70">
+                          <div className="mt-0.5 truncate text-caption text-muted-foreground">
                             {shortText(peer, 48)}
                           </div>
                           {(edge.sourceRef || edge.status !== "active") && (
-                            <div className="mt-1 flex gap-1 text-xs text-muted-foreground/50">
+                            <div className="mt-1 flex gap-1 text-caption text-muted-foreground/50">
                               {edge.status !== "active" && (
                                 <span>{edge.status}</span>
                               )}
@@ -1416,32 +1430,37 @@ function KnowledgeGraph3DContent() {
             <div className="grid gap-1.5">
               {entityGroups.slice(0, 8).map(([entityType, group]) => {
                 const disabled = disabledTypes.has(entityType);
+                const typeStyle = entityTypeStyle(entityType);
+                const TypeIcon = typeStyle.icon;
                 return (
                   <button
                     key={entityType}
                     type="button"
                     onClick={() => toggleType(entityType)}
+                    aria-pressed={!disabled}
+                    data-entity-shape={typeStyle.shape}
                     className={cn(
-                      "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                      "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-caption transition-colors",
                       disabled
-                        ? "text-muted-foreground/50 hover:bg-background/80"
+                        ? "text-muted-foreground/60 hover:bg-background/80"
                         : "text-foreground/80 hover:bg-muted/70",
                     )}
                   >
                     <span className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{
-                          background: disabled
-                            ? "var(--muted-foreground)"
-                            : group.color,
-                        }}
+                      <TypeIcon
+                        aria-hidden
+                        className={cn(
+                          "size-3.5 shrink-0",
+                          disabled && "opacity-40",
+                        )}
+                        strokeWidth={1.5}
+                        style={{ color: tokenVar(typeStyle.tone) }}
                       />
                       <span className="truncate">
                         {entityTypeLabel(entityType)}
                       </span>
                     </span>
-                    <span className="font-mono text-xs text-muted-foreground/70">
+                    <span className="font-mono text-caption text-muted-foreground">
                       {group.count}
                     </span>
                   </button>
@@ -1455,7 +1474,7 @@ function KnowledgeGraph3DContent() {
               {displayToggles.map(([key, label]) => (
                 <label
                   key={key}
-                  className="flex items-center justify-between gap-3 text-xs text-foreground/80"
+                  className="flex items-center justify-between gap-3 text-caption text-foreground/80"
                 >
                   <span>{label}</span>
                   <Switch
@@ -1517,7 +1536,7 @@ function KnowledgeGraph3DContent() {
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 w-full border-border-default bg-transparent text-xs text-foreground/80 hover:bg-muted hover:text-foreground"
+            className="h-8 w-full border-border-default bg-transparent text-caption text-foreground/80 hover:bg-muted hover:text-foreground"
             onClick={resetCamera}
           >
             <SlidersHorizontalIcon className="mr-1.5 size-3.5" />

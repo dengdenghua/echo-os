@@ -72,6 +72,7 @@ export const enUS: Translations = {
       `${method} ${path} returned stub data. Treat this workspace state as a development fallback until the real backend endpoint is enabled.`,
     openSidebarMenu: "Open sidebar menu",
     loadingWorkspace: "Loading workspace...",
+    startingSystem: "System services are starting. Please wait...",
   },
 
   // Home
@@ -103,12 +104,12 @@ export const enUS: Translations = {
   welcome: {
     greeting: "Hello, I am {name}",
     description:
-      "Welcome to 🦌 EchoAI, an open source super agent. With built-in and custom skills, EchoAI helps you search on the web, analyze data, and generate artifacts like slides, web pages and do almost anything.",
+      "Welcome to Echo, an open source super agent. With built-in and custom skills, Echo helps you search on the web, analyze data, and generate artifacts like slides, web pages and do almost anything.",
     echoTagline: "Multi-agent collaboration · One input, direct solutions",
 
     createYourOwnSkill: "Create Your Own Skill",
     createYourOwnSkillDescription:
-      "Create your own skill to release the power of EchoAI. With customized skills,\nEchoAI can help you search on the web, analyze data, and generate\n artifacts like slides, web pages and do almost anything.",
+      "Create your own skill to release the power of Echo. With customized skills,\nEcho can help you search on the web, analyze data, and generate\n artifacts like slides, web pages and do almost anything.",
 
     scenes: {
       daily: "Daily Work",
@@ -297,6 +298,7 @@ export const enUS: Translations = {
     makeSimilar: "Make similar",
     makeSimilarHint: "Start a new task with the same prompt",
     retryTask: "Retry",
+    openModelSettings: "Set up a model",
     retryTaskHint: "Start a new task with the same prompt",
     taskFailedReason: "Failure reason",
     resultUrl: "Result URL",
@@ -469,12 +471,12 @@ export const enUS: Translations = {
     maxSubagents: "Max Subagents",
     maxSearches: "Max Searches",
     permissionModeLabel: "Permissions",
-    permissionModeDefault: "Default",
+    permissionModeDefault: "Ask for approval",
     permissionModeDefaultDesc:
-      "Any write or command asks for your approval first. Safest option.",
-    permissionModeAcceptEdits: "Accept edits",
+      "Can edit the workspace and run routine commands; asks before using the network or crossing workspace boundaries.",
+    permissionModeAcceptEdits: "Approve for me",
     permissionModeAcceptEditsDesc:
-      "File changes run automatically; commands still ask for approval.",
+      "Keeps the same workspace boundary and sends eligible escalations to an independent reviewer.",
     permissionModeBypass: "Full access",
     permissionModeBypassDesc:
       "Every action runs automatically with no questions. Maximum permissions.",
@@ -498,8 +500,8 @@ export const enUS: Translations = {
     projectWriteAccess: "Project write",
     projectReadOnly: "Read only",
     permissionFullAccess: "Full access",
-    permissionAcceptEdits: "Accept edits",
-    permissionConfirm: "Default",
+    permissionAcceptEdits: "Approve for me",
+    permissionConfirm: "Ask for approval",
     addImage: "Add image (paste / drag / select)",
     addAppshot: "Attach current window snapshot",
     capturingAppshot: "Attaching the current window…",
@@ -729,7 +731,7 @@ export const enUS: Translations = {
     readFile: "Read file",
     updateFile: "Update file",
     runAction: "Run operation",
-    teammateTimeout: "Teammate did not return in time; EchoAI took over",
+    teammateTimeout: "Teammate did not return in time; Echo took over",
     factSummaryPath: (value: string) => `Confirmed: ${value}`,
     factSummaryCount: (value: string) => `Confirmed: ${value} items`,
     factSummaryStatus: (value: string) => `Confirmed: ${value}`,
@@ -1081,7 +1083,7 @@ export const enUS: Translations = {
       idle: "REC: Record this conversation and learn as a reusable replay skill",
     },
     replay: {
-      titleDefault: "EchoAI Run Replay",
+      titleDefault: "ECHO OS Run Replay",
       footer: "Self-contained offline replay",
     },
     composer: {
@@ -1865,6 +1867,13 @@ export const enUS: Translations = {
       "For example: turn slide 3 into a risk matrix and keep the current theme",
     officeEditHint:
       "The edit is sent to this task and the preview refreshes when it finishes",
+    fileAccessDenied:
+      "Cannot read this file. Check that you are signed in and this task can access its directory.",
+    fileMissing:
+      "The file is missing or has been moved. Check its original location and retry.",
+    fileUnavailable: "This file cannot be read right now. Please retry.",
+    fileTooLarge:
+      "This file is too large to preview or download here. Open the original in the file manager.",
     previewError:
       "Unable to load the preview. Check your sign-in and try again.",
     previewRetry: "Reload preview",
@@ -2018,8 +2027,8 @@ export const enUS: Translations = {
     sectionChats: "Chats",
     sectionSessions: "Sessions",
     noChatsYet: "No chats yet",
-    collapseSidebar: "Collapse sidebar (⌘B)",
-    expandSidebar: "Expand sidebar (⌘B)",
+    collapseSidebar: (shortcut: string) => `Collapse sidebar (${shortcut})`,
+    expandSidebar: (shortcut: string) => `Expand sidebar (${shortcut})`,
     collapseSection: (label: string) => `Collapse ${label}`,
     expandSection: (label: string) => `Expand ${label}`,
     projectNamePlaceholder: "Project name",
@@ -2166,9 +2175,9 @@ export const enUS: Translations = {
       "Limit the number of tabs the agent can retain. Tabs opened with retain=true won't be auto-closed after a task ends.",
     saveConfig: "Save Config",
     configSaved: "Config saved",
-    installExtensionTitle: "Install EchoAI Browser Relay",
+    installExtensionTitle: "Install ECHO Browser Relay",
     installExtensionDesc:
-      "Install the extension to connect your browser to EchoAI.",
+      "Install the extension to connect your browser to ECHO OS.",
     step1Title: "Open Chrome Extensions page and enable Developer Mode",
     step1Desc: "Open the extensions management page in your browser",
     step1Action: "Open chrome://extensions",
@@ -2186,7 +2195,7 @@ export const enUS: Translations = {
     relayVersion: "Version",
     compareTitle: "Choose Connection Method",
     compareDesc:
-      "Both methods connect your browser to EchoAI. Choose the one that fits your needs.",
+      "Both methods connect your browser to ECHO OS. Choose the one that fits your needs.",
     compareFeature: "Feature",
     compareExtension: "Extension",
     compareCdp: "CDP Direct",
@@ -2219,7 +2228,7 @@ export const enUS: Translations = {
     allVersions: "All versions",
     // Page Agent integration
     pageAgentDesc:
-      "Page Agent is an open-source GUI Agent framework by Alibaba. It controls web pages via text-based DOM manipulation — no screenshots or multimodal models needed. Integrated into EchoAI via MCP protocol.",
+      "Page Agent is an open-source GUI Agent framework by Alibaba. It controls web pages via text-based DOM manipulation — no screenshots or multimodal models needed. Integrated into ECHO OS via MCP protocol.",
     pageAgentDocs: "View docs",
     pageAgentFeature1: "In-page JS integration",
     pageAgentFeature1Desc:
@@ -2265,7 +2274,7 @@ export const enUS: Translations = {
     extConNeedExtension: "Requires installing a Chrome extension.",
     cdpProNoExtension: "No extension installation required.",
     cdpProChrome144: "Works with Chrome 144+.",
-    cdpConReAuth: "Requires re-authorization after each EchoAI restart.",
+    cdpConReAuth: "Requires re-authorization after each ECHO OS restart.",
     cdpConChrome144Only: "Only supports Chrome 144+.",
   },
 
@@ -2526,7 +2535,7 @@ export const enUS: Translations = {
     loadoutReady: "LOADOUT READY",
     saved: "Agent configuration saved",
     saveFailed: (msg) => `Save failed: ${msg}`,
-    officialFaction: "EchoAI Command",
+    officialFaction: "ECHO Command",
     authorFaction: (author) => `${author} Lab`,
     categoryRoles: {
       assistant: "Support",
@@ -2881,13 +2890,13 @@ export const enUS: Translations = {
     save: "Save agent",
     saving: "Saving agent...",
     saveRequested:
-      "Save requested. EchoAI is generating and saving an initial version now.",
+      "Save requested. Echo is generating and saving an initial version now.",
     saveHint:
       "You can save this agent at any time from the top-right menu, even if this is only a first draft.",
     saveCommandMessage:
       "Please save this custom agent now based on everything we have discussed so far. Treat this as my explicit confirmation to save. If some details are still missing, make reasonable assumptions, generate a concise first SOUL.md in English, and call setup_agent immediately without asking me for more confirmation.",
     agentCreatedPendingRefresh:
-      "The agent was created, but EchoAI could not load it yet. Please refresh this page in a moment.",
+      "The agent was created, but Echo could not load it yet. Please refresh this page in a moment.",
     more: "More actions",
     agentCreated: "Agent created!",
     startChatting: "Start chatting",
@@ -3141,13 +3150,13 @@ export const enUS: Translations = {
 
   // Workspace
   workspace: {
-    officialWebsite: "EchoAI's official website",
-    githubTooltip: "EchoAI on Github",
+    officialWebsite: "ECHO OS official website",
+    githubTooltip: "ECHO OS on Github",
     settingsAndMore: "Settings and more",
-    visitGithub: "EchoAI on GitHub",
+    visitGithub: "ECHO OS on GitHub",
     reportIssue: "Report a issue",
     contactUs: "Contact us",
-    about: "About EchoAI",
+    about: "About ECHO OS",
     modes: {
       chat: "Chat",
       team: "Team",
@@ -3159,7 +3168,7 @@ export const enUS: Translations = {
       badge: "Agent OS Control Room",
       headline: "Give agents a goal, then supervise the work.",
       description:
-        "EchoAI turns goals into plans, runs tools in a scoped runtime, records the trace, and keeps useful memory for the next run.",
+        "Echo turns goals into plans, runs tools in a scoped runtime, records the trace, and keeps useful memory for the next run.",
       newTask: "New Task",
       codeTask: "Code Task",
       systemLoop: {
@@ -3288,7 +3297,7 @@ export const enUS: Translations = {
 
   // Page titles (document title)
   pages: {
-    appName: "EchoAI",
+    appName: "ECHO OS",
     chats: "Chats",
     newChat: "New chat",
     untitled: "Untitled",
@@ -3314,7 +3323,7 @@ export const enUS: Translations = {
     writeFile: "Write file",
     clickToViewContent: "Click to view file content",
     writeTodos: "Update to-do list",
-    skillInstallTooltip: "Install skill and make it available to EchoAI",
+    skillInstallTooltip: "Install skill and make it available to ECHO OS",
     toastSkillInstallFailed: "Failed to install skill",
     toastExportConversationFailed: "Failed to export conversation",
   },
@@ -3335,6 +3344,8 @@ export const enUS: Translations = {
     connectionLost: "This reply was interrupted. Continue the chat or retry.",
     networkLost:
       "Network disconnected. Task auto-paused — send a message to resume from checkpoint.",
+    eventStreamOverloaded:
+      "The event stream is temporarily busy. Completed steps were preserved; retry to continue.",
     turnFailed:
       "This turn stopped before finishing. Continue the chat or retry.",
     guardBlocked:
@@ -3344,14 +3355,14 @@ export const enUS: Translations = {
     workspaceWriteRequired:
       "This task requires a project file change, but no successful file change was recorded.",
     verificationRequired:
-      "Code changes need verification before EchoAI can finish this turn. Run tests, lint, typecheck, or build, then continue.",
+      "Code changes need verification before Echo can finish this turn. Run tests, lint, typecheck, or build, then continue.",
     environmentBlocked:
       "This task is blocked by an environment constraint — the reason is below.",
     environmentBlockedAuthorizeCommon: 'Authorize "common domains" and retry',
     environmentBlockedAuthorizeFull: "Authorize full network and retry",
     blockedOnUser: "This task needs your input before it can continue.",
     streamEndpointUnavailable:
-      "The backend chat/team stream endpoint is not enabled or is unavailable. Start the full EchoAI backend or check the frontend proxy.",
+      "The backend chat/team stream endpoint is not enabled or is unavailable. Start the full ECHO OS backend or check the frontend proxy.",
     iteration: (count: number) => `Round ${count}`,
     toolCalls: (count: number) => `${count} call${count === 1 ? "" : "s"}`,
     generating: "Generating…",
@@ -3449,7 +3460,7 @@ export const enUS: Translations = {
     actions: "Actions",
     keyboardShortcuts: "Keyboard Shortcuts",
     keyboardShortcutsDescription:
-      "Navigate EchoAI faster with keyboard shortcuts.",
+      "Navigate ECHO OS faster with keyboard shortcuts.",
     openCommandPalette: "Open Command Palette",
     commandPaletteDescription: "Search for a command to run...",
     toggleSidebar: "Toggle Sidebar",
@@ -3535,7 +3546,7 @@ export const enUS: Translations = {
   // Settings
   settings: {
     title: "Settings",
-    description: "Adjust how EchoAI looks and behaves for you.",
+    description: "Adjust how ECHO OS looks and behaves for you.",
     sections: {
       account: "Account",
       subscription: "Plan & Usage",
@@ -3693,7 +3704,7 @@ export const enUS: Translations = {
     memory: {
       title: "Memory",
       description:
-        "Manage saved facts and conversation summaries, and control when EchoAI records and uses them.",
+        "Manage saved facts and conversation summaries, and control when Echo records and uses them.",
       empty: "No memory data to display.",
       rawJson: "Raw JSON",
       exportButton: "Export memory",
@@ -3870,7 +3881,7 @@ export const enUS: Translations = {
       createSkill: "Create skill",
       emptyTitle: "No agent skill yet",
       emptyDescription:
-        "Put your agent skill folders under the `/skills/custom` folder under the root folder of EchoAI.",
+        "Put your agent skill folders under the `/skills/custom` folder under the root folder of ECHO OS.",
       emptyButton: "Create Your First Skill",
       enabledDescription:
         "Enabled skills enter the Agent tool catalog. Disabled skills are hidden from models and cannot be executed.",
@@ -3894,16 +3905,16 @@ export const enUS: Translations = {
     notification: {
       title: "Notification",
       description:
-        "EchoAI only sends a completion notification when the window is not active. This is especially useful for long-running tasks so you can switch to other work and get notified when done.",
+        "Echo only sends a completion notification when the window is not active. This is especially useful for long-running tasks so you can switch to other work and get notified when done.",
       enableNotification: "Enable notifications",
       permissionGranted: "Permission granted",
       permissionPrompt: "Permission required",
       permissionDenied: "Permission denied",
       requestPermission: "Request notification permission",
       deniedHint:
-        "Notification permission was denied. Enable EchoAI notifications in your system or browser notification settings.",
+        "Notification permission was denied. Enable ECHO OS notifications in your system or browser notification settings.",
       testButton: "Send test notification",
-      testTitle: "EchoAI",
+      testTitle: "ECHO OS",
       testBody: "This is a test notification.",
       testSent: "Test notification sent",
       requestFailed: "Unable to request notification permission",
@@ -4160,16 +4171,16 @@ export const enUS: Translations = {
       },
     },
     echoMix: {
-      title: "EchoAI Mix · multi-model collaboration",
+      title: "Echo Mix · multi-model collaboration",
       description:
-        "Pick 2+ models as proposers (each drafts independently, no tools), then pick one aggregator to merge their answers. Selecting “EchoAI Mix” in chat routes through this config; if the proposer pool is empty, the default model × count is used instead.",
+        "Pick 2+ models as proposers (each drafts independently, no tools), then pick one aggregator to merge their answers. Selecting “Echo Mix” in chat routes through this config; if the proposer pool is empty, the default model × count is used instead.",
       proposersLabel: "Proposers (models that draft)",
       noCandidates: "No models available",
       aggregatorLabel: "Aggregator",
       aggregatorDefault: "Default",
       nLabel: "Count when pool is empty",
       saveButton: "Save",
-      saveSuccess: "EchoAI Mix configuration saved",
+      saveSuccess: "Echo Mix configuration saved",
       saveFailed: (status: number) => `Save failed (${status})`,
       saveFailedFallback: "Save failed",
     },
@@ -4306,7 +4317,7 @@ export const enUS: Translations = {
     approveExecute: "Approve & Execute",
     startQuest: "Start Quest",
     questDesc:
-      "Describe a complex task and let EchoAI autonomously plan, execute, and verify it",
+      "Describe a complex task and let Echo autonomously plan, execute, and verify it",
     requirementPlaceholder: "Describe what you want to accomplish...",
     executionPlan: "Execution Plan",
     verificationPassed: "Verification passed",
@@ -4454,7 +4465,7 @@ export const enUS: Translations = {
       installFailed: "Plugin installation failed",
       statusFailed: "Plugin status update failed",
       removeConfirm:
-        "Remove this plugin from EchoAI? Local files will not be deleted.",
+        "Remove this plugin from ECHO OS? Local files will not be deleted.",
       removeFailed: "Plugin removal failed",
       enabled: "Enabled",
       disabled: "Disabled",
@@ -4465,7 +4476,7 @@ export const enUS: Translations = {
       emptyWeb: "The localhost preview cannot access the Electron plugin API.",
       placeholderTitle: "Plugin catalog placeholder",
       placeholderDesc:
-        "Run the desktop app to install and manage local plugins. The preview still shows the plugin categories EchoAI supports.",
+        "Run the desktop app to install and manage local plugins. The preview still shows the plugin categories ECHO OS supports.",
       placeholderBrowserTitle: "Browser plugins",
       placeholderBrowserDesc:
         "Chrome / Edge extensions that let agents read pages, click controls, and collect screenshots.",
@@ -4812,7 +4823,7 @@ Strategy:
 
     extensionMarketplace: {
       title: "Extensions",
-      subtitle: "Manage EchoAI browser extension capabilities",
+      subtitle: "Manage ECHO OS browser extension capabilities",
       installLocal: "Install Local Extension",
       refreshAriaLabel: "Refresh extensions",
       closeAriaLabel: "Close extensions",
@@ -4842,7 +4853,7 @@ Strategy:
       errorStatusFailed: "Extension status update failed",
       errorRemoveFailed: "Extension removal failed",
       confirmRemove:
-        "Remove this extension from EchoAI? Local files will not be deleted.",
+        "Remove this extension from ECHO OS? Local files will not be deleted.",
       categoryFeatured: "Featured",
       categoryEfficiency: "Efficiency",
       categoryResearch: "Research",
@@ -4871,17 +4882,17 @@ Strategy:
       openDirectory: "Open Directory",
       extPluginTitle: "External Browser Plugin",
       extPluginDesc:
-        "For Chrome / Edge. The plugin connects to local EchoAI, allowing external pages to be read and operated by Agent.",
+        "For Chrome / Edge. The plugin connects to local ECHO OS, allowing external pages to be read and operated by Agent.",
       dragToBookmarks: "Drag to Bookmarks Bar",
       dragToBookmarksDesc:
         "Lightweight Page Agent mode, suitable for temporarily connecting the current page.",
       dragToBookmarksTitle: "Drag to Chrome/Edge bookmarks bar",
       step1Temporary:
-        "1. Temporary: Drag the EchoAI Agent above to your bookmarks bar, then click it on the target page.",
+        "1. Temporary: Drag the ECHO button above to your bookmarks bar, then click it on the target page.",
       step2LongTerm:
         "2. Long-term: Open Chrome/Edge extension management page, enable 'Developer mode'.",
       step3LoadExtension:
-        "3. Click 'Load unpacked extension', select the EchoAI plugin directory.",
+        "3. Click 'Load unpacked extension', select the ECHO Browser Relay folder.",
       pluginDirectory: "Plugin Directory",
       pluginDirectoryOpened: (path: string) =>
         `Plugin directory opened: ${path}`,
@@ -5057,7 +5068,7 @@ Strategy:
       searchOrUrl: "Search or enter URL",
       siteInfo: "Site Info",
       siteInfoDesc:
-        "Login state, cookies, and local data are retained in the EchoAI browser and shared across tabs.",
+        "Login state, cookies, and local data are retained in the ECHO OS browser and shared across tabs.",
       clearData: "Clear Data",
       openExternally: "Open Externally",
       confirmClearSiteData:
@@ -5679,11 +5690,18 @@ Strategy:
     cancelledTasks: (count: number) => `${count} cancelled`,
     coordinationWarnings: (count: number) => `${count} coordination warning(s)`,
     rerunnableTasks: (count: number) => `${count} rerunnable task(s)`,
+    recoveryResume: "Rerun safe tasks from snapshot",
+    recoveryResuming: "Rerunning…",
+    recoveryResumeFailed:
+      "Recovery could not start; refresh the snapshot and retry",
     failedTasks: (count: number) => `${count} failed`,
     dependencyBlocked: (count: number) => `${count} dependency-blocked`,
     checkpointSequence: (sequence: number) => `checkpoint #${sequence}`,
     recoverySafe: "redacted",
     recoveryUnsafe: "raw data included",
+    durableRecovery: "durable view",
+    durableRecoveryHint:
+      "Worker output is withheld after restart; inspect the recovery queue before resuming.",
     statusLabels: {
       pending: "Pending",
       running: "Running",
@@ -6141,13 +6159,13 @@ Strategy:
 
   intelligencePanel: {
     examplePrompts: [
-      "Track EchoAI Agent GitHub releases, issues, and competitor updates daily, keeping only changes relevant to product decisions",
+      "Track Echo Agent GitHub releases, issues, and competitor updates daily, keeping only changes relevant to product decisions",
       "Summarize new papers and open-source projects on AI Agents, browser automation, and multi-agent frameworks weekly, filtering duplicate news",
       "Monitor pricing, plugin ecosystem, and enterprise feature changes for three competitors, alerting on important updates",
     ],
     goalLabel: "Describe what you want to track continuously",
     goalPlaceholder:
-      "e.g., Track EchoAI Agent, browser-use, and OpenAI Agent SDK releases, issues, and important discussions daily, keeping only changes that impact the product roadmap.",
+      "e.g., Track Echo Agent, browser-use, and OpenAI Agent SDK releases, issues, and important discussions daily, keeping only changes that impact the product roadmap.",
     subscriptionName: "Subscription name",
     keywords: "Keywords (comma-separated)",
     cadence: "Frequency",
@@ -6458,10 +6476,10 @@ Strategy:
   // Onboarding
   onboarding: {
     title: "Onboarding Guide",
-    welcomeToEcho: "Welcome to EchoAI",
+    welcomeToEcho: "Welcome to ECHO OS",
     yourAIPlatform: "Your AI Agent Platform",
     welcomeDesc:
-      "EchoAI is an open-source super agent harness that orchestrates sub-agents, memory, and sandboxes to do almost anything \u2014 powered by extensible skills.",
+      "ECHO OS is an open-source super agent harness that orchestrates sub-agents, memory, and sandboxes to do almost anything \u2014 powered by extensible skills.",
     chatModes: "Task capabilities",
     chatModesDesc: "Start with one task, then add capabilities and helpers",
     modeChat: "Chat",
@@ -6668,6 +6686,8 @@ Strategy:
     readingGitDiff: (running) =>
       running ? "Reading Git diff" : "Read Git diff",
     committingGit: (running) => (running ? "Committing Git" : "Committed Git"),
+    subagentUsage: (tokens, costUsd) =>
+      `Governance: ${tokens.toLocaleString()} tokens · $${costUsd.toFixed(4)}`,
   },
 
   // Store utilities
@@ -6686,7 +6706,7 @@ Strategy:
     },
     technicalDetails: "Technical details",
     createPluginPrompt:
-      "Use $plugin-creator to create a new EchoAI plugin.\nPlease first ask for the plugin name, purpose, and whether it includes skills/apps/MCP, then scaffold it into the personal plugin directory, complete the manifest, and verify the plugin can be recognized by the marketplace.",
+      "Use $plugin-creator to create a new ECHO OS plugin.\nPlease first ask for the plugin name, purpose, and whether it includes skills/apps/MCP, then scaffold it into the personal plugin directory, complete the manifest, and verify the plugin can be recognized by the marketplace.",
   },
 
   // Local skill directory panel
@@ -6854,7 +6874,7 @@ Strategy:
   // Bundle Info
   bundleInfo: {
     title: "Build Information",
-    appVersion: "EchoAI version",
+    appVersion: "ECHO OS version",
     license: "License",
     environment: "Environment",
     vite: "Vite",
@@ -6918,7 +6938,7 @@ Strategy:
     confirmDelete: "Confirm Delete",
     factoryResetTitle: "Factory reset",
     factoryResetDescription:
-      "Clear local conversations, workspaces, memory, install state, and browser-side EchoAI cache. Source code and built-in roles are preserved.",
+      "Clear local conversations, workspaces, memory, install state, and browser-side ECHO OS cache. Source code and built-in roles are preserved.",
     factoryResetDialogDescription:
       "This deletes local runtime data and cache. Restart or refresh the app afterward. Source code and built-in role folders will not be deleted.",
     factoryResetTypeToConfirm: "Type RESET ECHO to confirm",
@@ -6956,7 +6976,7 @@ Strategy:
     totalCredits: (total) => `Total ${total} credits`,
     billingUnavailableTitle: "Plans are temporarily unavailable",
     billingUnavailableDescription:
-      "Your EchoAI account is signed in, but the billing service is not connected. Retry to refresh the account link and available plans.",
+      "Your ECHO account is signed in, but the billing service is not connected. Retry to refresh the account link and available plans.",
     subscriptionUnavailable: "Subscription information could not be loaded.",
     plansUnavailable: "Plans could not be loaded.",
     noPlans: "No purchasable plans are currently available.",
@@ -7207,7 +7227,7 @@ Strategy:
   appAuth: {
     pageTitle: "App authorizations",
     pageSubtitle:
-      "Authorize third-party platforms so EchoAI can access data on your behalf.",
+      "Authorize third-party platforms so Echo can access data on your behalf.",
     searchPlaceholder: "Search authorizations...",
     connectedCount: (n: number) => `${n} connected`,
     tabAll: "All",
@@ -7936,14 +7956,14 @@ Strategy:
   evolutionPanel: {
     title: "Self-evolution status",
     description:
-      "EchoAI reviews completed tasks and carries useful lessons into future runs. This view shows what it has learned and how it will affect the next task.",
+      "Echo reviews completed tasks and carries useful lessons into future runs. This view shows what it has learned and how it will affect the next task.",
     summaryEmpty: "Still collecting experience",
     summaryReady: (learned: number, total: number) =>
       `Learned ${learned} reusable lessons from ${total} tasks`,
     summaryHealthy:
       "No action is needed right now; similar future tasks will use these lessons automatically.",
     summaryFailures: (failures: number) =>
-      `${failures} deep-task failures were recorded recently, so EchoAI will prioritize learning how to avoid them.`,
+      `${failures} deep-task failures were recorded recently, so Echo will prioritize learning how to avoid them.`,
     statusNormal: "Looks good",
     statusNeedsReview: "Worth checking",
     statAvoidRule: "Risk lessons",
@@ -7961,11 +7981,11 @@ Strategy:
     statAllTrajsTooltip: (total: number) =>
       `${total} historical tasks are in the review pool. More samples make lessons less dependent on one-off outcomes.`,
     statAllTrajsDesc:
-      "These are historical tasks in the review pool. EchoAI uses them to find stable approaches and risk patterns.",
+      "These are historical tasks in the review pool. Echo uses them to find stable approaches and risk patterns.",
     statAllTrajsPoints: (total: number, learned: number) => [
       `${total} samples are in the review pool.`,
       `${learned} lessons are ready to be applied automatically in similar tasks.`,
-      "As the sample grows, EchoAI weighs long-term patterns more than one-off outcomes.",
+      "As the sample grows, Echo weighs long-term patterns more than one-off outcomes.",
     ],
     statReactLabel: "Deep tasks",
     statReactHint: (reviewCount: number) =>
@@ -7980,14 +8000,14 @@ Strategy:
       `${failures} items are marked for review and prioritized for risk lessons.`,
       "Worth checking does not mean you must fix it manually; it means the system is learning from these records first.",
     ],
-    learnedMitigationsTitle: "Pitfalls EchoAI learned to avoid",
+    learnedMitigationsTitle: "Pitfalls Echo learned to avoid",
     learnedMitigationsDesc:
       "These lessons come from repeated failures and are used as guardrails next time.",
-    consolidatedMemoriesTitle: "Useful approaches EchoAI remembers",
+    consolidatedMemoriesTitle: "Useful approaches Echo remembers",
     consolidatedMemoriesDesc:
       "These approaches worked repeatedly and can be reused on similar tasks.",
     noMitigationsHint:
-      "No repeated pitfall has been found yet. Once a problem repeats, EchoAI will list what to avoid here.",
+      "No repeated pitfall has been found yet. Once a problem repeats, Echo will list what to avoid here.",
     noMemoriesHint:
       "No stable successful approach has enough evidence yet. After more similar tasks, reusable approaches will appear here.",
     linesSuffix: (n: number) => `${n}`,
@@ -8001,11 +8021,11 @@ Strategy:
     failureTypeError: "a type error",
     failureGeneric: (failure: string) => `failure signature ${failure}`,
     toolFailureLesson: (tool: string, failure: string, count: number) =>
-      `${tool} failed ${count} times due to ${failure}; next time EchoAI will validate inputs first and switch tools if needed.`,
+      `${tool} failed ${count} times due to ${failure}; next time Echo will validate inputs first and switch tools if needed.`,
     reflectingButton: "Reviewing...",
     reflectButton: "Review now",
     reflectHint:
-      "You usually do not need to click this. EchoAI reviews tasks automatically; use this after an important task to organize lessons immediately.",
+      "You usually do not need to click this. Echo reviews tasks automatically; use this after an important task to organize lessons immediately.",
     advancedTitle: "Advanced details",
     reactVariantsTitle: "Execution strategy experiments",
     tableName: "Strategy",
@@ -8027,7 +8047,7 @@ Strategy:
   privacySettings: {
     identityLockTitle: "Identity Lock",
     identityLockDesc:
-      "When enabled, vendor/model names in model replies (Claude / Kimi / Anthropic / Moonshot, etc.) are rewritten to EchoAI · users only see the product identity. Disable to enter developer mode where the raw LLM identity shows through — useful for tuning prompts or verifying routing.",
+      "When enabled, vendor/model names in model replies (Claude / Kimi / Anthropic / Moonshot, etc.) are rewritten to Echo · users only see the product identity. Disable to enter developer mode where the raw LLM identity shows through — useful for tuning prompts or verifying routing.",
     lockedTag: "LOCKED",
     unlockedTag: "UNLOCKED",
     sourceLabel: "source",
@@ -8067,9 +8087,10 @@ Strategy:
       `Recommended for this device: ${label}`,
     efficiencyMode: "Efficiency",
     efficiencyModeDesc:
-      "Prefer cloud high-performance models for faster, stronger responses.",
+      "Allow cloud models. Task content, file excerpts and conversation history may be sent to the selected service.",
     privacyMode: "Privacy",
-    privacyModeDesc: "Prefer local models; data stays on this device.",
+    privacyModeDesc:
+      "Use on-device models only; stop if unavailable. Network tools and unverified execution methods are blocked.",
     detectButton: "Detect",
     recommendedTag: "Recommended",
     enabledTag: "Enabled",
@@ -8109,7 +8130,7 @@ Strategy:
   sandboxSettings: {
     title: "Sandbox & Execution Permissions",
     description:
-      "Execution environment and permission level are two independent dimensions you can combine freely — e.g. “Sandbox + Full access” for full automation inside isolation, or “Local + Accept edits” to run on this machine while commands still ask for confirmation.",
+      "Permission levels choose the execution boundary and reviewer: Ask for approval and Approve for me stay in the workspace sandbox, while Full access runs locally. Network access is configured separately.",
     activeTag: "Current",
     scopeNote:
       "Changes are saved to local settings and apply to all future tasks; tasks already running are unaffected.",
@@ -8150,14 +8171,14 @@ Strategy:
     },
     permission: {
       default: {
-        label: "Default",
+        label: "Ask for approval",
         description:
-          "Any write or command asks for your approval first. Safest option.",
+          "Can edit the workspace and run routine commands; asks before using the network or crossing workspace boundaries.",
       },
       acceptEdits: {
-        label: "Accept edits",
+        label: "Approve for me",
         description:
-          "File changes run automatically; commands still ask for approval.",
+          "Keeps the same workspace boundary and sends eligible escalations to an independent reviewer.",
       },
       bypassPermissions: {
         label: "Full access",
@@ -8257,13 +8278,13 @@ Strategy:
   // Register page
   registerPage: {
     loadingText: "Loading...",
-    badgeText: "Create your EchoAI account",
+    badgeText: "Create your ECHO account",
     heroTitleLine1: "Start right after you join",
     heroTitleLine2: "the multi-agent workflow",
     heroDescription:
       "Set up your own workspace, plug in skills, tools and models, and unify research, collaboration and automation on one platform.",
     cardTitle: "Create account",
-    cardDescription: "Join EchoAI and start your agent journey",
+    cardDescription: "Join ECHO OS and start your agent journey",
     usernameLabel: "Username",
     usernamePlaceholder: "at least 3 characters",
     emailLabel: "Email (optional)",
@@ -8346,7 +8367,7 @@ Strategy:
       privacyPolicy: "Privacy Policy",
     },
     page: {
-      title: "Secure Access to Your EchoAI Workspace",
+      title: "Secure Access to Your ECHO OS Workspace",
       subtitle: "Continue your",
       description:
         "Continue your research, coding, collaboration, and automation tasks in a unified workspace for managing context, skills, and execution results.",
@@ -8446,8 +8467,8 @@ Strategy:
   },
 
   hero: {
-    releaseBadge: "EchoAI 2.0 released",
-    withEcho: "with EchoAI",
+    releaseBadge: "ECHO OS 2.0 released",
+    withEcho: "with Echo",
     heroDescription:
       "An open-source SuperAgent harness that researches, codes, and creates. With the help of sandboxes, memories, tools, skills and subagents, it handles different levels of tasks that could take minutes to hours.",
   },
@@ -9218,13 +9239,13 @@ Strategy:
   desktop: {
     disabledTitle: "Desktop assistant is off",
     disabledDescription:
-      "By default, EchoAI opens the welcome, sign-in, and workspace surfaces. Turn on the transparent desktop assistant when you want to manage system desktop files.",
+      "By default, ECHO OS opens the welcome, sign-in, and workspace surfaces. Turn on the transparent desktop assistant when you want to manage system desktop files.",
     enableButton: "Enable Desktop Assistant",
     pluginSettingsButton: "Open Plugin Settings",
     backToWorkspaceButton: "Back to Workspace",
     header: {
       workspaceTooltip: "Open Workspace",
-      brand: "EchoAI",
+      brand: "Workbench",
       accountModels: "Official Models",
       desktopAssistant: "Desktop Assistant",
       desktopCount: (count) => `Desktop ${count || "--"}`,
@@ -9463,6 +9484,10 @@ Strategy:
     batchEventTitle: (status) => `Batch ${status}`,
     subagentEventTitle: (name, status) => `${name} ${status}`,
     subagentFallback: "subagent",
+    durableRecovery: "Durable recovery view",
+    durableRecoveryHint:
+      "Worker output is withheld; inspect the recovery queue before resuming.",
+    recoveryRequired: "Recovery review required",
     statusComplete: "complete",
     statusUpdated: "updated",
     routeBlocked: "Route blocked",
@@ -9490,7 +9515,7 @@ Strategy:
       "You're in a web environment, so right-click menu install/remove stays disabled. Switch to the desktop app to make these options take effect.",
     contextMenuTitle: "System right-click menu",
     contextMenuDescription:
-      'Right-click on the Windows desktop shows "EchoAI Organize Desktop".',
+      'Right-click on the Windows desktop shows "Echo Organize Desktop".',
     installButton: "Install right-click command",
     installingButton: "Installing",
     removeButton: "Remove",
@@ -9503,7 +9528,7 @@ Strategy:
     backToWorkspace: "Back to workspace",
     confirmRemoveTitle: "Remove system right-click menu?",
     confirmRemoveDescription:
-      "This will remove the EchoAI one-click organize command from the Windows desktop right-click menu.",
+      "This will remove the Echo one-click organize command from the Windows desktop right-click menu.",
   },
 
   // Knowledge page
@@ -9575,11 +9600,15 @@ Strategy:
         "The local knowledge base is running, but its credentials have expired. Reconnecting…",
       notFound:
         "echo-storage was not found. Install the local knowledge base service or set ECHO_STORAGE_CMD, then try again.",
+      browseOnly:
+        "The index service is offline. You can still browse and reference local files.",
       startFailed:
         "The local knowledge base service failed to start. Check the backend logs and try again.",
       notConnected: "Local knowledge base service is still unreachable: {url}",
       networkError:
         "Unable to connect to the local knowledge base service. Please make sure it is running and try again.",
+      folderPickerUnavailable:
+        "Unable to open the system folder picker. Check the desktop bridge or local backend and try again.",
     },
     toolbar: {
       authorize: "Authorize",
@@ -9721,9 +9750,9 @@ Strategy:
       colType: "Type",
       colItems: "Items",
       footerOnline:
-        "Frequent locations are connected to EchoAI NAS. The local database only stores paths, thumbnails, OCR text, and vector indexes.",
+        "Frequent locations are connected to ECHO NAS. The local database only stores paths, thumbnails, OCR text, and vector indexes.",
       footerOffline:
-        "Frequent locations are browsable; EchoAI NAS is waiting to connect. The local database only stores paths, thumbnails, OCR text, and vector indexes.",
+        "Frequent locations are browsable; ECHO NAS is waiting to connect. The local database only stores paths, thumbnails, OCR text, and vector indexes.",
       folderType: "Folder",
     },
     sources: {

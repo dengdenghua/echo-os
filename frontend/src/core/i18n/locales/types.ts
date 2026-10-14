@@ -58,6 +58,7 @@ export interface Translations {
     stubResponseDescription: (method: string, path: string) => string;
     openSidebarMenu: string;
     loadingWorkspace: string;
+    startingSystem: string;
   };
 
   home: {
@@ -230,6 +231,7 @@ export interface Translations {
     makeSimilar: string;
     makeSimilarHint: string;
     retryTask: string;
+    openModelSettings: string;
     retryTaskHint: string;
     taskFailedReason: string;
     resultUrl: string;
@@ -1613,6 +1615,10 @@ export interface Translations {
     officeEditPlaceholder: string;
     officeEditHint: string;
     previewError: string;
+    fileAccessDenied: string;
+    fileMissing: string;
+    fileUnavailable: string;
+    fileTooLarge: string;
     previewRetry: string;
     officeFidelity: string;
     humanEdit: string;
@@ -1760,8 +1766,8 @@ export interface Translations {
     sectionChats: string;
     sectionSessions: string;
     noChatsYet: string;
-    collapseSidebar: string;
-    expandSidebar: string;
+    collapseSidebar: (shortcut: string) => string;
+    expandSidebar: (shortcut: string) => string;
     collapseSection: (label: string) => string;
     expandSection: (label: string) => string;
     projectNamePlaceholder: string;
@@ -2686,6 +2692,7 @@ export interface Translations {
     thoughtProcess: string;
     connectionLost: string;
     networkLost: string;
+    eventStreamOverloaded: string;
     turnFailed: string;
     guardBlocked: string;
     lifecycleFailed: string;
@@ -4873,11 +4880,16 @@ export interface Translations {
     cancelledTasks: (count: number) => string;
     coordinationWarnings: (count: number) => string;
     rerunnableTasks: (count: number) => string;
+    recoveryResume: string;
+    recoveryResuming: string;
+    recoveryResumeFailed: string;
     failedTasks: (count: number) => string;
     dependencyBlocked: (count: number) => string;
     checkpointSequence: (sequence: number) => string;
     recoverySafe: string;
     recoveryUnsafe: string;
+    durableRecovery: string;
+    durableRecoveryHint: string;
     statusLabels: {
       pending: string;
       running: string;
@@ -5748,6 +5760,7 @@ export interface Translations {
     readingGitStatus: (running: boolean) => string;
     readingGitDiff: (running: boolean) => string;
     committingGit: (running: boolean) => string;
+    subagentUsage: (tokens: number, costUsd: number) => string;
   };
 
   // Store utilities
@@ -8165,6 +8178,9 @@ export interface Translations {
     batchEventTitle: (status: string) => string;
     subagentEventTitle: (name: string, status: string) => string;
     subagentFallback: string;
+    durableRecovery: string;
+    durableRecoveryHint: string;
+    recoveryRequired: string;
     statusComplete: string;
     statusUpdated: string;
     routeBlocked: string;
@@ -8268,9 +8284,11 @@ export interface Translations {
     service: {
       credentialsExpired: string;
       notFound: string;
+      browseOnly: string;
       startFailed: string;
       notConnected: string;
       networkError: string;
+      folderPickerUnavailable: string;
     };
     toolbar: {
       authorize: string;

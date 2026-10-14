@@ -252,6 +252,11 @@ def main(argv: list[str] | None = None) -> int:
         # from the same distribution even outside Docker Compose.
         os.environ.setdefault("ECHO_APPLIANCE", "1")
         os.environ.setdefault("ECHO_APP_EXTENSIONS", "appliance.extension")
+        # A device image must never expose a healthy-looking Agent without its
+        # appliance routes.  The generic runtime keeps third-party extensions
+        # best-effort; this entrypoint opts the core appliance extension into
+        # the fail-closed contract.
+        os.environ.setdefault("ECHO_REQUIRED_APP_EXTENSIONS", "1")
         os.environ.setdefault("ECHO_SKILL_EXTENSIONS", "appliance.pm_skills:register_pm_skills")
         # Do this outside Agent's best-effort extension loader so a broken image
         # exits instead of merely logging a warning and serving a mixed runtime.
@@ -290,9 +295,17 @@ def main(argv: list[str] | None = None) -> int:
                     flush=True,
                 )
             else:
+                # Only a bcrypt hash reaches the auth store and this value is
+                # generated once, so it cannot be recovered or printed later.
                 print(
-                    f"Echo OS appliance admin password generated. username={ADMIN_USERNAME} "
-                    f"stored in {auth_store_path()}; set ECHO_PRINT_GENERATED_PASSWORD=1 to print it, then rotate immediately.",
+                    f"Echo OS appliance admin password generated for username={ADMIN_USERNAME} "
+                    "but not printed (ECHO_PRINT_GENERATED_PASSWORD is off). Only its bcrypt "
+                    f"hash is kept in {auth_store_path()}; the plaintext cannot be recovered "
+                    "and later restarts will not print it. Choose the owner password in a "
+                    "browser on the same network instead: ECHO OS prints a one-time "
+                    "first-boot setup code in this log when the service starts, and the "
+                    "setup page asks for it. (Alternatively stop Echo, remove "
+                    f"{auth_store_path()} and start again with ECHO_ADMIN_PASSWORD set.)",
                     file=sys.stderr,
                     flush=True,
                 )

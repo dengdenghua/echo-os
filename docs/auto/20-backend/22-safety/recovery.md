@@ -138,7 +138,7 @@ Self-evolution subsystem — biomimetic alias: *Regeneration*.
 
 ## Who imports this
 
-**40** file(s) reference this package:
+**44** file(s) reference this package:
 
 - **`runtime/_cli_commands.py/`** · 1 file(s)
   - `runtime/_cli_commands.py`
@@ -146,19 +146,21 @@ Self-evolution subsystem — biomimetic alias: *Regeneration*.
   - `runtime/cli_reflect.py`
 - **`runtime/cli_serve.py/`** · 1 file(s)
   - `runtime/cli_serve.py`
-- **`runtime/core/`** · 3 file(s)
+- **`runtime/core/`** · 4 file(s)
   - `runtime/core/cerebrum/llm_planner.py`
   - `runtime/core/cerebrum/planner.py`
+  - `runtime/core/cerebrum/react_resume.py`
   - `runtime/core/graph_runtime/runtime.py`
 - **`runtime/execution/`** · 3 file(s)
   - `runtime/execution/cron_context.py`
   - `runtime/execution/suckers/cron_skills.py`
   - `runtime/execution/suckers/memory_skills.py`
-- **`runtime/memory/`** · 4 file(s)
+- **`runtime/memory/`** · 5 file(s)
   - `runtime/memory/diagnostics/wiki_compiler.py`
   - `runtime/memory/hemolymph/composer.py`
   - `runtime/memory/learning/deep_evolution.py`
   - `runtime/memory/learning/promotion_applier.py`
+  - `runtime/memory/users/user_store.py`
 - **`runtime/platform/`** · 8 file(s)
   - `runtime/platform/capabilities/tenant_context.py`
   - `runtime/platform/ui/_app_agents.py`
@@ -172,11 +174,11 @@ Self-evolution subsystem — biomimetic alias: *Regeneration*.
   - `runtime/safety/evolution/replay_latency_budget.py`
   - `runtime/safety/experiments/prompt_mutator.py`
   - `runtime/safety/experiments/prompt_optimizer.py`
-- **`runtime/sensing/`** · 14 file(s)
+- **`runtime/sensing/`** · 16 file(s)
   - `runtime/sensing/gateway/_agents_endpoints_system.py`
   - `runtime/sensing/gateway/_observability_helpers.py`
   - `runtime/sensing/gateway/_observability_journal.py`
   - `runtime/sensing/gateway/_observability_kg.py`
   - `runtime/sensing/gateway/_observability_rollback_panels.py`
-  - _… and 9 more_
+  - _… and 11 more_
 

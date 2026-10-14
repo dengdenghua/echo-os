@@ -146,8 +146,26 @@ export function pendingOutboundToHumanMessage(
       ...(pending.error ? { delivery_error: pending.error } : {}),
       ...(attachments.length > 0 ? { attachments } : {}),
       ...(files.length > 0 ? { files } : {}),
+      ...(pending.message.contextFiles?.length
+        ? { context_files: pending.message.contextFiles }
+        : {}),
     },
   };
+}
+
+/**
+ * A human bubble typed before the realtime transport was ready is only queued
+ * in this tab; the server has not seen it, so it does not prove the thread
+ * exists there yet.
+ */
+export function isLocallyQueuedMessage(message: {
+  type?: string;
+  additional_kwargs?: Record<string, unknown> | null;
+}): boolean {
+  return (
+    message.type === "human" &&
+    message.additional_kwargs?.delivery_state === "queued"
+  );
 }
 
 /**

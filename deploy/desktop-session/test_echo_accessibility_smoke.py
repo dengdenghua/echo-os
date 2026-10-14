@@ -74,6 +74,31 @@ class AccessibilitySmokeTests(unittest.TestCase):
                 MODULE.marker_belongs_to_process(desktop, "fixed", 100, proc_root)
             )
 
+    def test_failure_report_lists_only_structural_roles_of_the_process(self) -> None:
+        class RoleAccessible(FakeAccessible):
+            def __init__(self, name, pid, role, children=None):
+                super().__init__(name, pid, children)
+                self._role = role
+
+            def getRoleName(self) -> str:
+                return self._role
+
+        with tempfile.TemporaryDirectory() as directory:
+            proc_root = Path(directory)
+            write_status(proc_root, 100, 1)
+            write_status(proc_root, 201, 1)
+            gate = RoleAccessible(
+                "", 100, "frame",
+                [RoleAccessible("暂时无法连接系统服务", 100, "heading"),
+                 RoleAccessible("private text", 100, "label")],
+            )
+            other = RoleAccessible("Other app", 201, "heading")
+            desktop = FakeAccessible("desktop", 1, [gate, other])
+            self.assertEqual(
+                MODULE.describe_process_landmarks(desktop, 100, proc_root),
+                ["frame:", "heading:暂时无法连接系统服务"],
+            )
+
     def test_tree_walk_is_bounded_when_child_access_fails(self) -> None:
         class BrokenAccessible(FakeAccessible):
             @property

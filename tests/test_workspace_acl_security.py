@@ -19,7 +19,10 @@ from runtime.workspace import WorkspaceStore
 def _client(tmp_path: Path) -> tuple[TestClient, WorkspaceStore, IdentityStore]:
     store = WorkspaceStore(db_path=tmp_path / "workspaces.db")
     identity_store = IdentityStore()
-    identity_store.add(Identity(actor_id="alice"), api_key_plaintext="sk-alice")
+    # Server-local mounts are operator-only in shared mode.
+    identity_store.add(
+        Identity(actor_id="alice", roles=("operator",)), api_key_plaintext="sk-alice"
+    )
     identity_store.add(Identity(actor_id="bob"), api_key_plaintext="sk-bob")
     registry = MountBackendRegistry()
     registry.register("local", LocalMountBackend)
@@ -140,7 +143,7 @@ def test_workspace_acl_rejects_cross_tenant_membership(tmp_path: Path, monkeypat
         store = WorkspaceStore(db_path=tmp_path / "workspaces.db")
         identities = IdentityStore()
         identities.add(
-            Identity(actor_id="alice", metadata={"tenant_id": "tenant-a"}),
+            Identity(actor_id="alice", roles=("operator",), metadata={"tenant_id": "tenant-a"}),
             api_key_plaintext="sk-alice",
         )
         identities.add(
@@ -201,3 +204,87 @@ def test_workspace_acl_rejects_cross_tenant_membership(tmp_path: Path, monkeypat
         ff._SNAPSHOT = original_snapshot
         ff._FILE_PATH = original_file
 
+
+def test_server_local_mounts_and_fields_require_operator(tmp_path: Path, monkeypatch) -> None:
+    original_specs = dict(ff._SPECS)
+    original_snapshot = ff._SNAPSHOT
+    original_file = ff._FILE_PATH
+    monkeypatch.setenv("ECHO_FF_UI_REMOTE_WORKSPACE", "1")
+    ff.reload()
+    try:
+        store = WorkspaceStore(db_path=tmp_path / "workspaces.db")
+        identities = IdentityStore()
+        identities.add(Identity(actor_id="bob"), api_key_plaintext="sk-bob")
+        identities.add(Identity(actor_id="ops", roles=("admin",)), api_key_plaintext="sk-ops")
+        probes: list[str] = []
+
+        class ProbedLocal(LocalMountBackend):
+            def __init__(self, root_path, **kwargs) -> None:
+                probes.append(str(root_path))
+                super().__init__(root_path, **kwargs)
+
+        registry = MountBackendRegistry()
+        registry.register("local", ProbedLocal)
+        registry.register("nfs", ProbedLocal)
+        registry.register("sftp", ProbedLocal)
+        app = FastAPI()
+        app.include_router(
+            create_workspace_api_router(
+                workspace_store=store,
+                lease_store=LeaseStore(db_path=tmp_path / "leases.db"),
+                registry=registry,
+                identity_store=identities,
+                require_auth=True,
+            )
+        )
+        client = TestClient(app)
+        mount = tmp_path / "server-dir"
+        mount.mkdir()
+        bob = {"Authorization": "Bearer sk-bob"}
+
+        for mount_type in ("local", "nfs"):
+            denied = client.post(
+                "/api/workspaces",
+                headers=bob,
+                json={
+                    "name": "host-dir",
+                    "mount_type": mount_type,
+                    "mount_target": str(mount),
+                    "owner_id": "bob",
+                },
+            )
+            assert denied.status_code == 403
+        for field in ("filesystem_path", "mount_point", "allowed_read_roots", "identity_file"):
+            denied = client.post(
+                "/api/workspaces",
+                headers=bob,
+                json={
+                    "name": "remote",
+                    "mount_type": "sftp",
+                    "mount_target": "sftp://example.invalid",
+                    "mount_options": {field: str(mount)},
+                    "owner_id": "bob",
+                },
+            )
+            assert denied.status_code == 403
+            assert denied.json()["detail"]["fields"] == [field]
+        assert probes == []
+        assert store.list_workspaces() == []
+
+        allowed = client.post(
+            "/api/workspaces",
+            headers={"Authorization": "Bearer sk-ops"},
+            json={
+                "name": "host-dir",
+                "mount_type": "local",
+                "mount_target": str(mount),
+                "owner_id": "ops",
+            },
+        )
+        assert allowed.status_code == 200
+        assert probes
+    finally:
+        ff._SPECS.clear()
+        ff._SPECS.update(original_specs)
+        ff._SNAPSHOT = original_snapshot
+        ff._FILE_PATH = original_file

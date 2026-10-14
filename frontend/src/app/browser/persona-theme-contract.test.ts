@@ -24,12 +24,25 @@ describe("shared persona theme scope", () => {
     // own shell class, not which syntax applies them.
     expect(workspaceSource).toContain("persona-shell workspace-shell");
     expect(workspaceSource).toContain("data-persona-theme={personaThemeId}");
-    expect(browserSource).toContain('className="persona-shell browser-shell');
+    expect(browserSource).toContain("persona-shell browser-shell");
     expect(browserSource).toContain("data-persona-theme={personaThemeId}");
     expect(browserSource).toContain(
       "workspacePresetForAgent(activeAgentId).themeId",
     );
-    expect(stylesSource).toContain('.persona-shell[data-persona-theme="noah"]');
-    expect(stylesSource).toContain(".dark .persona-shell[data-persona-theme]");
+  });
+
+  it("never lets a persona recolour the ECHO accent", () => {
+    // core is the only accent: personas keep their identity in avatar and
+    // name, so no persona-scoped rule may override primary, ring or sidebar.
+    const personaRules =
+      stylesSource.match(
+        /\.persona-shell\[data-persona-theme[^{]*\{[^}]*\}/g,
+      ) ?? [];
+    for (const rule of personaRules) {
+      expect(rule).not.toMatch(
+        /--(primary|ring|sidebar-primary|sidebar-ring)\s*:/,
+      );
+    }
+    expect(stylesSource).not.toContain("--persona-primary");
   });
 });

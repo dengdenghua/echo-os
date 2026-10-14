@@ -1950,4 +1950,26 @@ describe("reducer · out-of-order event matrix", () => {
     expect(many.workflowNotifications).toHaveLength(20);
     expect(many.workflowNotifications[19]!.workflowName).toBe("wf-20");
   });
+
+  it("turn/execution/updated attaches execution snapshot to the turn", () => {
+    const state = apply(
+      emptyConversation("th"),
+      {
+        method: "turn/started",
+        params: { threadId: "th", turn: blankTurn("trn-1", "th") },
+      },
+      {
+        method: "turn/execution/updated",
+        params: {
+          threadId: "th",
+          turnId: "trn-1",
+          execution: { engine: "codex", status: "running" },
+        },
+      },
+    );
+    expect(state.turns[0]?.execution).toEqual({
+      engine: "codex",
+      status: "running",
+    });
+  });
 });

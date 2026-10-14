@@ -1,5 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
-import { expect, test } from "./fixtures";
+import {
+  desktop,
+  dock,
+  expect,
+  lockScreenPassword,
+  openWorkbench,
+  signIn,
+  test,
+} from "./fixtures";
 
 async function expectNoHorizontalOverflow(
   page: Page,
@@ -11,6 +19,8 @@ async function expectNoHorizontalOverflow(
     return {
       left: rect.left,
       right: rect.right,
+      scrollWidth: node.scrollWidth,
+      clientWidth: node.clientWidth,
       viewportWidth: window.innerWidth,
       bodyScrollWidth: document.documentElement.scrollWidth,
     };
@@ -25,162 +35,100 @@ async function expectNoHorizontalOverflow(
     `${label} should not overflow right`,
   ).toBeLessThanOrEqual(overflow.viewportWidth + 1);
   expect(
+    overflow.scrollWidth,
+    `${label} should not scroll sideways inside`,
+  ).toBeLessThanOrEqual(overflow.clientWidth + 1);
+  expect(
     overflow.bodyScrollWidth,
     `${label} should not create page-level horizontal scroll`,
   ).toBeLessThanOrEqual(overflow.viewportWidth + 1);
 }
 
-test.describe("Mobile workspace smoke", () => {
+test.describe("Mobile desktop smoke", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("Settings dialog stays usable across core sections", async ({
-    authedPage: page,
-  }) => {
-    await page.goto("/#/workspace/agents");
-    await page.waitForLoadState("domcontentloaded");
+  test("the lock screen and desktop fit a phone", async ({ page }) => {
+    await page.goto("/");
+    await expect(lockScreenPassword(page)).toBeVisible({ timeout: 60_000 });
+    await expectNoHorizontalOverflow(
+      page,
+      lockScreenPassword(page),
+      "lock screen password",
+    );
+    await expectNoHorizontalOverflow(
+      page,
+      page.getByRole("button", { name: "进入桌面" }),
+      "sign-in button",
+    );
 
-    const settingsButton = page.getByRole("button", {
-      name: /^(设置|Settings)$/,
-    });
-    if (!(await settingsButton.isVisible())) {
-      await page
-        .getByRole("button", { name: /打开侧栏菜单|Open sidebar menu/ })
-        .click();
+    await signIn(page);
+    await expect(page.getByRole("button", { name: "Echo 菜单" })).toBeVisible();
+    await expectNoHorizontalOverflow(
+      page,
+      desktop(page).getByRole("textbox", { name: "输入意图" }),
+      "intent bar",
+    );
+    // The first Dock items stay reachable at phone width.
+    for (const app of ["文件", "应用库", "任务空间", "审批收件箱"]) {
+      const item = dock(page).getByRole("button", { name: app, exact: true });
+      await expect(item).toBeInViewport({ ratio: 1 });
     }
-    await expect(settingsButton).toBeVisible({ timeout: 15_000 });
-    await settingsButton.click();
+  });
 
-    const dialog = page.getByRole("dialog", { name: /设置|Settings/ });
-    await expect(dialog).toBeVisible();
-    await expectNoHorizontalOverflow(page, dialog, "settings dialog");
-
-    const sectionStrip = dialog.getByTestId("settings-section-scroll");
-    const dialogLayout = await dialog.evaluate((node) => {
-      const rect = node.getBoundingClientRect();
-      const current = node.querySelectorAll('[aria-current="page"]');
-      return {
-        top: rect.top,
-        bottom: rect.bottom,
-        height: rect.height,
-        viewportHeight: window.innerHeight,
-        scrollWidth: node.scrollWidth,
-        clientWidth: node.clientWidth,
-        currentCount: current.length,
-      };
+  test("工作台 window and its composer fit a phone", async ({
+    desktopPage: page,
+  }) => {
+    const workbench = await openWorkbench(page);
+    await expectNoHorizontalOverflow(page, workbench, "工作台 window");
+    const composer = workbench.getByTestId("chat-composer");
+    await expect(composer).toBeVisible();
+    await expectNoHorizontalOverflow(page, composer, "composer");
+    await workbench.getByTestId("chat-composer-input").fill("看看今天的任务");
+    await expect(workbench.getByTestId("chat-send-button")).toBeEnabled();
+    await expect(workbench.getByTestId("chat-send-button")).toBeInViewport({
+      ratio: 1,
     });
-    const sectionStripLayout = await sectionStrip.evaluate((node) => ({
-      scrollWidth: node.scrollWidth,
-      clientWidth: node.clientWidth,
-    }));
-    expect(dialogLayout.top).toBeGreaterThanOrEqual(15);
-    expect(dialogLayout.bottom).toBeLessThanOrEqual(
-      dialogLayout.viewportHeight - 15,
-    );
-    expect(dialogLayout.scrollWidth).toBeLessThanOrEqual(
-      dialogLayout.clientWidth + 1,
-    );
-    expect(dialogLayout.currentCount).toBe(1);
-    expect(sectionStripLayout.scrollWidth).toBeGreaterThan(
-      sectionStripLayout.clientWidth,
-    );
-    const sectionTargetHeights = await sectionStrip
-      .getByRole("button")
-      .evaluateAll((buttons) =>
-        buttons.map((button) => button.getBoundingClientRect().height),
-      );
-    expect(Math.min(...sectionTargetHeights)).toBeGreaterThanOrEqual(44);
+  });
 
-    const resizeHandle = dialog.getByRole("separator", {
-      name: /拖动调整大小|Drag to resize/,
-    });
-    await expect(resizeHandle).toBeHidden();
+  test("系统设置 switches every section from its phone picker", async ({
+    desktopPage: page,
+  }) => {
+    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "系统设置…" }).click();
+    const settings = page.getByRole("dialog", { name: "系统设置" });
+    await expect(settings).toBeVisible();
+    await expectNoHorizontalOverflow(page, settings, "settings window");
 
-    const sections = [
-      /^(账户|Account)$/,
-      /^(订阅与用量|Plan & Usage)$/,
-      /^(外观|Appearance)$/,
-      /^(通知|Notification)$/,
-      /^(记忆|Memory)$/,
-      /^(工具与集成|Tools & integrations)$/,
-      /^(自动化与安全|Automation & security)$/,
-      /^(运行诊断|Run diagnostics)$/,
-      /^(关于|About)$/,
-    ];
-    for (const sectionName of sections) {
-      const section = dialog.getByRole("button", { name: sectionName });
-      await section.scrollIntoViewIfNeeded();
-      await section.click();
-      await expect(section).toHaveAttribute("aria-current", "page");
+    const picker = settings.getByRole("combobox", { name: "设置分类" });
+    await expect(picker).toBeVisible();
+    const sections = await picker.locator("option").allTextContents();
+    expect(sections.length).toBeGreaterThanOrEqual(10);
+    for (const section of sections) {
+      await picker.selectOption({ label: section });
+      await expect(
+        settings.getByRole("heading", { name: section, level: 1 }),
+      ).toBeVisible();
       await expectNoHorizontalOverflow(
         page,
-        dialog,
-        `settings section ${sectionName.source}`,
+        settings,
+        `settings section ${section}`,
       );
     }
-
-    const aboutSection = dialog.getByRole("button", {
-      name: /^(关于|About)$/,
-    });
-    await expect(aboutSection).toHaveAttribute("aria-current", "page");
-    await expect(dialog.getByText("Apache License 2.0").first()).toBeVisible();
-    await expect(dialog.getByText("MIT License")).toHaveCount(0);
-
-    const closeButton = dialog.getByRole("button", {
-      name: /^(关闭|Close)$/,
-    });
-    await expect(closeButton).toBeVisible();
-    expect(
-      await closeButton.evaluate(
-        (button) => button.getBoundingClientRect().height,
-      ),
-    ).toBeGreaterThanOrEqual(44);
-    await closeButton.click();
-    await expect(dialog).toBeHidden();
   });
 
-  test("Realtime composer fits mobile width", async ({
-    authedPage: page,
+  test("任务空间 and 审批收件箱 open as phone-width windows", async ({
+    desktopPage: page,
   }) => {
-    await page.goto("/#/workspace/realtime/new");
-    await page.waitForLoadState("domcontentloaded");
-
-    const composer = page.getByTestId("chat-composer");
-    await expect(composer).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("chat-composer-input")).toBeVisible();
-    await expectNoHorizontalOverflow(page, composer, "realtime composer");
-  });
-
-  test("Agents category chips scroll within the viewport", async ({
-    authedPage: page,
-  }) => {
-    await page.goto("/#/workspace/agents");
-    await page.waitForLoadState("domcontentloaded");
-
-    const search = page.getByTestId("agents-search-input");
-    await expect(search).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("agents-loading-skeleton")).toBeHidden({
-      timeout: 20_000,
-    });
-    const chips = page.getByTestId("agents-category-scroll");
-    await expect(chips).toBeVisible();
-    await expectNoHorizontalOverflow(page, chips, "agents category chips");
-  });
-
-  test("Skills list and search fit mobile width", async ({
-    authedPage: page,
-  }) => {
-    await page.goto("/#/workspace/skills");
-    await page.waitForLoadState("domcontentloaded");
-
-    await expect(page).toHaveURL(/#\/workspace\/agents\?surface=chat&tab=skills/);
-    await expect(
-      page.getByRole("tab", { name: /技能|Skills|Skill Market/i }),
-    ).toBeVisible();
-    const search = page.getByTestId("agents-search-input");
-    await expect(search).toBeVisible({ timeout: 15_000 });
-    await expect(
-      page.getByRole("button", { name: /^(全部|All)$/ }).first(),
-    ).toBeVisible();
-    await expectNoHorizontalOverflow(page, search, "skills search");
+    for (const app of ["任务空间", "审批收件箱"]) {
+      await dock(page).getByRole("button", { name: app, exact: true }).click();
+      const appWindow = page.getByRole("dialog", { name: app });
+      await expect(appWindow).toBeVisible();
+      await expectNoHorizontalOverflow(page, appWindow, `${app} window`);
+      await expect(
+        appWindow.getByRole("button", { name: `关闭${app}` }),
+      ).toBeInViewport({ ratio: 1 });
+      await appWindow.getByRole("button", { name: `关闭${app}` }).click();
+      await expect(appWindow).toHaveCount(0);
+    }
   });
 });

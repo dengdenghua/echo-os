@@ -12,7 +12,7 @@ DOCKER_COMPOSE_BASE = ECHO_DOCKER_PROXY_TOKEN=$${ECHO_DOCKER_PROXY_TOKEN:-$$(pyt
 
 # ─── Install ─────────────────────────────────────────
 install:  ## Install the unified Echo OS + Agent development environment
-	pip install -e ".[dev,serve,tracing,web,local-auth]"
+	uv sync --locked --extra dev --extra serve --extra tracing --extra web --extra local-auth
 
 # ─── Test ────────────────────────────────────────────
 test:  ## Run pytest with coverage

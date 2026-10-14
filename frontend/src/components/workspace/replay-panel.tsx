@@ -19,6 +19,8 @@ import {
 } from "@/core/agent-trace/api";
 import { cn } from "@/lib/utils";
 
+import { useOperatorCopy } from "./agent-operator/use-operator-copy";
+
 // ═══════════════════════════════════════════════════════════
 // Shared replay components · used by both AgentOperatorPanel
 // (inside /workspace/observability) and the standalone
@@ -99,6 +101,7 @@ export function ReplayGateCard({
 }: {
   gate: AgentTraceReplayGate | null;
 }) {
+  const to = useOperatorCopy();
   const blocked = gate && !gate.passed;
   const summary = gate?.summary;
   return (
@@ -120,20 +123,20 @@ export function ReplayGateCard({
                 gate?.passed ? "completed" : blocked ? "failed" : "unknown"
               }
             />
-            Replay gate
+            {to("Replay gate")}
             <Badge variant="outline" className="text-xs">
-              {gate ? (gate.passed ? "passed" : "blocked") : "loading"}
+              {to(gate ? (gate.passed ? "passed" : "blocked") : "loading")}
             </Badge>
           </div>
           <div className="mt-1 truncate text-xs text-muted-foreground">
-            {gate?.reason || "Waiting for replay evaluations"}
+            {gate?.reason || to("Waiting for replay evaluations")}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 text-right font-mono text-xs sm:grid-cols-4">
-          <GateStat label="cases" value={summary?.total ?? 0} />
-          <GateStat label="pass" value={summary?.passed ?? 0} />
-          <GateStat label="fail" value={summary?.failed ?? 0} />
-          <GateStat label="low" value={summary?.below_min_score ?? 0} />
+          <GateStat label={to("cases")} value={summary?.total ?? 0} />
+          <GateStat label={to("pass")} value={summary?.passed ?? 0} />
+          <GateStat label={to("fail")} value={summary?.failed ?? 0} />
+          <GateStat label={to("low")} value={summary?.below_min_score ?? 0} />
         </div>
       </div>
       {blocked && gate.failing_cases.length > 0 && (

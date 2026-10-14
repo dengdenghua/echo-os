@@ -5,8 +5,8 @@ import { copyTextToClipboard } from "@/core/clipboard";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/core/i18n/hooks";
 import { ArrowLeftRight, CheckIcon, CopyIcon, WrapText } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useScopedDarkMode } from "@/hooks/use-scoped-dark-mode";
 import {
   type ComponentProps,
   createContext,
@@ -140,9 +140,10 @@ export const CodeBlock = ({
   children,
   ...props
 }: CodeBlockProps) => {
-  const { resolvedTheme } = useTheme();
+  // Follow the nearest theme scope: the graphite desktop sets `.dark` on
+  // its wrapper while next-themes still reports `light` for <html>.
+  const [themeScopeRef, isDark] = useScopedDarkMode<HTMLDivElement>();
   const { t } = useI18n();
-  const isDark = resolvedTheme === "dark";
   const shikiTheme = isDark ? "one-dark-pro" : "one-light";
   const [html, setHtml] = useState<string>("");
   const [wrap, setWrap] = useLocalStorage("echo:code-block-wrap", true);
@@ -218,6 +219,7 @@ export const CodeBlock = ({
   return (
     <CodeBlockContext.Provider value={{ code, isStreaming }}>
       <div
+        ref={themeScopeRef}
         className={cn(
           "group bg-muted/30 text-foreground relative size-full overflow-hidden rounded-lg border",
           className,

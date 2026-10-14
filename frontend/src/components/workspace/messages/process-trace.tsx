@@ -15,6 +15,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
 import { DotProgress } from "@/components/workspace/swarm/dot-progress";
@@ -318,9 +319,11 @@ function AgentClusterRow({
           )}
         >
           {agent.avatar ? (
-            <span className="text-base leading-none" aria-hidden="true">
-              {agent.avatar}
-            </span>
+            <AgentAvatarTile
+              name={agent.name}
+              avatar={agent.avatar}
+              className="size-5"
+            />
           ) : (
             <BotIcon
               className={cn("size-4", agentRunIconClass(agent.status))}
@@ -329,7 +332,7 @@ function AgentClusterRow({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
               {agent.label}
             </span>
             <span className="truncate font-medium text-foreground">
@@ -417,7 +420,7 @@ function TraceSectionCard({ section }: { section: TraceSection }) {
       ? "waiting"
       : section.events.some((event) => event.status === "running")
         ? "running"
-      : "done";
+        : "done";
   const displayItems = useMemo(
     () => compactTraceEvents(section.events),
     [section.events],
@@ -502,7 +505,11 @@ function compactTraceEvents(events: LiveToolEvent[]): TraceDisplayItem[] {
       continue;
     }
 
-    const summary = { kind: "delegation-summary" as const, events: [event], target };
+    const summary = {
+      kind: "delegation-summary" as const,
+      events: [event],
+      target,
+    };
     delegationBuckets.set(target, summary);
     items.push(summary);
   }

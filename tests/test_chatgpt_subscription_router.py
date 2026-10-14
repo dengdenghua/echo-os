@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import httpx
@@ -195,6 +196,7 @@ def test_http_400_classifies_context_and_tool_protocol_errors_without_leaking_bo
     assert "secret detail" not in context_error
 
 
+@pytest.mark.skipif(os.name != "posix", reason="0600 credential policy requires POSIX mode bits")
 def test_credentials_must_be_private_and_are_never_returned_as_public_metadata(
     tmp_path: Path,
 ) -> None:
@@ -221,3 +223,10 @@ def test_credentials_must_be_private_and_are_never_returned_as_public_metadata(
         _read_credentials(auth)
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows fail-closed credential policy")
+def test_windows_credentials_without_posix_private_permissions_are_rejected(tmp_path: Path) -> None:
+    auth = tmp_path / "auth.json"
+    auth.write_text(json.dumps({"tokens": {"access_token": "test", "account_id": "test"}}))
+    auth.chmod(0o600)
+    with pytest.raises(ChatGPTSubscriptionRouterError, match="权限不安全"):
+        _read_credentials(auth)

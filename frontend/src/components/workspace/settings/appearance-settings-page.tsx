@@ -1,8 +1,4 @@
-import {
-  useCallback,
-  useRef,
-  type PointerEvent,
-} from "react";
+import { useCallback, useRef, type PointerEvent } from "react";
 
 import {
   Select,
@@ -32,12 +28,7 @@ const LANGUAGE_OPTIONS = [
 
 export default function AppearanceSettingsPage() {
   const { t, locale, changeLocale } = useI18n();
-  const {
-    cornerScale,
-    density,
-    setCornerScale,
-    setDensity,
-  } = useAppearance();
+  const { cornerScale, density, setCornerScale, setDensity } = useAppearance();
 
   return (
     <div className="space-y-6">
@@ -278,7 +269,7 @@ function AppearanceStepSlider<TValue extends AppearanceStepValue>({
       >
         <input
           aria-label={label}
-          className="octo-appearance-step-slider"
+          className="octo-appearance-step-slider w-full accent-core"
           aria-valuetext={[active.label, activeDetail]
             .filter(Boolean)
             .join(": ")}

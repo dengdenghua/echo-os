@@ -56,7 +56,7 @@ const SOURCE_FILTERS: { key: UnifiedAssetSource | "all"; label: string }[] = [
 const SOURCE_BADGE: Record<UnifiedAssetSource, string> = {
   codex: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
   workbuddy: "bg-rose-500/10 text-rose-600 dark:text-rose-300",
-  local: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+  local: "bg-core/10 text-core",
   builtin: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
   imported: "bg-violet-500/10 text-violet-600 dark:text-violet-300",
 };
@@ -237,9 +237,7 @@ function DetailDialog({
           {asset.origin ? (
             <div className="flex flex-col gap-1">
               <dt className="text-muted-foreground">位置</dt>
-              <dd className="break-all font-mono text-[11px]">
-                {asset.origin}
-              </dd>
+              <dd className="break-all font-mono text-xs">{asset.origin}</dd>
             </div>
           ) : null}
         </dl>
@@ -372,7 +370,7 @@ export function UnifiedAssetsPanel({
                     <tab.icon className="h-3.5 w-3.5" />
                     {tab.label}
                     {totalForKind != null && tab.key === kind ? (
-                      <span className="ml-0.5 rounded bg-primary/10 px-1.5 text-[11px] text-primary">
+                      <span className="ml-0.5 rounded bg-primary/10 px-1.5 text-xs text-primary">
                         {totalForKind}
                       </span>
                     ) : null}

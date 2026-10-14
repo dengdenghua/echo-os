@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from runtime.execution.suckers.verify_skills import detect_project, run_checks
 
 
@@ -19,9 +21,15 @@ def test_unknown_project_file_count_is_cross_platform(tmp_path: Path) -> None:
     assert "wc -l" not in joined
 
     [result] = run_checks(profile, timeout_per_check=10)
+    assert result.command == 'python -c "count files up to depth 3"'
+    if result.execution_policy.get("result", {}).get("error_type") == (
+        "sandbox_fallback_needs_approval"
+    ):
+        # Without a hard sandbox backend, unattended unconfined execution is
+        # refused by design; the argv portability above is still verified.
+        pytest.skip("no hard process sandbox backend on this host")
     assert result.passed is True
     assert result.stdout.strip() == "1"
-    assert result.command == 'python -c "count files up to depth 3"'
 
 
 def test_python_syntax_check_avoids_unix_pipes(tmp_path: Path) -> None:
@@ -60,7 +68,13 @@ def test_python_typecheck_offered_only_when_mypy_installed(tmp_path: Path) -> No
     assert "syntax" in names
 
 
-def test_node_typecheck_offered_only_when_tsc_installed(tmp_path: Path) -> None:
+def test_node_typecheck_offered_only_when_tsc_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The check is gated on npx being on PATH; do not depend on the host's Node.
+    monkeypatch.setattr(
+        "runtime.execution.suckers.verify_skills._executable_available", lambda _name: True
+    )
     (tmp_path / "package.json").write_text('{"name": "demo", "scripts": {}}', encoding="utf-8")
     (tmp_path / "tsconfig.json").write_text("{}", encoding="utf-8")
 

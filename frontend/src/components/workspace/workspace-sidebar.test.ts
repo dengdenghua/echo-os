@@ -1,8 +1,30 @@
 import { describe, expect, test } from "vitest";
 
 import { __testing } from "./workspace-sidebar";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 describe("workspace sidebar route activation", () => {
+  test("preserves the workbench presentation across workspace links", () => {
+    expect(
+      preserveWorkbenchPresentation(
+        "/workspace/storage?surface=company",
+        "?presentation=workbench",
+      ),
+    ).toBe("/workspace/storage?surface=company&presentation=workbench");
+    expect(
+      preserveWorkbenchPresentation(
+        "/workspace/projects?presentation=standalone",
+        "?presentation=workbench",
+      ),
+    ).toBe("/workspace/projects?presentation=standalone");
+    expect(
+      preserveWorkbenchPresentation(
+        "https://example.com/help",
+        "?presentation=workbench",
+      ),
+    ).toBe("https://example.com/help");
+  });
+
   test("projects thread searches down to sidebar-only state", () => {
     expect(__testing.SIDEBAR_THREAD_QUERY_PARAMS).toEqual({
       limit: 30,
@@ -171,6 +193,13 @@ describe("workspace sidebar project grouping", () => {
     expect(__testing.activeTeamTaskRoomId("/workspace/team/room-2", null)).toBe(
       "room-2",
     );
+    // The invitation page is not a room: no ?room_id=join task query.
+    expect(
+      __testing.activeTeamTaskRoomId("/workspace/team/join?token=x", null),
+    ).toBeNull();
+    expect(
+      __testing.activeTeamTaskRoomId("/workspace/team/join", teamThread),
+    ).toBeNull();
   });
 
   test("keeps team history out of chat recents and under projects", () => {
@@ -456,6 +485,20 @@ describe("workspace sidebar project grouping", () => {
     } as never);
 
     expect(summary.title).toBe("来自旧会话的可读标题");
+  });
+
+  test("shows a user-renamed title over the first-message projection", () => {
+    const summary = __testing.summarizeThreadForSidebar({
+      thread_id: "renamed-thread",
+      updated_at: "2026-10-13T00:00:00Z",
+      metadata: { mode: "chat", title_source: "user", title_pinned: true },
+      values: {
+        title: "走查测试对话",
+        sidebar_title_source: "你好，请用一句话介绍你自己。",
+      },
+    } as never);
+
+    expect(summary.title).toBe("走查测试对话");
   });
 
   test("hides bare legacy team labels even when mode metadata was lost", () => {

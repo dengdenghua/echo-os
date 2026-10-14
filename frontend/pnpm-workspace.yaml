@@ -1,4 +1,13 @@
 allowBuilds:
   electron: true
+  # The desktop release uses NSIS; the optional Squirrel installer is unused.
+  electron-winstaller: false
   esbuild: true
   sharp: true
+# rehype-katex, streamdown and micromark-extension-math still declare
+# katex ^0.16; every 0.16.x release is affected by GHSA-238p-pmpm-9mq7, so
+# all consumers are pinned to the patched 0.18 line (`pnpm audit --prod`).
+# 0.18.11 is deprecated upstream (it shipped 0.19 breaking changes), so the
+# pin is exact until 0.19 is adopted deliberately.
+overrides:
+  katex: 0.18.10

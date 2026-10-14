@@ -17,6 +17,22 @@
  */
 
 import { communityAssetURL } from "./community-assets";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
+
+export function communityStorageKey(
+  key: string,
+  actor = currentActorId(),
+): string {
+  return actorScopedStorageKey(key, actor);
+}
+
+export function readCommunityValue(key: string): string | null {
+  return readActorScopedStorageValue(key);
+}
 
 export type CommunityPostKind = "post" | "mini-app" | "";
 
@@ -183,7 +199,7 @@ const COMMENT_POOL: Array<Omit<CommunityComment, "id" | "createdAt">> = [
   {
     author: "鲸鱼",
     authorInitial: "鲸",
-    authorColor: "#71B280",
+    authorColor: "#08788A",
     content: "效率提升明显，老板都夸了。",
   },
   {
@@ -230,7 +246,7 @@ const USER_COMMENTS_KEY = "echo.community.user-comments.v1";
 
 export function readUserComments(): Record<string, CommunityComment[]> {
   try {
-    const raw = window.localStorage.getItem(USER_COMMENTS_KEY);
+    const raw = readCommunityValue(USER_COMMENTS_KEY);
     return raw ? (JSON.parse(raw) as Record<string, CommunityComment[]>) : {};
   } catch {
     return {};
@@ -239,7 +255,10 @@ export function readUserComments(): Record<string, CommunityComment[]> {
 
 function writeUserComments(map: Record<string, CommunityComment[]>) {
   try {
-    window.localStorage.setItem(USER_COMMENTS_KEY, JSON.stringify(map));
+    window.localStorage.setItem(
+      communityStorageKey(USER_COMMENTS_KEY),
+      JSON.stringify(map),
+    );
   } catch {
     /* ignore */
   }
@@ -280,7 +299,7 @@ const FORKED_KEY = "echo.community.forked.v1";
 
 export function readForked(): string[] {
   try {
-    const raw = window.localStorage.getItem(FORKED_KEY);
+    const raw = readCommunityValue(FORKED_KEY);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
@@ -289,7 +308,10 @@ export function readForked(): string[] {
 
 function writeForked(ids: string[]) {
   try {
-    window.localStorage.setItem(FORKED_KEY, JSON.stringify(ids));
+    window.localStorage.setItem(
+      communityStorageKey(FORKED_KEY),
+      JSON.stringify(ids),
+    );
   } catch {
     /* ignore */
   }
@@ -310,7 +332,7 @@ const FOLLOWING_KEY = "echo.community.following.v1";
 
 export function readFollowing(): string[] {
   try {
-    const raw = window.localStorage.getItem(FOLLOWING_KEY);
+    const raw = readCommunityValue(FOLLOWING_KEY);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
@@ -319,7 +341,10 @@ export function readFollowing(): string[] {
 
 function writeFollowing(ids: string[]) {
   try {
-    window.localStorage.setItem(FOLLOWING_KEY, JSON.stringify(ids));
+    window.localStorage.setItem(
+      communityStorageKey(FOLLOWING_KEY),
+      JSON.stringify(ids),
+    );
   } catch {
     /* ignore */
   }
@@ -342,7 +367,7 @@ const FAVORITES_KEY = "echo.community.favorites.v1";
 
 export function readFavorites(): string[] {
   try {
-    const raw = window.localStorage.getItem(FAVORITES_KEY);
+    const raw = readCommunityValue(FAVORITES_KEY);
     return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
@@ -351,7 +376,10 @@ export function readFavorites(): string[] {
 
 export function writeFavorites(ids: string[]) {
   try {
-    window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+    window.localStorage.setItem(
+      communityStorageKey(FAVORITES_KEY),
+      JSON.stringify(ids),
+    );
   } catch {
     /* ignore */
   }
@@ -367,6 +395,32 @@ export function toggleFavorite(id: string): string[] {
 }
 
 /* ------------------------------------------------------------------ */
+/* 点赞（帖子）持久化                                                  */
+/* ------------------------------------------------------------------ */
+
+const LIKES_KEY = "echo.community.likes.v1";
+
+export function readLikes(): string[] {
+  try {
+    const raw = readCommunityValue(LIKES_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeLikes(ids: string[]) {
+  try {
+    window.localStorage.setItem(
+      communityStorageKey(LIKES_KEY),
+      JSON.stringify(ids),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* 用户发布（localStorage 持久化，发布后进入全量 feed）                 */
 /* ------------------------------------------------------------------ */
 
@@ -374,7 +428,7 @@ const PUBLISHED_KEY = "echo.community.published.v1";
 
 export function readPublished(): CommunityPost[] {
   try {
-    const raw = window.localStorage.getItem(PUBLISHED_KEY);
+    const raw = readCommunityValue(PUBLISHED_KEY);
     return raw ? (JSON.parse(raw) as CommunityPost[]) : [];
   } catch {
     return [];
@@ -383,7 +437,10 @@ export function readPublished(): CommunityPost[] {
 
 function writePublished(posts: CommunityPost[]) {
   try {
-    window.localStorage.setItem(PUBLISHED_KEY, JSON.stringify(posts));
+    window.localStorage.setItem(
+      communityStorageKey(PUBLISHED_KEY),
+      JSON.stringify(posts),
+    );
   } catch {
     /* ignore */
   }
@@ -442,10 +499,10 @@ export const COMMUNITY_CATEGORIES: CommunityCategory[] = [
   { key: "work", label: "职场", color: "#3F5EFB" },
   { key: "efficiency", label: "效率", color: "#00C6FF" },
   { key: "life", label: "生活", color: "#FF6A5B" },
-  { key: "study", label: "学习", color: "#71B280" },
+  { key: "study", label: "学习", color: "#08788A" },
   { key: "shopping", label: "购物", color: "#F2994A" },
   { key: "tech", label: "科技", color: "#8E2DE2" },
-  { key: "game", label: "游戏", color: "#5B8C5A" },
+  { key: "game", label: "游戏", color: "#64748B" },
 ];
 
 /** 顶栏 tab 的轻量视图（{key, label}），供页面渲染。 */
@@ -526,7 +583,7 @@ const REGISTRY: CommunityPost[] = [
     tag: "教程",
     tagColor: "#00C6FF",
     coverUrl: "",
-    coverGradient: ["#11998E", "#38EF7D"],
+    coverGradient: ["#11998E", "#6FE3F0"],
     coverHeight: 150,
     kind: "post",
     appRef: "",
@@ -650,9 +707,9 @@ const REGISTRY: CommunityPost[] = [
     likesCount: 742,
     commentsCount: 33,
     tag: "学习",
-    tagColor: "#71B280",
+    tagColor: "#08788A",
     coverUrl: "",
-    coverGradient: ["#134E5E", "#71B280"],
+    coverGradient: ["#134E5E", "#08788A"],
     coverHeight: 145,
     kind: "post",
     appRef: "",
@@ -730,13 +787,13 @@ const REGISTRY: CommunityPost[] = [
     content: "根据你的水平定制对话练习，实时纠音并生成复习卡。",
     author: "语言教练",
     authorInitial: "语",
-    authorColor: "#71B280",
+    authorColor: "#08788A",
     likesCount: 1330,
     commentsCount: 89,
     tag: "学习",
-    tagColor: "#71B280",
+    tagColor: "#08788A",
     coverUrl: "",
-    coverGradient: ["#134E5E", "#38EF7D"],
+    coverGradient: ["#134E5E", "#6FE3F0"],
     coverHeight: 195,
     kind: "mini-app",
     appRef: "language-coach",
@@ -751,13 +808,13 @@ const REGISTRY: CommunityPost[] = [
     content: "接管日常重复刷本，自动补血补蓝、拾取掉落，晚上回家直接收菜。",
     author: "游戏管家",
     authorInitial: "游",
-    authorColor: "#5B8C5A",
+    authorColor: "#64748B",
     likesCount: 2100,
     commentsCount: 173,
     tag: "手游助手",
-    tagColor: "#5B8C5A",
+    tagColor: "#64748B",
     coverUrl: "",
-    coverGradient: ["#5B8C5A", "#2E5E4E"],
+    coverGradient: ["#64748B", "#334155"],
     coverHeight: 200,
     kind: "mini-app",
     appRef: "game-auto-daily",
@@ -776,7 +833,7 @@ const REGISTRY: CommunityPost[] = [
     likesCount: 1450,
     commentsCount: 96,
     tag: "攻略",
-    tagColor: "#5B8C5A",
+    tagColor: "#64748B",
     coverUrl: "",
     coverGradient: ["#8E2DE2", "#4A00E0"],
     coverHeight: 175,
@@ -856,13 +913,13 @@ const REGISTRY: CommunityPost[] = [
     content: "把错题拍照录入，AI 按知识点归类并生成薄弱点专项练习。",
     author: "上岸学长",
     authorInitial: "岸",
-    authorColor: "#71B280",
+    authorColor: "#08788A",
     likesCount: 1050,
     commentsCount: 63,
     tag: "学习",
-    tagColor: "#71B280",
+    tagColor: "#08788A",
     coverUrl: "",
-    coverGradient: ["#134E5E", "#38EF7D"],
+    coverGradient: ["#134E5E", "#6FE3F0"],
     coverHeight: 190,
     kind: "post",
     appRef: "",
@@ -898,13 +955,13 @@ const REGISTRY: CommunityPost[] = [
     content: "输入抽数快速算概率与期望，帮你冷静判断要不要继续氪。",
     author: "数据党玩家",
     authorInitial: "数",
-    authorColor: "#5B8C5A",
+    authorColor: "#64748B",
     likesCount: 880,
     commentsCount: 52,
     tag: "游戏",
-    tagColor: "#5B8C5A",
+    tagColor: "#64748B",
     coverUrl: "",
-    coverGradient: ["#5B8C5A", "#2E5E4E"],
+    coverGradient: ["#64748B", "#334155"],
     coverHeight: 165,
     kind: "post",
     appRef: "gacha-calc",
@@ -925,7 +982,7 @@ const REGISTRY: CommunityPost[] = [
     tag: "效率",
     tagColor: "#00C6FF",
     coverUrl: "",
-    coverGradient: ["#11998E", "#38EF7D"],
+    coverGradient: ["#11998E", "#6FE3F0"],
     coverHeight: 150,
     kind: "post",
     appRef: "",

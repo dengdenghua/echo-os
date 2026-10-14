@@ -24,6 +24,7 @@ from runtime.protocol import (
     ItemStatus,
     Turn,
     TurnParams,
+    TurnStatus,
     VerificationItem,
 )
 from runtime.safety.auth.scope import TenantScope, tenant_scoped_path
@@ -406,7 +407,7 @@ def _turn_model(turn: Turn) -> str | None:
 
 def _turn_execution_engine(turn: Turn) -> str:
     value = str(getattr(turn, "execution_engine", None) or "").strip().lower()
-    return value if value in {"codex", "echo"} else "echo"
+    return value if value in {"codex", "echo", "octopus", "opencode"} else "echo"
 
 
 def _goal_fingerprint(goal: str) -> str:
@@ -767,12 +768,28 @@ def _record_task_run_started(
         _logger.warning("trace store start failed for %s: %s", turn.id, exc)
 
 
+def _turn_goal(turn: Turn) -> str:
+    """The first user message of a turn: what the task list calls the task."""
+
+    return next(
+        (
+            str(getattr(item, "text", "") or "").strip()
+            for item in turn.items
+            if str(getattr(item, "type", "")) in {"userMessage", "ItemType.USER_MESSAGE"}
+            and str(getattr(item, "text", "") or "").strip()
+        ),
+        "",
+    )
+
+
 def _record_task_run_finished(
     runtime: CerebrumRuntime,
     turn: Turn,
     *,
     recover_stale_lease: bool = False,
 ) -> None:
+    if turn.id in getattr(runtime, "_task_execution_settled", set()):
+        return
     status_value = str(getattr(turn.status, "value", turn.status) or "").lower()
     if status_value in {"in_progress", "in-progress", "pending", ""}:
         return
@@ -785,6 +802,7 @@ def _record_task_run_finished(
         "canceled": "cancelled",
     }.get(status_value, "unknown")
     supervisor = getattr(runtime, "_task_supervisor", None)
+    execution_guard = getattr(runtime, "_task_execution_guards", {}).get(turn.id)
     if supervisor is not None:
         try:
             from runtime.platform.process._task_supervisor_models import TaskRunStatus
@@ -797,14 +815,37 @@ def _record_task_run_finished(
                 "react_task_id": turn.task_id,
                 "turn_id": turn.id,
                 "error": turn.error,
+                "execution_engine": getattr(turn, "execution_engine", None) or "echo",
+                "model_name": _turn_model(turn),
             }
-            if supervisor.store.get(supervisor_task_id) is None:
+            if execution_guard is not None:
+                # Failed admission owns no task record. Never overwrite the
+                # holder that rejected us, including a newer same-holder epoch.
+                if execution_guard.bound_task_id is not None:
+                    execution_guard.transition(
+                        supervisor_status,
+                        preserve_approval_wait=(
+                            isinstance(turn.error, dict)
+                            and turn.error.get("disposition") == "blocked_on_user"
+                            and turn.status in {TurnStatus.FAILED, TurnStatus.PAUSED}
+                        ),
+                        reason=turn.outcome_reason or status_value,
+                        checkpoint_id=turn.checkpoint_id,
+                        metadata_patch=metadata,
+                    )
+            elif supervisor.store.get(supervisor_task_id) is None:
                 params = cast(TurnParams, turn.params)
+                # A turn that ended before execution (e.g. no model connected)
+                # is only recorded here; without its goal the Task Space and
+                # the desktop card listed it as 未命名任务.
+                goal = _turn_goal(turn)
                 supervisor.start_task(
                     task_id=supervisor_task_id,
                     kind="realtime_objective",
                     owner_id=getattr(params, "owner_actor_id", None),
                     thread_id=turn.thread_id,
+                    title=_preview_text(goal, limit=80),
+                    goal=goal,
                     mode=_turn_mode(params) or "direct",
                     origin_task_id=turn.id,
                     metadata=metadata,
@@ -828,9 +869,23 @@ def _record_task_run_finished(
                     metadata_patch=metadata,
                 )
         except Exception as exc:  # noqa: BLE001
+            if execution_guard is not None and turn.status == TurnStatus.COMPLETED:
+                turn.status = TurnStatus.FAILED
+                turn.outcome_reason = "task_execution_finalization_failed"
+                turn.error = {
+                    "code": "task_execution_finalization_failed",
+                    "message": "任务结果未能在有效执行权下保存，请检查任务状态后恢复。",
+                    "exception_type": exc.__class__.__name__,
+                }
+                status = status_value = "failed"
             _logger.warning(
                 "task supervisor finish failed for %s: %s", turn.task_id or turn.id, exc
             )
+        finally:
+            if execution_guard is not None:
+                execution_guard.close()
+                runtime._task_execution_guards.pop(turn.id, None)
+                runtime._task_execution_settled.add(turn.id)
     if runtime._trace_store is None:
         return
     try:
@@ -860,19 +915,15 @@ def _record_react_trace_event(runtime: CerebrumRuntime, turn: Turn, evt: dict[st
     if kind == "react_started":
         supervisor = getattr(runtime, "_task_supervisor", None)
         supervisor_task_id = str(evt.get("task_id") or "").strip()
-        if supervisor is not None and supervisor_task_id:
+        execution_guard = getattr(runtime, "_task_execution_guards", {}).get(turn.id)
+        if execution_guard is not None:
+            if execution_guard.bound_task_id != supervisor_task_id:
+                raise ValueError("producer task identity differs from its execution lease")
+            execution_guard.assert_allowed()
+        elif supervisor is not None and supervisor_task_id:
             try:
                 params = cast(TurnParams, turn.params)
-                goal = next(
-                    (
-                        str(getattr(item, "text", "") or "").strip()
-                        for item in turn.items
-                        if str(getattr(item, "type", ""))
-                        in {"userMessage", "ItemType.USER_MESSAGE"}
-                        and str(getattr(item, "text", "") or "").strip()
-                    ),
-                    "",
-                )
+                goal = _turn_goal(turn)
                 supervisor.start_task(
                     task_id=supervisor_task_id,
                     kind="realtime_objective",
@@ -887,6 +938,8 @@ def _record_react_trace_event(runtime: CerebrumRuntime, turn: Turn, evt: dict[st
                         "objective_id": supervisor_task_id,
                         "turn_id": turn.id,
                         "agent_id": _agent_id_from_params(params),
+                        "execution_engine": "echo",
+                        "model_name": getattr(params, "model", None),
                     },
                 )
             except Exception as exc:  # noqa: BLE001
@@ -984,6 +1037,9 @@ def _record_successful_turn_example(
     intent: ParsedIntent | None,
 ) -> None:
     """Persist a compact successful turn as positive evolution fuel."""
+
+    if turn.status != TurnStatus.COMPLETED:
+        return
 
     try:
         from runtime.safety.evolution.proposal_ledger import ProposalLedger

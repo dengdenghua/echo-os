@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { env } from "@/env";
 import { getWorkspaceArtifactRefetchInterval } from "@/core/artifacts/polling";
-import { useWorkspaceArtifacts } from "@/core/artifacts/use-workspace-artifacts";
+import {
+  useWorkspaceArtifacts,
+  workspaceArtifactsQueryKey,
+} from "@/core/artifacts/use-workspace-artifacts";
 import { normalizeWorkspaceArtifactRef } from "@/core/artifacts/utils";
 import { isInternalArtifactRef } from "@/core/artifacts/workspace-outputs";
 import { cn } from "@/lib/utils";
@@ -29,7 +32,14 @@ const ChatBox: React.FC<{
   artifactPanelMode?: "drawer" | "external";
   children: React.ReactNode;
   threadId: string;
-}> = ({ artifactPanelMode = "drawer", children, threadId }) => {
+  /** False for a draft or a first turn the server has not recorded yet. */
+  artifactFetchEnabled?: boolean;
+}> = ({
+  artifactPanelMode = "drawer",
+  children,
+  threadId,
+  artifactFetchEnabled = true,
+}) => {
   const { thread } = useThread();
   const queryClient = useQueryClient();
   const threadIdRef = useRef(threadId);
@@ -40,6 +50,7 @@ const ChatBox: React.FC<{
   const { data: workspaceArtifacts = EMPTY_ARTIFACTS } = useWorkspaceArtifacts(
     threadId,
     {
+      enabled: artifactFetchEnabled,
       refetchInterval: getWorkspaceArtifactRefetchInterval(thread.isLoading),
     },
   );
@@ -54,7 +65,7 @@ const ChatBox: React.FC<{
     if (!runJustFinished || !threadId || threadId === "new") return;
     void queryClient.invalidateQueries({
       exact: true,
-      queryKey: ["workspace-artifacts", threadId],
+      queryKey: workspaceArtifactsQueryKey(threadId),
     });
   }, [queryClient, thread.isLoading, threadId]);
 

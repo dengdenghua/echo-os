@@ -386,6 +386,17 @@ export function deriveThreadTitle(thread: {
     return truncateThreadTitle(metaTitle);
   }
 
+  // A user rename pins the title (source=user + title_pinned on the record),
+  // so it outranks any title projected from the first message.
+  const pinnedTitle = cleanDisplayText(thread.values?.["title"]);
+  if (
+    pinnedTitle &&
+    (thread.metadata?.["title_pinned"] === true ||
+      thread.metadata?.["title_source"] === "user")
+  ) {
+    return truncateThreadTitle(pinnedTitle);
+  }
+
   const projectedTitle = threadTitleFromContent(
     thread.values?.["sidebar_title_source"],
   );
@@ -430,9 +441,11 @@ export function threadHref(thread: {
 export function activeWorkspaceThreadIdFromPathname(
   pathname: string,
 ): string | null {
-  const match = /^\/workspace\/(?:realtime|team)\/([^/?#]+)/.exec(pathname);
-  const value = match?.[1];
+  const match = /^\/workspace\/(realtime|team)\/([^/?#]+)/.exec(pathname);
+  const value = match?.[2];
   if (!value || value === "new") return null;
+  // /workspace/team/join is the invitation page, not a team room.
+  if (match?.[1] === "team" && value === "join") return null;
   try {
     return decodeURIComponent(value);
   } catch {

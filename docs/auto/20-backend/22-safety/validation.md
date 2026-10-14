@@ -42,25 +42,27 @@
 
 ## Who imports this
 
-**19** file(s) reference this package:
+**23** file(s) reference this package:
 
 - **`runtime/adapters/`** · 1 file(s)
   - `runtime/adapters/channels/base.py`
 - **`runtime/cli_serve.py/`** · 1 file(s)
   - `runtime/cli_serve.py`
-- **`runtime/core/`** · 4 file(s)
+- **`runtime/core/`** · 5 file(s)
+  - `runtime/core/cerebrum/_react_action_review.py`
   - `runtime/core/cerebrum/_react_execution_phase6d.py`
   - `runtime/core/cerebrum/_react_prompt_assembly_state.py`
   - `runtime/core/cerebrum/react_parallel_dispatch.py`
   - `runtime/core/cerebrum/react_resume.py`
-- **`runtime/execution/`** · 7 file(s)
+- **`runtime/execution/`** · 9 file(s)
   - `runtime/execution/agents/loader.py`
-  - `runtime/execution/codex_backend/dynamic_tools.py`
   - `runtime/execution/misc/parallel_runner.py`
   - `runtime/execution/parallel_agents/orchestrator.py`
   - `runtime/execution/subagents/bridge.py`
-  - _… and 2 more_
-- **`runtime/memory/`** · 1 file(s)
+  - `runtime/execution/suckers/ephemeral_injection_gate.py`
+  - _… and 4 more_
+- **`runtime/memory/`** · 2 file(s)
+  - `runtime/memory/cowork/runtime.py`
   - `runtime/memory/threads/llm_summariser.py`
 - **`runtime/safety/`** · 4 file(s)
   - `runtime/safety/approval/approval_gate.py`

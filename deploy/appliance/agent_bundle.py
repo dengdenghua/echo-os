@@ -165,7 +165,18 @@ def _normalize_tree_mtime(root: Path, epoch: int) -> None:
     for path in reversed(paths):
         try:
             os.utime(path, (epoch, epoch), follow_symlinks=False)
-        except (FileNotFoundError, NotImplementedError):
+        except NotImplementedError:
+            # Windows' ``utime`` implementation does not expose the
+            # ``follow_symlinks`` keyword.  Generated bundle trees must still
+            # be reproducible there, but never follow a link supplied by a
+            # caller while applying the timestamp.
+            try:
+                if path.is_symlink():
+                    continue
+                os.utime(path, (epoch, epoch))
+            except (FileNotFoundError, OSError):
+                continue
+        except (FileNotFoundError, OSError):
             continue
 
 
@@ -587,12 +598,18 @@ def record_codex(agent_src: Path, identity_path: Path, dist: Path) -> dict[str, 
         raise BundleError("Agent source does not pin a packaged Codex version")
     codex_manifest_path = dist / "echo-codex-bundle.json"
     codex_manifest = _read_json(codex_manifest_path)
+    targets = {
+        "x86_64-unknown-linux-musl": ("@openai/codex-linux-x64", 62),
+        "aarch64-unknown-linux-musl": ("@openai/codex-linux-arm64", 183),
+    }
+    selected_target = codex_manifest.get("target")
+    profile = targets.get(selected_target) if isinstance(selected_target, str) else None
     if (
         codex_manifest.get("schema") != "echo.codex_bundle.v1"
         or codex_manifest.get("package") != "@openai/codex"
         or codex_manifest.get("version") != expected_version
-        or codex_manifest.get("platformPackage") != "@openai/codex-linux-x64"
-        or codex_manifest.get("target") != "x86_64-unknown-linux-musl"
+        or profile is None
+        or codex_manifest.get("platformPackage") != profile[0]
         or codex_manifest.get("fileHashPhase") != "pre-package"
     ):
         raise BundleError("Codex bundle does not match the selected Agent/Linux target")
@@ -613,19 +630,19 @@ def record_codex(agent_src: Path, identity_path: Path, dist: Path) -> dict[str, 
             raise BundleError(f"Codex file hash mismatch: {relative}")
     executable = dist / "bin/codex"
     if executable.is_symlink() or not executable.is_file() or not os.access(executable, os.X_OK):
-        raise BundleError("Codex bundle has no executable x86-64 entrypoint")
+        raise BundleError("Codex bundle has no executable Linux entrypoint")
     with executable.open("rb") as handle:
         header = handle.read(20)
     if (
         len(header) != 20
         or header[:6] != b"\x7fELF\x02\x01"
-        or int.from_bytes(header[18:20], "little") != 62
+        or int.from_bytes(header[18:20], "little") != profile[1]
     ):
-        raise BundleError("Codex entrypoint is not a little-endian x86-64 ELF64 binary")
+        raise BundleError("Codex entrypoint ELF64 architecture does not match its declared target")
     artifact = {
         **_tree_digest(dist, exclude={PARTIAL_MANIFEST}),
         "version": expected_version,
-        "target": "x86_64-unknown-linux-musl",
+        "target": selected_target,
         "manifest_sha256": _sha256(codex_manifest_path),
         "executable_sha256": _sha256(executable),
     }
@@ -902,6 +919,16 @@ print(json.dumps(report, sort_keys=True, separators=(",", ":")))
     environment.pop("PYTHONPATH", None)
     contract_path = os_root / "appliance" / "agent_api" / "contract.py"
     try:
+        from appliance.agent_api.contract import ALL_AGENT_API_DOMAINS
+
+        expected_domains = tuple(ALL_AGENT_API_DOMAINS)
+    except (ImportError, AttributeError, TypeError):
+        # The verifier can also run from a flattened release-tool directory
+        # where the source package is not importable.  The isolated child still
+        # performs the authoritative contract probe; this parent check remains
+        # strict when the OS contract is available locally.
+        expected_domains = ()
+    try:
         completed = subprocess.run(
             [sys.executable, "-c", program, str(contract_path)],
             cwd=source,
@@ -927,7 +954,13 @@ print(json.dumps(report, sort_keys=True, separators=(",", ":")))
         or report.get("schema") != "echo.agent_api_contract.v1"
         or report.get("compatible") is not True
         or not isinstance(report.get("required"), list)
-        or len(report["required"]) != 8
+        or (
+            expected_domains
+            and tuple(
+                item.get("id") if isinstance(item, dict) else None for item in report["required"]
+            )
+            != expected_domains
+        )
         or report.get("optional") != []
         or any(
             not isinstance(item, dict)

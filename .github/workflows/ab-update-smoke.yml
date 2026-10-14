@@ -10,6 +10,7 @@ on:
       - "packaging/recovery/**"
       - "appliance/**"
       - "deploy/agent/**"
+      - "deploy/storage/**"
       - "deploy/appliance/**"
       - "deploy/desktop-session/**"
       - "deploy/apps/**"
@@ -37,6 +38,7 @@ on:
       - "packaging/recovery/**"
       - "appliance/**"
       - "deploy/agent/**"
+      - "deploy/storage/**"
       - "deploy/appliance/**"
       - "deploy/desktop-session/**"
       - "deploy/apps/**"
@@ -76,7 +78,7 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            ca-certificates git python3 systemd
+            bash ca-certificates coreutils gh git grep mawk python3 sed systemd
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -87,7 +89,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 deploy/appliance/delivery_source_preflight.py --compact
+          python3 deploy/appliance/delivery_source_preflight.py --compact \
+            --expected-branch "$GITHUB_REF_NAME"
 
       - name: Verify private-source and image contracts
         run: |
@@ -111,7 +114,7 @@ jobs:
           cat /tmp/echo-operations-native-systemd-verification.json
 
   signed-update-rollback:
-    name: Signed 0.2.0 → 0.2.1 · failed-root rollback
+    name: Signed base → next patch · failed-root rollback
     if: >-
       github.event_name != 'pull_request' &&
       (github.ref == 'refs/heads/os-main' || github.ref == 'refs/heads/main')
@@ -131,7 +134,7 @@ jobs:
       CI: "true"
       NODE_OPTIONS: --max-old-space-size=4096
       TMPDIR: /__w/_temp
-      UPDATE_VERSION: 0.2.1
+      UPDATE_VERSION: 0.3.1
 
     steps:
       - name: Install image, update, VM and frontend dependencies
@@ -307,6 +310,9 @@ jobs:
 
       - name: Verify on-demand removable-storage policy
         run: python3 deploy/removable-storage/test_echo_removable_storage_health.py
+
+      - name: Verify running-kernel OpenZFS policy
+        run: python3 deploy/storage/test_echo_zfs_health.py
 
       - name: Verify private local printing policy
         run: |

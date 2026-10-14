@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -41,6 +41,8 @@ const projection: EchoTaskProjectionResponse = {
       progressPercent: 50,
       mode: "agent",
       agentId: "echo-eve",
+      executionEngine: "echo",
+      modelName: "qwen3.5-plus",
       runtimeCapabilityGroups: ["apps"],
       capabilityDecisions: [
         {
@@ -57,6 +59,7 @@ const projection: EchoTaskProjectionResponse = {
       ],
       approval: {
         required: true,
+        version: "a".repeat(64),
         tool: "apps.start",
         action: "app.start",
         reason: "需要设备管理员确认",
@@ -98,11 +101,98 @@ const projection: EchoTaskProjectionResponse = {
       completedAt: "2026-08-26T01:30:00Z",
       terminalReason: null,
       latestCheckpointId: "checkpoint-1",
+      resultArtifacts: [
+        {
+          resourceId:
+            "workspace-file:v1:dGhyZWFkLXBob3Rvcw:ZmluYWw:cmVwb3J0Lm1k",
+          area: "final",
+          relativePath: "report.md",
+          name: "report.md",
+          size: 128,
+          modified: 1_724_650_000,
+        },
+      ],
     },
   ],
 };
 
 describe("Echo task space", () => {
+  it("loads the advertised file provider in the requested task detail", async () => {
+    const task = {
+      ...projection.tasks[1]!,
+      kind: "file_organization",
+      changeProvider: "echo-os.files" as const,
+    };
+    const fetcher = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        schema: "echo.task_changes.v1",
+        taskId: task.id,
+        available: false,
+        reason: "provider_unavailable",
+        changes: [],
+        canPreviewUndo: false,
+        generatedAt: "2026-10-13T00:00:00Z",
+        phase: "unavailable",
+      }),
+    } as Response);
+    try {
+      render(
+        <TaskSpacePanel
+          open
+          projection={{ ...projection, tasks: [task] }}
+          focusTaskRequest={{ taskId: task.id }}
+          loading={false}
+          error={null}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+          onOpenWorkspace={vi.fn()}
+          onTakeover={vi.fn()}
+          onResumeExecution={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(fetcher).toHaveBeenCalled());
+      expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+        "/api/appliance/tasks/task-photo-sort/changes",
+      );
+      expect(
+        await screen.findByText("当前服务无法读取此任务的操作证据。"),
+      ).toBeInTheDocument();
+    } finally {
+      fetcher.mockRestore();
+    }
+  });
+
+  it("opens the requested task's details when the desktop asks for it", () => {
+    const props = {
+      open: true,
+      projection,
+      loading: false,
+      error: null,
+      onClose: vi.fn(),
+      onRefresh: vi.fn(),
+      onOpenWorkspace: vi.fn(),
+      onTakeover: vi.fn(),
+      onResumeExecution: vi.fn(),
+      onApprovalDecision: vi.fn(),
+    };
+    const { rerender } = render(<TaskSpacePanel {...props} />);
+    expect(
+      screen.queryByRole("complementary", { name: "任务详情" }),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <TaskSpacePanel
+        {...props}
+        focusTaskRequest={{ taskId: "task-app-start" }}
+      />,
+    );
+    expect(
+      screen.getByRole("complementary", { name: "任务详情" }),
+    ).toHaveTextContent("启动媒体服务");
+  });
+
   it("shows real task state, approval context, capability policy, and filters", async () => {
     const user = userEvent.setup();
     render(
@@ -128,9 +218,73 @@ describe("Echo task space", () => {
     expect(screen.getByText("apps.start")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
 
+    await user.click(
+      screen.getByRole("button", { name: "查看任务：启动媒体服务" }),
+    );
+    expect(screen.getByText("Echo 原生")).toBeInTheDocument();
+    expect(screen.getByText("qwen3.5-plus")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "收起任务详情" }));
+
     await user.click(screen.getByRole("button", { name: "待确认" }));
     expect(screen.getByText("启动媒体服务")).toBeInTheDocument();
     expect(screen.queryByText("整理照片")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "待确认" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("words a bare approval by its tool on the card", () => {
+    const bare = {
+      ...projection.tasks[0]!,
+      approval: {
+        ...projection.tasks[0]!.approval!,
+        tool: "exec_shell",
+        reason: null,
+      },
+    };
+    render(
+      <TaskSpacePanel
+        open
+        projection={{ ...projection, tasks: [bare] }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText("Agent 请求运行命令，需要你授权"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("exec_shell")).not.toBeInTheDocument();
+  });
+
+  it("opens a completed result from the task projection in the original thread", async () => {
+    const user = userEvent.setup();
+    const onOpenWorkspace = vi.fn();
+    render(
+      <TaskSpacePanel
+        open
+        projection={{ ...projection, tasks: [projection.tasks[1]!] }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={onOpenWorkspace}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "查看任务：整理照片" }),
+    );
+    await user.click(screen.getByRole("button", { name: /report\.md/ }));
+    expect(onOpenWorkspace).toHaveBeenCalledWith(
+      projection.tasks[1],
+      "workspace-file:v1:dGhyZWFkLXBob3Rvcw:ZmluYWw:cmVwb3J0Lm1k",
+    );
   });
 
   it("connects refresh, workspace, and close controls", async () => {
@@ -158,6 +312,54 @@ describe("Echo task space", () => {
 
     expect(onRefresh).toHaveBeenCalledOnce();
     expect(onOpenWorkspace).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("makes a projection error recoverable without hiding the empty state", async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn();
+    render(
+      <TaskSpacePanel
+        open
+        projection={null}
+        loading={false}
+        error="无法连接任务服务"
+        onClose={vi.fn()}
+        onRefresh={onRefresh}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+        onApprovalDecision={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("无法连接任务服务");
+    expect(screen.getByText("任务服务暂时不可用")).toBeInTheDocument();
+    expect(screen.getAllByText("—")).toHaveLength(7);
+    await user.click(screen.getByRole("button", { name: "重试读取" }));
+    expect(onRefresh).toHaveBeenCalledOnce();
+  });
+
+  it("focuses its close control and closes with Escape", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <TaskSpacePanel
+        open
+        projection={projection}
+        loading={false}
+        error={null}
+        onClose={onClose}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+      />,
+    );
+
+    const close = screen.getByRole("button", { name: "关闭任务空间" });
+    await waitFor(() => expect(close).toHaveFocus());
+    await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -215,6 +417,10 @@ describe("Echo task space", () => {
       screen.getByRole("complementary", { name: "任务详情" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Agent 租约需要恢复")).toBeInTheDocument();
+    // Runtime identifiers are worded, not shown raw.
+    expect(screen.getByText("租约已失效")).toBeInTheDocument();
+    expect(screen.getByText("建议：接管任务")).toBeInTheDocument();
+    expect(screen.queryByText(/^takeover$|expired/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "接管任务租约…" }));
     expect(
@@ -237,6 +443,7 @@ describe("Echo task space", () => {
   it("keeps approval decisions in the original Agent task", async () => {
     const user = userEvent.setup();
     const onOpenWorkspace = vi.fn();
+    const onApprovalDecision = vi.fn().mockResolvedValue(undefined);
     render(
       <TaskSpacePanel
         open
@@ -248,6 +455,7 @@ describe("Echo task space", () => {
         onOpenWorkspace={onOpenWorkspace}
         onTakeover={vi.fn()}
         onResumeExecution={vi.fn()}
+        onApprovalDecision={onApprovalDecision}
       />,
     );
 
@@ -255,11 +463,232 @@ describe("Echo task space", () => {
       screen.getByRole("button", { name: "查看任务：启动媒体服务" }),
     );
     expect(screen.getByText("等待人工确认")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /批准/ }),
-    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "打开原任务" }));
     expect(onOpenWorkspace).toHaveBeenCalledWith(projection.tasks[0]);
+    await user.click(screen.getByRole("button", { name: "批准操作" }));
+    expect(
+      screen.getByRole("alertdialog", { name: "确认审批决定" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "确认" }));
+    expect(onApprovalDecision).toHaveBeenCalledWith(
+      "task-app-start",
+      true,
+      "设备管理员批准任务操作",
+      "a".repeat(64),
+    );
+    expect(
+      screen.getByText("操作已批准，任务将继续执行。"),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["unversioned", { version: null }, true],
+    ["blocked", { required: false }, false],
+  ] as const)(
+    "does not offer a doomed decision for a %s approval",
+    async (_label, approvalPatch, buttonsShown) => {
+      const user = userEvent.setup();
+      const waiting = projection.tasks[0];
+      render(
+        <TaskSpacePanel
+          open
+          projection={{
+            ...projection,
+            tasks: [
+              {
+                ...waiting,
+                approval: { ...waiting.approval!, ...approvalPatch },
+              },
+            ],
+          }}
+          loading={false}
+          error={null}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+          onOpenWorkspace={vi.fn()}
+          onTakeover={vi.fn()}
+          onResumeExecution={vi.fn()}
+          onApprovalDecision={vi.fn()}
+        />,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "查看任务：启动媒体服务" }),
+      );
+      const approve = screen.queryByRole("button", { name: "批准操作" });
+      if (buttonsShown) {
+        expect(approve).toBeDisabled();
+        expect(screen.getByText(/无法核验审批版本/)).toBeInTheDocument();
+      } else {
+        expect(approve).toBeNull();
+      }
+    },
+  );
+
+  it("keeps running and failed states discoverable through their filters", async () => {
+    const user = userEvent.setup();
+    const running = {
+      ...projection.tasks[0]!,
+      id: "task-running",
+      title: "正在同步资料",
+      status: "running",
+      displayStatus: "running",
+      approval: null,
+      leaseHealth: {
+        ...projection.tasks[0]!.leaseHealth!,
+        state: "active",
+        recoveryNeeded: false,
+      },
+    };
+    const failed = {
+      ...projection.tasks[1]!,
+      id: "task-failed",
+      title: "导出失败的任务",
+      status: "failed",
+      displayStatus: "failed",
+      completedAt: null,
+      terminalReason: "导出目标不可写",
+    };
+    const paused = {
+      ...projection.tasks[1]!,
+      id: "task-paused",
+      title: "等待资源的任务",
+      status: "paused",
+      displayStatus: "paused",
+      completedAt: null,
+    };
+    const disconnected = {
+      ...running,
+      id: "task-disconnected",
+      title: "租约失效的任务",
+      displayStatus: "disconnected",
+      leaseHealth: {
+        ...running.leaseHealth!,
+        state: "expired",
+        recoveryNeeded: true,
+      },
+    };
+    render(
+      <TaskSpacePanel
+        open
+        projection={{
+          ...projection,
+          counts: {
+            ...projection.counts,
+            total: 4,
+            active: 1,
+            paused: 1,
+            failed: 2,
+            recoveryNeeded: 1,
+            completed: 0,
+          },
+          tasks: [running, failed, paused, disconnected],
+        }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "进行中" }));
+    expect(screen.getByText("正在同步资料")).toBeInTheDocument();
+    expect(screen.queryByText("导出失败的任务")).not.toBeInTheDocument();
+    expect(screen.queryByText("等待资源的任务")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "已暂停" }));
+    expect(screen.getByText("等待资源的任务")).toBeInTheDocument();
+    expect(screen.queryByText("正在同步资料")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "异常" }));
+    expect(screen.getByText("导出失败的任务")).toBeInTheDocument();
+    expect(screen.getByText("租约失效的任务")).toBeInTheDocument();
+    expect(screen.queryByText("正在同步资料")).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "查看任务：导出失败的任务" }),
+    );
+    expect(screen.getByText("结束原因")).toBeInTheDocument();
+    expect(screen.getByText("导出目标不可写")).toBeInTheDocument();
+  });
+
+  it("does not present an unknown backend status as a pending task", () => {
+    const unknown = {
+      ...projection.tasks[0]!,
+      id: "task-unknown-status",
+      title: "等待新版本状态",
+      status: "suspended_by_provider",
+      displayStatus: "suspended_by_provider",
+      approval: null,
+    };
+    render(
+      <TaskSpacePanel
+        open
+        projection={{
+          ...projection,
+          counts: { ...projection.counts, total: 1, waitingApproval: 0 },
+          tasks: [unknown],
+        }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+        onApprovalDecision={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("状态未知")).toBeInTheDocument();
+    expect(screen.queryByText("准备中")).not.toBeInTheDocument();
+  });
+
+  it("says an approval ran out with the task and re-runs it", async () => {
+    const user = userEvent.setup();
+    const expired = {
+      ...projection.tasks[0]!,
+      id: "task-expired",
+      title: "写入 hello.txt",
+      status: "cancelled",
+      displayStatus: "cancelled",
+      approval: null,
+      approvalExpired: {
+        tool: "write_text_file",
+        action: "ask",
+        reason: "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+        expiredAt: "2026-10-14T03:00:00Z",
+      },
+      canRerun: true,
+    };
+    const onRerun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskSpacePanel
+        open
+        focusTaskRequest={{ taskId: "task-expired" }}
+        projection={{
+          ...projection,
+          counts: { ...projection.counts, total: 1, waitingApproval: 0 },
+          tasks: [expired],
+        }}
+        loading={false}
+        error={null}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+        onTakeover={vi.fn()}
+        onResumeExecution={vi.fn()}
+        onApprovalDecision={vi.fn()}
+        onRerun={onRerun}
+      />,
+    );
+
+    const detail = screen.getByRole("complementary", { name: "任务详情" });
+    expect(detail).toHaveTextContent("任务已超时，审批已失效");
+    expect(detail).toHaveTextContent("这次操作没有执行");
+    await user.click(screen.getByRole("button", { name: "重新运行" }));
+    expect(onRerun).toHaveBeenCalledWith(expired);
+    expect(detail).toHaveTextContent("已重新运行");
   });
 
   it("confirms checkpoint execution and then opens the original task", async () => {

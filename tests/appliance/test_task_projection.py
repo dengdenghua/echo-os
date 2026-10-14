@@ -2,25 +2,172 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from appliance.audit import ApplianceAudit, AuditIntegrityError
 from appliance.task_projection import create_task_projection_router
 from runtime.platform.process.task_supervisor import TaskRunStatus, TaskSupervisor
+from runtime.platform.runtime_policy.workspaces import WorkspaceManager
 from runtime.safety.auth.identity import encode_jwt_hs256
 
 JWT_SECRET = "task-projection-test-secret-which-is-not-production"
 
 
-def _client(app: FastAPI) -> TestClient:
+def _client(app: FastAPI, actor: str = "local:admin") -> TestClient:
     client = TestClient(app)
     token = encode_jwt_hs256(
-        {"sub": "local:admin", "iat": 0, "exp": 9_999_999_999},
+        {"sub": actor, "iat": 0, "exp": 9_999_999_999},
         secret=JWT_SECRET,
     )
     client.cookies.set("echo_session", token)
     return client
+
+
+@pytest.fixture
+def private_task_app(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    for task_id, owner in (
+        ("private-alice", "local:alice"),
+        ("private-bob", "local:bob"),
+        ("private-unowned", None),
+    ):
+        supervisor.start_task(
+            task_id=task_id,
+            kind="file_organization",
+            owner_id=owner,
+            title=f"synthetic-private-directory-{task_id}",
+            workspace_path=str(tmp_path / task_id),
+        )
+        supervisor.store.mutate(
+            task_id,
+            lambda current: current.model_copy(
+                update={
+                    "lease": current.lease.model_copy(update={"expires_at": 1}),
+                },
+                deep=True,
+            ),
+        )
+    supervisor.start_task(task_id="device-system", kind="system", owner_id="local:admin")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+    return app, supervisor
+
+
+def test_blocked_approval_wait_is_not_projected_as_decidable(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(task_id="task-blocked", kind="system", owner_id="local:admin")
+    supervisor.transition(
+        "task-blocked",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="能力已停用",
+        metadata_patch={"approval_action": "capability_denied", "capability_denied": True},
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["status"] == "waiting_approval"
+    assert task["approval"]["required"] is False
+    assert task["approval"]["reason"] == "能力已停用"
+
+
+def test_private_file_tasks_filter_before_projection_and_counts(private_task_app):
+    app, _ = private_task_app
+    response = _client(app, "local:alice").get("/api/appliance/tasks")
+    assert response.status_code == 200
+    payload = response.json()
+    assert {task["id"] for task in payload["tasks"]} == {"private-alice", "device-system"}
+    assert payload["counts"]["total"] == 2
+    assert "private-bob" not in response.text
+    assert "private-unowned" not in response.text
+    # This narrow privacy rule does not redefine existing system-task visibility.
+    assert "device-system" in response.text
+    admin = _client(app).get("/api/appliance/tasks").json()
+    assert admin["counts"]["total"] == 4
+
+
+@pytest.mark.parametrize("suffix", ["", "/takeover", "/resume-execution"])
+def test_other_member_cannot_probe_or_control_private_task_by_spoofing_actor(
+    private_task_app, suffix
+):
+    app, supervisor = private_task_app
+    before = supervisor.store.get("private-bob")
+    client = _client(app, "local:alice")
+    if suffix:
+        response = client.post(
+            "/api/appliance/tasks/private-bob" + suffix,
+            json={"actor": "local:admin", "owner_id": "local:bob"},
+            headers={"X-Echo-Actor": "local:admin"},
+        )
+    else:
+        response = client.get("/api/appliance/tasks/private-bob?actor=local:admin")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "task not found"}
+    assert supervisor.store.get("private-bob") == before
+
+
+@pytest.mark.parametrize("actor", ["local:bob", "local:admin"])
+def test_owner_and_explicit_admin_can_read_and_take_over_private_task(private_task_app, actor):
+    app, supervisor = private_task_app
+    client = _client(app, actor)
+    assert client.get("/api/appliance/tasks/private-bob").status_code == 200
+    response = client.post(
+        "/api/appliance/tasks/private-bob/takeover",
+        json={"actor": "local:forged"},
+    )
+    assert response.status_code == 200
+    current = supervisor.store.get("private-bob")
+    assert current.metadata["takeover_by"] == actor
+    assert current.owner_id == "local:bob"
+
+
+def test_unowned_private_task_is_admin_only_and_anonymous_still_requires_auth(private_task_app):
+    app, _ = private_task_app
+    assert (
+        _client(app, "local:alice").get("/api/appliance/tasks/private-unowned").status_code == 404
+    )
+    assert _client(app).get("/api/appliance/tasks/private-unowned").status_code == 200
+    assert TestClient(app).get("/api/appliance/tasks/private-alice").status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("metadata", "expected"),
+    [
+        ({"completed_steps": 100, "total_steps": 500}, 20.0),
+        ({"completed_steps": 250, "total_steps": 500}, 50.0),
+        ({"completed_steps": 750, "total_steps": 500}, 100.0),
+        ({"completed_steps": -1, "total_steps": 500}, None),
+        ({"completed_steps": 1, "total_steps": 0}, None),
+        ({"completed_steps": True, "total_steps": 500}, None),
+        ({"completed_steps": "Infinity", "total_steps": 500}, None),
+        ({"completed_steps": 100, "total_steps": "NaN"}, None),
+        ({"progressPercent": "NaN"}, None),
+        ({"progressPercent": "Infinity"}, None),
+        ({"progressPercent": 125}, 100.0),
+        ({"progressPercent": -5}, 0.0),
+        ({"progressPercent": 42, "completed_steps": 250, "total_steps": 500}, 42.0),
+        ({"progressPercent": "NaN", "completed_steps": 250, "total_steps": 500}, 50.0),
+    ],
+)
+def test_projection_reports_full_task_counts_without_false_completion(tmp_path, metadata, expected):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(
+        task_id="task-documents",
+        owner_id="local:admin",
+        metadata=metadata,
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    response = _client(app).get("/api/appliance/tasks")
+
+    assert response.status_code == 200
+    assert response.json()["tasks"][0]["progressPercent"] == expected
 
 
 def test_projection_joins_agent_task_and_capability_audit(tmp_path) -> None:
@@ -33,7 +180,13 @@ def test_projection_joins_agent_task_and_capability_audit(tmp_path) -> None:
         title="整理昨天的照片",
         goal="扫描重复照片，确认后移入回收站",
         mode="agent",
-        metadata={"agent_id": "echo-eve", "completed_steps": 1, "total_steps": 4},
+        metadata={
+            "agent_id": "echo-eve",
+            "completed_steps": 1,
+            "total_steps": 4,
+            "execution_engine": "echo",
+            "model_name": "qwen3.5-plus",
+        },
     )
     supervisor.start_task(
         task_id="task-app-start",
@@ -107,17 +260,81 @@ def test_projection_joins_agent_task_and_capability_audit(tmp_path) -> None:
     assert waiting["status"] == "waiting_approval"
     assert waiting["approval"] == {
         "required": True,
+        "version": waiting["approval"]["version"],
         "tool": "apps.start",
         "action": "app.start",
         "reason": "需要管理员确认",
+        # A record without a stored hold deadline (older runtime) has none.
+        "expiresAt": None,
     }
+    assert len(waiting["approval"]["version"]) == 64
     assert waiting["capabilityDecisions"][0]["capabilityId"] == "apps.start"
     photo = body["tasks"][1]
     assert photo["progressPercent"] == 25.0
     assert photo["agentId"] == "echo-eve"
+    assert photo["executionEngine"] == "echo"
+    assert photo["modelName"] == "qwen3.5-plus"
     assert photo["displayStatus"] == "running"
     assert photo["leaseHealth"]["recoveryNeeded"] is False
     assert photo["capabilityDecisions"][0]["target"] == "files.list"
+
+
+def test_projection_exposes_bounded_completed_workspace_results(tmp_path) -> None:
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(
+        task_id="task-result",
+        owner_id="local:admin",
+        thread_id="thread-result",
+        title="生成报告",
+    )
+    supervisor.transition("task-result", TaskRunStatus.COMPLETED)
+    workspaces = WorkspaceManager(tmp_path / "workspaces")
+    layout = workspaces.layout("thread-result")
+    (layout.final / "report.md").write_text("# done", encoding="utf-8")
+    app = FastAPI()
+    app.include_router(
+        create_task_projection_router(
+            supervisor=supervisor,
+            realtime_gateway=SimpleNamespace(_workspaces=workspaces),
+            jwt_secret=JWT_SECRET,
+        )
+    )
+
+    response = _client(app).get("/api/appliance/tasks")
+
+    assert response.status_code == 200
+    artifacts = response.json()["tasks"][0]["resultArtifacts"]
+    assert artifacts[0]["name"] == "report.md"
+    assert artifacts[0]["area"] == "final"
+    assert artifacts[0]["resourceId"].startswith("workspace-file:v1:")
+    assert str(tmp_path) not in response.text
+
+
+def test_projection_skips_workspace_scan_for_live_tasks(tmp_path) -> None:
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(
+        task_id="task-running-result",
+        owner_id="local:admin",
+        thread_id="thread-running-result",
+        title="仍在执行",
+    )
+
+    class ExplodingWorkspaces:
+        def layout(self, _thread_id):
+            raise AssertionError("live task should not scan workspace outputs")
+
+    app = FastAPI()
+    app.include_router(
+        create_task_projection_router(
+            supervisor=supervisor,
+            realtime_gateway=SimpleNamespace(_workspaces=ExplodingWorkspaces()),
+            jwt_secret=JWT_SECRET,
+        )
+    )
+
+    body = _client(app).get("/api/appliance/tasks").json()
+
+    assert body["tasks"][0]["resultArtifacts"] == []
 
 
 def test_projection_status_filter_and_unavailable_supervisor(tmp_path) -> None:
@@ -144,12 +361,30 @@ def test_projection_status_filter_and_unavailable_supervisor(tmp_path) -> None:
     )
 
     completed = _client(app).get("/api/appliance/tasks", params={"status": "completed"})
+    limited = _client(app).get("/api/appliance/tasks", params={"limit": 1})
     unavailable = _client(missing_app).get("/api/appliance/tasks")
 
     assert completed.json()["counts"]["total"] == 1
     assert completed.json()["tasks"][0]["id"] == "task-done"
+    assert limited.json()["counts"]["total"] == 2
+    assert len(limited.json()["tasks"]) == 1
     assert unavailable.json()["available"] is False
     assert unavailable.json()["tasks"] == []
+
+
+def test_projection_failure_count_matches_desktop_terminal_filter(tmp_path) -> None:
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(task_id="task-failed", title="失败任务")
+    supervisor.transition("task-failed", TaskRunStatus.FAILED, reason="执行失败")
+    supervisor.start_task(task_id="task-cancelled", title="取消任务")
+    supervisor.transition("task-cancelled", TaskRunStatus.CANCELLED, reason="用户取消")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    body = _client(app).get("/api/appliance/tasks").json()
+
+    assert body["counts"]["failed"] == 2
+    assert {task["status"] for task in body["tasks"]} == {"failed", "cancelled"}
 
 
 def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> None:
@@ -158,7 +393,11 @@ def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> No
         tmp_path / "task-runs.json",
         holder_id="old-worker",
     )
-    supervisor.start_task(task_id="task-interrupted", title="中断的任务")
+    supervisor.start_task(
+        task_id="task-interrupted",
+        thread_id="thread-interrupted",
+        title="中断的任务",
+    )
     supervisor.store.mutate(
         "task-interrupted",
         lambda current: current.model_copy(
@@ -170,11 +409,16 @@ def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> No
             deep=True,
         ),
     )
+    workspaces = WorkspaceManager(tmp_path / "workspaces")
+    (workspaces.layout("thread-interrupted").final / "checkpoint-result.txt").write_text(
+        "partial result", encoding="utf-8"
+    )
     app = FastAPI()
     app.include_router(
         create_task_projection_router(
             supervisor=supervisor,
             audit=audit,
+            realtime_gateway=SimpleNamespace(_workspaces=workspaces),
             jwt_secret=JWT_SECRET,
         )
     )
@@ -183,6 +427,7 @@ def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> No
 
     assert body["counts"]["active"] == 0
     assert body["counts"]["recoveryNeeded"] == 1
+    assert body["counts"]["failed"] == 1
     task = body["tasks"][0]
     assert task["status"] == "running"
     assert task["displayStatus"] == "disconnected"
@@ -194,6 +439,36 @@ def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> No
         "recommendedAction": "takeover",
         "reason": "task has no live lease",
     }
+    assert task["resultArtifacts"][0]["name"] == "checkpoint-result.txt"
+
+
+def test_an_approval_whose_lease_died_is_not_offered_until_takeover(tmp_path) -> None:
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="old-worker")
+    supervisor.start_task(task_id="held", kind="realtime_codex", owner_id="local:admin", title="ls")
+    supervisor.transition(
+        "held",
+        TaskRunStatus.WAITING_APPROVAL,
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "exec_shell",
+            "approval_delivery": "server_hold",
+        },
+    )
+    supervisor.store.mutate(
+        "held",
+        lambda current: current.model_copy(
+            update={"lease": current.lease.model_copy(update={"expires_at": 1})}, deep=True
+        ),
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    # The process that held the request is gone; a decision would answer 409.
+    assert task["displayStatus"] == "disconnected"
+    assert task["leaseHealth"]["recommendedAction"] == "takeover_for_approval"
+    assert task["approval"]["required"] is False
 
 
 def test_task_detail_and_takeover_reclaim_the_agent_lease_with_audit(tmp_path) -> None:
@@ -348,9 +623,11 @@ def test_takeover_fails_closed_before_mutation_when_audit_is_unavailable(
     assert "takeover_by" not in after.metadata
 
 
+@pytest.mark.parametrize("server_hold", [False, True])
 def test_resume_execution_uses_agent_checkpoint_route_and_audits_handoff(
     tmp_path,
     monkeypatch,
+    server_hold,
 ) -> None:
     audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
     supervisor = TaskSupervisor.from_path(
@@ -366,6 +643,16 @@ def test_resume_execution_uses_agent_checkpoint_route_and_audits_handoff(
         title="继续整理照片",
         metadata={"agent_id": "echo-eve"},
     )
+    if server_hold:
+        supervisor.transition(
+            task_id,
+            TaskRunStatus.WAITING_APPROVAL,
+            metadata_patch={
+                "approval_delivery": "server_hold",
+                "approval_hold": {"tool_call_id": "call-73"},
+                "approval_required": True,
+            },
+        )
     supervisor.store.mutate(
         task_id,
         lambda current: current.model_copy(
@@ -535,3 +822,204 @@ def test_resume_execution_fails_closed_before_agent_handoff_when_audit_is_unavai
     task = supervisor.store.get(task_id)
     assert task is not None
     assert task.status == TaskRunStatus.PAUSED
+
+
+def _expired_codex_task(supervisor: TaskSupervisor, *, owner: str = "local:admin") -> str:
+    task_id = "6f7b0e8c-1d1a-4c39-9b8f-6f0b8a2f3c11"
+    supervisor.start_task(
+        task_id=task_id,
+        kind="realtime_codex",
+        owner_id=owner,
+        thread_id="thread-expired-approval",
+        title="写入 hello.txt",
+        goal="在个人空间里创建 hello.txt，内容写 hello echo" + "。" * 900,
+        metadata={"agent_id": "general"},
+    )
+    supervisor.transition(
+        task_id,
+        TaskRunStatus.WAITING_APPROVAL,
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "write_text_file",
+            "approval_action": "ask",
+            "approval_reason": "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+            "approval_delivery": "server_hold",
+            "approval_hold": {"tool_call_id": "call-1", "expires_at": "2026-10-14T03:30:00Z"},
+        },
+    )
+    return task_id
+
+
+def test_a_waiting_approval_projects_when_it_expires(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    _expired_codex_task(supervisor)
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["approval"]["expiresAt"] == "2026-10-14T03:30:00Z"
+    assert task["approvalExpired"] is None
+    assert task["canRerun"] is False
+
+
+def test_a_bare_approval_request_projects_no_reason_instead_of_the_status_text(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    supervisor.start_task(task_id="bare", kind="realtime_codex", owner_id="local:admin", title="ls")
+    supervisor.transition(
+        "bare",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="exec_shell requires your approval",
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "exec_shell",
+            "approval_action": "ask",
+            "approval_reason": "",
+            "approval_delivery": "server_hold",
+        },
+    )
+    supervisor.start_task(
+        task_id="legacy", kind="realtime_codex", owner_id="local:admin", title="old"
+    )
+    supervisor.transition(
+        "legacy",
+        TaskRunStatus.WAITING_APPROVAL,
+        reason="旧记录的等待原因",
+        metadata_patch={"approval_required": True, "approval_tool_name": "exec_shell"},
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    tasks = {task["id"]: task for task in _client(app).get("/api/appliance/tasks").json()["tasks"]}
+
+    assert tasks["bare"]["approval"]["reason"] is None
+    assert tasks["legacy"]["approval"]["reason"] == "旧记录的等待原因"
+
+
+def test_an_approval_that_ran_out_with_the_task_is_projected_as_expired(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(
+        task_id,
+        TaskRunStatus.RUNNING,
+        metadata_patch={
+            "approval_required": False,
+            "approval_hold": None,
+            "approval_hold_outcome": "timeout",
+            "approval_expired_at": "2026-10-14T03:30:00Z",
+        },
+    )
+    supervisor.transition(task_id, TaskRunStatus.CANCELLED, reason="codex_timeout")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    assert task["approval"] is None
+    assert task["approvalExpired"] == {
+        "tool": "write_text_file",
+        "action": "ask",
+        "reason": "Codex 引擎请求使用 write_text_file：写入文件（高风险）",
+        "expiredAt": "2026-10-14T03:30:00Z",
+    }
+    assert task["canRerun"] is True
+
+
+def test_rerun_starts_the_full_goal_as_a_new_task_and_audits_it(tmp_path):
+    audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(
+        task_id, TaskRunStatus.RUNNING, metadata_patch={"approval_hold_outcome": "timeout"}
+    )
+    supervisor.transition(task_id, TaskRunStatus.FAILED, reason="codex_timeout")
+    observed: dict = {}
+    app = FastAPI()
+
+    @app.post("/api/task-runs/start", status_code=202)
+    async def _agent_start(request: Request) -> dict:
+        observed["authorization"] = request.headers.get("authorization")
+        observed["body"] = await request.json()
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": "turn_started",
+            "thread_id": "tnewthread",
+            "turn_id": "trn-new",
+            "user_item_id": "itm_user_1",
+            "approval_delivery": "server_hold",
+        }
+
+    app.include_router(
+        create_task_projection_router(supervisor=supervisor, audit=audit, jwt_secret=JWT_SECRET)
+    )
+
+    response = _client(app).post(f"/api/appliance/tasks/{task_id}/rerun", json={})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["action"] == "rerun"
+    assert body["threadId"] == "tnewthread"
+    assert body["threadPath"] == "/workspace/realtime/tnewthread"
+    # The full stored goal, not the 800-character projection summary.
+    assert observed["body"]["prompt"].startswith("在个人空间里创建 hello.txt")
+    assert len(observed["body"]["prompt"]) > 800
+    assert observed["body"]["agentId"] == "general"
+    assert observed["authorization"].startswith("Bearer ")
+    events = [
+        entry["payload"] for entry in audit.recent(30) if entry["payload"]["action"] == "task.rerun"
+    ]
+    assert [event["outcome"] for event in events] == ["attempted", "accepted"]
+    assert events[0]["metadata"]["approvalExpired"] is True
+    assert events[-1]["metadata"]["threadId"] == "tnewthread"
+    # The original task is left exactly as it ended.
+    original = supervisor.store.get(task_id)
+    assert original is not None and original.status == TaskRunStatus.FAILED
+
+
+def test_rerun_refuses_active_tasks_and_other_owners(tmp_path):
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor, owner="local:alice")
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    assert (
+        _client(app, "local:alice").post(f"/api/appliance/tasks/{task_id}/rerun").status_code == 409
+    )
+    supervisor.transition(task_id, TaskRunStatus.CANCELLED, reason="user_cancelled")
+    assert (
+        _client(app, "local:bob").post(f"/api/appliance/tasks/{task_id}/rerun").status_code == 404
+    )
+
+
+def test_rerun_and_resume_hand_off_through_the_appliance_browser_boundary(tmp_path):
+    """The in-process Agent call must carry a Host the web boundary accepts."""
+
+    from appliance.web_security import ApplianceWebSecurityMiddleware
+
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="worker-a")
+    task_id = _expired_codex_task(supervisor)
+    supervisor.transition(task_id, TaskRunStatus.FAILED, reason="codex_timeout")
+    seen: dict = {}
+    app = FastAPI()
+
+    @app.post("/api/task-runs/start", status_code=202)
+    async def _agent_start(request: Request) -> dict:
+        seen["host"] = request.headers.get("host")
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": "turn_started",
+            "thread_id": "tnew",
+            "turn_id": None,
+            "user_item_id": "itm_user_1",
+            "approval_delivery": "server_hold",
+        }
+
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+    app.add_middleware(ApplianceWebSecurityMiddleware, trusted_hosts=(), trusted_origins=())
+
+    response = _client(app).post(f"/api/appliance/tasks/{task_id}/rerun", json={})
+
+    assert response.status_code == 200, response.text
+    assert seen["host"] == "127.0.0.1"

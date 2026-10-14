@@ -5,14 +5,19 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+
+import { useDesktopWallpaperSources } from "@/appliance/desktop-wallpaper";
 import {
   BatteryFullIcon,
   BellIcon,
   BluetoothIcon,
   BotIcon,
+  CheckIcon,
   CheckCircle2Icon,
+  ChevronDownIcon,
   ChevronRightIcon,
   CommandIcon,
   DropletsIcon,
@@ -22,6 +27,7 @@ import {
   LockIcon,
   Loader2Icon,
   MoonIcon,
+  PaletteIcon,
   SearchIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -35,6 +41,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { EchoMark } from "@/components/brand/echo-mark";
+import { getEchoAppArtwork } from "./echo-app-artworks";
 import type {
   AgentDesktopHealth,
   AgentDesktopHealthState,
@@ -49,6 +56,11 @@ import {
   LIQUID_GLASS_TINTS,
   type LiquidGlassTuning,
 } from "@/appliance/liquid-glass-settings";
+import {
+  OPEN_ROOMS,
+  type DesktopMode,
+  type OpenRoomType,
+} from "@/appliance/intent-desktop-surface";
 import "@/styles/macos-desktop.css";
 
 type MacIcon = typeof SearchIcon;
@@ -71,44 +83,49 @@ function echoSolidPalette(
   };
 }
 
-const ECHO_SIGNAL_GLASS = {
-  carbon: echoSolidPalette("#111318", "#4a96ff", "rgba(36, 107, 253, .52)"),
-  cobalt: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  marine: echoSolidPalette("#22c55e", "#f5fff8", "rgba(34, 197, 94, .46)"),
-  oxide: echoSolidPalette("#ff6b6b", "#fff8f8", "rgba(255, 107, 107, .46)"),
-  sonar: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  orbital: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  amber: echoSolidPalette("#f59e0b", "#fffdf5", "rgba(245, 158, 11, .46)"),
-  command: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  signal: echoSolidPalette("#22c55e", "#f5fff8", "rgba(34, 197, 94, .46)"),
-  gunmetal: echoSolidPalette("#8b95a5", "#ffffff", "rgba(139, 149, 165, .4)"),
-  azure: echoSolidPalette("#246bfd", "#f8fbff", "rgba(36, 107, 253, .5)"),
-  titanium: echoSolidPalette("#f7f8fa", "#8b95a5", "rgba(139, 149, 165, .28)"),
-  slate: echoSolidPalette("#7b61ff", "#fbfaff", "rgba(123, 97, 255, .48)"),
-  glacier: echoSolidPalette("#f7f8fa", "#8b95a5", "rgba(139, 149, 165, .28)"),
-} as const;
+/**
+ * ECHO family icons: every app sits on the same graphite tile with a snow glyph.
+ * Apps are told apart by their glyph, never by colour; colour is reserved for
+ * the Echo Core state light (see BRAND.md, "Echo Core 灯语").
+ */
+const ECHO_GRAPHITE = echoSolidPalette(
+  "#16191e",
+  "#eef1f4",
+  "rgba(111, 227, 240, .2)",
+);
 
 const ECHO_APP_ICON_PALETTES: Record<string, EchoAppIconPalette> = {
-  "echo:/workspace/realtime/new": ECHO_SIGNAL_GLASS.carbon,
-  "echo:/browser": ECHO_SIGNAL_GLASS.cobalt,
-  "echo:/workspace/storage": ECHO_SIGNAL_GLASS.marine,
-  "echo:/photos": ECHO_SIGNAL_GLASS.oxide,
-  "echo:/storage-center": ECHO_SIGNAL_GLASS.sonar,
-  "echo:/device-link": ECHO_SIGNAL_GLASS.orbital,
-  "echo:/workspace/knowledge": ECHO_SIGNAL_GLASS.amber,
-  "echo:/workspace/store": ECHO_SIGNAL_GLASS.command,
-  "echo:/hub": ECHO_SIGNAL_GLASS.command,
-  "echo:/workspace/observability": ECHO_SIGNAL_GLASS.signal,
-  "echo:/workspace": ECHO_SIGNAL_GLASS.gunmetal,
-  "system:finder": ECHO_SIGNAL_GLASS.azure,
-  "system:files": ECHO_SIGNAL_GLASS.azure,
-  "system:launchpad": ECHO_SIGNAL_GLASS.titanium,
-  "system:app-store": ECHO_SIGNAL_GLASS.command,
-  "system:tasks": ECHO_SIGNAL_GLASS.slate,
-  "system:activity-monitor": ECHO_SIGNAL_GLASS.signal,
-  "system:settings": ECHO_SIGNAL_GLASS.gunmetal,
-  "system:trash": ECHO_SIGNAL_GLASS.glacier,
+  "echo:/workspace/realtime/new": ECHO_GRAPHITE,
+  "echo:/browser": ECHO_GRAPHITE,
+  "echo:/workspace/storage": ECHO_GRAPHITE,
+  "echo:/photos": ECHO_GRAPHITE,
+  "echo:/storage-center": ECHO_GRAPHITE,
+  "echo:/device-link": ECHO_GRAPHITE,
+  "echo:/workspace/knowledge": ECHO_GRAPHITE,
+  "echo:/workspace/store": ECHO_GRAPHITE,
+  "echo:/hub": ECHO_GRAPHITE,
+  "echo:/workspace/observability": ECHO_GRAPHITE,
+  "echo:/workspace": ECHO_GRAPHITE,
+  "system:finder": ECHO_GRAPHITE,
+  "system:files": ECHO_GRAPHITE,
+  "system:launchpad": ECHO_GRAPHITE,
+  "system:app-store": ECHO_GRAPHITE,
+  "system:tasks": ECHO_GRAPHITE,
+  "system:activity-monitor": ECHO_GRAPHITE,
+  "system:settings": ECHO_GRAPHITE,
+  "system:trash": ECHO_GRAPHITE,
 };
+
+/** 浅色底座上的单色图形改用强调色，否则白色图形会和底座融在一起。 */
+function isLightSurface(hex: string): boolean {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return false;
+  const value = Number.parseInt(match[1]!, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.72;
+}
 
 const ECHO_TECH_FIELD_APP_IDS = new Set([
   "echo:/storage-center",
@@ -131,22 +148,16 @@ export type MacShellApp = {
 
 export type MacAppIconState = "default" | "active" | "thinking" | "complete";
 
-/** Keep branding on Echo Agent; system apps use familiar supplied glyphs. */
-function MacAppArtwork({ appId }: { appId?: string }): ReactNode {
-  if (appId !== "echo:/workspace/realtime/new") return null;
-
-  return (
-    <EchoMark tone="light" className="mac-app-icon-art mac-shell-icon-art" />
-  );
-}
-
-/** Original fluid ribbon artwork shared by the desktop and lock screen. */
+/** Echo 默认壁纸，桌面与锁屏共用。 */
 export function MacDesktopWallpaperArtwork() {
+  const wallpaper = useDesktopWallpaperSources();
   return (
     <img
       aria-hidden="true"
       className="desktop-wallpaper-art"
-      src="/third-party/appletechie-macos/wallpaper-day2.jpg"
+      src={wallpaper.url}
+      srcSet={wallpaper.srcSet}
+      sizes={wallpaper.sizes}
       alt=""
     />
   );
@@ -160,6 +171,7 @@ export function MacAppIcon({
   className,
   liquidBackdrop = false,
   state = "default",
+  artwork,
 }: {
   icon: MacIcon;
   gradient: string;
@@ -168,9 +180,15 @@ export function MacAppIcon({
   className?: string;
   liquidBackdrop?: boolean;
   state?: MacAppIconState;
+  artwork?: ReactNode;
 }) {
-  const appArtwork = iconUrl ? null : MacAppArtwork({ appId });
-  const echoPalette = appId ? ECHO_APP_ICON_PALETTES[appId] : undefined;
+  // Dock、启动台、桌面和 Spotlight 共用同一套原创图形；没有专属图形的应用
+  // 回退到线性图标。
+  const appArtwork = iconUrl ? null : (artwork ?? getEchoAppArtwork(appId));
+  // Apps that ship their own picture keep it; every glyph app joins the family tile.
+  const echoPalette = iconUrl
+    ? undefined
+    : ((appId ? ECHO_APP_ICON_PALETTES[appId] : undefined) ?? ECHO_GRAPHITE);
   const showTechField = appId ? ECHO_TECH_FIELD_APP_IDS.has(appId) : false;
 
   return (
@@ -187,6 +205,9 @@ export function MacAppIcon({
       data-app-id={appId}
       data-icon-source={iconUrl ? "image" : appArtwork ? "art" : "glyph"}
       data-echo-family={echoPalette ? "true" : undefined}
+      data-echo-surface={
+        echoPalette && isLightSurface(echoPalette.surface) ? "light" : undefined
+      }
       data-liquid-backdrop={liquidBackdrop ? "true" : undefined}
       data-icon-state={state}
       aria-hidden
@@ -250,6 +271,18 @@ export type MacSystemCapabilities = {
 export type MacLiquidGlassStyle = "crystal" | "softlight";
 export type MacLiquidGlassIntensity = "weak" | "balanced" | "strong";
 
+/** The enabled items of the menu-bar menu `key`, in order. */
+function enabledMenuItems(
+  container: HTMLElement | null,
+  key: string,
+): HTMLButtonElement[] {
+  return Array.from(
+    container?.querySelectorAll<HTMLButtonElement>(
+      `[data-menu-root="${key}"] .mac-menu-item:not(:disabled)`,
+    ) ?? [],
+  );
+}
+
 function MacMenuDropdown({
   items,
   align = "left",
@@ -284,6 +317,165 @@ function MacMenuDropdown({
   );
 }
 
+export interface MacWorkspaceDropdownProps {
+  desktopMode: DesktopMode;
+  onToggleMode: () => void;
+  activeRoom: OpenRoomType;
+  onSelectRoom: (room: OpenRoomType) => void;
+}
+
+export function MacWorkspaceDropdown({
+  desktopMode,
+  onToggleMode,
+  activeRoom,
+  onSelectRoom,
+}: MacWorkspaceDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const currentRoom =
+    OPEN_ROOMS.find((r) => r.id === activeRoom) ?? OPEN_ROOMS[0]!;
+  const CurrentRoomIcon = currentRoom.icon;
+
+  return (
+    <div ref={containerRef} className="relative select-none">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-label="空间与模式控制"
+        className={cn(
+          // Never wraps: at phone width the label used to break into two
+          // lines (全局总 / 览) inside the 22px pill; there it shows only the
+          // room icon and chevron and keeps the label for screen readers.
+          "flex shrink-0 items-center gap-1.5 h-[22px] px-2.5 whitespace-nowrap rounded-full text-xs transition-all border cursor-pointer",
+          open
+            ? "bg-current/20 text-inherit border-current/25 shadow-xs"
+            : "bg-current/10 text-inherit border-current/15 hover:bg-current/15",
+        )}
+        title="桌面空间与模式：点击切换协作空间或纯净态"
+      >
+        <span
+          className={cn(
+            "size-1.5 rounded-full transition-transform",
+            desktopMode === "pure" ? "bg-core animate-pulse" : "bg-primary",
+          )}
+        />
+        <span className="flex items-center gap-1 text-[12px] font-medium tracking-tight">
+          {desktopMode === "pure" ? (
+            <span className="max-sm:sr-only">意图纯净态</span>
+          ) : (
+            <>
+              <CurrentRoomIcon className="size-3" aria-hidden />
+              <span className="max-sm:sr-only">
+                {currentRoom.title.split(" ")[0]}
+              </span>
+            </>
+          )}
+        </span>
+        <ChevronDownIcon
+          className={cn(
+            "size-3 text-inherit opacity-60 transition-transform duration-150",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="mac-menu-dropdown w-52 left-1/2 -translate-x-1/2 top-[25px]"
+          data-liquid-surface="thick"
+        >
+          <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
+            桌面模式
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (desktopMode !== "pure") onToggleMode();
+              setOpen(false);
+            }}
+            className="mac-menu-item"
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  desktopMode === "pure" ? "bg-core" : "bg-slate-300 ",
+                )}
+              />
+              <span>意图纯净态</span>
+            </span>
+            <span className="mac-menu-shortcut">Space</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (desktopMode !== "workspace") onToggleMode();
+              setOpen(false);
+            }}
+            className="mac-menu-item"
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  desktopMode === "workspace" ? "bg-primary" : "bg-slate-300 ",
+                )}
+              />
+              <span>多窗口工作台</span>
+            </span>
+            <span className="mac-menu-shortcut">Space</span>
+          </button>
+
+          <div className="mac-menu-separator" />
+
+          <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
+            协作空间
+          </div>
+          {OPEN_ROOMS.map((room) => {
+            const isSelected =
+              activeRoom === room.id && desktopMode === "workspace";
+            return (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => {
+                  onSelectRoom(room.id);
+                  if (desktopMode === "pure") onToggleMode();
+                  setOpen(false);
+                }}
+                className="mac-menu-item"
+              >
+                <span className="flex items-center gap-2">
+                  <room.icon className="size-3.5" aria-hidden />
+                  <span
+                    className={isSelected ? "font-semibold" : "font-normal"}
+                  >
+                    {room.title.split(" ")[0]}
+                  </span>
+                </span>
+                {isSelected && <CheckIcon className="size-3.5 text-core" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MacMenuBar({
   activeApp = "文件管理器",
   controlCenterOpen,
@@ -304,6 +496,12 @@ export function MacMenuBar({
   onLockScreen,
   onSystemAction,
   notificationCount = 0,
+  modelStatus,
+  centerContent,
+  desktopTheme = "theme-white",
+  onToggleTheme,
+  showBattery = false,
+  onToggleMissionControl,
 }: {
   activeApp?: string;
   controlCenterOpen: boolean;
@@ -312,25 +510,35 @@ export function MacMenuBar({
   onOpenSpotlight: () => void;
   onToggleControlCenter: () => void;
   onToggleNotifications: () => void;
-  onToggleLiquidGlass: () => void;
+  onToggleLiquidGlass?: () => void;
   onOpenAbout: () => void;
   onOpenFiles: () => void;
   onOpenSettings: () => void;
   appStoreAvailable: boolean;
   onOpenAppStore: () => void;
   onOpenLaunchpad: () => void;
+  onToggleMissionControl?: () => void;
   systemCapabilities: MacSystemCapabilities;
   systemControls?: SystemControlState | null;
   onLockScreen: () => void;
   onSystemAction: (action: MacSystemAction) => void;
   notificationCount?: number;
+  modelStatus?: ReactNode;
+  centerContent?: ReactNode;
+  desktopTheme?: "theme-white" | "theme-glass" | "theme-dark";
+  onToggleTheme?: () => void;
+  showBattery?: boolean;
 }) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    // 页面不可见时暂停时钟，回到前台立即刷新，避免后台每秒空转 setState
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      setNow(new Date());
+    }, 1000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -345,6 +553,87 @@ export function MacMenuBar({
   const select = (action: () => void) => {
     setActiveMenu(null);
     action();
+  };
+
+  // Keyboard: the menu titles stay in the Tab order. Left/Right move between
+  // titles (or between menus while one is open), Down/Up open a menu and walk
+  // its items, Home/End jump, and Escape closes it back onto its title.
+  const pendingItemFocus = useRef<"first" | "last" | null>(null);
+  useEffect(() => {
+    const which = pendingItemFocus.current;
+    if (!activeMenu || !which) return;
+    pendingItemFocus.current = null;
+    const items = enabledMenuItems(menuRef.current, activeMenu);
+    (which === "last" ? items[items.length - 1] : items[0])?.focus();
+  }, [activeMenu]);
+
+  const focusMenuTitle = (key: string) =>
+    menuRef.current
+      ?.querySelector<HTMLElement>(`[data-menu-trigger="${key}"]`)
+      ?.focus();
+
+  const openMenuAt = (key: string, which: "first" | "last") => {
+    if (activeMenu === key) {
+      const items = enabledMenuItems(menuRef.current, key);
+      (which === "last" ? items[items.length - 1] : items[0])?.focus();
+      return;
+    }
+    pendingItemFocus.current = which;
+    setActiveMenu(key);
+  };
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const target = event.target as HTMLElement;
+    const key =
+      target.closest<HTMLElement>("[data-menu-root]")?.dataset.menuRoot;
+    if (!key) return;
+    const inMenu = target.classList.contains("mac-menu-item");
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowLeft": {
+        event.preventDefault();
+        const keys = ["system", ...menus.map((menu) => menu.key)];
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const next =
+          keys[(keys.indexOf(key) + step + keys.length) % keys.length]!;
+        if (activeMenu) openMenuAt(next, "first");
+        else focusMenuTitle(next);
+        return;
+      }
+      case "ArrowDown":
+      case "ArrowUp": {
+        event.preventDefault();
+        const forward = event.key === "ArrowDown";
+        if (!inMenu) {
+          openMenuAt(key, forward ? "first" : "last");
+          return;
+        }
+        const items = enabledMenuItems(menuRef.current, key);
+        const index = items.indexOf(target as HTMLButtonElement);
+        items[
+          (index + (forward ? 1 : -1) + items.length) % items.length
+        ]?.focus();
+        return;
+      }
+      case "Home":
+      case "End": {
+        if (!inMenu) return;
+        event.preventDefault();
+        const items = enabledMenuItems(menuRef.current, key);
+        (event.key === "Home" ? items[0] : items[items.length - 1])?.focus();
+        return;
+      }
+      case "Escape":
+        if (!activeMenu) return;
+        event.preventDefault();
+        setActiveMenu(null);
+        focusMenuTitle(key);
+        return;
+      case "Tab":
+        if (activeMenu) setActiveMenu(null);
+        return;
+    }
   };
 
   const menus: Array<{ label: string; key: string; items: MenuAction[] }> = [
@@ -373,26 +662,22 @@ export function MacMenuBar({
           shortcut: "Ctrl+N",
           onSelect: () => select(onOpenFiles),
         },
-        { label: "新建文件夹", shortcut: "Ctrl+Shift+N", disabled: true },
-        { divider: true },
         {
-          label: "打开",
+          label: "打开…",
           shortcut: "Ctrl+O",
           onSelect: () => select(onOpenFiles),
         },
-        { label: "关闭窗口", shortcut: "Ctrl+W", disabled: true },
-      ],
-    },
-    {
-      label: "编辑",
-      key: "edit",
-      items: [
-        { label: "撤销", shortcut: "Ctrl+Z", disabled: true },
-        { label: "重做", shortcut: "Ctrl+Shift+Z", disabled: true },
         { divider: true },
-        { label: "剪切", shortcut: "Ctrl+X", disabled: true },
-        { label: "拷贝", shortcut: "Ctrl+C", disabled: true },
-        { label: "粘贴", shortcut: "Ctrl+V", disabled: true },
+        {
+          label: "桌面",
+          shortcut: "Ctrl+Shift+D",
+          onSelect: () => select(onOpenFiles),
+        },
+        {
+          label: "个人主目录",
+          shortcut: "Ctrl+Shift+H",
+          onSelect: () => select(onOpenFiles),
+        },
       ],
     },
     {
@@ -400,52 +685,25 @@ export function MacMenuBar({
       key: "view",
       items: [
         {
+          label: "调度中心 (Mission Control)",
+          shortcut: "F3",
+          onSelect: () => select(() => onToggleMissionControl?.()),
+        },
+        {
           label: "显示应用库",
           shortcut: "F4",
           onSelect: () => select(onOpenLaunchpad),
         },
-        { label: "显示边栏", shortcut: "Ctrl+Shift+S", disabled: true },
         { divider: true },
         { label: "进入全屏幕", shortcut: "Ctrl+Shift+F", disabled: true },
-      ],
-    },
-    {
-      label: "前往",
-      key: "go",
-      items: [
-        {
-          label: "个人",
-          shortcut: "Ctrl+Shift+H",
-          onSelect: () => select(onOpenFiles),
-        },
-        {
-          label: "桌面",
-          shortcut: "Ctrl+Shift+D",
-          onSelect: () => select(onOpenFiles),
-        },
-        {
-          label: "应用程序",
-          shortcut: "Ctrl+Shift+A",
-          onSelect: () => select(onOpenLaunchpad),
-        },
-      ],
-    },
-    {
-      label: "窗口",
-      key: "window",
-      items: [
-        { label: "最小化", shortcut: "Ctrl+M", disabled: true },
-        { label: "缩放", disabled: true },
-        { divider: true },
-        { label: "前置全部窗口", disabled: true },
       ],
     },
     {
       label: "帮助",
       key: "help",
       items: [
-        { label: "Echo OS 帮助", onSelect: () => select(onOpenAbout) },
-        { label: "键盘快捷键", disabled: true },
+        { label: "ECHO OS 帮助", onSelect: () => select(onOpenAbout) },
+        { label: "系统设置…", onSelect: () => select(onOpenSettings) },
       ],
     },
   ];
@@ -474,13 +732,16 @@ export function MacMenuBar({
     <header
       ref={menuRef}
       data-desktop-interactive
-      data-liquid-surface="ultra-thin"
-      className="mac-menu-bar"
+      className={cn("mac-menu-bar", desktopTheme)}
+      data-theme={desktopTheme}
     >
-      <div className="mac-menu-left">
-        <div className="relative">
+      <div className="mac-menu-left" onKeyDown={handleMenuKeyDown}>
+        <div className="relative" data-menu-root="system">
           <button
             type="button"
+            data-menu-trigger="system"
+            aria-haspopup="menu"
+            aria-expanded={activeMenu === "system"}
             className={cn(
               "mac-menu-logo",
               activeMenu === "system" && "is-active",
@@ -490,7 +751,7 @@ export function MacMenuBar({
             }
             aria-label="Echo 菜单"
           >
-            <img src="/favicon.svg" alt="" className="size-[17px]" />
+            <EchoMark className="size-[17px]" />
           </button>
           {activeMenu === "system" && (
             <MacMenuDropdown
@@ -539,45 +800,91 @@ export function MacMenuBar({
             />
           )}
         </div>
-        {menus.map((menu, index) => (
-          <div key={menu.key} className="relative">
-            <button
-              type="button"
-              className={cn(
-                "mac-menu-button",
-                index === 0 && "font-semibold",
-                activeMenu === menu.key && "is-active",
-              )}
-              onClick={() =>
-                setActiveMenu((value) => (value === menu.key ? null : menu.key))
-              }
-              onPointerEnter={() => activeMenu && setActiveMenu(menu.key)}
+        {menus.map((menu, index) => {
+          return (
+            <div
+              key={menu.key}
+              data-menu-root={menu.key}
+              className={cn("relative", index === 0 && "mr-1")}
             >
-              {menu.label}
-            </button>
-            {activeMenu === menu.key && <MacMenuDropdown items={menu.items} />}
-          </div>
-        ))}
+              <button
+                type="button"
+                data-menu-trigger={menu.key}
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === menu.key}
+                className={cn(
+                  "mac-menu-button",
+                  index === 0
+                    ? "font-bold text-inherit"
+                    : "text-inherit opacity-90 font-normal",
+                  activeMenu === menu.key && "is-active",
+                )}
+                onClick={() =>
+                  setActiveMenu((value) =>
+                    value === menu.key ? null : menu.key,
+                  )
+                }
+                onPointerEnter={() => activeMenu && setActiveMenu(menu.key)}
+              >
+                {menu.label}
+              </button>
+              {activeMenu === menu.key && (
+                <MacMenuDropdown items={menu.items} />
+              )}
+            </div>
+          );
+        })}
       </div>
 
+      {centerContent && (
+        <div className="mac-menu-center mx-auto flex items-center justify-center pointer-events-auto">
+          {centerContent}
+        </div>
+      )}
+
       <div className="mac-menu-right">
-        <button
-          type="button"
-          className={cn("mac-status-icon", liquidGlassOpen && "is-active")}
-          onClick={onToggleLiquidGlass}
-          aria-label="流光玻璃设置"
-          aria-pressed={liquidGlassOpen}
-        >
-          <DropletsIcon className="size-[15px]" />
-        </button>
-        <button
-          type="button"
-          className="mac-status-icon"
-          aria-label={batteryLabel}
-          title={batteryLabel}
-        >
-          <BatteryFullIcon className="size-[15px]" />
-        </button>
+        {modelStatus}
+        {onToggleLiquidGlass && (
+          <button
+            type="button"
+            className={cn("mac-status-icon", liquidGlassOpen && "is-active")}
+            onClick={onToggleLiquidGlass}
+            aria-label="流光玻璃设置"
+            title="流光玻璃设置"
+            aria-pressed={liquidGlassOpen}
+          >
+            <DropletsIcon className="size-[15px]" />
+          </button>
+        )}
+        {onToggleTheme && (
+          <button
+            type="button"
+            className="mac-status-icon"
+            onClick={onToggleTheme}
+            aria-label="快速切换桌面主题"
+            title={`当前主题：${desktopTheme === "theme-white" ? "雪白" : desktopTheme === "theme-glass" ? "神经玻璃" : "石墨"} · 点击快速切换`}
+          >
+            {desktopTheme === "theme-white" ? (
+              <SunIcon className="size-[15px]" />
+            ) : desktopTheme === "theme-glass" ? (
+              <PaletteIcon className="size-[15px]" />
+            ) : (
+              <MoonIcon className="size-[15px]" />
+            )}
+          </button>
+        )}
+        {(showBattery ||
+          (systemControls?.nativeShell && systemControls.battery.present)) && (
+          <button
+            type="button"
+            className="mac-status-icon"
+            aria-label={batteryLabel}
+            title={batteryLabel}
+            onClick={onToggleControlCenter}
+          >
+            <BatteryFullIcon className="size-[15px]" />
+          </button>
+        )}
         <button
           type="button"
           className={cn(
@@ -588,6 +895,7 @@ export function MacMenuBar({
           )}
           aria-label={wifiLabel}
           title={wifiLabel}
+          onClick={onToggleControlCenter}
         >
           <WifiIcon className="size-[15px]" />
         </button>
@@ -620,8 +928,10 @@ export function MacMenuBar({
               ? `通知中心，${notificationCount} 条通知`
               : "通知中心"
           }
+          title={`${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 周${"日一二三四五六"[now.getDay()]} ${timeText}`}
         >
-          <span className="hidden sm:inline">{dateText}</span>
+          <span className="hidden 2xl:inline">{dateText}</span>
+          <span className="hidden sm:inline 2xl:hidden">{`周${"日一二三四五六"[now.getDay()]}`}</span>
           <span>{timeText}</span>
           {notificationCount > 0 && (
             <span className="mac-notification-count" aria-hidden>
@@ -708,6 +1018,8 @@ export function MacLiquidGlassPanel({
   onTuningChange,
   onResetTuning,
   onClose,
+  desktopTheme = "theme-white",
+  onDesktopThemeChange,
 }: {
   open: boolean;
   style: MacLiquidGlassStyle;
@@ -718,6 +1030,10 @@ export function MacLiquidGlassPanel({
   onTuningChange: (patch: Partial<LiquidGlassTuning>) => void;
   onResetTuning: () => void;
   onClose: () => void;
+  desktopTheme?: "theme-white" | "theme-glass" | "theme-dark";
+  onDesktopThemeChange?: (
+    theme: "theme-white" | "theme-glass" | "theme-dark",
+  ) => void;
 }) {
   if (!open) return null;
 
@@ -762,6 +1078,66 @@ export function MacLiquidGlassPanel({
           </span>
           <small>{style === "crystal" ? "Crystal Flow" : "Soft Aurora"}</small>
         </div>
+
+        {/* 桌面环境主题预设 (雪白 / 神经玻璃 / 石墨) */}
+        <fieldset className="mac-glass-fieldset">
+          <legend>桌面环境主题</legend>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-white"
+                  ? "border-warning/30 bg-warning/15 text-warning shadow-sm ring-1 ring-warning/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-white")}
+              aria-pressed={desktopTheme === "theme-white"}
+            >
+              <SunIcon className="size-4 text-warning" />
+              <span>雪白</span>
+              <small className="text-[12px] font-normal text-muted-foreground">
+                轻柔晨光
+              </small>
+            </button>
+
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-glass"
+                  ? "border-core/30 bg-core/15 text-core shadow-sm ring-1 ring-core/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-glass")}
+              aria-pressed={desktopTheme === "theme-glass"}
+            >
+              <DropletsIcon className="size-4 text-core" />
+              <span>神经玻璃</span>
+              <small className="text-[12px] font-normal text-muted-foreground">
+                澄澈流光
+              </small>
+            </button>
+
+            <button
+              type="button"
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-semibold transition-all",
+                desktopTheme === "theme-dark"
+                  ? "border-core/30 bg-core/15 text-core shadow-sm ring-1 ring-core/30"
+                  : "border-black/5 bg-card/40 text-muted-foreground hover:bg-card",
+              )}
+              onClick={() => onDesktopThemeChange?.("theme-dark")}
+              aria-pressed={desktopTheme === "theme-dark"}
+            >
+              <MoonIcon className="size-4 text-core" />
+              <span>石墨</span>
+              <small className="text-[12px] font-normal text-muted-foreground">
+                冷光玻璃
+              </small>
+            </button>
+          </div>
+        </fieldset>
 
         <fieldset className="mac-glass-fieldset">
           <legend>材质模式</legend>
@@ -935,6 +1311,7 @@ export function MacDesktopIcon({ app }: { app: MacShellApp }) {
  */
 function MacSurfaceLens() {
   const lensRef = useRef<HTMLSpanElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const lens = lensRef.current;
@@ -961,7 +1338,12 @@ function MacSurfaceLens() {
   return (
     <span ref={lensRef} className="mac-surface-lens" aria-hidden>
       <span className="mac-surface-lens-raster">
-        <img src="/third-party/appletechie-macos/wallpaper-day2.jpg" alt="" />
+        <img
+          src={wallpaper.url}
+          srcSet={wallpaper.srcSet}
+          sizes={wallpaper.sizes}
+          alt=""
+        />
       </span>
       <MacDesktopWallpaperArtwork />
     </span>
@@ -976,6 +1358,7 @@ function MacSurfaceLens() {
  */
 function MacIconLiquidBackdrop() {
   const backdropRef = useRef<HTMLSpanElement>(null);
+  const wallpaper = useDesktopWallpaperSources();
 
   useLayoutEffect(() => {
     const icon = backdropRef.current?.parentElement;
@@ -1004,7 +1387,12 @@ function MacIconLiquidBackdrop() {
       className="mac-app-icon-liquid-backdrop"
       aria-hidden
     >
-      <img src="/third-party/appletechie-macos/wallpaper-day2.jpg" alt="" />
+      <img
+        src={wallpaper.url}
+        srcSet={wallpaper.srcSet}
+        sizes={wallpaper.sizes}
+        alt=""
+      />
     </span>
   );
 }
@@ -1026,22 +1414,22 @@ export function MacDesktopWidgets({
     checking: {
       title: "正在连接 Echo",
       detail: "正在检查本机 Agent Runtime",
-      label: "正在连接 Echo Agent，打开工作台",
+      label: "正在连接 Echo Agent，打开 Agent",
     },
     ready: {
       title: "Echo Agent 在线",
       detail: "点击开始新的 Agent 会话",
-      label: "Echo Agent 在线，打开工作台",
+      label: "Echo Agent 在线，开始新的 Agent 会话",
     },
     "restart-required": {
       title: "Echo Agent 等待重启",
       detail: "Runtime 更新将在重启后生效",
-      label: "Echo Agent 等待重启，打开工作台",
+      label: "Echo Agent 等待重启，打开 Agent",
     },
     unavailable: {
       title: "Echo Agent 未连接",
-      detail: "点击打开工作台检查连接",
-      label: "Echo Agent 未连接，打开工作台检查连接",
+      detail: "点击打开 Agent 检查连接",
+      label: "Echo Agent 未连接，打开 Agent 检查连接",
     },
   };
   const statusCopy = agentCopy[agentHealth.state];
@@ -1049,12 +1437,12 @@ export function MacDesktopWidgets({
     if (agentHealth.verifiedBundle && agentHealth.sourceId) {
       statusCopy.title = "Echo Agent 已验证";
       statusCopy.detail = `${agentHealth.version ? `v${agentHealth.version} · ` : ""}${agentHealth.sourceId.slice(0, 8)}`;
-      statusCopy.label = `${statusCopy.title}，${statusCopy.detail}，打开工作台`;
+      statusCopy.label = `${statusCopy.title}，${statusCopy.detail}，开始新的 Agent 会话`;
     } else {
       statusCopy.detail = agentHealth.version
         ? `v${agentHealth.version} · 来源未验证`
         : "Runtime 版本未知 · 来源未验证";
-      statusCopy.label = `${statusCopy.title}，${statusCopy.detail}，打开工作台`;
+      statusCopy.label = `${statusCopy.title}，${statusCopy.detail}，开始新的 Agent 会话`;
     }
   }
 
@@ -1081,6 +1469,7 @@ export function MacDesktopWidgets({
         className={cn("mac-agent-widget", `is-${agentHealth.state}`)}
         data-liquid-surface="thick-dark"
         data-agent-status={agentHealth.state}
+        data-agent-entry="primary"
         onClick={onOpenWorkspace}
         aria-label={statusCopy.label}
       >
@@ -1241,6 +1630,7 @@ export function MacLaunchpad({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索"
+          aria-label="搜索应用"
           autoFocus
         />
       </div>
@@ -1278,6 +1668,7 @@ export function MacControlCenter({
   open,
   onClose,
   onOpenSettings,
+  onOpenLiquidGlass,
   systemControls,
   onSetWifiEnabled,
   onSetBluetoothEnabled,
@@ -1287,6 +1678,7 @@ export function MacControlCenter({
   open: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
+  onOpenLiquidGlass?: () => void;
   systemControls?: SystemControlState | null;
   onSetWifiEnabled?: (enabled: boolean) => Promise<unknown> | unknown;
   onSetBluetoothEnabled?: (enabled: boolean) => Promise<unknown> | unknown;
@@ -1428,17 +1820,35 @@ export function MacControlCenter({
             </span>
             <strong>专注模式</strong>
           </button>
-          <button
-            type="button"
-            className="mac-control-tile"
-            data-liquid-surface="thick"
-            onClick={onOpenSettings}
-          >
-            <span className="mac-control-round">
-              <SettingsIcon />
-            </span>
-            <strong>系统设置</strong>
-          </button>
+          {onOpenLiquidGlass ? (
+            <button
+              type="button"
+              className="mac-control-tile"
+              data-liquid-surface="thick"
+              onClick={() => {
+                onClose();
+                onOpenLiquidGlass();
+              }}
+              title="调节流光玻璃材质与光泽"
+            >
+              <span className="mac-control-round">
+                <DropletsIcon />
+              </span>
+              <strong>流光玻璃</strong>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mac-control-tile"
+              data-liquid-surface="thick"
+              onClick={onOpenSettings}
+            >
+              <span className="mac-control-round">
+                <SettingsIcon />
+              </span>
+              <strong>系统设置</strong>
+            </button>
+          )}
         </div>
         <label className="mac-control-slider" data-liquid-surface="thick">
           <span>
@@ -1488,7 +1898,7 @@ export function MacControlCenter({
         </label>
         <div className="mac-control-footer">
           <span>
-            <CommandIcon className="size-3.5" /> Echo OS
+            <CommandIcon className="size-3.5" /> ECHO OS
           </span>
           <button type="button" onClick={onOpenSettings}>
             控制中心设置…
@@ -1612,7 +2022,7 @@ export function MacNotificationCenter({
               <span>
                 {nativeServiceAvailable
                   ? "来自应用和系统服务的新通知会显示在这里。"
-                  : "系统通知在 Echo OS 原生 Linux 会话中启用。"}
+                  : "系统通知在 ECHO OS 原生 Linux 会话中启用。"}
               </span>
             </section>
           )}
@@ -1645,6 +2055,7 @@ export function MacAboutDialog({
   onApplyUpdate?: () => void;
   onRestart?: () => void;
 }) {
+  useEscapeToClose(open, onClose);
   if (!open) return null;
   const state = updateStatus?.state || "unavailable";
   const updateCopy: Record<
@@ -1661,7 +2072,7 @@ export function MacAboutDialog({
     },
     ready: {
       title: updateStatus?.version
-        ? `Echo OS ${updateStatus.version} 已认证`
+        ? `ECHO OS ${updateStatus.version} 已认证`
         : "更新已认证",
       detail: "安装将写入未启用的系统槽，当前系统保持可启动。",
     },
@@ -1671,7 +2082,7 @@ export function MacAboutDialog({
     },
     "reboot-required": {
       title: updateStatus?.version
-        ? `Echo OS ${updateStatus.version} 已就绪`
+        ? `ECHO OS ${updateStatus.version} 已就绪`
         : "更新已就绪",
       detail: "新系统已写入备用槽，重新启动后进行首次验证启动。",
     },
@@ -1682,7 +2093,7 @@ export function MacAboutDialog({
     unavailable: {
       title: "原生系统更新不可用",
       detail:
-        updateStatus?.error || "请在 Echo OS 原生 Linux 桌面中查看系统更新。",
+        updateStatus?.error || "请在 ECHO OS 原生 Linux 桌面中查看系统更新。",
     },
   };
   const copy = updateCopy[state];
@@ -1700,6 +2111,9 @@ export function MacAboutDialog({
       onPointerDown={onClose}
     >
       <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="关于本机"
         className="mac-about-dialog"
         data-liquid-surface="ultra-thick"
         onPointerDown={(event) => event.stopPropagation()}
@@ -1710,12 +2124,12 @@ export function MacAboutDialog({
           onClick={onClose}
           aria-label="关闭"
         >
-          <span />
+          <XIcon aria-hidden />
         </button>
         <div className="mac-about-mark">
           <EchoMark tone="light" />
         </div>
-        <h1>Echo OS</h1>
+        <h1>ECHO OS</h1>
         <p>Personal Agent Operating System</p>
         <dl data-liquid-surface="thick">
           <div>
@@ -1804,7 +2218,7 @@ export function MacAboutDialog({
         >
           打开系统设置…
         </button>
-        <small>© 2026 Echo Project</small>
+        <small>© 2026 ECHO</small>
       </section>
     </div>
   );
@@ -1815,25 +2229,50 @@ const SYSTEM_ACTION_COPY: Record<
   { title: string; detail: string; confirm: string }
 > = {
   logout: {
-    title: "退出当前 Echo OS 会话？",
+    title: "退出当前 ECHO OS 会话？",
     detail: "正在运行的应用会被关闭，并返回本地系统登录界面。",
     confirm: "退出登录",
   },
   suspend: {
-    title: "让 Echo OS 进入睡眠？",
+    title: "让 ECHO OS 进入睡眠？",
     detail: "当前会话会暂停，按电源键或键盘即可唤醒设备。",
     confirm: "睡眠",
   },
   restart: {
-    title: "重新启动 Echo OS？",
+    title: "重新启动 ECHO OS？",
     detail: "正在运行的应用会被关闭，请先保存尚未完成的工作。",
     confirm: "重新启动",
   },
   shutdown: {
-    title: "关闭 Echo OS？",
+    title: "关闭 ECHO OS？",
     detail: "正在运行的应用会被关闭，设备需要再次按下电源键才能启动。",
     confirm: "关机",
   },
+};
+
+/**
+ * Modal shell dialogs mark themselves aria-modal, which makes the desktop's
+ * global Escape handlers stand down; the dialog then owns Escape itself.
+ */
+function useEscapeToClose(active: boolean, onClose: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [active, onClose]);
+}
+
+// Signing out of ECHO OS in a browser ends only this browser's session; the
+// device and its tasks keep running.
+const WEB_LOGOUT_COPY = {
+  title: "退出这个浏览器里的 ECHO OS？",
+  detail: "设备上的任务会继续运行。再次使用时需要输入设备密码。",
+  confirm: "退出登录",
 };
 
 export function MacSystemActionDialog({
@@ -1842,15 +2281,22 @@ export function MacSystemActionDialog({
   error,
   onCancel,
   onConfirm,
+  webSession = false,
 }: {
   action: MacSystemAction | null;
   busy: boolean;
   error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+  /** No native shell: logout ends the browser session only. */
+  webSession?: boolean;
 }) {
+  useEscapeToClose(Boolean(action) && !busy, onCancel);
   if (!action) return null;
-  const copy = SYSTEM_ACTION_COPY[action];
+  const copy =
+    action === "logout" && webSession
+      ? WEB_LOGOUT_COPY
+      : SYSTEM_ACTION_COPY[action];
   return (
     <div
       className="mac-system-action-overlay"
@@ -1912,15 +2358,15 @@ export function MacStatusPill() {
 export const MAC_SYSTEM_APPS = {
   launchpad: {
     icon: LayoutGridIcon,
-    gradient: "linear-gradient(145deg, #f7f7fa, #bfc4cf)",
+    gradient: "linear-gradient(150deg, #1e1b4b 0%, #0f172a 60%, #020617 100%)",
   },
   settings: {
     icon: SettingsIcon,
-    gradient: "linear-gradient(145deg, #7f8793, #343940)",
+    gradient: "linear-gradient(150deg, #94a3b8 0%, #475569 60%, #334155 100%)",
   },
   appStore: {
     icon: ShoppingBagIcon,
-    gradient: "linear-gradient(145deg, #72b9ff, #3158d8)",
+    gradient: "linear-gradient(150deg, #38bdf8 0%, #2563eb 55%, #1e40af 100%)",
   },
   notifications: {
     icon: BellIcon,

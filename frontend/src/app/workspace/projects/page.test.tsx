@@ -12,6 +12,7 @@ const toastMocks = vi.hoisted(() => ({
 vi.mock("sonner", () => ({ toast: toastMocks }));
 vi.mock("@/core/auth/api", () => ({
   authHeaders: () => ({ Authorization: "Bearer test-token" }),
+  currentActorId: () => "local:test-actor",
   getToken: () => "test-token",
   jsonAuthHeaders: () => ({
     Authorization: "Bearer test-token",
@@ -114,7 +115,7 @@ describe("ProjectsPage production error states", () => {
 
     renderWithProviders(<ProjectsPage />, { locale: "zh-CN" });
 
-    expect(screen.getByText("加载中…")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("正在加载项目");
     expect(screen.queryByText(/还没有项目/)).not.toBeInTheDocument();
   });
 
@@ -142,7 +143,7 @@ describe("ProjectsPage production error states", () => {
     renderWithProviders(<ProjectsPage />, { locale: "zh-CN" });
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "🗂️ 项目管理" }),
+      screen.getByRole("heading", { level: 1, name: "项目管理" }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/还没有项目/)).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

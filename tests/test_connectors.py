@@ -187,6 +187,7 @@ class TestCredentialStore:
         assert store.get_secret("x", "second") is None
         assert not list(tmp_path.glob(".credentials.v1.json.*.tmp"))
 
+    @pytest.mark.skipif(os.name != "posix", reason="owner-only mode bits require POSIX")
     def test_existing_files_are_tightened_to_owner_only(self, tmp_path):
         store = CredentialStore(root=tmp_path)
         store.set_secret("x", "token", "secret")
@@ -1695,7 +1696,7 @@ class TestNextAction:
         conn = _device_flow_connector()  # cnb-api,有 auth 命令
         result = orch.connect(conn)  # 不带 run_cli / tokens
         assert result["next_action"] == "cli_command"
-        assert "cnb login" in result["command"]
+        assert result["command"] == ("cnb.cmd login" if os.name == "nt" else "cnb login")
 
     def test_no_cli_no_token_action_is_form(self, tmp_path: Path):
         conn = ConnectorDefinition(id="pure-token", auth_mode="token", cli={})
@@ -2167,4 +2168,3 @@ class TestTokenRefresher:
         assert conn.id not in second_registry.installed_ids()
         assert first._credentials.get_secret(conn.id, "access_token") is None
         assert second._credentials.get_secret(conn.id, "access_token") is None
-

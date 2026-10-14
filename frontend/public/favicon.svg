@@ -1,11 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Echo">
-  <defs>
-    <linearGradient id="echo-brand" x1="16" y1="10" x2="49" y2="54" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2454D8"/>
-      <stop offset=".52" stop-color="#4D8CF7"/>
-      <stop offset="1" stop-color="#A9DDFC"/>
-    </linearGradient>
-  </defs>
-  <path d="M45.25 15.9A21.5 21.5 0 1 0 45.25 48.1" stroke="url(#echo-brand)" stroke-width="7.5" stroke-linecap="round"/>
-  <circle cx="51.5" cy="32" r="4.6" fill="url(#echo-brand)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ECHO">
+  <rect width="64" height="64" rx="14" fill="#101216"/>
+  <path d="M50 17H24a7 7 0 0 0-7 7v16a7 7 0 0 0 7 7h26" fill="none" stroke="#EEF1F4" stroke-width="6"/>
+  <circle cx="38" cy="32" r="5" fill="#6FE3F0"/>
 </svg>

@@ -89,7 +89,7 @@ export function AuditEvidencePanel() {
           <h1 className="text-[24px] font-semibold tracking-tight">
             审计与证据
           </h1>
-          <p className="mt-1 text-[13px] text-slate-500">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             验证管理操作记录，并把设备身份锚点保存到设备之外
           </p>
         </div>
@@ -98,7 +98,7 @@ export function AuditEvidencePanel() {
           aria-label="刷新审计状态"
           disabled={loading || busy}
           onClick={() => void refresh()}
-          className="grid size-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm disabled:opacity-40"
+          className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm disabled:opacity-40"
         >
           <RefreshCwIcon
             className={`size-4 ${loading ? "animate-spin" : ""}`}
@@ -109,26 +109,26 @@ export function AuditEvidencePanel() {
       {error && (
         <p
           role="alert"
-          className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700"
+          className="mt-4 rounded-xl bg-breach/10 px-4 py-3 text-xs text-breach"
         >
           {error}
         </p>
       )}
 
       {loading && !anchor ? (
-        <div className="grid h-48 place-items-center text-slate-400">
+        <div className="grid h-48 place-items-center text-muted-foreground">
           <Loader2Icon className="size-5 animate-spin" />
         </div>
       ) : (
         <>
-          <section className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-start gap-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                 <CheckCircle2Icon className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold">审计链健康</h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   已验证 {anchor?.audit.entries ?? 0} 条记录；当前尾序号为{" "}
                   {anchor?.audit.tailSeq ?? -1}。
                 </p>
@@ -136,21 +136,21 @@ export function AuditEvidencePanel() {
             </div>
           </section>
 
-          <section className="mt-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+          <section className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-start gap-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
                 <FingerprintIcon className="size-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold">设备验证身份</h2>
-                <p className="mt-1 break-all font-mono text-[10px] leading-4 text-slate-500">
+                <p className="mt-1 break-all font-mono text-[12px] leading-4 text-muted-foreground">
                   {anchor?.signing.keyId || "尚未生成"}
                 </p>
                 <button
                   type="button"
                   disabled={!anchor}
                   onClick={downloadAnchor}
-                  className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-foreground hover:bg-background disabled:opacity-40"
                 >
                   <DownloadIcon className="size-3.5" />
                   下载签名锚点
@@ -159,13 +159,13 @@ export function AuditEvidencePanel() {
             </div>
           </section>
 
-          <section className="mt-4 flex items-center gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+          <section className="mt-4 flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-core/10 text-core">
               <KeyRoundIcon className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="text-[15px] font-semibold">审计签名密钥</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 已使用 {keys?.keyCount ?? 1}/{keys?.maximumKeys ?? 64}{" "}
                 个密钥；历史记录仍可验证。
               </p>
@@ -174,13 +174,13 @@ export function AuditEvidencePanel() {
               type="button"
               disabled={busy || !keys || keys.keyCount >= keys.maximumKeys}
               onClick={() => setDialogOpen(true)}
-              className="h-9 shrink-0 rounded-lg border border-blue-200 bg-blue-50 px-3.5 text-[13px] font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-40"
+              className="h-9 shrink-0 rounded-lg border border-core/30 bg-core/10 px-3.5 text-[13px] font-medium text-core hover:bg-core/10 disabled:opacity-40"
             >
               轮换密钥…
             </button>
           </section>
 
-          <p className="mt-4 text-[11px] leading-5 text-slate-400">
+          <p className="mt-4 text-[12px] leading-5 text-muted-foreground">
             下载锚点不含审计正文。完整加密证据包由宿主定时任务写入外置盘或远端挂载；本机实时审计不会被保留策略删除。
           </p>
         </>

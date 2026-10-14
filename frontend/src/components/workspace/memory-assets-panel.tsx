@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -77,7 +78,7 @@ function LayerMark({ layer }: { layer: MemoryLayer }) {
     <div
       className={cn(
         "grid size-9 shrink-0 place-items-center rounded-lg border text-mini font-semibold",
-        layer === "L0" && "border-slate-200 bg-slate-50 text-slate-600",
+        layer === "L0" && "border-border bg-background text-muted-foreground",
         layer === "L1" && "border-info bg-info text-info",
         layer === "L2" && "border-success/30 bg-success/5 text-success",
         layer === "L3" && "border-chart-1/30 bg-chart-1/10 text-chart-1",
@@ -372,9 +373,7 @@ export function MemoryAssetsPanel() {
         </div>
 
         {assets.isLoading ? (
-          <div className="flex min-h-48 items-center justify-center text-muted-foreground">
-            <Loader2Icon className="size-5 animate-spin" />
-          </div>
+          <PanelLoading label="正在读取记忆资产" className="min-h-48" />
         ) : assets.isError ? (
           <div className="flex min-h-48 flex-col items-center justify-center gap-2 text-center">
             <CircleGaugeIcon className="size-5 text-muted-foreground" />

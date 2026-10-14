@@ -56,8 +56,16 @@ export function TeamWorkbenchPanel({
     Icon: typeof ClipboardListIcon;
   }> = [
     { id: "members", label: t.collab.workbench.tabMembers, Icon: UsersIcon },
-    { id: "tasks", label: t.collab.workbench.tabTasks, Icon: ClipboardListIcon },
-    { id: "workspace", label: t.collab.workbench.tabWorkspace, Icon: FolderIcon },
+    {
+      id: "tasks",
+      label: t.collab.workbench.tabTasks,
+      Icon: ClipboardListIcon,
+    },
+    {
+      id: "workspace",
+      label: t.collab.workbench.tabWorkspace,
+      Icon: FolderIcon,
+    },
   ];
 
   return (
@@ -192,6 +200,7 @@ function TeamMachineRail({
             <WorkstationSeat
               key={agent.name}
               name={name}
+              agentId={agent.name}
               avatar={agent.icon}
               avatarUrl={avatarSrc}
               avatarNode={
@@ -203,7 +212,11 @@ function TeamMachineRail({
               showBotBadge
               fallbackInitial={name.charAt(0)}
               dotClassName="bg-muted-foreground/45"
-              dotLabel={isLeader ? t.collab.workbench.leaderStandby : t.collab.workbench.standby}
+              dotLabel={
+                isLeader
+                  ? t.collab.workbench.leaderStandby
+                  : t.collab.workbench.standby
+              }
               title={
                 agent.description ||
                 t.collab.workbench.memberNameWithRole(name, isLeader)
@@ -223,15 +236,15 @@ function TeamMachineRail({
         {humans.map((participant) => {
           const isSelf = participant.id === currentParticipantId;
           const isOnline = participant.status === "active";
-          const statusText = isOnline ? t.collab.common.online : t.collab.common.offline;
+          const statusText = isOnline
+            ? t.collab.common.online
+            : t.collab.common.offline;
           return (
             <WorkstationSeat
               key={participant.id}
               name={participant.display_name}
               fallbackInitial={participant.display_name.charAt(0)}
-              dotClassName={
-                isOnline ? "bg-success" : "bg-muted-foreground/35"
-              }
+              dotClassName={isOnline ? "bg-success" : "bg-muted-foreground/35"}
               dotLabel={statusText}
               title={`${participant.display_name} · ${statusText} · ${participant.role}`}
               ariaLabel={`${participant.display_name} · ${statusText}`}

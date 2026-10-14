@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # preview-release.yml calls this with preview: true; see the plugin
+  # publisher steps below for the only behavioural difference.
+  workflow_call:
+    inputs:
+      preview:
+        description: Build the preview-channel AppImage
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -60,12 +68,23 @@ jobs:
           --extra desktop-core
           --extra desktop-build
 
+      # A standalone run (the one release.yml selects) always requires the
+      # publisher variables. Only a preview-channel build may skip them; it
+      # then ships no built-in publisher trust store, so first-party
+      # marketplace plugins stay unverified in it.
       - name: Configure trusted first-party plugin publisher
+        if: ${{ !inputs.preview || vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY != '' }}
         env:
           ECHO_PLUGIN_SIGNING_PUBLIC_KEY: ${{ vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY }}
           ECHO_PLUGIN_SIGNING_PUBLISHER_ID: ${{ vars.ECHO_PLUGIN_SIGNING_PUBLISHER_ID }}
           ECHO_PLUGIN_SIGNING_KEY_ID: ${{ vars.ECHO_PLUGIN_SIGNING_KEY_ID }}
         run: ./.venv/bin/python scripts/configure_builtin_plugin_publisher.py
+
+      - name: Report the unconfigured plugin publisher of a preview build
+        if: ${{ inputs.preview && vars.ECHO_PLUGIN_SIGNING_PUBLIC_KEY == '' }}
+        run: >-
+          echo "::warning title=No built-in plugin publisher::ECHO_PLUGIN_SIGNING_PUBLIC_KEY/_KEY_ID/_PUBLISHER_ID
+          are not configured; this preview build trusts no first-party plugin publisher."
 
       - name: Install frontend dependencies
         working-directory: frontend

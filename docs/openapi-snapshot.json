@@ -1437,6 +1437,22 @@
             ],
             "title": "Effective Model"
           },
+          "execution_available": {
+            "default": false,
+            "title": "Execution Available",
+            "type": "boolean"
+          },
+          "execution_unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Unavailable Reason"
+          },
           "mode": {
             "enum": [
               "follow_system",
@@ -2405,6 +2421,74 @@
         "title": "ControlSessionStateBody",
         "type": "object"
       },
+      "CoordinationReceiptBody": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "ack",
+              "cancel"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "message_id": {
+            "default": "",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "action"
+        ],
+        "title": "CoordinationReceiptBody",
+        "type": "object"
+      },
+      "CoordinationTaskBody": {
+        "additionalProperties": false,
+        "properties": {
+          "assignee": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Assignee",
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "prompt": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignee",
+          "prompt",
+          "request_id"
+        ],
+        "title": "CoordinationTaskBody",
+        "type": "object"
+      },
       "CreateAgentRequest": {
         "properties": {
           "description": {
@@ -3236,6 +3320,19 @@
           "topic"
         ],
         "title": "DeepResearchRequest",
+        "type": "object"
+      },
+      "DeployRequest": {
+        "properties": {
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_id"
+        ],
+        "title": "DeployRequest",
         "type": "object"
       },
       "DetachFromGroupBody": {
@@ -6224,6 +6321,47 @@
         "title": "RecoverBody",
         "type": "object"
       },
+      "RecoveryResumeRequest": {
+        "description": "POST /api/agents/parallel/batch/{batch_id}/resume body.\n\nRecovery is deliberately an explicit decision.  The caller names the\nlanes to rerun instead of allowing the server to replay an entire lost\nbatch (which could repeat an unknown side effect).",
+        "properties": {
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Task Ids",
+            "type": "array"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          }
+        },
+        "required": [
+          "task_ids"
+        ],
+        "title": "RecoveryResumeRequest",
+        "type": "object"
+      },
       "RejectTeamJoinRequest": {
         "properties": {
           "reason": {
@@ -6300,6 +6438,17 @@
               }
             ],
             "title": "Path"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
           },
           "text": {
             "anyOf": [
@@ -7143,6 +7292,18 @@
             "title": "Approved",
             "type": "boolean"
           },
+          "expected_approval_version": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Approval Version"
+          },
           "reason": {
             "anyOf": [
               {
@@ -7276,6 +7437,35 @@
           }
         },
         "title": "TaskResumeExecutionRequest",
+        "type": "object"
+      },
+      "TaskStartRequest": {
+        "description": "Start one agent task from a one-line intent (the desktop intent box).",
+        "properties": {
+          "agentId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentid"
+          },
+          "prompt": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "TaskStartRequest",
         "type": "object"
       },
       "TaskTakeoverRequest": {
@@ -8464,6 +8654,10 @@
             "title": "Relative Path",
             "type": "string"
           },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
           "size": {
             "title": "Size",
             "type": "integer"
@@ -8476,7 +8670,8 @@
           "path",
           "size",
           "modified",
-          "download_url"
+          "download_url",
+          "resource_id"
         ],
         "title": "WorkspaceOutputEntry",
         "type": "object"
@@ -14213,6 +14408,61 @@
         ]
       }
     },
+    "/api/agents/parallel/batch/{batch_id}/resume": {
+      "post": {
+        "description": "Explicitly rerun named safe lanes from a recovery snapshot.\n\nReading a snapshot never starts work.  This endpoint is the separate\nuser-confirmed action and returns a new batch so the old evidence is\npreserved for audit and comparison.",
+        "operationId": "resume_batch_api_agents_parallel_batch__batch_id__resume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryResumeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resume Batch Api Agents Parallel Batch  Batch Id  Resume Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resume Batch",
+        "tags": [
+          "parallel-agents"
+        ]
+      }
+    },
     "/api/agents/parallel/cancel-all": {
       "post": {
         "operationId": "cancel_all_api_agents_parallel_cancel_all_post",
@@ -14318,6 +14568,54 @@
           }
         },
         "summary": "Dispatch",
+        "tags": [
+          "parallel-agents"
+        ]
+      }
+    },
+    "/api/agents/parallel/recovery-snapshots": {
+      "get": {
+        "description": "Discover durable, redacted batches owned by the caller.\n\nThis route is deliberately separate from the actor-agnostic live\nstatus route: a restarted orchestrator has no in-memory batch map,\nwhile the recovery list can safely use durable owner/tenant fields.",
+        "operationId": "list_recovery_snapshots_api_agents_parallel_recovery_snapshots_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Recovery Snapshots Api Agents Parallel Recovery Snapshots Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Recovery Snapshots",
         "tags": [
           "parallel-agents"
         ]
@@ -19698,6 +19996,158 @@
         ]
       }
     },
+    "/api/collab/{thread_id}/coordination": {
+      "get": {
+        "operationId": "coordination_snapshot_api_collab__thread_id__coordination_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Coordination Snapshot Api Collab  Thread Id  Coordination Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Coordination Snapshot",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
+    "/api/collab/{thread_id}/coordination/receipt": {
+      "post": {
+        "operationId": "coordination_receipt_api_collab__thread_id__coordination_receipt_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoordinationReceiptBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Coordination Receipt Api Collab  Thread Id  Coordination Receipt Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Coordination Receipt",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
+    "/api/collab/{thread_id}/coordination/tasks": {
+      "post": {
+        "operationId": "create_coordination_task_api_collab__thread_id__coordination_tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoordinationTaskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Coordination Task Api Collab  Thread Id  Coordination Tasks Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Coordination Task",
+        "tags": [
+          "cowork"
+        ]
+      }
+    },
     "/api/collab/{thread_id}/link-room": {
       "post": {
         "description": "Link a Team Room to this session (event-sourced) so the two surfaces\nstop drifting as separate sources of truth.",
@@ -21210,6 +21660,51 @@
           }
         },
         "summary": "Api Identity Lock Put",
+        "tags": [
+          "config"
+        ]
+      }
+    },
+    "/api/config/local-models/activate": {
+      "post": {
+        "operationId": "activate_api_config_local_models_activate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Activate Api Config Local Models Activate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activate",
         "tags": [
           "config"
         ]
@@ -22821,6 +23316,115 @@
         ]
       }
     },
+    "/api/cookbook/deployment": {
+      "get": {
+        "operationId": "deployment_status_api_cookbook_deployment_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Deployment Status Api Cookbook Deployment Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Deployment Status",
+        "tags": [
+          "cookbook"
+        ]
+      }
+    },
+    "/api/cookbook/deployment/plan": {
+      "post": {
+        "operationId": "deployment_plan_api_cookbook_deployment_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Deployment Plan Api Cookbook Deployment Plan Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Deployment Plan",
+        "tags": [
+          "cookbook"
+        ]
+      }
+    },
+    "/api/cookbook/deployment/start": {
+      "post": {
+        "operationId": "deployment_start_api_cookbook_deployment_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeployRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Deployment Start Api Cookbook Deployment Start Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Deployment Start",
+        "tags": [
+          "cookbook"
+        ]
+      }
+    },
     "/api/cookbook/pull": {
       "post": {
         "description": "One-click pull a recommended model via ollama (runs in the background).",
@@ -22869,6 +23473,20 @@
       "get": {
         "description": "Detected hardware + ranked recommendations + ollama availability.",
         "operationId": "snapshot_api_cookbook_snapshot_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "context_tokens",
+            "required": false,
+            "schema": {
+              "default": 4096,
+              "maximum": 32768,
+              "minimum": 4096,
+              "title": "Context Tokens",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -22881,9 +23499,62 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "Snapshot",
+        "tags": [
+          "cookbook"
+        ]
+      }
+    },
+    "/api/cookbook/verify": {
+      "post": {
+        "operationId": "verify_api_cookbook_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Verify Api Cookbook Verify Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify",
         "tags": [
           "cookbook"
         ]
@@ -24086,6 +24757,246 @@
         "summary": "Member View",
         "tags": [
           "cowork"
+        ]
+      }
+    },
+    "/api/crashes": {
+      "delete": {
+        "description": "Acknowledge every recorded crash (used after triage).",
+        "operationId": "api_crashes_clear_api_crashes_delete",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crashes Clear Api Crashes Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crashes Clear",
+        "tags": [
+          "observability"
+        ]
+      },
+      "get": {
+        "operationId": "api_crashes_api_crashes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crashes Api Crashes Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crashes",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/api/crashes/{fingerprint}": {
+      "get": {
+        "operationId": "api_crash_detail_api_crashes__fingerprint__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "title": "Fingerprint",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crash Detail Api Crashes  Fingerprint  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crash Detail",
+        "tags": [
+          "observability"
+        ]
+      }
+    },
+    "/api/crashes/{fingerprint}/report": {
+      "get": {
+        "description": "Plain-text report, ready to paste into a bug report.",
+        "operationId": "api_crash_report_api_crashes__fingerprint__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fingerprint",
+            "required": true,
+            "schema": {
+              "title": "Fingerprint",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "explain",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Explain",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cross_tenant",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Cross Tenant",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Crash Report Api Crashes  Fingerprint  Report Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Crash Report",
+        "tags": [
+          "observability"
         ]
       }
     },
@@ -31122,6 +32033,240 @@
         "summary": "Api Files Stream",
         "tags": [
           "observability"
+        ]
+      }
+    },
+    "/api/fs/content": {
+      "get": {
+        "operationId": "api_fs_content_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "thread_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Thread Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_fidelity_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Fidelity Preview",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Fs Content",
+        "tags": [
+          "fs"
+        ]
+      },
+      "head": {
+        "operationId": "api_fs_content_head",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "thread_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Thread Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_fidelity_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Fidelity Preview",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Fs Content",
+        "tags": [
+          "fs"
         ]
       }
     },
@@ -42772,6 +43917,51 @@
         ]
       }
     },
+    "/api/research/deep/jobs/{job_id}/recovery-snapshot": {
+      "get": {
+        "description": "Return the batch's redacted recovery view after a restart.\n\nA ResearchJob is the user-facing durable record, while the parallel\norchestrator owns execution state.  Keep the lookup scoped by the\njob's immutable owner/tenant coordinates and require the returned\nsnapshot to match the persisted host coordinate before exposing it.",
+        "operationId": "get_deep_research_recovery_snapshot_api_research_deep_jobs__job_id__recovery_snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Deep Research Recovery Snapshot Api Research Deep Jobs  Job Id  Recovery Snapshot Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Deep Research Recovery Snapshot",
+        "tags": [
+          "deep-research"
+        ]
+      }
+    },
     "/api/research/deep/plan": {
       "post": {
         "operationId": "plan_deep_research_api_research_deep_plan_post",
@@ -44982,6 +46172,50 @@
           }
         },
         "summary": "Api Task Runs Recovery Queue",
+        "tags": [
+          "task-runs"
+        ]
+      }
+    },
+    "/api/task-runs/start": {
+      "post": {
+        "description": "Start an agent task on a new thread with nobody watching it.\n\nThis is the same server-resident ``turn/start`` a workbench sends,\nreusing the recovery bridge above, with one difference: the turn opts\ninto ``approval_delivery: server_hold``. Its ask/confirm approvals then\npark the task as ``waiting_approval`` for the Task Space instead of\ntiming out on a socket nobody watches. Auth, ownership, the risk matrix\nand auto-approve/bypass rules are exactly those of a workbench turn.",
+        "operationId": "api_task_run_start_api_task_runs_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Api Task Run Start Api Task Runs Start Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Task Run Start",
         "tags": [
           "task-runs"
         ]
@@ -47886,6 +49120,59 @@
         ]
       }
     },
+    "/api/tentacle/devices/{device_id}/mirror/{operation}": {
+      "post": {
+        "operationId": "invoke_api_tentacle_devices__device_id__mirror__operation__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "operation",
+            "required": true,
+            "schema": {
+              "title": "Operation",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Invoke Api Tentacle Devices  Device Id  Mirror  Operation  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invoke",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
     "/api/tentacle/devices/{tentacle_id}": {
       "get": {
         "operationId": "device_detail_api_tentacle_devices__tentacle_id__get",
@@ -48023,6 +49310,29 @@
           }
         },
         "summary": "Device Screenshot",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
+    "/api/tentacle/discovery": {
+      "get": {
+        "operationId": "discovery_status_api_tentacle_discovery_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Discovery Status Api Tentacle Discovery Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Discovery Status",
         "tags": [
           "tentacle"
         ]
@@ -48356,6 +49666,50 @@
           }
         },
         "summary": "Submit Task",
+        "tags": [
+          "tentacle"
+        ]
+      }
+    },
+    "/api/tentacle/task-workspace/{command}": {
+      "post": {
+        "operationId": "invoke_api_tentacle_task_workspace__command__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "command",
+            "required": true,
+            "schema": {
+              "title": "Command",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Invoke Api Tentacle Task Workspace  Command  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invoke",
         "tags": [
           "tentacle"
         ]
@@ -48750,6 +50104,16 @@
             "schema": {
               "default": false,
               "title": "Office Fidelity Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locate",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Locate",
               "type": "boolean"
             }
           }
@@ -49985,6 +51349,189 @@
         ]
       }
     },
+    "/api/workspace-resources/{resource_id}": {
+      "get": {
+        "description": "Resolve a portable file identity through the same auth boundary.",
+        "operationId": "api_workspace_resource_api_workspace_resources__resource_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "title": "Resource Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "office_fidelity_preview",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Office Fidelity Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locate",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Locate",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Api Workspace Resource Api Workspace Resources  Resource Id  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Workspace Resource",
+        "tags": [
+          "workspaces"
+        ]
+      },
+      "post": {
+        "operationId": "api_restore_workspace_resource_api_workspace_resources__resource_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceOutputRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceOutputWriteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Restore Workspace Resource",
+        "tags": [
+          "workspaces"
+        ]
+      },
+      "put": {
+        "operationId": "api_write_workspace_resource_api_workspace_resources__resource_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "title": "Resource Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceOutputWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceOutputWriteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Api Write Workspace Resource",
+        "tags": [
+          "workspaces"
+        ]
+      }
+    },
     "/api/workspaces": {
       "get": {
         "description": "List workspaces accessible to ``user_id``.",
@@ -50238,6 +51785,16 @@
             "schema": {
               "default": false,
               "title": "Office Fidelity Preview",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locate",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Locate",
               "type": "boolean"
             }
           }

@@ -2,7 +2,8 @@ import { BotIcon, PencilIcon } from "lucide-react";
 import { useState } from "react";
 
 import { type Agent } from "@/core/agents";
-import { withAgentAvatarVersion } from "@/core/agents/avatar";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
+import { isEchoAgentId, withAgentAvatarVersion } from "@/core/agents/avatar";
 import {
   getAssistantDisplayName,
   setAssistantDisplayName,
@@ -28,7 +29,7 @@ export function AgentWelcome({
     ? getAssistantDisplayName()
     : (agent?.display_name ??
       agent?.name ??
-      (agentName === "general" ? "EchoAI" : agentName));
+      (agentName === "general" ? "Echo" : agentName));
   const description = agent?.description;
   const typeBadge = isEcho ? "助手" : "Agent";
 
@@ -50,7 +51,13 @@ export function AgentWelcome({
     >
       <div className="relative">
         <div className="relative flex size-[80px] items-center justify-center overflow-hidden rounded-lg border border-border bg-card">
-          {agent?.avatar_url ? (
+          {isEchoAgentId(agentName) || isEchoAgentId(agent?.name) ? (
+            <AgentAvatarTile
+              agentId="echo"
+              label={displayName}
+              className="size-full rounded-none shadow-none"
+            />
+          ) : agent?.avatar_url ? (
             <img
               src={`${getBackendBaseURL()}${withAgentAvatarVersion(agent.avatar_url)}`}
               alt={displayName}

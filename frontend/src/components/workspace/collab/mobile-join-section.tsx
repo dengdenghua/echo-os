@@ -67,7 +67,7 @@ export function MobileJoinSection() {
       </div>
 
       <div className="mt-3 flex items-start gap-3">
-        <div className="shrink-0 rounded-lg bg-white p-2">
+        <div className="shrink-0 rounded-lg bg-card p-2">
           <QRCodeSVG value={data.connect_string} size={104} />
         </div>
         <div className="min-w-0 flex-1 space-y-2">

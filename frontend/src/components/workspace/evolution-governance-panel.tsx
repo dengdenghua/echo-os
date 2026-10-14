@@ -10,6 +10,7 @@ import {
 import { lazy, Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getDualHelixShadowStatus,
@@ -33,13 +34,7 @@ const ReflexMonitorContent = lazy(() =>
 );
 
 function GovernancePanelLoading() {
-  return (
-    <div
-      className="h-72 animate-pulse rounded-xl border bg-muted/25"
-      role="status"
-      aria-label="加载治理模块"
-    />
-  );
+  return <PanelLoading label="正在加载治理模块" className="min-h-72" />;
 }
 
 export function EvolutionGovernancePanel() {
@@ -93,7 +88,7 @@ export function EvolutionGovernancePanel() {
               role="alert"
               className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2"
             >
-              <span className="text-[11px] text-destructive">
+              <span className="text-xs text-destructive">
                 保护状态暂时无法加载；现有设置没有改变。
               </span>
               <Button
@@ -110,7 +105,7 @@ export function EvolutionGovernancePanel() {
               </Button>
             </div>
           ) : (
-            <div className="mt-3 rounded-lg bg-muted/45 px-3 py-2 text-[11px] text-muted-foreground">
+            <div className="mt-3 rounded-lg bg-muted/45 px-3 py-2 text-xs text-muted-foreground">
               {shadow.data?.enabled
                 ? "已授权手动影子复核；开启状态本身不会调用模型。"
                 : shadow.isLoading
@@ -119,7 +114,7 @@ export function EvolutionGovernancePanel() {
             </div>
           )}
           {setShadow.error ? (
-            <p role="alert" className="mt-2 text-[11px] text-destructive">
+            <p role="alert" className="mt-2 text-xs text-destructive">
               保护设置未保存，请稍后重试。
             </p>
           ) : null}

@@ -4,13 +4,13 @@ import {
   AlertTriangleIcon,
   BarChartIcon,
   DnaIcon,
-  Loader2Icon,
   RefreshCwIcon,
   ShuffleIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Separator } from "@/components/ui/separator";
 import {
   getRegenerationStatus,
@@ -68,14 +68,11 @@ export default function EvolutionSettingsPage() {
 
   if (loading && !data) {
     return (
-      <div
-        className="flex items-center py-8 text-sm text-muted-foreground"
-        role="status"
-        aria-live="polite"
-      >
-        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-        {e.loading}
-      </div>
+      <PanelLoading
+        label={e.loading}
+        caption={e.loading}
+        className="min-h-40"
+      />
     );
   }
   if (err && !data) {
@@ -187,11 +184,7 @@ export default function EvolutionSettingsPage() {
             {Object.entries(sched.last_summary)
               .filter(([k]) => !["tick", "ts"].includes(k))
               .map(([k, v]) => (
-                <Badge
-                  key={k}
-                  variant="outline"
-                  className="text-xs font-mono"
-                >
+                <Badge key={k} variant="outline" className="text-xs font-mono">
                   {k}={String(v)}
                 </Badge>
               ))}

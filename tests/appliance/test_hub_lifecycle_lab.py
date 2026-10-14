@@ -3,11 +3,17 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import stat
 from pathlib import Path
 from typing import Any
 
 import pytest
+
+if os.name == "nt":
+    pytest.skip(
+        "hub lifecycle lab requires Linux ownership and service semantics", allow_module_level=True
+    )
 
 from appliance.hub import HubCatalog, HubService
 from deploy.appliance import hub_lifecycle_lab as lab
@@ -58,7 +64,7 @@ def _release(tmp_path: Path) -> tuple[Path, Path]:
     extracted = operations_bundle.extract(Path(built["archive"]), tmp_path / "bundle")
     bundle_root = Path(extracted["destination"])
     candidate: dict[str, Any] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "kind": "echo.delivery-release-evidence-index",
         "source": {
             "repository": "dengdenghua/echo-os",
@@ -69,6 +75,12 @@ def _release(tmp_path: Path) -> tuple[Path, Path]:
         },
         "evidence": {
             "candidatePreflight": {"reportId": "4" * 64},
+            "nasRuntimeProfile": {
+                "product": "echo-nas-appliance",
+                "host": "debian-13-openmediavault-8",
+                "deployment": "oci-compose",
+                "echoOsImageRole": "separate-native-desktop-artifact",
+            },
             "appliance": {
                 "manifestSha256": "5" * 64,
                 "immutableReference": IMAGE_REFERENCE,

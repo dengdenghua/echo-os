@@ -258,6 +258,35 @@ port to host loopback and exposes only the pinned, zero-capability gateway.
   exact-member reconnect, completed rebuild, reboot persistence and an Echo API
   1 GiB recycle-bin restore. Every phase writes a fixed mode-`0444` JSON log.
   Never run it on a production array or on a volume containing user data.
+- `storage_provisioning_lab.py` closes the setup gap before that G2 harness.
+  On a fresh Debian 13 + OMV 8 acceptance VM, its private candidate-bound plan
+  selects exactly two blank 4--64 GiB whole disks and stores only hashed stable
+  identities. The confirmed `provision` phase logs in to the running appliance,
+  exercises its real md RAID1 and EXT4 plan/one-shot-approval/apply endpoints,
+  verifies the host topology, and fsyncs a 1 MiB persistence probe. After a real
+  reboot, `reboot-verify` requires a new kernel boot ID and rechecks the healthy
+  array, UUID-mounted writable EXT4 filesystem and probe digest. It intentionally
+  retains the volume for `storage_recovery_lab.py`; never point it at production
+  disks or disks containing the only copy of any data.
+- `mdraid_replacement_lab.py` is the candidate-bound three-disk companion. It
+  consumes a completed provisioning plan, binds all three disk identities, then
+  deliberately fails/removes one original member and exercises the appliance's
+  real replacement candidate, plan, one-shot approval and apply endpoints. Its
+  three separately confirmed phases require completed recovery, unchanged data,
+  and a healthy replacement array after a real reboot. It never runs cleanup and
+  must only be used on a disposable VM or dedicated acceptance host.
+- `btrfs_replacement_lab.py` is the equivalent three-disk Btrfs RAID1 harness.
+  Its private plan binds a completed Btrfs provisioning run, the persisted data
+  probe, both original members, the third blank disk and this exact executable.
+  The harness never detaches or wipes a disk: after planning, an operator must
+  hot-detach the named sacrificial member without rebooting. The separately
+  confirmed `repair` phase accepts only one Echo-managed, writable, degraded
+  RAID1 whose survivor and replacement identities still match, then exercises
+  the real replacement candidate/plan/one-shot-approval/apply API. `rebuild`
+  waits for a clean completed replace before any reboot; `reboot-verify` proves
+  both members, RAID1 profiles, writable mounting and the original probe. No
+  phase resizes or cleans up the filesystem, and failures preserve the host for
+  inspection. Use only a disposable VM or dedicated acceptance host.
 
 The A/B source contract additionally renders these same units inside a Debian
 13 container and passes them to that release's native `systemd-analyze verify`.

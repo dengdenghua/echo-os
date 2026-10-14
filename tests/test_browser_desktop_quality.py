@@ -24,7 +24,7 @@ def test_browser_desktop_quality_reports_all_local_checks() -> None:
         for row in report["checks"]
         if row["id"] == "thread_native_external_chrome_activation"
     )
-    assert "echoai browser relay" in chrome_activation["required_terms"]
+    assert "echo browser relay" in chrome_activation["required_terms"]
     assert "echo chrome sidecar" not in chrome_activation["required_terms"]
     assert report["browser_relay_bridge"]["schema"] == "echo.browser_relay_bridge.v1"
     assert report["browser_relay_bridge"]["base_url"].endswith("/api/browser/relay")

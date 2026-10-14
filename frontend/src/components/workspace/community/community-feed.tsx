@@ -16,59 +16,27 @@ import {
   XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { currentActorId } from "@/core/auth/api";
 import {
   formatCount,
+  readFavorites,
+  readLikes,
   readFollowing,
   toggleFollowing,
+  writeFavorites,
+  writeLikes,
   type CommunityPost,
 } from "./community-data";
 import { CommunityPostDetail } from "./community-post-detail";
 import { CommunityForkButton } from "./community-fork-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Button } from "@/components/ui/button";
 
-const FAVORITES_KEY = "echo.community.favorites.v1";
-const LIKES_KEY = "echo.community.likes.v1";
 /** 每列最小宽度（px），据此自动计算列数。 */
 const MIN_COLUMN_WIDTH = 240;
 /** 信息区（标题+描述+作者）等效高度，用于瀑布流高度估算。 */
 const INFO_EXTRA_HEIGHT = 96;
-
-/** 收藏状态持久化（localStorage）。 */
-function readFavorites(): string[] {
-  try {
-    const raw = window.localStorage.getItem(FAVORITES_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeFavorites(ids: string[]) {
-  try {
-    window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
-  } catch {
-    /* ignore */
-  }
-}
-
-/** 点赞状态持久化（与详情页共用同一 key）。 */
-function readLiked(): string[] {
-  try {
-    const raw = window.localStorage.getItem(LIKES_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLiked(ids: string[]) {
-  try {
-    window.localStorage.setItem(LIKES_KEY, JSON.stringify(ids));
-  } catch {
-    /* ignore */
-  }
-}
 
 /** 根据容器宽度自适应列数（ResizeObserver 监听）。 */
 function useColumnCount(minWidth = MIN_COLUMN_WIDTH) {
@@ -126,12 +94,14 @@ export function CommunityFeed({
   /** 点击作者跳转独立个人主页。 */
   onOpenProfile?: (author: string) => void;
 }) {
+  const actor = currentActorId();
   const { ref, count } = useColumnCount();
   const [favorites, setFavorites] = useState<string[]>(() => readFavorites());
-  const [liked, setLiked] = useState<string[]>(() => readLiked());
+  const [liked, setLiked] = useState<string[]>(() => readLikes());
   const [localFollowing, setLocalFollowing] = useState<string[]>(() =>
     readFollowing(),
   );
+  const [stateActor, setStateActor] = useState(actor);
   const [activePost, setActivePost] = useState<CommunityPost | null>(null);
   const [lightbox, setLightbox] = useState<{
     post: CommunityPost;
@@ -144,6 +114,17 @@ export function CommunityFeed({
   );
   /** 底部哨兵，用于无限滚动。 */
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (stateActor === actor) return;
+    setStateActor(actor);
+    setFavorites(readFavorites());
+    setLiked(readLikes());
+    setLocalFollowing(readFollowing());
+    setCommentCounts({});
+    setActivePost(null);
+    setLightbox(null);
+  }, [actor, stateActor]);
 
   const toggleFavorite = useCallback((id: string) => {
     setFavorites((prev) => {
@@ -160,7 +141,7 @@ export function CommunityFeed({
       const next = prev.includes(id)
         ? prev.filter((x) => x !== id)
         : [...prev, id];
-      writeLiked(next);
+      writeLikes(next);
       return next;
     });
   }, []);
@@ -182,15 +163,30 @@ export function CommunityFeed({
     setLightbox({ post, images, index });
   }, []);
 
-  const isFavorite = useCallback(
-    (id: string) => favorites.includes(id),
-    [favorites],
+  const accountReady = stateActor === actor;
+  const visibleFavorites = useMemo(
+    () => (accountReady ? favorites : []),
+    [accountReady, favorites],
   );
-  const isLiked = useCallback((id: string) => liked.includes(id), [liked]);
-  const effectiveFollowing = following ?? localFollowing;
+  const visibleLiked = useMemo(
+    () => (accountReady ? liked : []),
+    [accountReady, liked],
+  );
+  const visibleFollowing = useMemo(
+    () => (accountReady ? (following ?? localFollowing) : []),
+    [accountReady, following, localFollowing],
+  );
+  const isFavorite = useCallback(
+    (id: string) => visibleFavorites.includes(id),
+    [visibleFavorites],
+  );
+  const isLiked = useCallback(
+    (id: string) => visibleLiked.includes(id),
+    [visibleLiked],
+  );
   const isFollowing = useCallback(
-    (author: string) => effectiveFollowing.includes(author),
-    [effectiveFollowing],
+    (author: string) => visibleFollowing.includes(author),
+    [visibleFollowing],
   );
 
   // 无限滚动：哨兵进入视口时加载更多。
@@ -249,13 +245,20 @@ export function CommunityFeed({
 
   if (error && posts.length === 0) {
     return (
-      <div role="alert" className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-6 text-center">
+      <div
+        role="alert"
+        className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-6 text-center"
+      >
         <MessageCircleIcon className="size-6 text-destructive/70" />
         <div>
           <p className="text-sm font-medium">社区内容加载失败</p>
           <p className="mt-1 text-xs text-muted-foreground">{error}</p>
         </div>
-        {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>重试</Button>}
+        {onRetry && (
+          <Button size="sm" variant="outline" onClick={onRetry}>
+            重试
+          </Button>
+        )}
       </div>
     );
   }
@@ -303,9 +306,11 @@ export function CommunityFeed({
         <div ref={sentinelRef} className="col-span-full h-4" aria-hidden />
       )}
       {loading && hasMore && (
-        <div className="col-span-full flex justify-center py-3 text-sm text-muted-foreground">
-          加载中…
-        </div>
+        <PanelLoading
+          label="正在加载更多"
+          className="col-span-full py-4"
+          lineClassName="mx-auto max-w-48"
+        />
       )}
 
       {activePost && (
@@ -383,7 +388,7 @@ function ImageLightbox({
         type="button"
         onClick={onClose}
         aria-label="关闭"
-        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
       >
         <XIcon className="size-5" />
       </button>
@@ -393,7 +398,7 @@ function ImageLightbox({
             type="button"
             onClick={() => go(-1)}
             aria-label="上一张"
-            className="absolute left-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            className="absolute left-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
           >
             <ChevronLeftIcon className="size-5" />
           </button>
@@ -401,7 +406,7 @@ function ImageLightbox({
             type="button"
             onClick={() => go(1)}
             aria-label="下一张"
-            className="absolute right-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            className="absolute right-4 z-10 rounded-full bg-card/10 p-2 text-white transition-colors hover:bg-card/20"
           >
             <ChevronRightIcon className="size-5" />
           </button>
@@ -679,8 +684,8 @@ export function CommunityPostCard({
               className={cn(
                 "shrink-0 rounded p-0.5 transition-colors",
                 isFavorite
-                  ? "text-amber-500"
-                  : "text-muted-foreground/50 hover:text-amber-500",
+                  ? "text-warning"
+                  : "text-muted-foreground/50 hover:text-warning",
               )}
             >
               <StarIcon

@@ -8,7 +8,10 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
+
+import pytest
 
 from runtime.adapters.mcp_client import HttpMCPClient, MCPServerConfig, StdioMCPClient
 from runtime.platform.connectors.auth_orchestrator import (
@@ -19,6 +22,11 @@ from runtime.platform.connectors.connector_registry import ConnectorRegistry
 from runtime.platform.connectors.credential_store import CredentialStore
 
 FORK = Path(__file__).resolve().parents[1] / "extensions" / "workbuddy-connectors"
+
+# The client classes refuse to construct without the optional `mcp` extra.
+requires_mcp_sdk = pytest.mark.skipif(
+    importlib.util.find_spec("mcp") is None, reason="mcp SDK (optional `mcp` extra) not installed"
+)
 
 
 def _setup(
@@ -87,6 +95,7 @@ class TestMcpInjectionResolver:
         }
 
 
+@requires_mcp_sdk
 class TestHttpTransportInjection:
     def test_headers_merged_with_connector_auth(self, monkeypatch):
         from runtime.adapters.mcp_client import client as client_mod
@@ -155,6 +164,7 @@ class _FakeCtx:
         return False
 
 
+@requires_mcp_sdk
 class TestStdioEnvInjection:
     def test_config_and_connector_env_merged(self, monkeypatch):
         from runtime.adapters.mcp_client import client as client_mod

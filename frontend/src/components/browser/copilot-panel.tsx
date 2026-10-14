@@ -23,16 +23,27 @@ import {
 } from "react";
 
 import { swallow } from "@/core/utils/log";
+import { currentActorId } from "@/core/auth/api";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
+import {
+  readBrowserResearchLog,
+  writeBrowserResearchLog,
+  type BrowserResearchLogEntry,
+} from "@/core/browser/research-log";
 import { useThreadStream } from "@/core/threads/hooks";
 import { isAIMessage, isHumanMessage } from "@/core/api/types";
 import { useI18n } from "@/core/i18n/hooks";
 import {
   ACTIVE_AGENT_EVENT,
-  ACTIVE_AGENT_KEY,
+  setActiveAgentId,
   useActiveAgentId,
 } from "@/core/agents/active";
 import { useAgents } from "@/core/agents/hooks";
 import { copyTextToClipboard } from "@/core/clipboard";
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import { cn } from "@/lib/utils";
 
 import {
@@ -65,14 +76,7 @@ interface ResearchPlatform {
   hint: string;
 }
 
-interface ResearchLogEntry {
-  id: string;
-  createdAt: number;
-  platform: string;
-  title: string;
-  note: string;
-  url?: string;
-}
+type ResearchLogEntry = BrowserResearchLogEntry;
 
 const RESEARCH_PLATFORMS: ResearchPlatform[] = [
   {
@@ -110,6 +114,7 @@ const RECORDER_PROTOCOL = `\
 `;
 
 export function CopilotPanel({ webviewHandle }: Props) {
+  const actor = currentActorId();
   const { t } = useI18n();
   const { activeTab, state, setCopilotOpen, setCopilotWidth } =
     useBrowserStore();
@@ -121,21 +126,26 @@ export function CopilotPanel({ webviewHandle }: Props) {
   >([]);
   const [recorderMode, setRecorderMode] = useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem("echo:browser-recorder-mode") === "1";
+    return readActorScopedStorageValue("echo:browser-recorder-mode") === "1";
   });
+  const [sessionActor, setSessionActor] = useState(actor);
   const [researchGoal, setResearchGoal] = useState("");
   const [researchLog, setResearchLog] = useState<ResearchLogEntry[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = sessionStorage.getItem("echo:browser-research-log");
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      swallow(e);
-      return [];
-    }
+    return readBrowserResearchLog(actor);
   });
   const [briefCopied, setBriefCopied] = useState(false);
+  useEffect(() => {
+    if (sessionActor === actor) return;
+    setSessionActor(actor);
+    setRecorderMode(
+      typeof window !== "undefined" &&
+        readActorScopedStorageValue("echo:browser-recorder-mode", actor) ===
+          "1",
+    );
+    setResearchLog(readBrowserResearchLog(actor));
+    setResearchGoal("");
+    setBriefCopied(false);
+  }, [actor, sessionActor]);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Implementation note.
@@ -183,24 +193,17 @@ export function CopilotPanel({ webviewHandle }: Props) {
   const MAX_AGENT_LOOP = 8;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || sessionActor !== actor) return;
     localStorage.setItem(
-      "echo:browser-recorder-mode",
+      actorScopedStorageKey("echo:browser-recorder-mode", actor),
       recorderMode ? "1" : "0",
     );
-  }, [recorderMode]);
+  }, [actor, recorderMode, sessionActor]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      sessionStorage.setItem(
-        "echo:browser-research-log",
-        JSON.stringify(researchLog.slice(0, 80)),
-      );
-    } catch (e) {
-      swallow(e);
-    }
-  }, [researchLog]);
+    if (typeof window === "undefined" || sessionActor !== actor) return;
+    writeBrowserResearchLog(researchLog, actor);
+  }, [actor, researchLog, sessionActor]);
 
   useEffect(() => {
     if (recorderMode) {
@@ -717,7 +720,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         />
         {activeTab?.title && (
           <span
-            className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground"
+            className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
             title={activeTab.title}
           >
             · {activeTab.title}
@@ -727,7 +730,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         {agentLoopActive && (
           <button
             onClick={stopAgentLoop}
-            className="flex shrink-0 items-center gap-1 rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
+            className="flex shrink-0 items-center gap-1 rounded bg-rose-500/10 px-1.5 py-0.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
             title={t.browser.copilot.stopAgentTooltip}
           >
             <StopCircleIcon className="size-3" />
@@ -738,7 +741,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
         <button
           onClick={() => setAutoBrowse((v) => !v)}
           className={cn(
-            "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+            "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
             autoBrowse
               ? "bg-primary/10 text-primary"
               : "border border-border text-muted-foreground hover:bg-muted",
@@ -754,9 +757,9 @@ export function CopilotPanel({ webviewHandle }: Props) {
         <button
           onClick={() => setRecorderMode((v) => !v)}
           className={cn(
-            "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+            "shrink-0 rounded px-1.5 py-0.5 text-xs font-medium transition-colors",
             recorderMode
-              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              ? "bg-core/10 text-core"
               : "border border-border text-muted-foreground hover:bg-muted",
           )}
           title={t.browser.copilot.recorderTitle}
@@ -799,13 +802,13 @@ export function CopilotPanel({ webviewHandle }: Props) {
       </div>
 
       {recorderMode && (
-        <div className="shrink-0 border-b bg-emerald-500/[0.04] px-3 py-2">
+        <div className="shrink-0 border-b bg-core/[0.04] px-3 py-2">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="text-xs font-medium text-core">
                 {t.browser.copilot.recorderTitle}
               </div>
-              <div className="truncate text-[10px] text-muted-foreground">
+              <div className="truncate text-xs text-muted-foreground">
                 {t.browser.copilot.recorderDesc}
               </div>
             </div>
@@ -815,7 +818,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               value={researchGoal}
               onChange={(e) => setResearchGoal(e.target.value)}
               placeholder={t.browser.copilot.researchGoalPlaceholder}
-              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-[11px] outline-none focus:ring-1 focus:ring-emerald-500/40"
+              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-core/40"
             />
             <button
               type="button"
@@ -825,7 +828,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
                 thread.isLoading ||
                 (!researchGoal.trim() && !input.trim())
               }
-              className="rounded bg-emerald-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-40"
+              className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
             >
               {t.browser.copilot.start}
             </button>
@@ -835,7 +838,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               type="button"
               onClick={() => void addPageToResearchLog()}
               disabled={busy}
-              className="rounded border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted disabled:opacity-40"
+              className="rounded border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40"
             >
               {t.browser.copilot.recordCurrentPage}
             </button>
@@ -843,7 +846,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={() => setResearchLog([])}
-                className="text-[10px] text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 {t.browser.copilot.clearLog}
               </button>
@@ -854,7 +857,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={() => void copyResearchBrief()}
-                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 <ClipboardCheckIcon className="size-3" />
                 {briefCopied
@@ -864,7 +867,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
               <button
                 type="button"
                 onClick={downloadResearchBrief}
-                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted"
+                className="inline-flex items-center justify-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 <DownloadIcon className="size-3" />
                 {t.browser.copilot.exportMd}
@@ -876,14 +879,14 @@ export function CopilotPanel({ webviewHandle }: Props) {
               {researchLog.slice(0, 5).map((entry) => (
                 <div key={entry.id} className="rounded bg-muted/40 px-2 py-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[10px] font-medium">
+                    <span className="truncate text-xs font-medium">
                       {entry.platform} · {entry.title}
                     </span>
-                    <span className="shrink-0 text-[9px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(entry.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                     {entry.note}
                   </div>
                 </div>
@@ -894,7 +897,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
       )}
 
       {errorMsg && (
-        <div className="shrink-0 border-b bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive">
+        <div className="shrink-0 border-b bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {errorMsg}
         </div>
       )}
@@ -904,7 +907,7 @@ export function CopilotPanel({ webviewHandle }: Props) {
           {pendingConfirmations.map((pending) => (
             <div
               key={pending.id}
-              className="rounded-md border border-amber-500/30 bg-background/70 p-2 text-[11px]"
+              className="rounded-md border border-amber-500/30 bg-background/70 p-2 text-xs"
             >
               <div className="font-medium text-amber-700 dark:text-amber-300">
                 需要用户确认
@@ -1243,7 +1246,7 @@ function QuickAction({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+      className="flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-50"
     >
       <Icon className="size-3" />
       {label}
@@ -1335,7 +1338,7 @@ function AgentPicker({
 
   const select = (name: string) => {
     try {
-      window.localStorage.setItem(ACTIVE_AGENT_KEY, name);
+      setActiveAgentId(name);
     } catch (e) {
       swallow(e);
     }
@@ -1354,8 +1357,13 @@ function AgentPicker({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold transition-colors hover:bg-muted"
       >
-        {activeAgent?.icon ? (
-          <span className="text-base leading-none">{activeAgent.icon}</span>
+        {activeAgent ? (
+          <AgentAvatarTile
+            agentId={activeAgent.name}
+            name={display}
+            avatar={activeAgent.icon}
+            className="size-4 rounded"
+          />
         ) : (
           <SparklesIcon className="size-4 text-primary" />
         )}
@@ -1385,13 +1393,12 @@ function AgentPicker({
                     active && "bg-muted font-semibold",
                   )}
                 >
-                  {a.icon ? (
-                    <span className="text-base leading-none">{a.icon}</span>
-                  ) : (
-                    <span className="grid size-4 place-items-center text-muted-foreground">
-                      <SparklesIcon className="size-3" />
-                    </span>
-                  )}
+                  <AgentAvatarTile
+                    agentId={a.name}
+                    name={a.display_name || a.name}
+                    avatar={a.icon}
+                    className="size-4 rounded"
+                  />
                   <span className="min-w-0 flex-1 truncate">
                     {a.display_name || a.name}
                   </span>

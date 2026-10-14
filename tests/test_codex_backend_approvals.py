@@ -91,6 +91,32 @@ def test_command_approval_uses_outer_provider_without_session_grant(tmp_path: Pa
     assert timeout == 120.0
 
 
+
+def test_a_command_without_a_codex_reason_forwards_no_invented_detail(tmp_path: Path) -> None:
+    provider = _Provider(approved=True)
+    broker, workspace = _broker(tmp_path, provider)
+    params = {
+        "threadId": "inner-thread",
+        "turnId": "inner-turn",
+        "itemId": "command-2",
+        "command": "ls",
+        "cwd": str(workspace),
+    }
+
+    asyncio.run(broker(ApprovalRequest(request_id=8, method="item/commandExecution/requestApproval", params=params)))
+    asyncio.run(
+        broker(
+            ApprovalRequest(
+                request_id=9,
+                method="item/commandExecution/requestApproval",
+                params={**params, "itemId": "command-3", "reason": "需要联网安装依赖"},
+            )
+        )
+    )
+
+    assert provider.requests[0][0].detail == ""
+    assert provider.requests[1][0].detail == "需要联网安装依赖"
+
 def test_cross_turn_request_and_outside_grant_root_fail_closed(tmp_path: Path) -> None:
     provider = _Provider(approved=True)
     broker, _workspace = _broker(tmp_path, provider)
@@ -431,5 +457,3 @@ def test_interrupt_after_user_accept_translates_to_cancel(tmp_path: Path) -> Non
     )
 
     assert result == {"decision": "cancel"}
-
-

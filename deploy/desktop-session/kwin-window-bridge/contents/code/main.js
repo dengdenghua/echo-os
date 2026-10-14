@@ -33,7 +33,14 @@ function isEchoShellWindow(window) {
   ];
   for (let index = 0; index < identities.length; index += 1) {
     const identity = canonicalApplicationId(identities[index]);
-    if (identity === "echo-shell" || identity === "echo-os-desktop") {
+    // Wayland: app id "echo-os-desktop" (desktopName). X11: Electron sets
+    // WM_CLASS to the app name, package.json "name" ("echo-frontend"), and
+    // ignores --class.
+    if (
+      identity === "echo-shell" ||
+      identity === "echo-os-desktop" ||
+      identity === "echo-frontend"
+    ) {
       return true;
     }
   }

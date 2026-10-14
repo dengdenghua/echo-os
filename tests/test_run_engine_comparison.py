@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -649,6 +650,11 @@ def test_native_approval_is_exact_path_and_command_allowlist(tmp_path: Path) -> 
         case_ids={"coding.path-boundary"},
     )
     fixture = prepared.fixtures["coding.path-boundary"]
+    runner_command, foreign_runner_command = (
+        (".echo-eval\\run-tests.cmd", "./.echo-eval/run-tests")
+        if os.name == "nt"
+        else ("./.echo-eval/run-tests", ".echo-eval\\run-tests.cmd")
+    )
     fixture.setup()
     try:
         workspace = fixture.workspace()
@@ -670,7 +676,7 @@ def test_native_approval_is_exact_path_and_command_allowlist(tmp_path: Path) -> 
         ) == {"action": "accept"}
         assert responder(
             "item/commandExecution/requestApproval",
-            {"tool": "exec_shell", "argsPreview": "{'command': './.echo-eval/run-tests'}"},
+            {"tool": "exec_shell", "argsPreview": repr({"command": runner_command})},
         ) == {"action": "accept"}
 
         denied = [
@@ -681,9 +687,10 @@ def test_native_approval_is_exact_path_and_command_allowlist(tmp_path: Path) -> 
             },
             {"tool": "write_text_file", "argsPreview": f"{{'path': '{tmp_path / 'outside.py'}'}}"},
             {"tool": "exec_shell", "argsPreview": "{'command': 'python -m pytest'}"},
+            {"tool": "exec_shell", "argsPreview": repr({"command": foreign_runner_command})},
             {
                 "tool": "exec_shell",
-                "argsPreview": "{'command': './.echo-eval/run-tests', 'cwd': '/tmp'}",
+                "argsPreview": repr({"command": runner_command, "cwd": "/tmp"}),
             },
             {"tool": "read_text_file", "argsPreview": "{'path': 'file_service.py'}"},
         ]
@@ -1057,4 +1064,3 @@ def test_controller_source_drift_writes_invalid_artifact_and_returns_nonzero(
         row["backend"] for row in payload["configuration"]["execution_schedule"]["actual"]
     ]
     assert invoked_backends == actual_backends == planned_backends
-

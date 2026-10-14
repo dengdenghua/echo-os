@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   fetchCloudInstalled: vi.fn(),
   fetchUnifiedAssets: vi.fn(),
   streamInstallCloudSkill: vi.fn(),
+  listSkills: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
@@ -20,6 +21,8 @@ vi.mock("@/core/agents/agent-world-api", () => ({
   fetchUnifiedAssets: mocks.fetchUnifiedAssets,
   streamInstallCloudSkill: mocks.streamInstallCloudSkill,
 }));
+
+vi.mock("@/core/skills/api", () => ({ listSkills: mocks.listSkills }));
 
 vi.mock("sonner", () => ({ toast: mocks.toast }));
 
@@ -112,5 +115,45 @@ describe("CloudSkillsPanel", () => {
       ).toBeDisabled();
     });
     expect(mocks.toast.success).toHaveBeenCalledWith("技能「research」已安装");
+  });
+
+  it("falls back to the runtime skill registry when the asset index is not built", async () => {
+    mocks.fetchCloudSkills.mockResolvedValue({ total: 0, items: [] });
+    mocks.fetchUnifiedAssets.mockRejectedValue(
+      new Error("Unified assets failed: HTTP 404"),
+    );
+    mocks.listSkills.mockResolvedValue([
+      {
+        name: "deep-research",
+        description: "深度调研",
+        enabled: true,
+        category: "research",
+      },
+      {
+        name: "pdf",
+        description: "PDF 处理",
+        enabled: true,
+        category: "documents",
+      },
+    ]);
+
+    renderWithProviders(<CloudSkillsPanel />, { locale: "zh-CN" });
+
+    const card = (await screen.findByText("deep-research")).closest(
+      '[data-slot="card"]',
+    );
+    expect(
+      within(card!).getByRole("button", { name: "已安装" }),
+    ).toBeDisabled();
+    expect(screen.getByText("pdf")).toBeVisible();
+    expect(screen.getByText("2/2 已安装")).toBeVisible();
+    expect(screen.queryByText("没有匹配的 Skill。")).not.toBeInTheDocument();
+  });
+
+  it("does not consult the runtime registry when the asset index has skills", async () => {
+    renderWithProviders(<CloudSkillsPanel />, { locale: "zh-CN" });
+
+    expect(await screen.findByText("local-only")).toBeVisible();
+    expect(mocks.listSkills).not.toHaveBeenCalled();
   });
 });

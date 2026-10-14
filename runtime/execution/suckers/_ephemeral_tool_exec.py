@@ -181,7 +181,14 @@ def _execute_tool_in_subagent(
         _scope_meta = getattr(current_session(), "metadata", None) or {}
     except (ImportError, AttributeError, LookupError):
         _scope_meta = {}
-    if isinstance(getattr(call, "input", None), dict) and not _scope_meta.get("_locked_write_root"):
+    from runtime.execution.request import current_execution_request
+
+    # A locked worktree narrows the filesystem target but does not grant a
+    # write denied by the immutable parent request. Legacy lock-only callers
+    # retain their historical root injection when no host request exists.
+    if isinstance(getattr(call, "input", None), dict) and (
+        not _scope_meta.get("_locked_write_root") or current_execution_request() is not None
+    ):
         from runtime.execution.tool_engine._executor_helpers import (
             _prepare_scoped_args,
         )
@@ -221,7 +228,11 @@ def _execute_tool_in_subagent(
             return (f"(blocked: {_gate.message})", True)
 
     try:
-        output = skill.handler(**call.input)
+        from runtime.execution.tool_engine.coordination_guard import invoke_coordinated
+
+        output = invoke_coordinated(
+            skill, call.input, service=getattr(registry, "coordination", None)
+        )
     except TypeError as exc:
         return (f"(TypeError: {exc})", True)
     except Exception as exc:  # noqa: BLE001

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import importlib.util
 import json
+import os
 import tarfile
 from pathlib import Path
 
@@ -132,7 +133,7 @@ def test_plugin_content_builder_signs_codex_and_connector_packages(
             require_trusted=True,
         )
         assert runtime_trust["publisher_verified"] is True
-        assert runtime_trust["host_api"] == ">=0.2,<0.3"
+        assert runtime_trust["host_api"] == ">=0.2,<0.4"
     connector_trust = verify_marketplace_package_trust(
         runtime_extracted / "connector" / "documents",
         package_kind="connector",
@@ -146,13 +147,23 @@ def test_plugin_content_builder_signs_codex_and_connector_packages(
         "process.local",
     ]
     assert connector_trust["auth_modes"] == ["token"]
-    assert (
-        runtime_extracted / "codex" / "documents" / "content.txt"
-    ).stat().st_mode & 0o777 == 0o755
+    # NTFS does not expose POSIX execute bits; the archive mode is checked
+    # below on every platform, and the extracted mode on POSIX.
+    if os.name == "posix":
+        assert (
+            runtime_extracted / "codex" / "documents" / "content.txt"
+        ).stat().st_mode & 0o777 == 0o755
 
     extracted = tmp_path / "extracted"
     extracted.mkdir()
     with tarfile.open(output / "echo-plugins.tar.gz", "r:gz") as archive:
+        content_members = [
+            member
+            for member in archive.getmembers()
+            if member.name.endswith("/codex/documents/content.txt")
+        ]
+        assert len(content_members) == 1
+        assert content_members[0].mode & 0o777 == codex_content.stat().st_mode & 0o777
         archive.extractall(extracted, filter="data")
     for kind in ("codex", "connector"):
         trust = verify_marketplace_package_trust(
@@ -169,6 +180,3 @@ def test_plugin_content_builder_signs_codex_and_connector_packages(
 
     assert not (codex / ".codex-plugin" / "provenance.json").exists()
     assert not (connector / ".echo-connector").exists()
-
-
-

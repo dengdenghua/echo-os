@@ -196,6 +196,11 @@ describe("automation capability settings", () => {
   });
 
   it("does not pretend macOS permissions are known in web mode", async () => {
+    // The web build on a Mac: permissions exist but only the desktop app
+    // can read them.
+    const platform = vi
+      .spyOn(navigator, "platform", "get")
+      .mockReturnValue("MacIntel");
     renderWithProviders(<DesktopAutomationSettingsPage />, {
       locale: "zh-CN",
     });
@@ -205,6 +210,29 @@ describe("automation capability settings", () => {
     expect(
       screen.queryByRole("button", { name: "打开设置" }),
     ).not.toBeInTheDocument();
+    platform.mockRestore();
+  });
+
+  it("does not show macOS permission rows on Windows", async () => {
+    api.getDesktopAutomationPermissions.mockResolvedValue({
+      supported: false,
+      platform: "win32",
+      screenRecording: "unknown",
+      accessibility: "unknown",
+    });
+    renderWithProviders(<DesktopAutomationSettingsPage />, {
+      locale: "zh-CN",
+    });
+
+    expect(
+      await screen.findByText(
+        /在 Windows 上，桌面操控由上方开关和执行审批控制/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("系统权限")).toBeInTheDocument();
+    expect(screen.queryByText("macOS 系统权限")).not.toBeInTheDocument();
+    expect(screen.queryByText("屏幕录制")).not.toBeInTheDocument();
+    expect(screen.queryByText(/macOS 桌面端负责/)).not.toBeInTheDocument();
   });
 
   it("persists the desktop capability and opens both macOS permission panes", async () => {

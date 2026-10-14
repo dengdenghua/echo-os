@@ -12,6 +12,7 @@ with the right arguments and handles results correctly.
 
 from __future__ import annotations
 
+import threading
 from typing import Any
 from unittest.mock import patch
 
@@ -321,12 +322,20 @@ def test_retry_parallel_per_spec(mock_subagent, mock_builtins):
 
     # Spec A: timeout → success on retry
     # Spec B: success immediately
-    call_count = {"n": 0}
+    # The specs run on parallel threads, so "first call" must be counted per
+    # agent: a global counter makes the timeout depend on thread scheduling.
+    researcher_calls = {"n": 0}
+    count_lock = threading.Lock()
 
     def side_effect_fn(*args: Any, **kwargs: Any) -> dict[str, Any]:
-        call_count["n"] += 1
         aid = kwargs.get("agent_id")
-        if aid == "researcher" and call_count["n"] == 1:
+        if aid == "researcher":
+            with count_lock:
+                researcher_calls["n"] += 1
+                first_researcher_call = researcher_calls["n"] == 1
+        else:
+            first_researcher_call = False
+        if first_researcher_call:
             # First call to researcher times out
             return {
                 "agent_id": "researcher",

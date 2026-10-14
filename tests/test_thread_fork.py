@@ -133,17 +133,14 @@ def test_fork_unknown_thread_raises() -> None:
         ThreadStateStore().fork_thread("missing")
 
 
-def test_fork_round_trip_survives_store_reload() -> None:
-    import tempfile
-    from pathlib import Path
-
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "threads.jsonl"
-        store = ThreadStateStore(path=path)
+def test_fork_round_trip_survives_store_reload(tmp_path) -> None:
+    path = tmp_path / "threads.jsonl"
+    with ThreadStateStore(path=path) as store:
         source_id = store.create(values={"messages": _messages([H1, A1], [H2, A2])})["thread_id"]
         child = store.fork_thread(source_id)
         child_id = child["thread_id"]
-        reloaded = ThreadStateStore(path=path)
+    # Closing before reopening also proves the fork survives its owner ending.
+    with ThreadStateStore(path=path) as reloaded:
         assert reloaded.get(child_id)["metadata"]["parent_thread_id"] == source_id
         assert len(reloaded.get(child_id)["values"]["messages"]) == 4
 
@@ -205,4 +202,3 @@ def test_forked_thread_title_service_reads_child() -> None:
     child = store.fork_thread(source_id)
     snapshot = SessionTitleService(store).get(child["thread_id"])
     assert snapshot.title == "源标题"
-

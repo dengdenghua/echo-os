@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithProviders } from "@/test/harness";
@@ -25,5 +25,35 @@ describe("CodeBlockCopyButton", () => {
     );
 
     expect(container.querySelector("button")).not.toBeNull();
+  });
+});
+
+describe("CodeBlock theme", () => {
+  it("highlights with the dark theme inside a .dark scope", async () => {
+    const { container } = renderWithProviders(
+      <div className="dark">
+        <CodeBlock code="const a = 1;" language="ts" />
+      </div>,
+    );
+
+    await waitFor(
+      () =>
+        expect(
+          container.querySelector("pre.shiki.one-dark-pro"),
+        ).not.toBeNull(),
+      { timeout: 5000 },
+    );
+  });
+
+  it("highlights with the light theme outside a dark scope", async () => {
+    const { container } = renderWithProviders(
+      <CodeBlock code="const a = 1;" language="ts" />,
+    );
+
+    await waitFor(
+      () =>
+        expect(container.querySelector("pre.shiki.one-light")).not.toBeNull(),
+      { timeout: 5000 },
+    );
   });
 });

@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
+
 from runtime.memory.threads import ThreadStateStore
 from runtime.platform.ui.app import create_app
 
@@ -44,7 +45,7 @@ def test_factory_reset_endpoint_clears_runtime_state(
 
     assert response.status_code == 200
     body = response.json()
-    assert body["ok"] is True
+    assert body["ok"] is True, body
     assert not (tmp_path / "data").exists()
     assert not (tmp_path / ".echo").exists()
     assert (tmp_path / "agents" / "general.txt").exists()
@@ -66,6 +67,10 @@ def test_factory_reset_endpoint_clears_visible_threads_and_teams(
     monkeypatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    # The endpoint clears this project's state. A suite-wide ECHO_DATA_DIR
+    # must not put this test's rooms in a different runtime home.
+    monkeypatch.setenv("ECHO_HOME", str(tmp_path))
+    monkeypatch.delenv("ECHO_DATA_DIR", raising=False)
     app = create_app(stack=_fake_stack())
     client = TestClient(app)
 
@@ -91,6 +96,7 @@ def test_factory_reset_endpoint_clears_visible_threads_and_teams(
     )
 
     assert response.status_code == 200
+    assert response.json()["ok"], response.json()
     assert client.get("/api/threads/search").json()["threads"] == []
     assert client.get("/api/teams").json()["teams"] == []
 

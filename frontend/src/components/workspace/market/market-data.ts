@@ -9,6 +9,10 @@
  */
 
 import { spendMarketCredits } from "@/core/credits/ledger";
+import {
+  actorScopedStorageKey,
+  readActorScopedStorageValue,
+} from "@/core/auth/scoped-storage";
 import { communityAssetURL } from "@/components/workspace/community/community-assets";
 
 export interface MarketItem {
@@ -41,9 +45,9 @@ export const MARKET_CATEGORIES: MarketCategory[] = [
   { key: "all", label: "全部", color: "#FC466B" },
   { key: "efficiency", label: "效率工具", color: "#00C6FF" },
   { key: "work", label: "职场模板", color: "#3F5EFB" },
-  { key: "study", label: "学习资源", color: "#71B280" },
+  { key: "study", label: "学习资源", color: "#08788A" },
   { key: "life", label: "生活好物", color: "#FF6A5B" },
-  { key: "game", label: "游戏好物", color: "#5B8C5A" },
+  { key: "game", label: "游戏好物", color: "#64748B" },
   { key: "shopping", label: "购物神器", color: "#F2994A" },
 ];
 
@@ -100,7 +104,7 @@ const SEED_ITEMS: MarketItem[] = [
     category: "study",
     seller: "语言教练",
     sellerInitial: "语",
-    sellerColor: "#71B280",
+    sellerColor: "#08788A",
     sold: false,
     createdAt: Date.now() - 18_000_000,
   },
@@ -152,7 +156,7 @@ const SEED_ITEMS: MarketItem[] = [
     category: "game",
     seller: "游戏管家",
     sellerInitial: "游",
-    sellerColor: "#5B8C5A",
+    sellerColor: "#64748B",
     sold: false,
     createdAt: Date.now() - 60_000_000,
   },
@@ -165,7 +169,7 @@ const SEED_ITEMS: MarketItem[] = [
     category: "game",
     seller: "数据党玩家",
     sellerInitial: "数",
-    sellerColor: "#5B8C5A",
+    sellerColor: "#64748B",
     sold: false,
     createdAt: Date.now() - 90_000_000,
   },
@@ -219,7 +223,7 @@ const MINE_KEY = "echo.market.mine.v1";
 
 function readJson<T>(key: string, fallback: T): T {
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = readActorScopedStorageValue(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
@@ -228,7 +232,10 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson(key: string, value: unknown) {
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(
+      actorScopedStorageKey(key),
+      JSON.stringify(value),
+    );
   } catch {
     /* ignore */
   }

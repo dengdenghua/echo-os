@@ -115,6 +115,7 @@ def test_canary_outcome_write_failure_leaves_last_durable_state(
     assert reloaded.get_state("write_failure").sample_count == 0  # type: ignore[union-attr]
 
 
+@pytest.mark.skipif(os.name != "posix", reason="directory fsync is a POSIX durability boundary")
 def test_directory_fsync_failure_is_ambiguous_but_retry_recovers_committed_state(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -544,4 +545,3 @@ def test_runtime_selector_fails_closed_for_invalid_canary_state(
         )
 
     assert selector.is_active(candidate_id, routing_key=treatment_key) is False
-

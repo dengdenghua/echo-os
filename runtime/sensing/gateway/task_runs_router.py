@@ -32,25 +32,18 @@ from runtime.platform.process.task_supervisor import (
     task_lease_health,
 )
 from runtime.sensing._fastapi_guard import require_fastapi
+from runtime.sensing.gateway._task_approval_router import (
+    TaskApprovalDecisionRequest as TaskApprovalDecisionRequest,
+)
+from runtime.sensing.gateway._task_approval_router import (
+    register_task_approval_route,
+)
 
 _logger = logging.getLogger(__name__)
 _RESUME_START_TIMEOUT_SECONDS = 5.0
 _RESUME_QUEUE_STALE_SECONDS = 300.0
 _DEFAULT_RESUME_ITERATION_GRANT = 15
 _DEFAULT_RESUME_TOKEN_GRANT = 100_000
-
-
-class TaskApprovalDecisionRequest(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    approved: bool
-    reason: str | None = None
-
-    @field_validator("reason", mode="before")
-    @classmethod
-    def _normalize_reason(cls, value: Any) -> str | None:
-        text = str(value or "").strip()
-        return text or None
 
 
 class TaskTakeoverRequest(BaseModel):
@@ -63,6 +56,28 @@ class TaskTakeoverRequest(BaseModel):
     def _normalize_reason(cls, value: Any) -> str | None:
         text = str(value or "").strip()
         return text or None
+
+
+_MAX_START_PROMPT_CHARS = 8000
+
+
+class TaskStartRequest(BaseModel):
+    """Start one agent task from a one-line intent (the desktop intent box)."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    prompt: str = Field(min_length=1, max_length=_MAX_START_PROMPT_CHARS)
+    agent_id: str | None = Field(
+        default=None,
+        alias="agentId",
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+    )
+
+    @field_validator("prompt", mode="before")
+    @classmethod
+    def _normalize_prompt(cls, value: Any) -> str:
+        return str(value or "").strip()
 
 
 class TaskResumeExecutionRequest(BaseModel):
@@ -365,35 +380,13 @@ def create_task_runs_router(
             "lease_health": task_lease_health(task),
         }
 
-    @router.post("/api/task-runs/{task_id}/approval-decision")
-    def api_task_run_approval_decision(
-        task_id: str,
-        body: TaskApprovalDecisionRequest,
-        request: Request,
-    ) -> dict[str, Any]:
-        actor = _auth(request)
-        task = _store().get(task_id)
-        if task is None:
-            raise HTTPException(404, "task run not found")
-        _require_task_access(task, actor)
-        try:
-            updated = _supervisor().record_approval_decision(
-                task_id,
-                approved=body.approved,
-                decided_by=actor,
-                reason=body.reason or "",
-            )
-        except LostTaskLease as exc:
-            raise HTTPException(409, str(exc)) from exc
-        except ValueError as exc:
-            raise HTTPException(409, str(exc)) from exc
-        except KeyError as exc:
-            raise HTTPException(404, "task run not found") from exc
-        return {
-            "schema": "echo.task_run_approval_decision.v1",
-            "task_run": updated.model_dump(mode="json"),
-            "lease_health": task_lease_health(updated),
-        }
+    register_task_approval_route(
+        router,
+        auth=_auth,
+        store=_store,
+        supervisor=_supervisor,
+        require_access=_require_task_access,
+    )
 
     @router.post("/api/task-runs/{task_id}/takeover")
     def api_task_run_takeover(
@@ -501,11 +494,19 @@ def create_task_runs_router(
         } and not bool(task.metadata.get("takeover")):
             raise HTTPException(409, "task is already running")
 
+        from runtime.safety.auth.scope import scope_from_principal
         from runtime.sensing.gateway._realtime_turn_lifecycle_resume import (
             _resume_checkpoint_metadata,
         )
 
-        checkpoint = _resume_checkpoint_metadata(runtime, task_id)
+        resume_scope = scope_from_principal(
+            getattr(getattr(request, "state", None), "principal", None)
+        )
+        checkpoint = (
+            _resume_checkpoint_metadata(runtime, task_id, scope=resume_scope)
+            if resume_scope is not None
+            else _resume_checkpoint_metadata(runtime, task_id)
+        )
         if checkpoint is None:
             raise HTTPException(409, "no durable ReAct checkpoint is available for this task")
 
@@ -729,6 +730,106 @@ def create_task_runs_router(
             "lease_health": task_lease_health(task),
         }
 
+    @router.post("/api/task-runs/start", status_code=202)
+    async def api_task_run_start(request: Request, body: TaskStartRequest) -> dict[str, Any]:
+        """Start an agent task on a new thread with nobody watching it.
+
+        This is the same server-resident ``turn/start`` a workbench sends,
+        reusing the recovery bridge above, with one difference: the turn opts
+        into ``approval_delivery: server_hold``. Its ask/confirm approvals then
+        park the task as ``waiting_approval`` for the Task Space instead of
+        timing out on a socket nobody watches. Auth, ownership, the risk matrix
+        and auto-approve/bypass rules are exactly those of a workbench turn.
+        """
+
+        actor = _auth(request)
+        gateway = getattr(request.app.state, "realtime_gateway", None)
+        invoke_turn_start = getattr(gateway, "_invoke_turn_start", None)
+        if gateway is None or not callable(invoke_turn_start):
+            raise HTTPException(503, "Agent realtime runtime is unavailable")
+
+        thread_id = f"t{uuid4().hex[:24]}"
+        user_item_id = f"itm_user_{uuid4().hex}"
+        # Mirrors the workbench's defaults for a new task; everything else
+        # (model, permissions) resolves server-side as for any new thread.
+        context: dict[str, Any] = {
+            "mode": "code",
+            "capability_mode": "code",
+            "code_mode": "solo",
+            "approval_delivery": "server_hold",
+        }
+        if body.agent_id:
+            context["agent_name"] = body.agent_id
+
+        loop = asyncio.get_running_loop()
+        started: asyncio.Future[dict[str, Any]] = loop.create_future()
+        connection = _RecoveryTurnConnection(
+            gateway=gateway,
+            thread_id=thread_id,
+            actor_id=actor,
+            tenant_id=_tenant_id(actor),
+            started=started,
+        )
+        params = {
+            "threadId": thread_id,
+            "userItemId": user_item_id,
+            "input": [{"type": "text", "text": body.prompt, "metadata": {"context": context}}],
+            "approvalPolicy": "on-request",
+        }
+
+        def _detach_trigger() -> None:
+            connection._closed = True
+            if thread_id in connection.watched_threads:
+                with suppress(Exception):
+                    gateway._unwatch_thread(thread_id)
+                connection.watched_threads.discard(thread_id)
+
+        job = asyncio.create_task(
+            invoke_turn_start(params, connection),
+            name=f"task-start:{thread_id}",
+        )
+        job.add_done_callback(lambda _done: _detach_trigger())
+        _track_resume_job(request.app, job)
+
+        done, _pending = await asyncio.wait(
+            {job, started},
+            timeout=_RESUME_START_TIMEOUT_SECONDS,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        turn_id: str | None = None
+        state = "queued"
+        if started in done:
+            turn_id = _task_started_turn_id(started.result())
+            state = "turn_started"
+        elif job in done:
+            try:
+                result = job.result()
+            except Exception as exc:  # noqa: BLE001
+                _detach_trigger()
+                from runtime.protocol import JsonRpcErrorCode
+                from runtime.sensing.gateway._realtime_gateway_types import _RpcError
+
+                if isinstance(exc, _RpcError) and exc.code not in {
+                    JsonRpcErrorCode.SERVER_BUSY,
+                    JsonRpcErrorCode.INTERNAL_ERROR,
+                }:
+                    raise HTTPException(409, exc.message) from exc
+                raise HTTPException(503, "Agent could not start the task") from exc
+            turn = result.get("turn") if isinstance(result, dict) else None
+            turn_id = str(turn.get("id") or "").strip() or None if isinstance(turn, dict) else None
+            state = "finished"
+
+        _detach_trigger()
+        return {
+            "schema": "echo.task_run_start.v1",
+            "accepted": True,
+            "state": state,
+            "thread_id": thread_id,
+            "turn_id": turn_id,
+            "user_item_id": user_item_id,
+            "approval_delivery": "server_hold",
+        }
+
     return router
 
 
@@ -742,6 +843,7 @@ def _task_run_payload(task: Any) -> dict[str, Any]:
 __all__ = [
     "TaskApprovalDecisionRequest",
     "TaskResumeExecutionRequest",
+    "TaskStartRequest",
     "TaskTakeoverRequest",
     "create_task_runs_router",
 ]

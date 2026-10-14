@@ -12,7 +12,6 @@ import {
   ArrowRightIcon,
   Clock3Icon,
   ChevronRightIcon,
-  CloudIcon,
   CopyIcon,
   DatabaseIcon,
   DownloadIcon,
@@ -22,6 +21,7 @@ import {
   HardDriveIcon,
   HomeIcon,
   ListIcon,
+  Link2Icon,
   Loader2Icon,
   MessageSquareIcon,
   MoreHorizontalIcon,
@@ -31,6 +31,7 @@ import {
   SearchIcon,
   Trash2Icon,
   UploadCloudIcon,
+  FolderSyncIcon,
   XIcon,
 } from "lucide-react";
 
@@ -39,6 +40,7 @@ import {
   downloadFile,
   emptyTrash,
   FileServiceUnavailableError,
+  FolderNotFoundError,
   formatSize,
   listDir,
   listTrash,
@@ -52,6 +54,15 @@ import {
 import { requestHighRiskApproval } from "@/appliance/approval";
 import { resolveAgentAppUrl } from "@/appliance/agent-workspace";
 import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
+import { FileOrganizationPanel } from "@/appliance/file-organization-panel";
+import { FileSharePanel } from "@/appliance/file-share-panel";
+import { revealFileRequest } from "@/appliance/desktop-actions";
+import type { DesktopAgentContext } from "./desktop-agent-context";
+import {
+  SystemAppTrafficLights,
+  useInSystemAppWindow,
+} from "@/appliance/system-app-window";
+import { cn } from "@/lib/utils";
 import {
   answerStorage,
   searchStorage,
@@ -60,7 +71,6 @@ import {
 
 type FinderSidebarTarget =
   | "recent"
-  | "airdrop"
   | "applications"
   | "home"
   | "desktop"
@@ -69,7 +79,6 @@ type FinderSidebarTarget =
 
 const FINDER_TARGET_LABELS: Record<FinderSidebarTarget, string> = {
   recent: "最近使用",
-  airdrop: "隔空投送",
   applications: "应用程序",
   home: "个人",
   desktop: "桌面",
@@ -100,7 +109,7 @@ function Breadcrumb({
       <button
         type="button"
         onClick={() => onNavigate("")}
-        className="shrink-0 rounded-md px-2 py-0.5 font-medium text-slate-700 transition hover:bg-slate-900/8"
+        className="shrink-0 rounded-md px-2 py-0.5 font-medium text-foreground transition hover:bg-slate-900/8"
       >
         NAS
       </button>
@@ -108,11 +117,11 @@ function Breadcrumb({
         const sub = parts.slice(0, i + 1).join("/");
         return (
           <span key={sub} className="flex shrink-0 items-center gap-1">
-            <ChevronRightIcon className="size-3.5 text-slate-400" />
+            <ChevronRightIcon className="size-3.5 text-muted-foreground" />
             <button
               type="button"
               onClick={() => onNavigate(sub)}
-              className="rounded-md px-2 py-0.5 text-slate-700 transition hover:bg-slate-900/8"
+              className="rounded-md px-2 py-0.5 text-foreground transition hover:bg-slate-900/8"
             >
               {part}
             </button>
@@ -124,22 +133,44 @@ function Breadcrumb({
 }
 
 export function FileManager({
+  openRequest,
+  initialShowTrash = false,
+  onAskAgent,
   onClose,
   onOpenSettings,
   onOpenSystemFiles,
 }: {
+  openRequest?: { path: string; selectedPath?: string } | null;
+  initialShowTrash?: boolean;
+  onAskAgent?: (context: DesktopAgentContext) => void;
   onClose: () => void;
   onOpenSettings?: () => void;
   onOpenSystemFiles?: () => void;
 }) {
+  const inWindow = useInSystemAppWindow();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const directoryRequest = useRef(0);
   const uploadControlRef = useRef<ResumableUploadController | null>(null);
   const downloadAbortRef = useRef<AbortController | null>(null);
   const [path, setPath] = useState("");
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const selectedRow = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!openRequest) return;
+    setPath(openRequest.path);
+    setSelectedPath(openRequest.selectedPath ?? null);
+    setOrganizationPath(null);
+    setSidebarTarget("nas");
+    setShowTrash(false);
+  }, [openRequest]);
   const [entries, setEntries] = useState<FileEntry[]>([]);
+  useEffect(() => {
+    selectedRow.current?.scrollIntoView?.({ block: "nearest" });
+  }, [entries, selectedPath]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileServiceUnavailable, setFileServiceUnavailable] = useState(false);
+  const [missingFolder, setMissingFolder] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [transfer, setTransfer] = useState<{
@@ -148,12 +179,22 @@ export function FileManager({
     percent: number;
     paused?: boolean;
   } | null>(null);
-  const [showTrash, setShowTrash] = useState(false);
+  const [showTrash, setShowTrash] = useState(initialShowTrash);
+  useEffect(() => {
+    if (initialShowTrash) {
+      setShowTrash(true);
+      setSidebarTarget("nas");
+      // 文件窗口常驻：上一个目录的读取错误不能带进回收站视图。
+      setError(null);
+    }
+  }, [initialShowTrash]);
   const [sidebarTarget, setSidebarTarget] =
     useState<FinderSidebarTarget>("nas");
   const [trash, setTrash] = useState<TrashEntry[]>([]);
   const [emptyApprovalOpen, setEmptyApprovalOpen] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
+  const [organizationPath, setOrganizationPath] = useState<string | null>(null);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [aiQuery, setAiQuery] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResults, setAiResults] = useState<{
@@ -164,14 +205,24 @@ export function FileManager({
   } | null>(null);
 
   const refresh = useCallback(() => {
+    const request = ++directoryRequest.current;
     setLoading(true);
     setError(null);
+    setMissingFolder(null);
     listDir(path)
       .then((r) => {
+        if (request !== directoryRequest.current) return;
         setEntries(r.entries);
         setFileServiceUnavailable(false);
       })
       .catch((e) => {
+        if (request !== directoryRequest.current) return;
+        if (e instanceof FolderNotFoundError) {
+          setEntries([]);
+          setFileServiceUnavailable(false);
+          setMissingFolder(e.path);
+          return;
+        }
         if (e instanceof FileServiceUnavailableError) {
           setEntries([]);
           setFileServiceUnavailable(true);
@@ -180,12 +231,17 @@ export function FileManager({
         setFileServiceUnavailable(false);
         setError(e instanceof Error ? e.message : "读取失败");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (request === directoryRequest.current) setLoading(false);
+      });
   }, [path]);
 
   useEffect(() => {
     if (!showTrash && sidebarTarget === "nas") refresh();
-  }, [refresh, showTrash, sidebarTarget]);
+    return () => {
+      directoryRequest.current += 1;
+    };
+  }, [refresh, showTrash, sidebarTarget, openRequest]);
 
   const selectSidebarTarget = (target: FinderSidebarTarget) => {
     setSidebarTarget(target);
@@ -333,24 +389,43 @@ export function FileManager({
   };
 
   return (
-    <div className="absolute inset-0 z-[70]" data-desktop-interactive>
-      <button
-        type="button"
-        className="absolute inset-0 bg-transparent"
-        onClick={onClose}
-        aria-label="关闭文件管理器"
-      />
-      <section className="mac-finder-window" data-liquid-surface="ultra-thick">
+    <div
+      className={inWindow ? "relative size-full" : "absolute inset-0 z-[70]"}
+      data-desktop-interactive
+    >
+      {!inWindow && (
+        <button
+          type="button"
+          className="absolute inset-0 bg-transparent"
+          onClick={onClose}
+          aria-label="关闭文件管理器"
+        />
+      )}
+      <section
+        aria-label={inWindow ? "文件" : undefined}
+        className={cn("mac-finder-window", inWindow && "is-in-window")}
+        data-liquid-surface={inWindow ? undefined : "ultra-thick"}
+      >
         <header className="mac-finder-toolbar">
           <div className="mac-finder-traffic">
             <button
               type="button"
-              className="mac-traffic-light close"
-              onClick={onClose}
-              aria-label="关闭"
-            />
-            <span className="mac-traffic-light minimize" />
-            <span className="mac-traffic-light zoom" />
+              onClick={() => setShowSharePanel(true)}
+              disabled={
+                showTrash ||
+                sidebarTarget !== "nas" ||
+                entries.find((entry) => entry.path === selectedPath)?.kind !==
+                  "file"
+              }
+              aria-label="分享所选文件"
+              title="创建或管理外部分享链接"
+            >
+              <Link2Icon />
+            </button>
+            {/* 窗口形态由系统提供红绿灯。 */}
+            {!inWindow && (
+              <SystemAppTrafficLights closeLabel="关闭" onClose={onClose} />
+            )}
           </div>
           <div className="mac-finder-navigation">
             <button
@@ -383,6 +458,21 @@ export function FileManager({
           <div className="mac-finder-actions">
             <button
               type="button"
+              aria-label="整理此目录"
+              title="按年月整理此目录的发票"
+              disabled={
+                showTrash ||
+                sidebarTarget !== "nas" ||
+                fileServiceUnavailable ||
+                loading ||
+                busy !== null
+              }
+              onClick={() => setOrganizationPath(path)}
+            >
+              <FolderSyncIcon />
+            </button>
+            <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={
                 showTrash ||
@@ -412,10 +502,33 @@ export function FileManager({
             </button>
             <button
               type="button"
-              onClick={() => setShowAiPanel((value) => !value)}
+              onClick={() => {
+                if (!onAskAgent) {
+                  setShowAiPanel((value) => !value);
+                  return;
+                }
+                const selected = entries.find(
+                  (entry) => entry.path === selectedPath,
+                );
+                onAskAgent({
+                  app: "files",
+                  kind:
+                    selected?.kind === "dir" || !selected
+                      ? "directory"
+                      : "file",
+                  path: selected?.path ?? path,
+                });
+              }}
+              disabled={
+                !!onAskAgent &&
+                (showTrash ||
+                  sidebarTarget !== "nas" ||
+                  fileServiceUnavailable ||
+                  loading)
+              }
               className={showAiPanel ? "is-active" : ""}
-              aria-label="AI 问答"
-              title="AI 问答"
+              aria-label={onAskAgent ? "交给 Agent" : "AI 问答"}
+              title={onAskAgent ? "将选中对象或当前目录交给 Agent" : "AI 问答"}
             >
               <MessageSquareIcon />
             </button>
@@ -454,55 +567,55 @@ export function FileManager({
 
         <div className="mac-finder-main">
           <aside className="mac-finder-sidebar">
-            <p>个人收藏</p>
-            <button
-              type="button"
-              className={sidebarTarget === "recent" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("recent")}
-            >
-              <Clock3Icon className="text-[#0a84ff]" />
-              最近使用
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "airdrop" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("airdrop")}
-            >
-              <CloudIcon className="text-[#0a84ff]" />
-              隔空投送
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "applications" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("applications")}
-            >
-              <AppWindowIcon className="text-[#0a84ff]" />
-              应用程序
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "home" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("home")}
-            >
-              <HomeIcon className="text-[#0a84ff]" />
-              个人
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "desktop" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("desktop")}
-            >
-              <FolderIcon className="text-[#0a84ff]" />
-              桌面
-            </button>
-            <button
-              type="button"
-              className={sidebarTarget === "downloads" ? "is-selected" : ""}
-              onClick={() => selectSidebarTarget("downloads")}
-            >
-              <DownloadIcon className="text-[#0a84ff]" />
-              下载
-            </button>
+            {/* 本机位置由宿主系统管理：只有接入系统文件管理器时才列出，
+                点进去能打开系统文件；网页会话里只显示 NAS。 */}
+            {onOpenSystemFiles && (
+              <>
+                <p>个人收藏</p>
+                <button
+                  type="button"
+                  className={sidebarTarget === "recent" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("recent")}
+                >
+                  <Clock3Icon className="text-muted-foreground" />
+                  最近使用
+                </button>
+                <button
+                  type="button"
+                  className={
+                    sidebarTarget === "applications" ? "is-selected" : ""
+                  }
+                  onClick={() => selectSidebarTarget("applications")}
+                >
+                  <AppWindowIcon className="text-muted-foreground" />
+                  应用程序
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "home" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("home")}
+                >
+                  <HomeIcon className="text-muted-foreground" />
+                  个人
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "desktop" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("desktop")}
+                >
+                  <FolderIcon className="text-muted-foreground" />
+                  桌面
+                </button>
+                <button
+                  type="button"
+                  className={sidebarTarget === "downloads" ? "is-selected" : ""}
+                  onClick={() => selectSidebarTarget("downloads")}
+                >
+                  <DownloadIcon className="text-muted-foreground" />
+                  下载
+                </button>
+              </>
+            )}
             <p>位置</p>
             {onOpenSystemFiles && (
               <button type="button" onClick={onOpenSystemFiles}>
@@ -524,15 +637,6 @@ export function FileManager({
             >
               <DatabaseIcon />
               NAS
-            </button>
-            <p>标签</p>
-            <button type="button">
-              <span className="mac-tag-dot bg-red-500" />
-              重要
-            </button>
-            <button type="button">
-              <span className="mac-tag-dot bg-blue-500" />
-              项目
             </button>
           </aside>
 
@@ -626,7 +730,7 @@ export function FileManager({
                   <div className="mac-finder-transfer-actions">
                     <button
                       type="button"
-                      className="rounded-md p-1 text-slate-500 hover:bg-slate-900/8"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-slate-900/8"
                       aria-label={transfer.paused ? "继续上传" : "暂停上传"}
                       onClick={() => {
                         const control = uploadControlRef.current;
@@ -648,7 +752,7 @@ export function FileManager({
                     </button>
                     <button
                       type="button"
-                      className="rounded-md p-1 text-slate-500 hover:bg-red-500/10 hover:text-red-600"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-breach/10 hover:text-breach"
                       aria-label="取消上传"
                       onClick={() => uploadControlRef.current?.cancel()}
                     >
@@ -660,7 +764,7 @@ export function FileManager({
                   <div className="mac-finder-transfer-actions">
                     <button
                       type="button"
-                      className="rounded-md p-1 text-slate-500 hover:bg-red-500/10 hover:text-red-600"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-breach/10 hover:text-breach"
                       aria-label="取消下载"
                       onClick={() => downloadAbortRef.current?.abort()}
                     >
@@ -687,7 +791,7 @@ export function FileManager({
                   role="status"
                 >
                   <FolderIcon
-                    className="size-14 text-slate-400"
+                    className="size-14 text-muted-foreground"
                     strokeWidth={1.25}
                   />
                   <strong>{FINDER_TARGET_LABELS[sidebarTarget]}</strong>
@@ -698,7 +802,7 @@ export function FileManager({
                     <button
                       type="button"
                       onClick={onOpenSystemFiles}
-                      className="mt-3 rounded-md bg-slate-900/8 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-900/12"
+                      className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
                     >
                       打开系统文件
                     </button>
@@ -711,7 +815,7 @@ export function FileManager({
               ) : fileServiceUnavailable ? (
                 <div className="mac-finder-empty" role="status">
                   <HardDriveIcon
-                    className="size-14 text-slate-400"
+                    className="size-14 text-muted-foreground"
                     strokeWidth={1.25}
                   />
                   <strong>NAS 文件服务尚未启用</strong>
@@ -722,7 +826,7 @@ export function FileManager({
                     <button
                       type="button"
                       onClick={refresh}
-                      className="rounded-md bg-slate-900/8 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-900/12"
+                      className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
                     >
                       重试连接
                     </button>
@@ -730,17 +834,33 @@ export function FileManager({
                       <button
                         type="button"
                         onClick={onOpenSettings}
-                        className="rounded-md bg-[#0a84ff] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#0077ed]"
+                        className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90"
                       >
                         打开系统设置
                       </button>
                     )}
                   </div>
                 </div>
+              ) : missingFolder ? (
+                <div className="mac-finder-empty" role="status">
+                  <FolderIcon
+                    className="size-14 text-muted-foreground"
+                    strokeWidth={1.25}
+                  />
+                  <strong>找不到这个文件夹</strong>
+                  <span>“{missingFolder}”可能尚未创建，或已被移动。</span>
+                  <button
+                    type="button"
+                    onClick={() => setPath("")}
+                    className="mt-3 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-foreground/5"
+                  >
+                    返回 NAS
+                  </button>
+                </div>
               ) : entries.length === 0 ? (
                 <div className="mac-finder-empty">
                   <FolderIcon
-                    className="size-14 text-[#63b6ee]"
+                    className="size-14 text-muted-foreground"
                     strokeWidth={1.25}
                   />
                   <strong>此文件夹为空</strong>
@@ -754,18 +874,32 @@ export function FileManager({
                     <span>种类</span>
                   </li>
                   {entries.map((entry) => (
-                    <li key={entry.path} className="group">
+                    <li
+                      key={entry.path}
+                      className="group"
+                      ref={
+                        selectedPath === entry.path ? selectedRow : undefined
+                      }
+                      data-selected={selectedPath === entry.path || undefined}
+                      style={
+                        selectedPath === entry.path
+                          ? { backgroundColor: "rgba(59, 130, 246, 0.16)" }
+                          : undefined
+                      }
+                    >
                       <button
                         type="button"
+                        aria-pressed={selectedPath === entry.path}
+                        onClick={() => setSelectedPath(entry.path)}
                         onDoubleClick={() => {
                           if (entry.kind === "dir") setPath(entry.path);
                           else void onDownload(entry);
                         }}
                       >
                         {entry.kind === "dir" ? (
-                          <FolderIcon className="text-[#5eb6ed]" />
+                          <FolderIcon className="text-muted-foreground" />
                         ) : (
-                          <FileIcon className="text-slate-400" />
+                          <FileIcon className="text-muted-foreground" />
                         )}
                         <span>{entry.name}</span>
                       </button>
@@ -858,6 +992,32 @@ export function FileManager({
         onCancel={() => setEmptyApprovalOpen(false)}
         onConfirm={confirmEmpty}
       />
+      {organizationPath !== null && (
+        <FileOrganizationPanel
+          key={organizationPath}
+          path={organizationPath}
+          onClose={() => setOrganizationPath(null)}
+          onChanged={refresh}
+          onReveal={(target) => {
+            const request = revealFileRequest(target);
+            if (!request) return;
+            setOrganizationPath(null);
+            setShowTrash(false);
+            setSidebarTarget("nas");
+            setSelectedPath(request.selectedPath);
+            if (request.path === path) refresh();
+            else setPath(request.path);
+          }}
+        />
+      )}
+      {showSharePanel && (
+        <FileSharePanel
+          selected={
+            entries.find((entry) => entry.path === selectedPath) ?? null
+          }
+          onClose={() => setShowSharePanel(false)}
+        />
+      )}
     </div>
   );
 }
@@ -882,10 +1042,10 @@ function AiDocPanel({
 }) {
   const [mode, setMode] = useState<"search" | "answer">("search");
   return (
-    <div className="border-b border-slate-900/8 bg-slate-50/60 px-5 py-3">
+    <div className="border-b border-foreground/20 bg-background/60 px-5 py-3">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+          <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
@@ -895,13 +1055,13 @@ function AiDocPanel({
               }
             }}
             placeholder="问我关于你文档库的问题…"
-            className="h-8 w-full rounded-lg border border-slate-300 bg-white pl-8 pr-3 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400"
+            className="h-8 w-full rounded-lg border border-border bg-card pl-8 pr-3 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-core/30"
           />
         </div>
         <button
           type="button"
           onClick={() => setMode(mode === "search" ? "answer" : "search")}
-          className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+          className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-background"
           title={mode === "search" ? "切换为智能回答" : "切换为仅检索"}
         >
           {mode === "search" ? "检索" : "回答"}
@@ -910,7 +1070,7 @@ function AiDocPanel({
           type="button"
           disabled={!query.trim() || loading}
           onClick={() => void onSearch(query.trim(), mode)}
-          className="inline-flex h-8 items-center gap-1 rounded-lg bg-blue-600 px-3 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition hover:bg-primary disabled:opacity-50"
         >
           {loading ? (
             <Loader2Icon className="size-3.5 animate-spin" />
@@ -924,40 +1084,40 @@ function AiDocPanel({
       {results && (
         <div className="mt-3 space-y-2">
           {results.unavailable && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
               {results.message ||
                 "本地文档库未运行。请先启动 Echo Storage 服务。"}
             </div>
           )}
           {results.answer && (
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-700">
-              <span className="mb-1 block text-[10px] font-medium text-slate-400">
+            <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs leading-relaxed text-foreground">
+              <span className="mb-1 block text-[12px] font-medium text-muted-foreground">
                 回答
               </span>
               {results.answer}
             </div>
           )}
           {results.hits.length > 0 && (
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
-              <div className="mb-1 text-[10px] font-medium text-slate-400">
+            <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card p-2">
+              <div className="mb-1 text-[12px] font-medium text-muted-foreground">
                 {results.answer ? "引用来源" : "检索结果"}
               </div>
               <ul className="space-y-1.5">
                 {results.hits.map((hit, i) => (
                   <li
                     key={`${hit.path}-${i}`}
-                    className="rounded-md bg-slate-50 px-2 py-1.5 text-xs"
+                    className="rounded-md bg-background px-2 py-1.5 text-xs"
                   >
-                    <div className="font-medium text-slate-700">
+                    <div className="font-medium text-foreground">
                       {hit.title || hit.path}
                     </div>
                     {hit.snippet && (
-                      <div className="mt-0.5 line-clamp-2 text-slate-500">
+                      <div className="mt-0.5 line-clamp-2 text-muted-foreground">
                         {hit.snippet}
                       </div>
                     )}
                     {hit.path && (
-                      <div className="mt-0.5 text-[10px] text-slate-400">
+                      <div className="mt-0.5 text-[12px] text-muted-foreground">
                         {hit.path}
                       </div>
                     )}
@@ -969,7 +1129,7 @@ function AiDocPanel({
           {!results.unavailable &&
             results.hits.length === 0 &&
             !results.answer && (
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+              <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
                 未找到相关文档。
               </div>
             )}
@@ -992,7 +1152,7 @@ function TrashView({
 }) {
   if (trash.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
         回收站是空的
       </div>
     );
@@ -1000,14 +1160,14 @@ function TrashView({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           {trash.length} 项 · 恢复回原位置,或永久删除
         </p>
         <button
           type="button"
           onClick={onEmpty}
           disabled={busy === "__empty__"}
-          className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-red-600 px-2.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-breach px-2.5 text-xs font-medium text-primary-foreground transition hover:bg-breach disabled:opacity-50"
         >
           {busy === "__empty__" ? (
             <Loader2Icon className="size-3 animate-spin" />
@@ -1024,13 +1184,13 @@ function TrashView({
             className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-900/5"
           >
             {entry.kind === "dir" ? (
-              <FolderIcon className="size-5 shrink-0 text-amber-500" />
+              <FolderIcon className="size-5 shrink-0 text-muted-foreground" />
             ) : (
-              <FileIcon className="size-5 shrink-0 text-slate-400" />
+              <FileIcon className="size-5 shrink-0 text-muted-foreground" />
             )}
             <span className="min-w-0 flex-1 truncate text-sm">
               {entry.name}
-              <span className="ml-2 text-xs text-slate-400">
+              <span className="ml-2 text-xs text-muted-foreground">
                 {entry.original}
               </span>
             </span>
@@ -1039,7 +1199,7 @@ function TrashView({
               onClick={() => onRestore(entry.id)}
               disabled={busy === entry.id}
               title="恢复"
-              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2 text-xs text-muted-foreground transition hover:bg-background disabled:opacity-50"
             >
               {busy === entry.id ? (
                 <Loader2Icon className="size-3 animate-spin" />

@@ -7,7 +7,6 @@ import {
   CodeIcon,
   CodeXmlIcon,
   EyeIcon,
-  Loader2Icon,
   SquareMousePointerIcon,
 } from "lucide-react";
 import {
@@ -18,6 +17,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { cn } from "@/lib/utils";
 import { swallow } from "@/core/utils/log";
 import { useI18n } from "@/core/i18n/hooks";
@@ -386,7 +386,9 @@ ${jsContent || "// No JavaScript"}
                 : "text-muted-foreground hover:text-foreground hover:bg-muted",
             )}
             title={showCode ? t.livePreview.hideCode : t.livePreview.showCode}
-            aria-label={showCode ? t.livePreview.hideCode : t.livePreview.showCode}
+            aria-label={
+              showCode ? t.livePreview.hideCode : t.livePreview.showCode
+            }
           >
             {showCode ? (
               <EyeIcon className="size-3.5" />
@@ -437,16 +439,18 @@ ${jsContent || "// No JavaScript"}
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden relative">
         {isLoading ? (
-          <div className="flex h-full min-h-0 flex-col items-center justify-center text-muted-foreground">
-            <Loader2Icon className="size-8 animate-spin mb-2" />
-            <span className="text-sm">{t.livePreview.loading}</span>
-          </div>
+          <PanelLoading
+            label={t.livePreview.loading}
+            caption={t.livePreview.loading}
+            className="h-full min-h-0"
+          />
         ) : showCode ? (
           <Suspense
             fallback={
-              <div className="flex h-full min-h-0 items-center justify-center text-sm text-muted-foreground">
-                {t.livePreview.loading}
-              </div>
+              <PanelLoading
+                label={t.livePreview.loading}
+                className="h-full min-h-0"
+              />
             }
           >
             <CodeEditor

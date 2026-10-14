@@ -368,6 +368,8 @@ BENCHMARK_CASES: tuple[AgentBenchmarkCase, ...] = (
         paths=(
             "runtime/sensing/gateway/realtime_turn_lifecycle.py",
             "runtime/sensing/gateway/realtime_turn_routing.py",
+            # Group-fanout / swarm-mesh dispatch moved here from turn routing.
+            "runtime/sensing/gateway/realtime_execution.py",
             "runtime/core/cerebrum/react_loop.py",
             "runtime/core/cerebrum/react_guards.py",
             "tests/test_realtime_cerebrum.py",

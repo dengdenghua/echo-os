@@ -9,11 +9,29 @@ import {
   WorkspaceBody,
   WorkspaceContainer,
 } from "@/components/workspace/workspace-container";
+import { canAccessGlobalControlPlane } from "@/core/auth/control-plane-access";
 import { useI18n } from "@/core/i18n/hooks";
+import { useOptionalAuth } from "@/providers/AuthProvider";
+
+type KnowledgeTab = "graph" | "memory" | "wiki";
 
 export default function KnowledgePage() {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState("graph");
+  const auth = useOptionalAuth();
+  // The graph is one device-wide store, served only to an account with the
+  // cross-tenant scope. The appliance owner is an admin without it, so the
+  // tab would only ever answer 403; such accounts start on their own memories.
+  const graphAllowed = canAccessGlobalControlPlane(
+    auth?.authStatus ?? null,
+    auth?.user ?? null,
+  );
+  const [chosenTab, setChosenTab] = useState<KnowledgeTab | null>(null);
+  const activeTab: KnowledgeTab =
+    chosenTab && (chosenTab !== "graph" || graphAllowed)
+      ? chosenTab
+      : graphAllowed
+        ? "graph"
+        : "memory";
   return (
     <WorkspaceContainer>
       <WorkspaceBody>
@@ -25,12 +43,20 @@ export default function KnowledgePage() {
                 实体、关系与本地记忆
               </div>
             </div>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setChosenTab(value as KnowledgeTab)}
+            >
               <TabsList className="flex h-8 rounded-md bg-transparent p-0">
-                <TabsTrigger value="graph" className="h-8 gap-1.5 px-3 text-xs">
-                  <NetworkIcon className="size-3.5" />
-                  {t.knowledgeGraph.graph}
-                </TabsTrigger>
+                {graphAllowed && (
+                  <TabsTrigger
+                    value="graph"
+                    className="h-8 gap-1.5 px-3 text-xs"
+                  >
+                    <NetworkIcon className="size-3.5" />
+                    {t.knowledgeGraph.graph}
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="memory"
                   className="h-8 gap-1.5 px-3 text-xs"
@@ -47,7 +73,7 @@ export default function KnowledgePage() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto border-0 bg-card p-3">
-            {activeTab === "graph" && <KnowledgeGraphPanel />}
+            {activeTab === "graph" && graphAllowed && <KnowledgeGraphPanel />}
             {activeTab === "memory" && <MemoryAssetsPanel />}
             {activeTab === "wiki" && <WikiPanel />}
           </div>

@@ -11,6 +11,7 @@ on:
       - "packaging/desktop/**"
       - "appliance/**"
       - "deploy/agent/**"
+      - "deploy/storage/**"
       - "deploy/backup/**"
       - "deploy/appliance/**"
       - "deploy/desktop-session/**"
@@ -40,6 +41,7 @@ on:
       - "packaging/desktop/**"
       - "appliance/**"
       - "deploy/agent/**"
+      - "deploy/storage/**"
       - "deploy/backup/**"
       - "deploy/appliance/**"
       - "deploy/desktop-session/**"
@@ -80,7 +82,7 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            ca-certificates git python3
+            bash ca-certificates coreutils gh git grep mawk python3 sed
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -91,7 +93,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 deploy/appliance/delivery_source_preflight.py --compact
+          python3 deploy/appliance/delivery_source_preflight.py --compact \
+            --expected-branch "$GITHUB_REF_NAME"
 
       - name: Verify runner policy and image source contract
         run: |
@@ -99,6 +102,8 @@ jobs:
           python3 packaging/image/test_verify_linux_image_runner_host.py
           python3 packaging/image/test_verify_linux_image_runner.py
           python3 packaging/image/test_verify_os_image_evidence.py
+          python3 deploy/oem/test_echo_oem_setup.py
+          python3 deploy/agent/test_native_storage_broker_linux.py
           ./packaging/image/verify-image.sh --static
 
   build-and-boot:
@@ -304,6 +309,9 @@ jobs:
 
       - name: Verify on-demand removable-storage policy
         run: python3 deploy/removable-storage/test_echo_removable_storage_health.py
+
+      - name: Verify running-kernel OpenZFS policy
+        run: python3 deploy/storage/test_echo_zfs_health.py
 
       - name: Verify private local printing policy
         run: |

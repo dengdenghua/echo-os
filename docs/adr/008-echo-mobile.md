@@ -208,5 +208,5 @@ echo-agent 已有 `desktop_operator_arm` —— 用 pyautogui / 屏幕截图 + �
 - [skills.md](../../mobile/skills.md) — 30 个移动技能
 - [browser-integration.md](../../mobile/browser-integration.md) — 浏览器内核集成
 - [biomimetic/tentacle/README.md](../../biomimetic/tentacle/README.md) — 触手器官说明
-- [Echo Mobile 源码](https://github.com/echo-agent/echo-mobile) — Android 端实现参考
+- [Echo Mobile 源码](https://github.com/dengdenghua/echo-mobile) — Android 端实现参考
 - ADR-001 — 双轨命名契约

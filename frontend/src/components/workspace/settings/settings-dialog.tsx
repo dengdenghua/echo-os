@@ -26,7 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Suspense, lazy } from "react";
 import { getSettingsUxCopy } from "./settings-ux-copy";
 import AppearanceSettingsPage from "./appearance-settings-page";
@@ -139,8 +139,10 @@ import { swallow } from "@/core/utils/log";
 import { useI18n } from "@/core/i18n/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import { useQueryClient } from "@tanstack/react-query";
 import { octApi } from "@/core/oct/api";
+import { octAvailabilityQuery, octLinkQueryKey } from "@/core/oct/hooks";
 
 type SettingsDialogProps = React.ComponentProps<typeof Dialog> & {
   defaultSection?: SettingsSection;
@@ -195,6 +197,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
   const { t, locale } = useI18n();
   const settingsUxCopy = getSettingsUxCopy(locale);
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { user, logout, authStatus, isLoading } = useAuth();
   const accountName = getAccountDisplayName(user);
   const queryClient = useQueryClient();
@@ -321,13 +324,19 @@ export function SettingsDialog(props: SettingsDialogProps) {
       const timerHandle =
         idleHandle === undefined ? window.setTimeout(preload, 500) : undefined;
 
-      // Prefetch the oct account bridge; individual account tabs can fetch
-      // their own optional data when opened.
-      queryClient.prefetchQuery({
-        queryKey: ["account", "oct"],
-        queryFn: () => octApi.get().catch(() => null),
-        staleTime: 30_000,
-      });
+      // Prefetch the oct account bridge when the backend mounts it;
+      // individual account tabs can fetch their own optional data when opened.
+      void queryClient
+        .fetchQuery(octAvailabilityQuery)
+        .then((octAvailable) => {
+          if (!octAvailable) return;
+          return queryClient.prefetchQuery({
+            queryKey: octLinkQueryKey(),
+            queryFn: () => octApi.get().catch(() => null),
+            staleTime: 30_000,
+          });
+        })
+        .catch(swallow);
 
       return () => {
         if (idleHandle !== undefined) {
@@ -780,7 +789,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 </Button>
               ) : null}
             </div>
-            <div className="text-muted-foreground mb-0.5 hidden items-center justify-between px-1.5 text-[11px] font-medium uppercase md:flex">
+            <div className="text-muted-foreground mb-0.5 hidden items-center justify-between px-1.5 text-xs font-medium uppercase md:flex">
               <span>{t.settings.dialog.sectionsLabel}</span>
               {normalizedSettingsQuery ? (
                 <span>
@@ -815,7 +824,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                           visibleSections[index - 1]?.group !== group ? (
                             <li
                               aria-hidden="true"
-                              className="hidden items-center gap-2 px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 first:pt-0 md:flex"
+                              className="hidden items-center gap-2 px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 first:pt-0 md:flex"
                             >
                               <span className="h-px flex-1 bg-border-subtle" />
                               <span>{sectionGroupLabels[group]}</span>
@@ -906,12 +915,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 </Empty>
               ) : null}
               {hasSettingsResults && activeSection === "account" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AccountSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "subscription" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <SubscriptionSettingsPage />
                 </Suspense>
               )}
@@ -919,47 +928,47 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 <AppearanceSettingsPage />
               )}
               {hasSettingsResults && activeSection === "conversation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <ConversationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "models" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <ModelSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "memory" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <MemorySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "tools" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <McpSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "automationSecurity" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AutomationSecuritySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "browserAutomation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <BrowserAutomationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "desktopAutomation" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <DesktopAutomationSettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "privacy" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <PrivacySettingsPage />
                 </Suspense>
               )}
               {hasSettingsResults && activeSection === "notification" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <NotificationSettingsPage />
                 </Suspense>
               )}
@@ -1022,7 +1031,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
                     className="w-full sm:w-auto"
                     onClick={() => {
                       dialogProps.onOpenChange?.(false);
-                      navigate("/workspace/observability");
+                      navigate(
+                        preserveWorkbenchPresentation(
+                          "/workspace/observability",
+                          search,
+                        ),
+                      );
                     }}
                   >
                     {settingsUxCopy.observability.openDashboard}
@@ -1030,7 +1044,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                 </section>
               )}
               {hasSettingsResults && activeSection === "about" && (
-                <Suspense fallback={<SettingsPageSkeleton />}>
+                <Suspense fallback={<SettingsPageLoading />}>
                   <AboutSettingsPage />
                 </Suspense>
               )}
@@ -1120,17 +1134,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
   );
 }
 
-// Skeleton loader for settings pages
-function SettingsPageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-96" />
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    </div>
-  );
+// Loading fallback for lazily loaded settings pages: the brand progress line.
+function SettingsPageLoading() {
+  const { t } = useI18n();
+  return <PanelLoading label={t.common.loading} className="min-h-64" />;
 }

@@ -225,12 +225,22 @@ export interface CloudInstalledStatus {
   skills: string[];
   plugins: string[];
   plugin_states?: Record<string, RuntimePluginStatus>;
+  /** False means local inventory is valid but catalog-derived states are unavailable. */
+  catalog_available?: boolean;
+  catalog_error?: string | null;
 }
+
+// The installed-status probe can hang when the cloud mirror is unreachable;
+// bound it so callers (e.g. the HUB Skills tab) leave their loading state.
+const CLOUD_INSTALLED_TIMEOUT_MS = 10_000;
 
 export async function fetchCloudInstalled(): Promise<CloudInstalledStatus> {
   const res = await fetch(
     `${getBackendBaseURL()}${AGENT_MARKET_API}/cloud/installed`,
-    { headers: authHeaders() },
+    {
+      headers: authHeaders(),
+      signal: AbortSignal.timeout(CLOUD_INSTALLED_TIMEOUT_MS),
+    },
   );
   if (!res.ok)
     throw new Error(`Cloud installed status failed: HTTP ${res.status}`);

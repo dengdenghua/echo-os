@@ -253,6 +253,19 @@ def test_resume_registration_applies_every_grant_dimension():
             active_max_tokens_budget=150_000,
             active_max_usd_budget=3.0,
             messages=[],
+            # Resume now fails closed without a readable checkpoint, so hand
+            # it a minimal valid one; this test is about grant application.
+            resume_snapshot={
+                "schema_version": 1,
+                "iteration_completed": 0,
+                "messages_snapshot": [],
+                "steps_snapshot": [],
+                "working_set_snapshot": [],
+                "progress_summary": "",
+                "current_phase": "understand",
+                "has_final_answer": False,
+                "final_answer": "",
+            },
         )
 
         active = next(task for task in controller.list_active() if task.task_id == task_id)
@@ -365,4 +378,3 @@ def test_resume_or_register_turn_forwards_wall_time_cap(monkeypatch):
         ).DEFAULT_TURN_WALL_TIME_CAP_S
     )
     assert turn is not None
-

@@ -1,0 +1,1179 @@
+#!/usr/bin/env bash
+# provision A 路线首次开机步骤库 —— 被 setup-base.sh `source`,不单独执行。
+#
+# 拆分目的(收敛 P2):把"装机步骤"从"编排"里抽出来,让 A 路线特有步骤与
+# 上游收敛步骤泾渭分明:
+#   - A 路线特有:step_apt / storage / docker / node / echo_src / echo_py /
+#     echo_web / services(apt 源、ZFS/SMB/NFS 存储栈、nginx+appliance 服务、
+#     自签证书 —— 上游 deploy/appliance 是容器模型,不覆盖这些)
+#   - 上游收敛:step_shell(桌面壳,ECHO_DESKTOP 开关调用上游
+#     deploy/desktop-session/setup-desktop-session.sh)、
+#     step_backup_recovery(直接复用上游 deploy/backup + deploy/recovery)
+#
+# 依赖(由 setup-base.sh 在 source 之前设置):OS_DIR STATE_DIR LOG_TAG
+# OS_REPO OS_BRANCH DEBIAN_MIRROR,以及可选覆盖 env。
+
+log()  { echo "[$(date -Is)] $*" | tee -a "/var/log/${LOG_TAG}.log"; }
+skip() { log "skip: $1 (已完成)"; }
+done_mark() { mkdir -p "$STATE_DIR"; touch "$STATE_DIR/$1"; }
+is_done()   { [ -f "$STATE_DIR/$1" ]; }
+
+SYSTEM_DEB_REPO=""
+
+# A declared system-deb bundle is a release artifact, not a best-effort cache:
+# missing files, a wrong hash/tree/kernel, links, or a broken package index must
+# fail closed.  A previously extracted repository remains valid on a resumed
+# firstboot after the compressed bundle has been consumed.
+validate_system_deb_repo() {
+  local repo="$1" required runtime expected_runtime expected_repo actual_repo
+  [ -d "$repo" ] || return 1
+  for required in .echo-source-tree .echo-system-runtime Packages Packages.gz packages.lock SHA256SUMS; do
+    [ -s "$repo/$required" ] && [ ! -L "$repo/$required" ] || return 1
+  done
+  [ "$(tr -d '[:space:]' <"$repo/.echo-source-tree")" = "${ECHO_SOURCE_TREE:-}" ] \
+    || return 1
+  runtime="$(tr -d '\r\n' <"$repo/.echo-system-runtime")"
+  expected_runtime="debian-trixie $(dpkg --print-architecture) kernel-$(uname -r)"
+  [ "$runtime" = "$expected_runtime" ] || return 1
+  [ "$(find "$repo" -maxdepth 1 -type f -name '*.deb' | wc -l)" -gt 40 ] \
+    || return 1
+  if find "$repo" -mindepth 1 -maxdepth 1 ! -type f -print -quit | grep -q .; then
+    return 1
+  fi
+  expected_repo="${ECHO_SYSTEM_DEB_REPO_SHA256:-}"
+  [ "${#expected_repo}" -eq 64 ] || return 1
+  actual_repo="$(sha256sum "$repo/SHA256SUMS" | awk '{print $1}')"
+  [ "$actual_repo" = "$expected_repo" ] || return 1
+  (cd "$repo" && sha256sum -c SHA256SUMS >/dev/null) || return 1
+}
+
+prepare_system_deb_repo() {
+  local configured="${ECHO_SYSTEM_DEB_BUNDLE:-}"
+  local bundle="${configured:-/opt/echo-system-debs.tar.gz}"
+  local expected="${ECHO_SYSTEM_DEB_BUNDLE_SHA256:-}"
+  local target=/opt/echo-system-debs staged actual backup
+
+  if [ -z "$configured" ] && [ -z "$expected" ]; then
+    return 1
+  fi
+  if validate_system_deb_repo "$target"; then
+    SYSTEM_DEB_REPO="$target"
+    rm -f "$bundle"
+    log "  复用已验证的首启离线系统包仓"
+    return 0
+  fi
+  [ -f "$bundle" ] && [ ! -L "$bundle" ] \
+    || { log "✗ 已声明的首启离线系统包仓不存在"; return 2; }
+  [ "${#expected}" -eq 64 ] \
+    || { log "✗ 首启离线系统包仓缺少 SHA-256 身份"; return 2; }
+  actual="$(sha256sum "$bundle" | awk '{print $1}')"
+  [ "$actual" = "$expected" ] \
+    || { log "✗ 首启离线系统包仓摘要不匹配"; return 2; }
+  if tar -tzf "$bundle" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+    log "✗ 首启离线系统包仓包含越界路径"
+    return 2
+  fi
+  staged="$(mktemp -d /opt/.echo-system-debs.XXXXXX)"
+  if ! tar -xzf "$bundle" -C "$staged" || ! validate_system_deb_repo "$staged"; then
+    rm -rf "$staged"
+    log "✗ 首启离线系统包仓内容验证失败"
+    return 2
+  fi
+  chmod 0755 "$staged"
+  find "$staged" -maxdepth 1 -type f -exec chmod 0644 {} +
+  backup=""
+  if [ -e "$target" ]; then
+    backup="$target.backup.$$"
+    mv "$target" "$backup"
+  fi
+  if ! mv "$staged" "$target"; then
+    [ -n "$backup" ] && mv "$backup" "$target"
+    return 2
+  fi
+  rm -rf "$backup"
+  rm -f "$bundle"
+  SYSTEM_DEB_REPO="$target"
+  log "  已验证并启用首启离线系统包仓 $expected"
+}
+
+validate_codex_bundle() {
+  local root="$1" required runtime expected_runtime executable
+  [ -d "$root" ] && [ ! -L "$root" ] || return 1
+  for required in .echo-source-tree .echo-codex-runtime \
+      echo-codex-bundle.json SHA256SUMS; do
+    [ -s "$root/$required" ] && [ ! -L "$root/$required" ] || return 1
+  done
+  if find "$root" \( -type l -o \( ! -type f -a ! -type d \) \) \
+      -print -quit | grep -q .; then
+    return 1
+  fi
+  [ "$(tr -d '[:space:]' <"$root/.echo-source-tree")" = "${ECHO_SOURCE_TREE:-}" ] \
+    || return 1
+  runtime="$(tr -d '\r\n' <"$root/.echo-codex-runtime")"
+  expected_runtime="codex-${ECHO_PACKAGED_CODEX_VERSION:-} linux x86_64"
+  [ "$runtime" = "$expected_runtime" ] || return 1
+  (cd "$root" && sha256sum -c SHA256SUMS >/dev/null) || return 1
+  for executable in \
+      bin/codex bin/codex-code-mode-host codex-path/rg \
+      codex-resources/zsh/bin/zsh codex-resources/bwrap; do
+    [ -x "$root/$executable" ] || return 1
+  done
+  [ "$($root/bin/codex --version)" \
+      = "codex-cli ${ECHO_PACKAGED_CODEX_VERSION:-}" ] || return 1
+}
+
+install_codex_bundle() {
+  local configured="${ECHO_CODEX_BUNDLE:-}"
+  local bundle="${configured:-/opt/echo-codex.tar.gz}"
+  local expected="${ECHO_CODEX_BUNDLE_SHA256:-}"
+  local target=/opt/echo-codex staged actual backup executable
+
+  if [ -z "$configured" ] && [ -z "$expected" ]; then
+    return 1
+  fi
+  if validate_codex_bundle "$target"; then
+    ln -sfn "$target/bin/codex" /usr/local/bin/codex
+    rm -f "$bundle"
+    log "  复用已验证的离线 Codex CLI"
+    return 0
+  fi
+  [ -f "$bundle" ] && [ ! -L "$bundle" ] \
+    || { log "✗ 已声明的离线 Codex 载荷不存在"; return 2; }
+  [ "${#expected}" -eq 64 ] \
+    || { log "✗ 离线 Codex 载荷缺少 SHA-256 身份"; return 2; }
+  actual="$(sha256sum "$bundle" | awk '{print $1}')"
+  [ "$actual" = "$expected" ] \
+    || { log "✗ 离线 Codex 载荷摘要不匹配"; return 2; }
+  if tar -tzf "$bundle" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+    log "✗ 离线 Codex 载荷包含越界路径"
+    return 2
+  fi
+  staged="$(mktemp -d /opt/.echo-codex.XXXXXX)"
+  if ! tar --no-same-owner --no-same-permissions -xzf "$bundle" -C "$staged"; then
+    rm -rf "$staged"
+    log "✗ 离线 Codex 载荷解包失败"
+    return 2
+  fi
+  find "$staged" -type d -exec chmod 0755 {} +
+  find "$staged" -type f -exec chmod 0644 {} +
+  for executable in \
+      bin/codex bin/codex-code-mode-host codex-path/rg \
+      codex-resources/zsh/bin/zsh codex-resources/bwrap; do
+    [ -f "$staged/$executable" ] && [ ! -L "$staged/$executable" ] \
+      || { rm -rf "$staged"; log "✗ 离线 Codex 载荷缺少 $executable"; return 2; }
+    chmod 0755 "$staged/$executable"
+  done
+  if ! validate_codex_bundle "$staged"; then
+    rm -rf "$staged"
+    log "✗ 离线 Codex 载荷内容验证失败"
+    return 2
+  fi
+  backup=""
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup="$target.backup.$$"
+    mv "$target" "$backup"
+  fi
+  if ! mv "$staged" "$target"; then
+    [ -n "$backup" ] && mv "$backup" "$target"
+    return 2
+  fi
+  [ -z "$backup" ] || rm -rf "$backup"
+  ln -sfn "$target/bin/codex" /usr/local/bin/codex
+  rm -f "$bundle"
+  log "  已验证并安装离线 Codex CLI $expected"
+}
+
+# network-online.target 只保证网络管理器已就绪，不保证 DNS/镜像在长时间
+# 首启期间始终可达。给每笔 apt 操作一个有上限的外层重试；最终仍失败时
+# 保留原始退出码，让 systemd 正确标记 firstboot 失败。
+apt_retry() {
+  local attempt=1 max_attempts=4 delay_seconds=10 status
+  while true; do
+    if "$@"; then return 0; else status=$?; fi
+    if [ "$attempt" -ge "$max_attempts" ]; then return "$status"; fi
+    log "  apt 暂时失败(exit=$status)，${delay_seconds}s 后重试 ($attempt/$max_attempts)"
+    sleep "$delay_seconds"
+    attempt=$((attempt + 1))
+    delay_seconds=$((delay_seconds * 2))
+  done
+}
+
+apt_update() {
+  # apt-get update 默认会把“所有索引下载失败”降级成 exit 0 + warning，导致
+  # apt_retry 误判成功。Error-Mode=any 把任一索引失败变成非零退出，才能
+  # 在首启 DNS/DHCP 抖动时真正进入有界退避。
+  apt_retry apt-get -o APT::Update::Error-Mode=any update
+}
+
+# 大型 apt 事务与前端构建在 2GB 设备上都可能短时超过物理内存。必须在
+# 第一个高峰步骤（存储栈）之前补足 swap，不能等到前端构建才处理。
+ensure_swap() {
+  local need_mb=2048 have_mb add_mb sf=/var/lib/echo-os/swapfile
+  have_mb=$(awk '/SwapTotal/{printf "%d", $2/1024}' /proc/meminfo)
+  if [ "${have_mb:-0}" -lt "$need_mb" ]; then
+    add_mb=$((need_mb - have_mb))
+    if [ ! -f "$sf" ]; then
+      mkdir -p "$(dirname "$sf")"
+      rm -f "$sf.partial"
+      dd if=/dev/zero of="$sf.partial" bs=1M count="$add_mb" status=none
+      chmod 600 "$sf.partial"
+      /usr/sbin/mkswap -q "$sf.partial"
+      mv "$sf.partial" "$sf"
+    fi
+    /usr/sbin/swapon "$sf" 2>/dev/null || true
+    grep -qs "^$sf " /etc/fstab || echo "$sf none swap sw 0 0" >> /etc/fstab
+    log "  低内存设备: 已补充 swap ${add_mb}MB"
+  fi
+}
+
+# ── 1/7 软件源 ──────────────────────────────────────────
+step_apt() {
+  log "== 1/7 配置软件源 =="
+  if [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ] && [ -z "$SYSTEM_DEB_REPO" ]; then
+    log "✗ 严格 release 缺少已验证的离线系统包仓"
+    return 1
+  fi
+  # apt 的默认读取超时可能让故障 CDN 单包挂住近一小时，外层 apt_retry
+  # 也就迟迟得不到退出码。先给每次传输设置明确上限；apt 自身做短重试，
+  # 若整笔事务仍失败，再由 apt_retry 进行有界退避。
+  cat >/etc/apt/apt.conf.d/80echo-network <<'EOF'
+Acquire::Retries "3";
+Acquire::http::Timeout "30";
+Acquire::https::Timeout "30";
+EOF
+  if [ -n "$SYSTEM_DEB_REPO" ]; then
+    cat >/etc/apt/sources.list.d/echo-system-debs.sources <<EOF
+Types: deb
+URIs: file:$SYSTEM_DEB_REPO
+Suites: ./
+Trusted: yes
+EOF
+    # Force every firstboot apt invocation through the verified local flat
+    # repository. Existing installer/administrator sources remain on disk but
+    # cannot trigger a hidden network fallback while this release is active.
+    cat >/etc/apt/apt.conf.d/79echo-offline-firstboot <<'EOF'
+Dir::Etc::sourcelist "/etc/apt/sources.list.d/echo-system-debs.sources";
+Dir::Etc::sourceparts "/dev/null";
+EOF
+  else
+    rm -f /etc/apt/apt.conf.d/79echo-offline-firstboot \
+      /etc/apt/sources.list.d/echo-system-debs.sources
+    cat >/etc/apt/sources.list.d/debian.sources <<EOF
+Types: deb
+URIs: ${DEBIAN_MIRROR}
+Suites: trixie trixie-updates
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb
+URIs: http://security.debian.org/debian-security
+Suites: trixie-security
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF
+  fi
+  # Debian 13 安装器可能同时留下传统 sources.list 和 deb822 文件。只注释
+  # 与本机 Debian 镜像/官方安全源重复的行，第三方仓库原样保留；原文件留
+  # 一份备份，便于运维审计或手工恢复。
+  if [ -f /etc/apt/sources.list ]; then
+    [ -f /etc/apt/sources.list.echo-installer ] \
+      || cp -a /etc/apt/sources.list /etc/apt/sources.list.echo-installer
+    local mirror_host sources_tmp
+    mirror_host="${DEBIAN_MIRROR#*://}"
+    mirror_host="${mirror_host%%/*}"
+    sources_tmp="$(mktemp /etc/apt/.sources.list.XXXXXX)"
+    awk -v mirror_host="$mirror_host" '
+      function url_host(url, value) {
+        value = tolower(url)
+        sub(/^[a-z]+:\/\//, "", value)
+        sub(/\/.*/, "", value)
+        return value
+      }
+      {
+        if ($1 == "deb" || $1 == "deb-src") {
+          url = ""
+          for (field = 2; field <= NF; field++) {
+            if ($field ~ /^[a-z]+:\/\//) { url = $field; break }
+          }
+          host = url_host(url)
+          if (host == tolower(mirror_host) || host == "deb.debian.org" ||
+              host == "security.debian.org") {
+            print "# Echo OS: duplicate disabled; canonical entry is debian.sources"
+            print "# " $0
+            next
+          }
+        }
+        print
+      }
+    ' /etc/apt/sources.list >"$sources_tmp"
+    chmod 0644 "$sources_tmp"
+    mv "$sources_tmp" /etc/apt/sources.list
+  fi
+  apt_update
+  # 严格 release 会清空 d-i 的 tasksel/pkgsel 附加包，因此首启自身后续
+  # 所需的 git/Python/nginx，以及设备的 SSH/sudo 管理入口，必须在第一步
+  # 从已验证的本地仓补齐。开发镜像重复安装已存在包也是幂等的。
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl zstd gnupg lsb-release openssl avahi-daemon libnss-mdns \
+    openssh-server rclone fuse3 sudo git \
+    python3 python3-venv python3-pip \
+    nginx
+  done_mark apt
+}
+
+# Debian's usershare registry is root:sambashare 1770. NAS members are in
+# users, not sambashare: smbd impersonates them when reading a share definition.
+# Grant metadata read/traverse only; never grant NAS members usershare creation.
+configure_native_samba_usershares() {
+  local registry=/var/lib/samba/usershares configured component mode max_shares
+  configured="$(testparm -s --parameter-name='usershare path' 2>/dev/null)" || return 1
+  [ "$configured" = "$registry" ] \
+    || { log "✗ 自定义 Samba usershare 路径需管理员单独配置"; return 1; }
+  max_shares="$(testparm -s --parameter-name='usershare max shares' 2>/dev/null)" || return 1
+  case "$max_shares" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$max_shares" -gt 0 ] || { log "✗ Samba usershare 已禁用"; return 1; }
+  getent group users >/dev/null || { log "✗ 缺少 NAS users 组"; return 1; }
+  for component in /var /var/lib /var/lib/samba "$registry"; do
+    [ -d "$component" ] && [ ! -L "$component" ] \
+      && [ "$(stat -c %u "$component")" = 0 ] \
+      || { log "✗ Samba usershare 目录不是受信 root 目录"; return 1; }
+    mode="$(stat -c %a "$component")" || return 1
+    case "$mode" in ''|*[!0-7]*) return 1 ;; esac
+    (( (8#$mode & 0002) == 0 )) || return 1
+    if [ "$component" != "$registry" ]; then
+      # A writable ancestor could swap the validated directory underneath root.
+      (( (8#$mode & 0022) == 0 )) || return 1
+    else
+      # Samba requires a sticky registry with no permissions for others.
+      (( (8#$mode & 1007) == 1000 )) || return 1
+    fi
+  done
+  # Keep the existing ACL mask: auto-recalculation could unmask unrelated writers.
+  (( (8#$mode & 0050) == 0050 )) \
+    || { log "✗ Samba usershare ACL mask 不允许安全只读访问"; return 1; }
+  setfacl --no-mask -m g:users:r-x "$registry" || return 1
+  getfacl --absolute-names --omit-header "$registry" \
+    | grep -q '^group:users:r-x$' || return 1
+}
+
+# Install the single Echo-owned Samba include used by native Time Machine.
+# The include lives in [global] so every connection negotiates AAPL/fruit;
+# mixing fruit and non-fruit shares makes negotiation depend on connection order.
+configure_native_samba_time_machine() {
+  local managed=/etc/samba/echo-os-time-machine.conf
+  local source_config="$OS_DIR/deploy/provision/base/echo-os-time-machine.conf"
+  local smb_config=/etc/samba/smb.conf include_state backup temporary module_dir module
+
+  [ -f "$source_config" ] && [ ! -L "$source_config" ] \
+    || { log "✗ 缺少 Echo Time Machine Samba 基线配置"; return 1; }
+  if [ ! -e "$managed" ]; then
+    install -o root -g root -m0644 "$source_config" "$managed"
+  fi
+  [ -f "$managed" ] && [ ! -L "$managed" ] \
+    && [ "$(stat -c %u:%g "$managed")" = 0:0 ] \
+    || { log "✗ Time Machine Samba 配置不是受信 root 文件"; return 1; }
+  [ $((8#$(stat -c %a "$managed") & 0022)) -eq 0 ] \
+    || { log "✗ Time Machine Samba 配置可被非 root 用户修改"; return 1; }
+
+  module_dir="$(smbd -b | awk '$1 == "MODULESDIR:" { print $2; exit }')"
+  [ -n "$module_dir" ] || return 1
+  for module in catia fruit streams_xattr; do
+    [ -f "$module_dir/vfs/$module.so" ] \
+      || { log "✗ Samba 缺少 $module VFS 模块"; return 1; }
+  done
+
+  include_state="$(awk -v target="$managed" '
+    function trim(value) {
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      return value
+    }
+    /^[[:space:]]*\[[^]]+\][[:space:]]*$/ {
+      section=tolower($0)
+      gsub(/^[[:space:]]*\[|\][[:space:]]*$/, "", section)
+      next
+    }
+    {
+      line=$0
+      sub(/[;#].*$/, "", line)
+      split(line, pair, "=")
+      key=tolower(trim(pair[1]))
+      value=trim(substr(line, index(line, "=") + 1))
+      if (key == "include" && value == target) {
+        if (section == "global") good++
+        else bad++
+      }
+    }
+    END { printf "%d:%d", good, bad }
+  ' "$smb_config")" || return 1
+  case "$include_state" in
+    1:0) ;;
+    0:0)
+      backup="$(mktemp /etc/samba/.smb.conf.echo-backup.XXXXXX)"
+      temporary="$(mktemp /etc/samba/.smb.conf.echo-new.XXXXXX)"
+      cp --preserve=mode,ownership,timestamps "$smb_config" "$backup"
+      if ! awk -v include="include = $managed" '
+        BEGIN { inserted=0 }
+        /^[[:space:]]*\[global\][[:space:]]*$/ && !inserted {
+          print
+          print "   " include
+          inserted=1
+          next
+        }
+        { print }
+        END { if (!inserted) exit 42 }
+      ' "$smb_config" >"$temporary"; then
+        rm -f "$temporary" "$backup"
+        return 1
+      fi
+      chown --reference="$smb_config" "$temporary"
+      chmod --reference="$smb_config" "$temporary"
+      mv "$temporary" "$smb_config"
+      if ! testparm -s "$smb_config" >/dev/null 2>&1; then
+        mv "$backup" "$smb_config"
+        log "✗ 插入 Time Machine include 后 Samba 配置校验失败"
+        return 1
+      fi
+      rm -f "$backup"
+      ;;
+    *)
+      log "✗ Time Machine Samba include 重复或位于非 global 分区"
+      return 1
+      ;;
+  esac
+  testparm -s "$smb_config" >/dev/null 2>&1
+  systemctl enable --now smbd.service
+  systemctl reload smbd.service
+}
+
+# ── 2/7 存储栈(全部用上游官方包,不自研)─────────────────
+# 参考 NAS逆向结论:存储栈一律集成,一个补丁都不打。ZFS 用 OpenZFS 官方源。
+step_storage() {
+  log "== 2/7 安装存储栈 =="
+  ensure_swap
+  # 注意:lsblk 在 util-linux 里,不是独立 apt 包(VM 实测写成包名会
+  # E: Unable to locate package → firstboot 卡死在 2/7 反复重试)
+  # zfs-dkms 不依赖当前内核的 headers；全新 netinst 只带内核镜像时，
+  # dpkg 会把 ZFS 留在 `dkms status: added`，随后 zfs-load-module 失败。
+  # 先单独安装并配置精确匹配当前内核的 headers，再装 DKMS 包；最后
+  # 显式 autoinstall + modprobe，把“包已安装但模块不可用”挡在哨兵之前。
+  local kernel_release
+  kernel_release="$(uname -r)"
+  # wsdd2 的 Debian postinst 可能立即启动服务。先放置 WSD-only drop-in，
+  # 让首次启动也不会临时暴露不需要的 LLMNR responder。
+  install -m755 -d /etc/systemd/system/wsdd2.service.d
+  install -m644 "$OS_DIR/deploy/provision/base/wsdd2-echo.conf" \
+    /etc/systemd/system/wsdd2.service.d/echo.conf
+  install -m755 -d /usr/lib/echo-os/webdav /etc/systemd/system/nginx.service.d
+  install -m755 "$OS_DIR/deploy/webdav/echo-device-tls" \
+    /usr/lib/echo-os/webdav/echo-device-tls
+  install -m755 "$OS_DIR/deploy/webdav/echo-webdav-auth" \
+    /usr/lib/echo-os/webdav/echo-webdav-auth
+  install -m755 "$OS_DIR/deploy/webdav/echo-webdav-jails" \
+    /usr/lib/echo-os/webdav/echo-webdav-jails
+  install -m644 "$OS_DIR/deploy/webdav/echo_webdav_jails.py" \
+    /usr/lib/echo-os/webdav/echo_webdav_jails.py
+  install -m644 "$OS_DIR/deploy/webdav/sshd_config" \
+    /etc/ssh/sshd_config_echo_webdav
+  for unit in echo-device-tls.service echo-webdav-jails.service \
+    echo-webdav-refresh.service echo-webdav-refresh.timer \
+    echo-webdav-refresh.path echo-webdav-sshd.service echo-webdav.service; do
+    install -m644 "$OS_DIR/deploy/webdav/$unit" "/etc/systemd/system/$unit"
+  done
+  install -m644 "$OS_DIR/deploy/webdav/nginx.service.d/echo-device-tls.conf" \
+    /etc/systemd/system/nginx.service.d/echo-device-tls.conf
+  systemctl daemon-reload
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    "linux-headers-${kernel_release}"
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    zfsutils-linux zfs-dkms \
+    samba samba-common-bin smbclient wsdd2 samba-vfs-modules \
+    nfs-kernel-server acl quota e2fsprogs \
+    nut-client nut-server \
+    smartmontools hdparm mdadm lvm2 btrfs-progs \
+    parted util-linux
+
+  # 固件包解包 + initramfs 触发器与 ZFS/Samba 放在同一笔 apt 事务时，
+  # 2GB VM 实测 apt-get 会增长到吃满 RAM+swap。拆分后每笔进程都能退出
+  # 释放内存；三组实测峰值分别约 632MB、742MB、165MB。
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    firmware-linux-free firmware-linux-nonfree firmware-misc-nonfree \
+    firmware-amd-graphics firmware-intel-graphics
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    firmware-realtek firmware-iwlwifi firmware-atheros \
+    firmware-brcm80211 firmware-mediatek \
+    intel-microcode amd64-microcode
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    nvme-cli pciutils usbutils ethtool lm-sensors
+
+  dkms autoinstall -k "$kernel_release"
+  modprobe zfs
+
+  # ZFS 开机自动导入池 + 挂载
+  systemctl enable --now zfs-import-cache
+  systemctl enable zfs-mount zfs-import.target || true
+  configure_native_samba_usershares
+  configure_native_samba_time_machine
+  done_mark storage
+}
+
+# ── 3/7 Docker ──────────────────────────────────────────
+step_docker() {
+  log "== 3/7 安装 Docker =="
+  if [ -n "$SYSTEM_DEB_REPO" ]; then
+    log "  Docker 使用已验证的首启离线系统包仓"
+  elif [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    log "✗ 严格 release 禁止 Docker 回退公网软件源"
+    return 1
+  else
+    install -m0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg \
+      -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+    cat >/etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: trixie
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+    apt_update
+  fi
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  systemctl enable --now docker
+  done_mark docker
+}
+
+# 预构建 Web 载荷只替代无头 NAS 的浏览器静态资源。桌面 profile 仍需安装
+# Node/Electron 运行时，auto profile 检测到 GPU 时也继续走完整构建。
+use_prebuilt_web() {
+  local configured="${ECHO_WEB_BUNDLE:-}"
+  local bundle="${configured:-/opt/echo-web-dist.tar.gz}"
+  local expected="${ECHO_WEB_BUNDLE_SHA256:-}"
+  local hdmi_mode="${ECHO_HDMI_SHELL:-off}"
+  if [ ! -f "$bundle" ]; then
+    if [ -n "$configured" ] || [ -n "$expected" ]; then
+      log "✗ 已配置的预构建 Web 载荷不存在: $bundle"
+      return 2
+    fi
+    return 1
+  fi
+  case "$expected" in
+    ""|*[!0-9a-fA-F]*) log "✗ 预构建 Web 载荷缺少有效 SHA-256 身份"; return 2 ;;
+  esac
+  [ "${#expected}" -eq 64 ] \
+    || { log "✗ 预构建 Web 载荷 SHA-256 身份长度错误"; return 2; }
+  [ "$hdmi_mode" = "off" ] || {
+    [ "$hdmi_mode" = "auto" ] && ! ls /dev/dri/card* >/dev/null 2>&1
+  }
+}
+
+# ── 4/7 Node(前端构建 + Electron)──────────────────────
+step_node() {
+  log "== 4/7 安装 Node 20 =="
+  local web_mode_status=0
+  use_prebuilt_web || web_mode_status=$?
+  if [ "$web_mode_status" -eq 0 ]; then
+    log "  无头 NAS 使用 ISO 预构建 Web 载荷,跳过 NodeSource/npm"
+    done_mark node
+    return 0
+  elif [ "$web_mode_status" -eq 2 ]; then
+    return 1
+  elif [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    log "✗ 严格 release 禁止回退 NodeSource/npm"
+    return 1
+  fi
+  if ! command -v node >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+  fi
+  done_mark node
+}
+
+# ── 5/7 Echo OS 源码 ───────────────────────────────────
+step_echo_src() {
+  log "== 5/7 拉取 Echo OS 源码 =="
+  # safe.directory 必须落 /etc/gitconfig(系统级): firstboot.service 由 systemd
+  # 拉起,环境无 HOME → ~/.gitconfig 不会被读;而 /opt/echo-os 可能由其他用户
+  # (octopus)创建,root 跑 git 会报 dubious ownership 直接 fatal(VM 开机实测)。
+  # 系统级配置任何用户/任何环境都读,幂等不重复追加。
+  git config --system --get-all safe.directory 2>/dev/null | grep -qxF "$OS_DIR" \
+    || git config --system --add safe.directory "$OS_DIR" 2>/dev/null \
+    || git config --global --add safe.directory "$OS_DIR" 2>/dev/null || true
+  mkdir -p "$OS_DIR"
+  local SOURCE_BUNDLE="${ECHO_SOURCE_BUNDLE:-/opt/echo-os-source.bundle}"
+  local SOURCE_REF="${ECHO_SOURCE_BUNDLE_REF:-}"
+  local SOURCE_BUNDLE_SHA256="${ECHO_SOURCE_BUNDLE_SHA256:-}"
+  local SOURCE_TREE="${ECHO_SOURCE_TREE:-}"
+  local IMAGE_COMMIT="${ECHO_IMAGE_COMMIT:-unknown}"
+  local OVERLAY="${ECHO_OVERLAY:-/opt/echo-os-overlay.tar.gz}" actual_bundle_sha256
+
+  if [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ] \
+     && { [ ! -f "$SOURCE_BUNDLE" ] || [ -L "$SOURCE_BUNDLE" ]; }; then
+    log "✗ 严格 release 源码 bundle 不存在或不是常规文件"
+    return 1
+  fi
+  if [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    actual_bundle_sha256="$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')"
+    [ "$actual_bundle_sha256" = "$SOURCE_BUNDLE_SHA256" ] \
+      || { log "✗ 严格 release 源码 bundle 摘要不匹配"; return 1; }
+  fi
+
+  # 正式 ISO 携带一个无父提交的 Git bundle，tree 精确等于构建 HEAD。
+  # 先从本地 bundle 恢复可更新的 .git 工作树，完全绕开首启 DNS/远端分支；
+  # 旧介质没有 bundle 时才进入后面的 clone + overlay 兼容路径。
+  if [ -f "$SOURCE_BUNDLE" ]; then
+    [ -n "$SOURCE_REF" ] || { log "✗ 源码 bundle 缺少 ref 身份"; return 1; }
+    [ -n "$SOURCE_TREE" ] || { log "✗ 源码 bundle 缺少 tree 身份"; return 1; }
+    if [ -n "$(ls -A "$OS_DIR" 2>/dev/null)" ]; then
+      mv "$OS_DIR" "$OS_DIR.pre-bundle.$$"
+      mkdir -p "$OS_DIR"
+    fi
+    git init -q "$OS_DIR"
+    git -C "$OS_DIR" fetch -q "$SOURCE_BUNDLE" "$SOURCE_REF"
+    git -C "$OS_DIR" checkout -q -B echo-image FETCH_HEAD
+    [ "$(git -C "$OS_DIR" rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE" ] \
+      || { log "✗ 源码 bundle tree 校验失败"; return 1; }
+    [ -z "$(git -C "$OS_DIR" status --porcelain)" ] \
+      || { log "✗ 源码 bundle checkout 非干净状态"; return 1; }
+    git -C "$OS_DIR" remote add origin "$OS_REPO"
+    printf '%s\n' "$IMAGE_COMMIT" >/etc/echo-os/image-commit
+    rm -f "$SOURCE_BUNDLE" "$OVERLAY"
+    log "  已从 ISO 恢复精确源码快照 $IMAGE_COMMIT (无需网络)"
+    done_mark echo-src
+    chmod +x "$OS_DIR/deploy/provision/base/setup-base.sh" 2>/dev/null || true
+    return 0
+  fi
+
+  # 开机自跑(firstboot.service)时 DHCP/DNS 可能晚于 network-online.target
+  # 就绪,git 网络操作报 "Could not resolve host"(VM 开机实测)。对 git 网络
+  # 操作做退避重试(6 次 x10s);目标分支 fetch 不重试 —— 分支缺失是确定性
+  # 失败,本来就走 os-main 回退,重试逻辑加在回退与 clone 上。
+  git_retry() {
+    local n
+    for n in 1 2 3 4 5 6; do
+      if "$@"; then return 0; fi
+      log "  git 网络操作失败(第 $n/6 次,10s 后重试)"
+      sleep 10
+    done
+    return 1
+  }
+  # 目标分支不存在于远程时(如 p3-provision 尚未 push),自动回退到 os-main
+  # 上游基线,保证首启不 brick;仅缺失 A 路线 NAS 特性,运维可据 WARN 修复。
+  clone_branch() {
+    local br="$1"
+    git_retry git clone --depth 1 --branch "$br" "$OS_REPO" "$OS_DIR" 2>/dev/null
+  }
+  if [ ! -d "$OS_DIR/.git" ]; then
+    # late_command 会先投放 setup-base.sh 引导文件,目录因此非空,
+    # 直接 clone 会报 "already exists"(VM 实测)。备份后重克隆。
+    if [ -n "$(ls -A "$OS_DIR" 2>/dev/null)" ]; then
+      mv "$OS_DIR" "$OS_DIR.pre-clone.$$"
+      mkdir -p "$OS_DIR"
+    fi
+    if clone_branch "$OS_BRANCH"; then
+      log "  已克隆目标分支 $OS_BRANCH"
+    else
+      log "⚠ 分支 '$OS_BRANCH' 在 $OS_REPO 不存在,回退克隆 os-main(上游基线)"
+      log "  ⚠ 回退后不含 p3-provision 的 A 路线 NAS 特性(appliance/nas 路由、deploy/provision 装机路线)。"
+      log "  ⚠ 修复:把 p3-provision push 到远程,或设 ECHO_OS_REPO/ECHO_OS_BRANCH 指向已发布分支后重跑本步。"
+      clone_branch os-main || { log "✗ os-main 回退克隆也失败,仓库不可达"; exit 1; }
+    fi
+  else
+    # 已有仓库时对齐 bundle/远程快照。注意:fetch 只更新 origin/$BRANCH,
+    # checkout 不会让本地分支快进(bundle 场景实测 HEAD 停留在旧提交),
+    # 必须 reset --hard 对齐;工作区脏文件会被覆盖,本脚本即被覆盖源。
+    if ! git -C "$OS_DIR" fetch --depth 1 origin "$OS_BRANCH" 2>/dev/null \
+       || ! git -C "$OS_DIR" reset --hard FETCH_HEAD 2>/dev/null; then
+      log "⚠ 分支 '$OS_BRANCH' 对齐失败,回退到 os-main"
+      git_retry git -C "$OS_DIR" fetch --depth 1 origin os-main \
+        && git -C "$OS_DIR" reset --hard FETCH_HEAD \
+        || { log "✗ os-main 回退对齐也失败"; exit 1; }
+    fi
+  fi
+  # A 路线 overlay:安装介质/首次开机阶段若投放了 overlay 包(由 build-iso.sh
+  # 生成、preseed late_command 落到 $ECHO_OVERLAY),解压覆盖到克隆树之上,
+  # 等价于直接 clone p3-provision —— 无需把分支 push 到远程即可拿到完整 NAS 产品。
+  # 典型内容:appliance/nas/ 路由、deploy/provision/ 装机路线、品牌重命名等。
+  if [ -f "$OVERLAY" ]; then
+    log "  应用 A 路线 overlay: $OVERLAY"
+    tar xzf "$OVERLAY" -C "$OS_DIR"
+    rm -f "$OVERLAY"
+    log "  overlay 已应用(含 appliance/nas 路由 + deploy/provision 装机路线)"
+  fi
+  done_mark echo-src
+  # clone/reset 后仓库版本(0644)会覆盖 late_command 投放的引导脚本,
+  # 而 firstboot.service 的 ExecStart 直接执行它 —— 无执行位会 203/EXEC
+  # (VM 实测:重启后服务起不来)。每次重拉后强制恢复执行位。
+  # 注意:overlay 可能已覆盖此文件,这里确保执行位恢复。
+  chmod +x "$OS_DIR/deploy/provision/base/setup-base.sh" 2>/dev/null || true
+}
+
+# 正式 ISO 可携带与源码 tree、CPython ABI 和机器架构绑定的完整 wheelhouse。
+# 一旦 env 声明了载荷，缺件或身份错误必须失败关闭，不能悄悄回退 PyPI。
+use_prebuilt_python() {
+  local configured="${ECHO_PYTHON_BUNDLE:-}"
+  local bundle="${configured:-/opt/echo-python-wheelhouse.tar.gz}"
+  local expected="${ECHO_PYTHON_BUNDLE_SHA256:-}"
+  if [ ! -f "$bundle" ]; then
+    if [ -n "$configured" ] || [ -n "$expected" ]; then
+      log "✗ 已配置的 Python wheelhouse 不存在: $bundle"
+      return 2
+    fi
+    return 1
+  fi
+  case "$expected" in
+    ""|*[!0-9a-fA-F]*) log "✗ Python wheelhouse 缺少有效 SHA-256 身份"; return 2 ;;
+  esac
+  [ "${#expected}" -eq 64 ] \
+    || { log "✗ Python wheelhouse SHA-256 身份长度错误"; return 2; }
+}
+
+# ── 5b/7 Python 依赖 ───────────────────────────────────
+step_echo_py() {
+  log "== 5b/7 安装 Python 依赖 =="
+  local python_mode_status=0
+  use_prebuilt_python || python_mode_status=$?
+  if [ "$python_mode_status" -eq 0 ]; then
+    local bundle="${ECHO_PYTHON_BUNDLE:-/opt/echo-python-wheelhouse.tar.gz}"
+    local expected="${ECHO_PYTHON_BUNDLE_SHA256:-}"
+    local actual staged runtime expected_runtime backup extras
+    local -a echo_wheels
+    actual="$(sha256sum "$bundle" | awk '{print $1}')"
+    expected="${expected,,}"
+    [ "$actual" = "$expected" ] \
+      || { log "✗ Python wheelhouse 摘要不匹配"; return 1; }
+    tar -tzf "$bundle" >/dev/null \
+      || { log "✗ Python wheelhouse 无法读取"; return 1; }
+    while IFS= read -r entry; do
+      case "$entry" in
+        /|/*|..|../*|*/../*|*/..) log "✗ Python wheelhouse 包含越界路径"; return 1 ;;
+      esac
+    done < <(tar -tzf "$bundle")
+    staged="$(mktemp -d /var/lib/echo-os/python-wheelhouse.XXXXXX)"
+    if ! tar --no-same-owner --no-same-permissions -xzf "$bundle" -C "$staged"; then
+      rm -rf "$staged"
+      return 1
+    fi
+    if find "$staged" -mindepth 1 -maxdepth 1 ! -type f -print -quit | grep -q .; then
+      log "✗ Python wheelhouse 只能包含顶层常规文件"
+      rm -rf "$staged"
+      return 1
+    fi
+    for required_file in .echo-source-tree .echo-python-runtime SHA256SUMS; do
+      if [ ! -f "$staged/$required_file" ]; then
+        log "✗ Python wheelhouse 缺少 $required_file"
+        rm -rf "$staged"
+        return 1
+      fi
+    done
+    [ "$(tr -d '[:space:]' <"$staged/.echo-source-tree" 2>/dev/null)" = "${ECHO_SOURCE_TREE:-}" ] \
+      || { log "✗ Python wheelhouse 与源码树身份不一致"; rm -rf "$staged"; return 1; }
+    runtime="$(tr -d '\r\n' <"$staged/.echo-python-runtime" 2>/dev/null)"
+    expected_runtime="$(python3 -c \
+      'import platform,sys; print(f"{sys.implementation.cache_tag} {platform.system().lower()} {platform.machine().lower()}")')"
+    [ "$runtime" = "$expected_runtime" ] \
+      || { log "✗ Python wheelhouse 运行时不匹配: $runtime != $expected_runtime"; rm -rf "$staged"; return 1; }
+    (cd "$staged" && sha256sum -c SHA256SUMS >/dev/null) \
+      || { log "✗ Python wheelhouse 文件摘要校验失败"; rm -rf "$staged"; return 1; }
+    mapfile -t echo_wheels < <(find "$staged" -maxdepth 1 -type f -name 'echo_os-*.whl' | sort)
+    [ "${#echo_wheels[@]}" -eq 1 ] \
+      || { log "✗ Python wheelhouse 必须且只能包含一个 echo_os wheel"; rm -rf "$staged"; return 1; }
+
+    extras="serve,web,appliance"
+    if [ "${ECHO_SKIP_AGENT:-0}" = "1" ]; then
+      extras="minimal"
+    fi
+    backup=""
+    if [ -e "$OS_DIR/.venv" ]; then
+      backup="$OS_DIR/.venv.before-image.$$"
+      rm -rf "$backup"
+      mv "$OS_DIR/.venv" "$backup"
+    fi
+    if ! python3 -m venv "$OS_DIR/.venv" \
+       || ! "$OS_DIR/.venv/bin/python" -m pip install \
+         --no-index --no-cache-dir --only-binary=:all: \
+         --find-links "$staged" "${echo_wheels[0]}[$extras]" packaging; then
+      rm -rf "$OS_DIR/.venv"
+      [ -z "$backup" ] || mv "$backup" "$OS_DIR/.venv"
+      rm -rf "$staged"
+      return 1
+    fi
+    [ -z "$backup" ] || rm -rf "$backup"
+    rm -rf "$staged"
+    rm -f "$bundle"
+    log "  已从 ISO wheelhouse 安装 Python 运行时 $actual (无需 PyPI 网络)"
+    done_mark echo-py
+    return 0
+  elif [ "$python_mode_status" -eq 2 ]; then
+    return 1
+  elif [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    log "✗ 严格 release 禁止回退 PyPI/uv"
+    return 1
+  fi
+  # 母体 echo-agent 是私有仓库,Docker/设备构建走本地 wheel;
+  # 见 deploy/appliance/prepare-agent-wheel.sh。
+  # 无凭据环境(如验证 VM)可用 ECHO_SKIP_AGENT=1 跳过私有 agent,
+  # 仅装最小集;真实部署请配 GitHub token 或本地 wheel。
+  if [ "${ECHO_SKIP_AGENT:-0}" = "1" ]; then
+    log "  ECHO_SKIP_AGENT=1,跳过私有 agent,仅装 minimal"
+    python3 -m venv "$OS_DIR/.venv"
+    "$OS_DIR/.venv/bin/pip" install --upgrade pip
+    "$OS_DIR/.venv/bin/pip" install -e "$OS_DIR[minimal]"
+    # minimal 不依赖 packaging,但 echo-agent serve 运行期需要
+    # (runtime/platform/plugins/marketplace_package.py: from packaging.specifiers import ...)
+    # 缺失会致服务启动即崩;补齐以保证无凭据环境也能起后端。
+    "$OS_DIR/.venv/bin/pip" install packaging
+  elif command -v uv >/dev/null 2>&1; then
+    (cd "$OS_DIR" && uv sync --extra serve --extra web --extra appliance --extra dev)
+    # 与 minimal 分支同因: runtime/platform/plugins/marketplace_package.py
+    # 顶层 import packaging.specifiers,pyproject 的 extras 却未声明 packaging
+    # (fresh 装机无 firstboot.env、走完整分支时实测服务启动即崩)。
+    "$OS_DIR/.venv/bin/pip" install packaging
+  else
+    python3 -m venv "$OS_DIR/.venv"
+    "$OS_DIR/.venv/bin/pip" install --upgrade pip
+    "$OS_DIR/.venv/bin/pip" install -e "$OS_DIR[serve,web,appliance]"
+    # 同上: 完整分支同样需要 packaging(fresh 装机无 firstboot.env 实测:
+    # echo-agent serve → ModuleNotFoundError: packaging.specifiers → 循环重启)
+    "$OS_DIR/.venv/bin/pip" install packaging
+  fi
+  done_mark echo-py
+}
+
+# ── 5c/7 前端构建 ──────────────────────────────────────
+step_echo_web() {
+  log "== 5c/7 构建前端 =="
+  local web_mode_status=0
+  use_prebuilt_web || web_mode_status=$?
+  if [ "$web_mode_status" -eq 0 ]; then
+    local bundle="${ECHO_WEB_BUNDLE:-/opt/echo-web-dist.tar.gz}"
+    local expected="${ECHO_WEB_BUNDLE_SHA256:-}"
+    local actual staged backup entry
+    actual="$(sha256sum "$bundle" | awk '{print $1}')"
+    expected="${expected,,}"
+    [ "$actual" = "$expected" ] \
+      || { log "✗ 预构建 Web 载荷摘要不匹配"; return 1; }
+    tar -tzf "$bundle" >/dev/null \
+      || { log "✗ 预构建 Web 载荷无法读取"; return 1; }
+    while IFS= read -r entry; do
+      case "$entry" in
+        /|/*|..|../*|*/../*|*/..) log "✗ 预构建 Web 载荷包含越界路径"; return 1 ;;
+      esac
+    done < <(tar -tzf "$bundle")
+    staged="$OS_DIR/frontend/.echo-dist-staged.$$"
+    backup="$OS_DIR/frontend/.echo-dist-before-image.$$"
+    rm -rf "$staged" "$backup"
+    mkdir -p "$staged"
+    tar --no-same-owner --no-same-permissions -xzf "$bundle" -C "$staged"
+    [ -f "$staged/index.html" ] \
+      || { log "✗ 预构建 Web 载荷缺少 index.html"; rm -rf "$staged"; return 1; }
+    [ -n "${ECHO_SOURCE_TREE:-}" ] \
+      && [ "$(tr -d '[:space:]' <"$staged/.echo-source-tree" 2>/dev/null)" = "$ECHO_SOURCE_TREE" ] \
+      || { log "✗ 预构建 Web 载荷与源码树身份不一致"; rm -rf "$staged"; return 1; }
+    if [ -e "$OS_DIR/frontend/dist" ]; then
+      mv "$OS_DIR/frontend/dist" "$backup"
+    fi
+    if ! mv "$staged" "$OS_DIR/frontend/dist"; then
+      [ ! -e "$backup" ] || mv "$backup" "$OS_DIR/frontend/dist"
+      return 1
+    fi
+    rm -rf "$backup"
+    rm -f "$bundle"
+    log "  已安装 ISO 预构建 Web 载荷 $actual (无需 Node/npm/pnpm 网络)"
+    done_mark echo-web
+    return 0
+  elif [ "$web_mode_status" -eq 2 ]; then
+    return 1
+  elif [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    log "✗ 严格 release 禁止回退 npm/pnpm 构建"
+    return 1
+  fi
+  # 锁文件是 pnpm-lock.yaml,必须用 pnpm 装(VM 实测:fallback 的 npm ci
+  # 因无 package-lock.json 报 EUSAGE)。4/7 只装了 Node,这里补装 pnpm。
+  if ! command -v pnpm >/dev/null 2>&1; then
+    npm install -g pnpm@10
+  fi
+  # 首启由 firstboot.service 经 nohup 后台拉起 —— 进程无控制终端(TTY)。
+  # 此时 pnpm install 在 lockfile/已装依赖不一致、需清理 node_modules 时会
+  # 弹 "Remove the existing node_modules directory?" 确认,pnpm 检测无 TTY
+  # 直接 abort(ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY),整段 firstboot
+  # 在 5c/7 卡死(VM 实测)。CI=true 让 pnpm 走非交互,跳过确认直接清理继续。
+  export CI=true
+  # 纯 Web 模式仍需解析 electron 这个前端开发依赖，但无需下载桌面运行时。
+  # 以最终 HDMI 开关为准，允许 nas + 显式 on、desktop + 显式 off 等覆盖。
+  HDMI_MODE="${ECHO_HDMI_SHELL:-off}"
+  if [ "$HDMI_MODE" = "off" ] || {
+    [ "$HDMI_MODE" = "auto" ] && ! ls /dev/dri/card* >/dev/null 2>&1
+  }; then
+    export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+  fi
+  # 低内存设备加固(VM 2GB RAM 实测): 主应用 vite build(1798+ 模块,
+  # shiki/mermaid/three/codemirror)真实需求 >1.5GB V8 堆,而 node 默认旧生代
+  # 上限按物理内存自动算,2GB 机器仅 ~1GB → OOM abort(exit 134)。两步保底:
+  #   1) 确保 swap >= 2GB:不足则补 swapfile 并写入 fstab(重启后仍生效)。
+  #      存储与固件已拆成低峰值事务；2GB swap 同时为后续前端构建兜底。
+  #   2) V8 堆上限显式放到 2560MB,超出物理内存的部分由 swap 兜底(构建变慢
+  #      但能完成)。只影响本步构建进程,不动系统其他部分。
+  ensure_swap
+  export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=2560"
+  (cd "$OS_DIR/frontend" && pnpm install --frozen-lockfile && pnpm build)
+  [ -f "$OS_DIR/frontend/dist/index.html" ] || { log "✗ 前端构建失败"; exit 1; }
+  done_mark echo-web
+}
+
+# ── 5d/7 Codex CLI ────────────────────────────────────
+step_codex() {
+  log "== 5d/7 安装 Codex CLI =="
+  local bundle_status=0
+  local expected_version="${ECHO_PACKAGED_CODEX_VERSION:-}"
+
+  install_codex_bundle || bundle_status=$?
+  if [ "$bundle_status" -eq 0 ]; then
+    done_mark codex
+    return 0
+  elif [ "$bundle_status" -eq 2 ]; then
+    return 1
+  elif [ "${ECHO_RELEASE_OFFLINE:-0}" = 1 ]; then
+    log "✗ 严格 release 禁止从 npm 安装 Codex"
+    return 1
+  fi
+
+  [ -n "$expected_version" ] \
+    || { log "✗ 无 Codex 载荷且缺少固定版本身份"; return 1; }
+  if ! command -v codex >/dev/null 2>&1; then
+    command -v npm >/dev/null 2>&1 \
+      || { log "✗ 无 Codex 载荷且无 npm，无法提供 Agent 执行面"; return 1; }
+    npm install -g "@openai/codex@$expected_version"
+  fi
+  [ "$(codex --version)" = "codex-cli $expected_version" ] \
+    || { log "✗ Codex CLI 版本与镜像身份不一致"; return 1; }
+  done_mark codex
+}
+
+# ── 6/7 桌面 shell(上游收敛)───────────────────────────
+# 收敛策略:桌面壳优先用上游 KWin 通用会话(deploy/desktop-session/),
+# NAS 默认关闭本地桌面；desktop 配置显式开启后，KWin 不可用时回退 cage。
+#   ECHO_DESKTOP=kwin  上游 KWin 会话(需 Xorg seat + echo.os.ci-session 凭据)
+#   ECHO_DESKTOP=cage  默认的轻量 HDMI shell
+  # ── 桌面壳跑在哪个系统账号下:探测,不写死 ──────────────
+  # 历史教训: rebrand 曾把 unit 的 User=octopus 一并改成 echo,但两代装机
+  # 介质建的用户不一致(vmtest preseed 建 echo; 更早的裸机/老 ISO 建 octopus),
+  # 写死任一名字在另一种装机上就是 217/USER crash-loop。以机器上真实存在的
+  # 账号为准:显式 ECHO_USER 优先,否则按常见名探测(echo=现行产品,
+  # octopus=历史装机,admin=保守兜底)。
+  probe_run_user() {
+    local u
+    [ -n "${ECHO_USER:-}" ] && { echo "$ECHO_USER"; return; }
+    for u in echo octopus admin; do
+      if id -u "$u" >/dev/null 2>&1; then echo "$u"; return; fi
+    done
+    echo echo
+  }
+  step_shell() {
+  DESKTOP_MODE="${ECHO_DESKTOP:-cage}"
+  HDMI_MODE="${ECHO_HDMI_SHELL:-off}"
+  RUN_USER="$(probe_run_user)"
+  case "$DESKTOP_MODE" in
+    cage|kwin) ;;
+    *) log "✗ ECHO_DESKTOP 只接受 cage/kwin: $DESKTOP_MODE"; return 1 ;;
+  esac
+  case "$HDMI_MODE" in
+    off|on|auto) ;;
+    *) log "✗ ECHO_HDMI_SHELL 只接受 off/on/auto: $HDMI_MODE"; return 1 ;;
+  esac
+  if [ "$HDMI_MODE" = "off" ]; then
+    log "== 6/7 跳过原生 shell (NAS 默认或 ECHO_HDMI_SHELL=off) =="
+    for unit in echo-shell.service echo-desktop.service; do
+      systemctl disable --now "$unit" 2>/dev/null || true
+    done
+    systemctl set-default multi-user.target
+  elif [ "$HDMI_MODE" = "auto" ] && ! ls /dev/dri/card* >/dev/null 2>&1; then
+    log "== 6/7 未检测到 GPU,跳过原生 shell(纯无头模式)=="
+    for unit in echo-shell.service echo-desktop.service; do
+      systemctl disable --now "$unit" 2>/dev/null || true
+    done
+    systemctl set-default multi-user.target
+  elif [ "$DESKTOP_MODE" = "kwin" ] && [ -x "$OS_DIR/deploy/desktop-session/setup-desktop-session.sh" ]; then
+    log "== 6/7 安装 KWin 通用桌面会话(上游) =="
+    # 复用既有系统账号($RUN_USER),避免上游脚本默认新建 echo 用户;
+    # 上游脚本读 ECHO_USER / ECHO_OS_DIR 两个 env。
+    ECHO_USER="$RUN_USER" ECHO_OS_DIR="$OS_DIR" "$OS_DIR/deploy/desktop-session/setup-desktop-session.sh"
+  else
+    log "== 6/7 安装 cage 原生 shell(回退) =="
+    apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      cage plymouth plymouth-themes seatd rsync
+    # Electron 运行时依赖:精简 Debian 默认没有,不装桌面起不来
+    # (VM 实测 echo-shell 循环重启,status=127,ldd 缺 libnss3/libasound2)
+    apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      libnss3 libasound2 libgbm1 libgtk-3-0 libxss1 libxtst6 libcups2 \
+      libxrandr2 libatk-bridge2.0-0 libdrm2
+    systemctl enable seatd
+    install -m644 "$OS_DIR/deploy/native-shell/echo-shell.service" \
+      /etc/systemd/system/echo-shell.service
+    # unit 里的 User= 是占位,以探测到的真实账号渲染(见顶部 probe_run_user);
+    # 写死任一名字(echo 或 octopus)在另一种装机上都会 217/USER crash-loop。
+    sed -i "s/^User=.*/User=${RUN_USER}/" /etc/systemd/system/echo-shell.service
+    chmod +x "$OS_DIR/deploy/native-shell/echo-shell-launch.sh"
+    systemctl daemon-reload
+    systemctl set-default graphical.target
+    systemctl enable echo-shell.service
+    plymouth-set-default-theme -R spinner 2>/dev/null || true
+  fi
+  done_mark shell
+}
+
+# ── 6b/7 备份/恢复(上游收敛,provision 原缺)────────────────
+# 复用上游 deploy/backup + deploy/recovery,不自研。备份服务在正常 NAS
+# 系统待命；echo-recovery.service 只属于自包含 Recovery UKI，主系统没有
+# 它要求的不可变 source-identity 链，不能在这里启用。
+step_backup_recovery() {
+  log "== 6b/7 安装备份/恢复模块(上游) =="
+  apt_retry env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    restic
+  install -m755 "$OS_DIR/deploy/backup/echo-user-backup" /usr/bin/echo-os-backup
+  install -m644 "$OS_DIR/deploy/backup/echo-user-backup.service" \
+    /etc/systemd/system/echo-user-backup.service
+  install -m644 "$OS_DIR/deploy/backup/echo-restore-transaction-health.service" \
+    /etc/systemd/system/echo-restore-transaction-health.service
+  install -m755 "$OS_DIR/deploy/recovery/echo-recovery" /usr/bin/echo-recovery
+  install -m644 "$OS_DIR/deploy/recovery/echo-recovery.service" \
+    /etc/systemd/system/echo-recovery.service
+  install -d -m0755 /usr/lib/echo-os/recovery-repart.d
+  install -m644 "$OS_DIR/deploy/recovery/repart.d/"*.conf \
+    /usr/lib/echo-os/recovery-repart.d/
+  systemctl daemon-reload
+  # 清理由早期 provision 版本留下的错误启用状态。保留 CLI/unit 供人工
+  # 检查，但自动启动只由 Recovery 镜像的 systemd preset 负责。
+  systemctl disable --now echo-recovery.service 2>/dev/null || true
+  systemctl reset-failed echo-recovery.service 2>/dev/null || true
+  # backup 需 /mnt/echo-backup 挂载点 + 加密凭据,缺则 Condition 跳过,仍 enable 待命
+  systemctl enable echo-user-backup.service 2>/dev/null || true
+  systemctl enable echo-restore-transaction-health.service 2>/dev/null || true
+  done_mark backup-recovery
+}
+
+# ── 7/7 服务:appliance 后端 + nginx 反代 ───────────────
+step_services() {
+  log "== 7/7 安装服务单元 =="
+
+  # 数据根目录:统一命名空间挂在这里(参考 NAS用 /fs,我们用 /data)
+  install -d -o root -g root -m0755 /data /data/nas /data/apps
+
+  # ── 配置:首启从模板生成 /etc/echo-os/config.yaml ───────────────
+  # echo-appliance.service 的 --config 指向它;缺失则后端起不来。
+  # 仅缺失时生成,绝不覆盖运维后期的手动改动。
+  mkdir -p /etc/echo-os
+  if [ ! -f /etc/echo-os/config.yaml ]; then
+    if [ -f "$OS_DIR/config.example.yaml" ]; then
+      cp "$OS_DIR/config.example.yaml" /etc/echo-os/config.yaml
+      log "  已生成 /etc/echo-os/config.yaml(模板副本,按需改)"
+    else
+      # 极小兜底配置:保证 echo-agent serve 能起(无 LLM key 时走 stub)
+      cat >/etc/echo-os/config.yaml <<'YAML'
+appliance:
+  data_dir: /data
+  nas_root: /data/nas
+YAML
+      log "  已生成 /etc/echo-os/config.yaml(极小兜底)"
+    fi
+  fi
+
+  # ── 清理上游/历史遗留 octopus 标识 ───────────────────────────
+  # 重命名前装机的残留会与 echo 冲突:nginx 双 default_server 让 nginx -t 失败;
+  # 8000 端口被 octopus-appliance 占用会让 echo-appliance 起不来。必须清掉。
+  rm -f /etc/nginx/sites-enabled/octopus /etc/nginx/sites-enabled/default
+  for u in $(systemctl list-unit-files 2>/dev/null | awk '{print $1}' | grep -E '^octopus-[a-z-]*\.service$'); do
+    log "  停用遗留 $u"
+    systemctl disable --now "$u" 2>/dev/null || true
+  done
+
+  install -m644 "$OS_DIR/deploy/provision/base/echo-appliance.service" \
+    /etc/systemd/system/echo-appliance.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-appliance-deadman.service" \
+    /etc/systemd/system/echo-appliance-deadman.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-appliance-deadman.timer" \
+    /etc/systemd/system/echo-appliance-deadman.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-ups-shutdown-guard.service" \
+    /etc/systemd/system/echo-ups-shutdown-guard.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-ups-shutdown-guard.timer" \
+    /etc/systemd/system/echo-ups-shutdown-guard.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-smart-self-test.service" \
+    /etc/systemd/system/echo-smart-self-test.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-smart-self-test.timer" \
+    /etc/systemd/system/echo-smart-self-test.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-mdraid-check.service" \
+    /etc/systemd/system/echo-mdraid-check.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-mdraid-check.timer" \
+    /etc/systemd/system/echo-mdraid-check.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-btrfs-scrub.service" \
+    /etc/systemd/system/echo-btrfs-scrub.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-btrfs-scrub.timer" \
+    /etc/systemd/system/echo-btrfs-scrub.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-btrfs-snapshot.service" \
+    /etc/systemd/system/echo-btrfs-snapshot.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-btrfs-snapshot.timer" \
+    /etc/systemd/system/echo-btrfs-snapshot.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-nas-data-backup.service" \
+    /etc/systemd/system/echo-nas-data-backup.service
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-nas-data-backup.timer" \
+    /etc/systemd/system/echo-nas-data-backup.timer
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-rclone-backup@.service" \
+    /etc/systemd/system/echo-rclone-backup@.service
+  install -m755 "$OS_DIR/deploy/appliance/rclone_backup_mount.py" \
+    /usr/lib/echo-os/rclone-backup-mount
+  install -d -m0700 -o root -g root /etc/credstore.encrypted
+  install -d -m0755 -o root -g root /mnt/echo-backup-remotes
+  install -m644 "$OS_DIR/deploy/appliance/systemd/echo-disk-idle.service" \
+    /etc/systemd/system/echo-disk-idle.service
+  install -m755 -d /etc/systemd/system/wsdd2.service.d
+  install -m644 "$OS_DIR/deploy/provision/base/wsdd2-echo.conf" \
+    /etc/systemd/system/wsdd2.service.d/echo.conf
+
+  # ── 首启引导服务自举 ─────────────────────────────────────────
+  # echo-firstboot.service 负责"开机自动续跑 firstboot"(幂等,marks 齐 +
+  # ConditionPathExists 后自动跳过)。ISO 路线由 preseed late_command 安装,
+  # 但裸机/非 ISO 路线(直接跑 setup-base.sh)没有任何人装它 → 装机中断后
+  # 只能手工拉起,开机自愈链断裂(VM 实测 not-found)。这里统一兜底装上。
+  if [ -f "$OS_DIR/deploy/provision/echo-firstboot.service" ]; then
+    install -m644 "$OS_DIR/deploy/provision/echo-firstboot.service" \
+      /etc/systemd/system/echo-firstboot.service
+    systemctl enable echo-firstboot.service 2>/dev/null || true
+  fi
+
+  # nginx 反代:对外只暴露 80/443,后端 appliance 只听 127.0.0.1:8000。
+  # 与参考 NAS同一手法 —— 单 nginx 入口,功能模块各自 unix socket / 本地端口。
+  install -m644 "$OS_DIR/deploy/provision/base/echo-nginx.conf" \
+    /etc/nginx/sites-available/echo
+  ln -sf /etc/nginx/sites-available/echo /etc/nginx/sites-enabled/echo
+  rm -f /etc/nginx/sites-enabled/default
+
+  systemctl daemon-reload
+  systemctl enable --now echo-device-tls.service
+  # WebDAV is a second publication path for every ACL-readable registered
+  # share. Keep it disabled until an administrator approves the explicit
+  # native WebDAV plan/apply action.
+  systemctl disable --now echo-webdav-refresh.path echo-webdav-refresh.timer \
+    echo-webdav.service echo-webdav-sshd.service echo-webdav-jails.service
+  systemctl enable --now echo-appliance-deadman.timer
+  systemctl enable --now echo-ups-shutdown-guard.timer
+  systemctl enable --now echo-smart-self-test.timer
+  systemctl enable --now echo-mdraid-check.timer
+  systemctl enable --now echo-btrfs-scrub.timer
+  systemctl enable --now echo-btrfs-snapshot.timer
+  systemctl enable --now echo-disk-idle.service
+  systemctl enable --now avahi-daemon.service
+  # Windows Explorer uses WSD rather than SMB1 browser discovery. Keep the
+  # package service ordered behind Samba and use the WSD-only override above;
+  # Echo does not need wsdd2's legacy LLMNR responder.
+  systemctl enable --now smbd.service
+  systemctl enable --now wsdd2.service
+  systemctl is-active --quiet smbd.service
+  systemctl is-active --quiet wsdd2.service
+  systemctl enable --now echo-appliance.service
+  # nginx 可能已在跑(apt 安装时自启),`enable --now` 不会重载已运行进程
+  # 的配置 → 80 端口仍服务旧 default 站点(VM 实测)。必须 restart。
+  nginx -t && systemctl enable nginx && systemctl restart nginx
+  done_mark services
+}

@@ -2,10 +2,23 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { revokeAllSessions, rotateAdminPassword } from "./account-security";
+import {
+  beginAdministratorTotpEnrollment,
+  confirmAdministratorTotpEnrollment,
+  disableAdministratorTotp,
+  fetchAdministratorTotpStatus,
+  revokeAllSessions,
+  rotateAdminPassword,
+} from "./account-security";
 import { AccountSecurityPanel } from "./account-security-panel";
+import { SystemAppWindowProvider } from "./system-app-window";
 import { requestHighRiskApproval } from "./approval";
 import {
+  fetchNativeFilesystems,
+  fetchNativeHealth,
+  fetchNativeSmartDevices,
+  fetchNativeStorageTopology,
+  fetchNativeStatus,
   fetchOmvFilesystems,
   fetchOmvHealth,
   fetchOmvSharePrivileges,
@@ -16,6 +29,10 @@ import {
 } from "./omv";
 
 vi.mock("./account-security", () => ({
+  beginAdministratorTotpEnrollment: vi.fn(),
+  confirmAdministratorTotpEnrollment: vi.fn(),
+  disableAdministratorTotp: vi.fn(),
+  fetchAdministratorTotpStatus: vi.fn(),
   revokeAllSessions: vi.fn(),
   rotateAdminPassword: vi.fn(),
 }));
@@ -25,6 +42,12 @@ vi.mock("./approval", () => ({
 }));
 
 vi.mock("./omv", () => ({
+  fetchNativeFilesystems: vi.fn(),
+  fetchNativeHealth: vi.fn(),
+  fetchNativeSmart: vi.fn(),
+  fetchNativeSmartDevices: vi.fn(),
+  fetchNativeStorageTopology: vi.fn(),
+  fetchNativeStatus: vi.fn(),
   fetchOmvFilesystems: vi.fn(),
   fetchOmvHealth: vi.fn(),
   fetchOmvSharePrivileges: vi.fn(),
@@ -48,6 +71,35 @@ vi.mock(
   }),
 );
 
+it("keeps desktop settings inline while retaining nested approval and busy guards", async () => {
+  const user = userEvent.setup();
+  const onClose = vi.fn();
+  const onBusyChange = vi.fn();
+  render(
+    <SystemAppWindowProvider>
+      <button type="button">另一窗口</button>
+      <AccountSecurityPanel
+        open
+        onClose={onClose}
+        onSessionEnded={vi.fn()}
+        onBusyChange={onBusyChange}
+      />
+    </SystemAppWindowProvider>,
+  );
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await user.type(screen.getByLabelText("当前密码"), "unsent-password");
+  await user.click(screen.getByRole("button", { name: "另一窗口" }));
+  expect(screen.getByRole("button", { name: "另一窗口" })).toHaveFocus();
+  expect(screen.getByLabelText("当前密码")).toHaveValue("unsent-password");
+  await user.click(screen.getByRole("button", { name: "全部退出…" }));
+  expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+  await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(true));
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+  expect(onClose).not.toHaveBeenCalled();
+  await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
+});
+
 beforeEach(() => {
   vi.mocked(requestHighRiskApproval).mockResolvedValue({
     approvalToken: "one-shot.signature",
@@ -64,6 +116,27 @@ beforeEach(() => {
     success: true,
     sessionsRevoked: true,
     sessionNotBefore: 43,
+  });
+  vi.mocked(fetchAdministratorTotpStatus).mockResolvedValue({
+    enabled: false,
+    recoveryCodesRemaining: 0,
+  });
+  vi.mocked(beginAdministratorTotpEnrollment).mockResolvedValue({
+    enrollmentId: "enrollment-id",
+    secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+    otpauthUri: "otpauth://totp/Echo%20OS%3Aadmin?secret=example",
+    recoveryCodes: ["AAAA-BBBB-CCCC-DDDD"],
+    expiresIn: 300,
+  });
+  vi.mocked(confirmAdministratorTotpEnrollment).mockResolvedValue({
+    success: true,
+    sessionsRevoked: true,
+    sessionNotBefore: 44,
+  });
+  vi.mocked(disableAdministratorTotp).mockResolvedValue({
+    success: true,
+    sessionsRevoked: true,
+    sessionNotBefore: 45,
   });
   vi.mocked(fetchOmvStatus).mockResolvedValue({
     configured: true,
@@ -90,6 +163,36 @@ beforeEach(() => {
   vi.mocked(fetchOmvStorageTopology).mockResolvedValue({
     devices: [],
     arrays: [],
+  });
+  vi.mocked(fetchNativeStatus).mockResolvedValue({
+    configured: true,
+    available: true,
+    readOnly: true,
+    adminUrl: null,
+    capabilities: [],
+    source: "native",
+  });
+  vi.mocked(fetchNativeFilesystems).mockResolvedValue([]);
+  vi.mocked(fetchNativeSmartDevices).mockResolvedValue([]);
+  vi.mocked(fetchNativeStorageTopology).mockResolvedValue({
+    devices: [],
+    arrays: [],
+  });
+  vi.mocked(fetchNativeHealth).mockResolvedValue({
+    schemaVersion: 1,
+    state: "unknown",
+    stale: false,
+    checkedAt: null,
+    lastSuccessfulAt: null,
+    intervalSeconds: 0,
+    persistenceHealthy: null,
+    monitoring: false,
+    activeAlerts: [],
+    events: [],
+    summary: { critical: 0, warning: 0, total: 0 },
+    readOnly: true,
+    coverage: "none",
+    probeEvidence: [],
   });
   vi.mocked(fetchOmvSharingOverview).mockResolvedValue({
     sharedFolders: [],
@@ -173,6 +276,61 @@ describe("Echo OS account security settings", () => {
     );
   });
 
+  it("dismisses nested approval with Escape without closing settings", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <AccountSecurityPanel open onClose={onClose} onSessionEnded={vi.fn()} />,
+    );
+    await user.click(screen.getByRole("button", { name: "全部退出…" }));
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("enrolls administrator TOTP and shows one-time recovery material", async () => {
+    const user = userEvent.setup();
+    const onSessionEnded = vi.fn();
+    render(
+      <AccountSecurityPanel
+        open
+        onClose={vi.fn()}
+        onSessionEnded={onSessionEnded}
+      />,
+    );
+
+    await user.type(
+      await screen.findByLabelText("启用动态验证码的管理员密码"),
+      "current-device-pass",
+    );
+    await user.click(screen.getByRole("button", { name: "设置动态验证码…" }));
+
+    await waitFor(() =>
+      expect(requestHighRiskApproval).toHaveBeenCalledWith(
+        "credentials.totp.enroll",
+        "admin",
+        "current-device-pass",
+      ),
+    );
+    expect(await screen.findByText("AAAA-BBBB-CCCC-DDDD")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("6 位动态验证码"), "123456");
+    await user.click(screen.getByRole("button", { name: "启用并退出旧会话" }));
+
+    await waitFor(() =>
+      expect(confirmAdministratorTotpEnrollment).toHaveBeenCalledWith(
+        "enrollment-id",
+        "123456",
+      ),
+    );
+    expect(onSessionEnded).toHaveBeenCalledWith(
+      "动态验证码已启用，请使用密码和验证码重新登录",
+    );
+  });
+
   it("opens read-only storage health inside system settings", async () => {
     const user = userEvent.setup();
     render(
@@ -184,28 +342,27 @@ describe("Echo OS account security settings", () => {
     expect(
       await screen.findByRole("heading", { name: "存储健康" }),
     ).toBeInTheDocument();
-    expect(fetchOmvStatus).toHaveBeenCalledOnce();
+    expect(fetchNativeStatus).toHaveBeenCalledOnce();
   });
 
-  it("opens model configuration from the OS AI settings section", async () => {
+  it("opens model configuration independently from Agent settings", async () => {
     const user = userEvent.setup();
     render(
-      <AccountSecurityPanel
-        open
-        onClose={vi.fn()}
-        onSessionEnded={vi.fn()}
-      />,
+      <AccountSecurityPanel open onClose={vi.fn()} onSessionEnded={vi.fn()} />,
     );
 
-    await user.click(screen.getByRole("button", { name: "AI 与 Agent" }));
+    await user.click(screen.getByRole("button", { name: "模型与用量" }));
     expect(
-      screen.getByRole("heading", { name: "AI 与 Agent" }),
+      screen.getByRole("heading", { name: "模型与用量" }),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId("embedded-agent-settings")).toHaveTextContent(
       "models",
     );
-    await user.click(screen.getByRole("button", { name: "工具、技能与 MCP" }));
+    await user.click(screen.getByRole("button", { name: "AI 与 Agent" }));
+    expect(
+      screen.queryByRole("button", { name: "模型与 Codex" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("embedded-agent-settings")).toHaveTextContent(
       "tools",
     );
@@ -224,7 +381,7 @@ describe("Echo OS account security settings", () => {
     expect(
       await screen.findByRole("heading", { name: "存储健康" }),
     ).toBeInTheDocument();
-    expect(fetchOmvStatus).toHaveBeenCalled();
+    expect(fetchNativeStatus).toHaveBeenCalled();
   });
 
   it("opens the OMV-backed sharing and user overview", async () => {

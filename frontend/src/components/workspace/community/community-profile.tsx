@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BellRingIcon,
   CheckIcon,
@@ -8,6 +8,7 @@ import {
   StarIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { currentActorId } from "@/core/auth/api";
 import { formatCount, type CommunityPost } from "./community-data";
 import {
   buildAuthorProfile,
@@ -38,6 +39,7 @@ export function CommunityProfile({
   onBack: () => void;
   onOpenPost: (p: CommunityPost) => void;
 }) {
+  const actor = currentActorId();
   const authorPosts = useMemo(
     () => posts.filter((p) => p.author === author),
     [posts, author],
@@ -56,6 +58,15 @@ export function CommunityProfile({
   const [topicSubs, setTopicSubs] = useState<string[]>(() =>
     readSubscribedTopics(),
   );
+  const [stateActor, setStateActor] = useState(actor);
+
+  useEffect(() => {
+    if (stateActor === actor) return;
+    setStateActor(actor);
+    setFollowing(readFollowing().includes(author));
+    setSubscribed(readSubscribedAuthors().includes(author));
+    setTopicSubs(readSubscribedTopics());
+  }, [actor, author, stateActor]);
 
   const handleFollow = useCallback(() => {
     toggleFollowing(author);
@@ -132,9 +143,7 @@ export function CommunityProfile({
         {/* 数据指标 */}
         <div className="mt-2 flex items-center gap-5 text-xs text-muted-foreground">
           <span className="text-center">
-            <b className="block text-sm text-foreground">
-              {profile.postCount}
-            </b>
+            <b className="block text-sm text-foreground">{profile.postCount}</b>
             笔记
           </span>
           <span className="text-center">
@@ -173,7 +182,7 @@ export function CommunityProfile({
               "flex items-center gap-1.5 rounded-md px-5 py-1.5 text-sm font-semibold transition-colors",
               subscribed
                 ? "border border-border-default text-muted-foreground hover:bg-muted/60"
-                : "bg-chart-3 text-white hover:bg-chart-3/90",
+                : "bg-chart-3 text-primary-foreground hover:bg-chart-3/90",
             )}
           >
             <BellRingIcon className="size-3.5" />

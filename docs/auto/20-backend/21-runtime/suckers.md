@@ -77,6 +77,7 @@ Suckers = skill pool.
 | `code_intelligence_skills.py` | — |
 | `code_navigation.py` | Cross-file symbol lookup and Python import-graph analysis. |
 | `codex_plugin_skills.py` | — |
+| `collaboration_skills.py` | One shared tool surface for native, Codex and OpenCode group execution. |
 | `computer_api_skills.py` | Agent-facing computer automation skills. |
 | `computer_macos.py` | — |
 | `computer_skills.py` | — |
@@ -116,10 +117,11 @@ Suckers = skill pool.
 | `rate_limit.py` | Per-skill rate limiter — runaway-loop protection for LLM agents. |
 | `reach_skills.py` | — |
 | `registry.py` | — |
+| `resource_refs.py` | Attach portable workspace identities to Agent file observations. |
 | `role_delegation_guidance.py` | Role-specific delegation guidance for hierarchical orchestration. |
 | `search.py` | Semantic skill search — TF-IDF-based skill discovery. |
 | `skill_library_skills.py` | skill_library_skills · expose Kimi-style "learned skills" as 3 skills. |
-| `storage_skills.py` | File Agent document search via the echo-storage sibling service. |
+| `storage_skills.py` | File Agent document search via echo-storage or the embedded desktop provider. |
 | `sub_agent.py` | Legacy compatibility shim for subagent dispatch. |
 | `testing.py` | — |
 | `verdict_repair.py` | Verdict-gated repair loop — the closed-loop orchestration echo lacked. |
@@ -131,7 +133,7 @@ Suckers = skill pool.
 
 ## Who imports this
 
-**88** file(s) reference this package:
+**89** file(s) reference this package:
 
 - **`runtime/_cli_commands.py/`** · 1 file(s)
   - `runtime/_cli_commands.py`
@@ -155,9 +157,9 @@ Suckers = skill pool.
 - **`runtime/execution/`** · 14 file(s)
   - `runtime/execution/all_skills/__init__.py`
   - `runtime/execution/arms/base.py`
-  - `runtime/execution/codex_backend/dynamic_tools.py`
-  - `runtime/execution/codex_backend/role_context.py`
   - `runtime/execution/loops/verifiers.py`
+  - `runtime/execution/misc/skill_policy.py`
+  - `runtime/execution/subagents/_bridge_trace.py`
   - _… and 9 more_
 - **`runtime/memory/`** · 2 file(s)
   - `runtime/memory/cowork/runtime.py`
@@ -186,6 +188,8 @@ Suckers = skill pool.
   - `runtime/sensing/gateway/_realtime_react_stream_drive.py`
   - `runtime/sensing/gateway/_realtime_react_stream_helpers.py`
   - _… and 19 more_
+- **`runtime/storage/`** · 1 file(s)
+  - `runtime/storage/service.py`
 - **`runtime/tour.py/`** · 1 file(s)
   - `runtime/tour.py`
 

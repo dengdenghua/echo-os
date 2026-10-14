@@ -20,11 +20,18 @@ endpoints; the thread router continues to own ``GET /api/workspaces/{thread_id}/
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
+import ipaddress
+import os
+from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
+from starlette.responses import Response
 
 from runtime.platform.io.lease import (
     LeaseConflictError,
@@ -33,6 +40,7 @@ from runtime.platform.io.lease import (
 )
 from runtime.safety.auth.principal import CurrentPrincipal, resolve_principal
 from runtime.safety.auth.scope import scope_from_principal
+from runtime.safety.auth.url_guard import check_host
 from runtime.sensing.server.mount_backend import (
     MountBackendRegistry,
     default_registry,
@@ -40,8 +48,140 @@ from runtime.sensing.server.mount_backend import (
 from runtime.workspace import (
     VALID_MEMBER_ROLES,
     VALID_MOUNT_TYPES,
+    WorkspaceCryptoError,
     WorkspaceStore,
+    encrypt_options,
 )
+
+# Mount types whose ``mount_target`` is a path on the server host, and option
+# keys that name server-side paths. Both are server-managed in shared mode.
+_SERVER_LOCAL_MOUNT_TYPES = frozenset({"local", "nfs"})
+_SERVER_MANAGED_MOUNT_OPTIONS = frozenset(
+    {
+        "filesystem_path",
+        "mount_point",
+        "allowed_read_roots",
+        "allowed_write_roots",
+        "identity_file",
+        "known_hosts_file",
+    }
+)
+
+
+_FALSE_STRINGS = frozenset({"", "0", "false", "no", "off"})
+
+
+def _host_key_trust_fields(mount_options: dict[str, Any] | None) -> list[str]:
+    """SSH options that relax host-key verification (TOFU keys are shared runtime state)."""
+    opts = mount_options or {}
+    fields: list[str] = []
+    tofu = opts.get("trust_on_first_use")
+    if tofu is not None and str(tofu).strip().lower() not in _FALSE_STRINGS:
+        fields.append("trust_on_first_use")
+    if "strict_host_key_checking" in opts and (
+        str(opts["strict_host_key_checking"]).strip().lower() in _FALSE_STRINGS
+    ):
+        fields.append("strict_host_key_checking")
+    return fields
+
+
+# Remote mount types whose probe/connection reaches a network host chosen by
+# the caller. Ordinary users must not aim these at the runtime's own network
+# (loopback, link-local/cloud metadata, RFC1918/ULA, multicast, unspecified).
+_REMOTE_MOUNT_TYPES = frozenset({"webdav", "sftp", "smb", "s3"})
+_MOUNT_HOST_OPTION_KEYS = ("host", "hostname", "server")
+_MOUNT_URL_OPTION_KEYS = ("base_url", "endpoint_url", "url")
+MOUNT_HOST_ALLOWLIST_ENV = "ECHO_WORKSPACE_MOUNT_HOST_ALLOWLIST"
+_HostAllowlist = tuple[frozenset[str], tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...]]
+
+
+def _remote_mount_hosts(
+    mount_type: str, mount_target: str, mount_options: dict[str, Any] | None
+) -> list[str]:
+    """Every network host the backend could connect to for this mount."""
+    if mount_type not in _REMOTE_MOUNT_TYPES:
+        return []
+    opts = mount_options or {}
+    hosts: list[str] = []
+    for key in _MOUNT_HOST_OPTION_KEYS:
+        value = opts.get(key)
+        if isinstance(value, str) and value.strip():
+            hosts.append(value.strip())
+    urls = [opts.get(key) for key in _MOUNT_URL_OPTION_KEYS]
+    target = str(mount_target or "").strip()
+    if "://" in target or target.startswith("//"):
+        urls.append(target)
+    for raw in urls:
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        parts = urlsplit(raw.strip())
+        if parts.scheme.lower() == "s3":
+            continue  # bucket name, not a host: the SDK uses the AWS endpoint
+        if not parts.hostname:
+            raise ValueError(f"cannot determine the host of mount URL {raw!r}")
+        hosts.append(parts.hostname)
+    return list(dict.fromkeys(hosts))
+
+
+def _parse_host_allowlist(entries: Iterable[str] | None) -> _HostAllowlist:
+    names: set[str] = set()
+    networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+    for entry in entries or ():
+        text = str(entry).strip().strip("[]").lower()
+        if not text:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(text, strict=False))
+        except ValueError:
+            names.add(text.rstrip("."))
+    return frozenset(names), tuple(networks)
+
+
+def _host_allowlisted(host: str, allowlist: _HostAllowlist) -> bool:
+    names, networks = allowlist
+    text = host.strip().strip("[]").lower().rstrip(".")
+    if text in names:
+        return True
+    try:
+        ip = ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    return any(ip.version == net.version and ip in net for net in networks)
+
+
+def _blocked_mount_host(
+    mount_type: str,
+    mount_target: str,
+    mount_options: dict[str, Any] | None,
+    allowlist: _HostAllowlist,
+) -> dict[str, Any] | None:
+    """Return a 403 detail when any mount host is internal/non-public.
+
+    Hostnames are resolved and *every* returned address is checked, so a
+    name with one public and one internal record is rejected.
+    """
+    try:
+        hosts = _remote_mount_hosts(mount_type, mount_target, mount_options)
+    except ValueError as exc:
+        return {"error": "mount_host_invalid", "detail": str(exc)}
+    for host in hosts:
+        if _host_allowlisted(host, allowlist):
+            continue
+        verdict = check_host(host)
+        if not verdict.allow:
+            return {
+                "error": "mount_host_blocked",
+                "mount_type": mount_type,
+                "host": host,
+                "reason": verdict.reason,
+                "hint": (
+                    "remote mounts must point at a public host; ask an admin/operator "
+                    "to create this mount or to add the host to "
+                    f"{MOUNT_HOST_ALLOWLIST_ENV}"
+                ),
+            }
+    return None
+
 
 # ═══════════════════════════════════════════════════════════
 # Request bodies
@@ -91,6 +231,21 @@ def _require_flag() -> None:
         )
 
 
+class _WorkspaceRoute(APIRoute):
+    """Keep credential failures actionable without exposing secret values."""
+
+    def get_route_handler(self) -> Callable[[Request], Awaitable[Response]]:
+        handler = super().get_route_handler()
+
+        async def handle(request: Request) -> Response:
+            try:
+                return await handler(request)
+            except WorkspaceCryptoError as exc:
+                raise HTTPException(503, detail=exc.to_detail()) from None
+
+        return handle
+
+
 def create_workspace_api_router(
     *,
     workspace_store: WorkspaceStore | None = None,
@@ -101,6 +256,7 @@ def create_workspace_api_router(
     jwt_secret: str | None = None,
     jwt_issuer: str | None = None,
     jwt_audience: str | None = None,
+    mount_host_allowlist: Iterable[str] | None = None,
 ) -> APIRouter:
     """Create the ``/api/workspaces/*`` router for the Workspace entity.
 
@@ -108,7 +264,13 @@ def create_workspace_api_router(
     on-disk locations; tests pass a ``tmp_path``-backed pair.
     ``registry`` defaults to the shared ``default_registry`` so backend
     instances are cached across requests.
+    ``mount_host_allowlist`` (default: comma-separated
+    ``ECHO_WORKSPACE_MOUNT_HOST_ALLOWLIST``) lists hostnames or IP/CIDR
+    literals that ordinary users may mount even though they are internal.
     """
+    if mount_host_allowlist is None:
+        mount_host_allowlist = os.environ.get(MOUNT_HOST_ALLOWLIST_ENV, "").split(",")
+    host_allowlist = _parse_host_allowlist(mount_host_allowlist)
     store = workspace_store or WorkspaceStore()
     leases = lease_store or LeaseStore()
     backend_registry = registry or default_registry
@@ -166,9 +328,16 @@ def create_workspace_api_router(
         *,
         action: str = "read",
     ) -> tuple[Any, CurrentPrincipal | None]:
-        """Load a workspace, then authorize against its persisted ACL."""
+        """Check membership before loading decrypted mount credentials."""
         principal = _principal(request)
         scoped_store = _scoped_store(request)
+        role = None
+        if principal is not None:
+            # Membership reads only tenant/ACL metadata. A non-member must not
+            # learn whether the stored credentials are decryptable.
+            role = scoped_store.get_member_role(workspace_id, principal.actor_id)
+            if role is None:
+                raise HTTPException(404, f"workspace {workspace_id!r} not found")
         ws = scoped_store.get_workspace(workspace_id)
         if ws is None:
             raise HTTPException(404, f"workspace {workspace_id!r} not found")
@@ -189,10 +358,6 @@ def create_workspace_api_router(
             # from missing resources to ordinary principals.
             raise HTTPException(404, f"workspace {workspace_id!r} not found")
 
-        role = scoped_store.get_member_role(workspace_id, principal.actor_id)
-        if role is None:
-            # Hide workspace existence from non-members.
-            raise HTTPException(404, f"workspace {workspace_id!r} not found")
         if action == "admin" and role != "owner" and not global_operator:
             raise HTTPException(403, "workspace owner or operator role required")
         if (
@@ -224,6 +389,18 @@ def create_workspace_api_router(
     def _bad_request(exc: ValueError) -> HTTPException:
         return HTTPException(400, str(exc))
 
+    def _network_restricted(principal: CurrentPrincipal | None) -> bool:
+        return principal is not None and not principal.roles.intersection({"admin", "operator"})
+
+    async def _require_public_mount_host(
+        mount_type: str, mount_target: str, mount_options: dict[str, Any]
+    ) -> None:
+        detail = await asyncio.to_thread(
+            _blocked_mount_host, mount_type, mount_target, mount_options, host_allowlist
+        )
+        if detail is not None:
+            raise HTTPException(403, detail)
+
     async def _test_connection(
         mount_type: str,
         mount_target: str,
@@ -247,7 +424,7 @@ def create_workspace_api_router(
             return False, f"test_connection raised: {exc}"
         return ok, "" if ok else "mount unreachable"
 
-    router = APIRouter(tags=["workspace-api"])
+    router = APIRouter(tags=["workspace-api"], route_class=_WorkspaceRoute)
 
     # ─── Workspace CRUD ────────────────────────────────────────────────────
 
@@ -267,6 +444,30 @@ def create_workspace_api_router(
                 f"invalid mount_type {body.mount_type!r}; "
                 f"expected one of {sorted(VALID_MOUNT_TYPES)}",
             )
+        if principal is not None and not principal.roles.intersection({"admin", "operator"}):
+            # Server-local roots and server-side path options let the caller
+            # choose which host directory the backend process exposes. Only a
+            # global operator may register those; reject before any probe or
+            # persistence touches the host filesystem.
+            server_fields = sorted(
+                _SERVER_MANAGED_MOUNT_OPTIONS.intersection(body.mount_options)
+                | set(_host_key_trust_fields(body.mount_options))
+            )
+            if body.mount_type in _SERVER_LOCAL_MOUNT_TYPES or server_fields:
+                raise HTTPException(
+                    403,
+                    {
+                        "error": "server_mount_requires_operator",
+                        "mount_type": body.mount_type,
+                        "fields": server_fields,
+                    },
+                )
+        # Verify persistence prerequisites after authorization and before any
+        # remote connection. The store still encrypts independently at commit.
+        encrypt_options(body.mount_options)
+        if _network_restricted(principal):
+            # SSRF guard: resolve and validate right before the probe connects.
+            await _require_public_mount_host(body.mount_type, body.mount_target, body.mount_options)
         ok, detail = await _test_connection(body.mount_type, body.mount_target, body.mount_options)
         if not ok:
             raise HTTPException(
@@ -485,7 +686,11 @@ def create_workspace_api_router(
     async def health(request: Request, workspace_id: str) -> dict[str, Any]:
         """Re-probe the workspace's mount connection."""
         _require_flag()
-        ws, _ = _workspace_access(request, workspace_id)
+        ws, principal = _workspace_access(request, workspace_id)
+        if _network_restricted(principal):
+            # Re-resolve on every probe so a host that later rebinds to an
+            # internal address is not probed on an ordinary user's behalf.
+            await _require_public_mount_host(ws.mount_type, ws.mount_target, ws.mount_options)
         try:
             backend = backend_registry.get_or_create(
                 ws.id, ws.mount_type, ws.mount_target, ws.mount_options

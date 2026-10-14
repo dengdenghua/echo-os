@@ -35,6 +35,8 @@ from ._cowork_group_models import (
     BreakoutBody,
     CollabTaskBody,
     CompleteBody,
+    CoordinationReceiptBody,
+    CoordinationTaskBody,
     EnsureRoomBody,
     HeartbeatBody,
     InviteBody,
@@ -314,6 +316,95 @@ def create_cowork_group_router(
         _require_collaborative_thread(thread_id, request)
 
     router = APIRouter(tags=["cowork"], dependencies=[Depends(_thread_access_dep)])
+
+    coordination = getattr(runtime, "coordination", None)
+    if coordination is not None:
+        # The queue admission/tool path uses this same fresh room-aware ACL,
+        # including after the initiating HTTP request has gone away.
+        def _coordination_authorize(thread: str, actor: str, tenant: str, write: bool) -> bool:
+            if not require_auth:
+                return True
+            decision = thread_access.resolve(thread, actor, tenant)
+            return decision.can_write if write else decision.can_read
+
+        coordination.authorize = _coordination_authorize
+
+    def _coordination():
+        if coordination is None:
+            raise HTTPException(503, "coordination service unavailable")
+        return coordination
+
+    @router.get("/api/collab/{thread_id}/coordination")
+    def coordination_snapshot(thread_id: str) -> dict[str, Any]:
+        return _coordination().snapshot(thread_id)
+
+    @router.post("/api/collab/{thread_id}/coordination/tasks", dependencies=[Depends(_auth_dep)])
+    def create_coordination_task(
+        thread_id: str, body: CoordinationTaskBody, request: Request
+    ) -> dict[str, Any]:
+        service = _coordination()
+        if not getattr(runtime, "runner_enabled", False):
+            raise HTTPException(503, "background runner unavailable")
+        from runtime.memory.cowork.coordination_policy import capture_policy
+        from runtime.platform.process.session import Session
+
+        # Only the host thread and resolved principal supply execution policy;
+        # none of these fields is accepted from the model/client payload.
+        state = getattr(request.state, "cowork_thread", None) or {}
+        if not state and service.thread_store is not None:
+            getter = getattr(service.thread_store, "get", None) or getattr(
+                service.thread_store, "get_state", None
+            )
+            if callable(getter):
+                try:
+                    state = getter(thread_id) or {}
+                except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+                    raise HTTPException(503, "thread execution policy unavailable") from exc
+        metadata = dict(state.get("metadata") or {})
+        principal = _principal(request)
+        if principal is not None:
+            metadata["tenant_id"] = principal.tenant_id
+        policy = capture_policy(
+            Session(thread_id=thread_id, actor=_actor(request), metadata=metadata)
+        )
+        try:
+            task = service.create_task(
+                thread_id,
+                _actor(request),
+                body.assignee,
+                body.prompt,
+                body.request_id,
+                body.dependencies,
+                policy=policy,
+            )
+        except PermissionError as exc:
+            raise HTTPException(403, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        runner = getattr(runtime, "runner", None)
+        if runner is not None:
+            runner.wake()
+        return {"ok": True, "task": task}
+
+    @router.post("/api/collab/{thread_id}/coordination/receipt", dependencies=[Depends(_auth_dep)])
+    def coordination_receipt(
+        thread_id: str, body: CoordinationReceiptBody, request: Request
+    ) -> dict[str, Any]:
+        service = _coordination()
+        task = service.ledger.get(body.task_id)
+        if task is None or task["thread_id"] != thread_id:
+            raise HTTPException(404, "coordination task not found")
+        if body.action == "cancel":
+            service.queue.cancel_batch([body.task_id], reason="cancelled by " + _actor(request))
+            service.finish(body.task_id, "cancelled")
+            return {"ok": True, "task": service.ledger.get(body.task_id)}
+        try:
+            acknowledged = service.ledger.acknowledge(
+                body.task_id, body.message_id, actor=_actor(request)
+            )
+        except ValueError as exc:
+            raise HTTPException(404, "coordination message not found for this task") from exc
+        return {"ok": True, "acknowledged": acknowledged}
 
     @router.get("/api/cowork/{thread_id}")
     def get_group(thread_id: str, until_seq: int | None = None) -> dict[str, Any]:

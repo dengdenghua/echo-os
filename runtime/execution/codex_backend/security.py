@@ -2,11 +2,13 @@
 
 The sidecar intentionally has two policy layers:
 
-* Echo is the approval broker. It chooses ``read-only`` or
+* Echo is the approval broker. It normally chooses ``read-only`` or
   ``workspace-write`` before a thread/turn starts and handles every Codex
-  approval request. Broker errors and timeouts fail closed as ``decline``.
-* Codex runs with ``approval_policy = "on-request"``, a user reviewer, and
-  network disabled. It can request more authority, but cannot grant it. This
+  approval request. A server-authorized local full-access turn may choose
+  ``danger-full-access`` while the isolated sidecar state remains denied.
+* Codex runs with ``approval_policy = "on-request"`` and the reviewer selected
+  by the server-owned permission mode. It can request more authority, but
+  cannot grant it. This
   validated inner profile is also the generated-tool sandbox on macOS local
   runs, where wrapping App Server in an outer Seatbelt would prevent Codex
   from applying its own nested Seatbelt profile. Production/shared remains
@@ -57,9 +59,11 @@ from ._security_support import (
     _validate_workspace,
     _write_marker,
 )
+from .feature_support import supported_codex_features
 from .types import CodexProviderProfile
 
-CodexSandboxMode = Literal["read-only", "workspace-write"]
+CodexSandboxMode = Literal["read-only", "workspace-write", "danger-full-access"]
+CodexApprovalReviewer = Literal["user", "auto_review"]
 ApprovalFailureDecision = Literal["decline"]
 
 APPROVAL_FAILURE_DECISION: ApprovalFailureDecision = "decline"
@@ -121,6 +125,7 @@ _LOCKED_OFF_FEATURES = (
     "shell_snapshot",
     "tool_suggest",
 )
+_VERSIONED_LOCKED_OFF_FEATURES = ("api_key_model_discovery",)
 _ALLOWED_ENABLED_FEATURES = frozenset({"mentions_v2"})
 _PROTECTED_WORKSPACE_SUBPATHS = (".git", ".agents", ".codex")
 
@@ -205,6 +210,7 @@ class CodexSidecarContext:
     config_path: Path
     binding_path: Path
     sandbox_mode: CodexSandboxMode
+    approval_reviewer: CodexApprovalReviewer
     realm_key: str
     tenant_key: str
     thread_key: str
@@ -212,6 +218,11 @@ class CodexSidecarContext:
     _launch_env: Mapping[str, str] = field(repr=False)
     provider_profile: CodexProviderProfile | None = field(default=None, repr=False)
     selected_app_ids: tuple[str, ...] = ()
+    locked_off_features: tuple[str, ...] = _LOCKED_OFF_FEATURES
+
+    @property
+    def sqlite_home(self) -> Path:
+        return _sqlite_home(self.state_root, self.codex_home)
 
     def launch_env(self) -> dict[str, str]:
         """Return a mutable copy suitable for ``subprocess.Popen(env=...)``."""
@@ -235,7 +246,7 @@ class CodexSidecarContext:
             "cwd": str(self.workspace),
             "runtimeWorkspaceRoots": [str(self.workspace)],
             "approvalPolicy": APPROVAL_POLICY,
-            "approvalsReviewer": APPROVAL_REVIEWER,
+            "approvalsReviewer": self.approval_reviewer,
             "permissions": PERMISSION_PROFILE,
             "dynamicTools": [],
             "selectedCapabilityRoots": [],
@@ -248,7 +259,7 @@ class CodexSidecarContext:
             "cwd": str(self.workspace),
             "runtimeWorkspaceRoots": [str(self.workspace)],
             "approvalPolicy": APPROVAL_POLICY,
-            "approvalsReviewer": APPROVAL_REVIEWER,
+            "approvalsReviewer": self.approval_reviewer,
             "permissions": PERMISSION_PROFILE,
         }
 
@@ -268,7 +279,7 @@ class CodexSidecarContext:
         errors: list[str] = []
 
         _expect_value(config, "approval_policy", APPROVAL_POLICY, errors)
-        _expect_value(config, "approvals_reviewer", APPROVAL_REVIEWER, errors)
+        _expect_value(config, "approvals_reviewer", self.approval_reviewer, errors)
         _expect_value(config, "default_permissions", PERMISSION_PROFILE, errors)
         _expect_value(config, "web_search", "disabled", errors)
         _expect_value(config, "allow_login_shell", False, errors)
@@ -306,7 +317,7 @@ class CodexSidecarContext:
 
         features = _mapping_at(config, "features", errors)
         if features is not None:
-            for feature_name in _LOCKED_OFF_FEATURES:
+            for feature_name in self.locked_off_features:
                 _expect_value(
                     features,
                     feature_name,
@@ -316,7 +327,7 @@ class CodexSidecarContext:
                 )
             for feature_name, enabled in features.items():
                 if (
-                    feature_name not in _LOCKED_OFF_FEATURES
+                    feature_name not in self.locked_off_features
                     and feature_name not in _ALLOWED_ENABLED_FEATURES
                     and enabled not in (None, False)
                 ):
@@ -326,7 +337,12 @@ class CodexSidecarContext:
         if agents is not None and _non_null_items(agents) != {"enabled": False}:
             errors.append("agents must be fully disabled")
 
-        _validate_apps_config(config, self.selected_app_ids, errors)
+        _validate_apps_config(
+            config,
+            self.selected_app_ids,
+            errors,
+            approval_reviewer=self.approval_reviewer,
+        )
 
         _validate_permission_profile_section(
             config,
@@ -492,16 +508,23 @@ class CodexSidecarSecurity:
         task_id: str,
         workspace: Path,
         sandbox_mode: CodexSandboxMode = "workspace-write",
+        approval_reviewer: CodexApprovalReviewer = "user",
         provider_profile: CodexProviderProfile | None = None,
         selected_app_ids: tuple[str, ...] = (),
+        codex_executable: str | None = None,
         outer_hard_sandbox_active: bool = False,
         host_env: Mapping[str, str] | None = None,
     ) -> CodexSidecarContext:
         """Provision one tenant/thread/task sidecar, failing closed on drift."""
 
-        if sandbox_mode not in {"read-only", "workspace-write"}:
+        if sandbox_mode not in {"read-only", "workspace-write", "danger-full-access"}:
             raise CodexSecurityError(
-                "Codex sidecars only allow 'read-only' or 'workspace-write' sandbox modes"
+                "Codex sidecars only allow 'read-only', 'workspace-write', or "
+                "'danger-full-access' sandbox modes"
+            )
+        if approval_reviewer not in {"user", "auto_review"}:
+            raise CodexSecurityError(
+                "Codex sidecars only allow 'user' or 'auto_review' approval reviewers"
             )
         if provider_profile is not None and not isinstance(provider_profile, CodexProviderProfile):
             raise CodexSecurityError("provider_profile must be server-resolved")
@@ -546,7 +569,7 @@ class CodexSidecarSecurity:
             thread_root,
             task_root,
             codex_home,
-            codex_home / "sqlite",
+            _sqlite_home(state_root, codex_home),
             app_home,
             app_home / "cache",
             app_home / "config",
@@ -625,12 +648,14 @@ class CodexSidecarSecurity:
             config_path=codex_home / "config.toml",
             binding_path=thread_root / "binding.json",
             sandbox_mode=sandbox_mode,
+            approval_reviewer=approval_reviewer,
             realm_key=realm_key,
             tenant_key=tenant_key,
             thread_key=thread_key,
             task_key=task_key,
             provider_profile=provider_profile,
             selected_app_ids=tuple(dict.fromkeys(selected_app_ids)),
+            locked_off_features=_locked_off_features_for(codex_executable),
             _launch_env=MappingProxyType(launch_env),
         )
         _read_binding_file(context)
@@ -733,19 +758,44 @@ def _tool_environment(context: CodexSidecarContext) -> dict[str, str]:
     return tool_env
 
 
+def _sqlite_home(state_root: Path, codex_home: Path) -> Path:
+    legacy = codex_home / "sqlite"
+    if os.name != "nt":
+        return legacy
+    # Keep existing databases in place. Moving a live SQLite database (and
+    # its WAL) can lose history or race another App Server process.
+    if legacy.exists() and any(legacy.iterdir()):
+        return legacy
+    # SQLx/SQLite normalizes away Windows extended-length prefixes. Flatten
+    # new database directories while retaining the complete realm, tenant,
+    # and thread identity in a full-length digest inside the protected root.
+    relative = codex_home.relative_to(state_root).as_posix()
+    key = hashlib.sha256(relative.encode("utf-8")).hexdigest()
+    return state_root / "sqlite" / key
+
+
+def _locked_off_features_for(codex_executable: str | None) -> tuple[str, ...]:
+    supported = supported_codex_features(codex_executable)
+    if not supported:
+        return _LOCKED_OFF_FEATURES
+    return _LOCKED_OFF_FEATURES + tuple(
+        name for name in _VERSIONED_LOCKED_OFF_FEATURES if name in supported
+    )
+
+
 def _render_codex_config(context: CodexSidecarContext) -> str:
     tool_env = _tool_environment(context)
     lines = [
         "# Managed by Echo. Do not merge ambient user/project configuration.",
         f"approval_policy = {_toml_string(APPROVAL_POLICY)}",
-        f"approvals_reviewer = {_toml_string(APPROVAL_REVIEWER)}",
+        f"approvals_reviewer = {_toml_string(context.approval_reviewer)}",
         f"default_permissions = {_toml_string(PERMISSION_PROFILE)}",
         "allow_login_shell = false",
         'web_search = "disabled"',
         "check_for_update_on_startup = false",
         'cli_auth_credentials_store = "file"',
         'file_opener = "none"',
-        f"sqlite_home = {_toml_string(str(context.codex_home / 'sqlite'))}",
+        f"sqlite_home = {_toml_string(str(context.sqlite_home))}",
         "notify = []",
         "mcp_servers = {}",
         "plugins = {}",
@@ -799,7 +849,10 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             "destructive_enabled = false",
             "open_world_enabled = false",
             *(
-                ('approvals_reviewer = "user"', 'default_tools_approval_mode = "prompt"')
+                (
+                    f'approvals_reviewer = "{context.approval_reviewer}"',
+                    'default_tools_approval_mode = "prompt"',
+                )
                 if context.selected_app_ids
                 else ()
             ),
@@ -807,7 +860,7 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             "[features]",
             *[
                 f"{name} = {str(bool(context.selected_app_ids) if name == 'apps' else False).lower()}"
-                for name in _LOCKED_OFF_FEATURES
+                for name in context.locked_off_features
             ],
             "",
             f"[permissions.{PERMISSION_PROFILE}]",
@@ -819,7 +872,8 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             "",
         ]
     )
-    workspace_access = "write" if context.sandbox_mode == "workspace-write" else "read"
+    full_access = context.sandbox_mode == "danger-full-access"
+    workspace_access = "read" if context.sandbox_mode == "read-only" else "write"
     for app_id in context.selected_app_ids:
         lines.extend(
             [
@@ -828,13 +882,19 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
                 "enabled = true",
                 "destructive_enabled = false",
                 "open_world_enabled = false",
-                'approvals_reviewer = "user"',
+                f'approvals_reviewer = "{context.approval_reviewer}"',
                 'default_tools_approval_mode = "prompt"',
             ]
         )
-    lines.extend(
+    filesystem_lines = (
         [
-            f"[permissions.{PERMISSION_PROFILE}.filesystem]",
+            '":minimal" = "read"',
+            '":root" = "write"',
+            f'{_toml_string(str(context.scratch_root))} = "write"',
+            f'{_toml_string(str(context.state_root))} = "deny"',
+        ]
+        if full_access
+        else [
             '":minimal" = "read"',
             f'{_toml_string(str(context.workspace))} = "{workspace_access}"',
             f'{_toml_string(str(context.scratch_root))} = "write"',
@@ -845,9 +905,15 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             '":tmpdir" = "deny"',
             '":slash_tmp" = "deny"',
             f'{_toml_string(str(context.state_root))} = "deny"',
+        ]
+    )
+    lines.extend(
+        [
+            f"[permissions.{PERMISSION_PROFILE}.filesystem]",
+            *filesystem_lines,
             "",
             f"[permissions.{PERMISSION_PROFILE}.network]",
-            "enabled = false",
+            f"enabled = {str(full_access).lower()}",
             "",
             f"[projects.{_toml_string(str(context.workspace))}]",
             'trust_level = "untrusted"',
@@ -977,6 +1043,7 @@ def _read_binding_file(context: CodexSidecarContext) -> CodexThreadBinding | Non
 
 __all__ = [
     "APPROVAL_FAILURE_DECISION",
+    "CodexApprovalReviewer",
     "APPROVAL_POLICY",
     "APPROVAL_REVIEWER",
     "PERMISSION_PROFILE",

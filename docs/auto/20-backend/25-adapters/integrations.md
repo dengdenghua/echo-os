@@ -9,6 +9,7 @@
 | Module | Summary |
 | --- | --- |
 | `local_auth/config.py` | — |
+| `local_auth/passwords.py` | — |
 | `local_auth/router.py` | — |
 | `oct/client.py` | oct 账号网关 HTTP 客户端 helpers。 |
 | `oct/config.py` | oct 账号网关集成配置。 |

@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
+
+if os.name == "nt":
+    pytest.skip("OMV plugin lifecycle verifier is a POSIX shell script", allow_module_level=True)
 
 _REPOSITORY = Path(__file__).resolve().parents[2]
 _LIFECYCLE_SCRIPT = _REPOSITORY / "deploy/omv/verify-plugin-package-lifecycle.sh"
@@ -27,7 +32,7 @@ def test_omv_plugin_lifecycle_verifier_is_shell_valid_and_covers_delivery_gates(
     for required in (
         'distribution_version" 13',
         "dpkg --force-depends --install",
-        "install ok half-configured|0.2.0-4",
+        "install ok half-configured|$upstream_version-4",
         "failed upgrade state",
         "manual installer conflict unexpectedly succeeded",
         "OMV 9 upgrade unexpectedly passed",

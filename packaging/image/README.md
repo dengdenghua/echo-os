@@ -34,7 +34,38 @@ mkosi 创建磁盘镜像需要 Linux 内核、systemd 254+ 和镜像构建权限
 拒绝。原生服务从同源配置加上镜像 policy 启动：关闭 Tentacle LAN listener、自动
 情报源和开机技能市场刷新，因此冷启动只需要本地绑定目录，不依赖网络；运行时唯一
 预期的 Agent listener 是 `127.0.0.1:8000`。开发兼容层中的模拟账号、计费和用量
-API 不会进入原生系统运行路径。
+API 不会进入原生系统运行路径。systemd unit 现把完整 `appliance.extension` 标为必需扩展并启用
+生产认证模式；OEM 设置把同一份本机管理员口令仅在进程内转换为 bcrypt 认证库，原生服务拒绝
+缺少该预置状态时随机生成并记录密码。一次性 CI session 只生成不可见的测试认证状态。开机健康门
+从 owner/mode 均受限的认证库签发 60 秒探针 JWT，再读取
+`/api/appliance/tasks?limit=1`。因此通用 Agent 即使仍能返回 `/api/health`，也不能在完整 NAS 扩展、
+认证或存储 broker 导入失败时让 `boot-complete.target` 误判成功。
+
+镜像现已安装并强依赖 `echo-native-storage-broker.service`。它以 root 运行但只监听 root-owned
+Unix socket，使用 Linux peer credentials 限定 `echo`/root 调用方，协议只允许源码内固定的 38 对原生
+存储 `plan`/`apply` 与共享总览/单共享 ACL 两条只读投影；浏览器侧 Agent 仍为无 capability 的普通用户，先请求 root 侧 plan，
+再完成密码审批和 attempted 审计，最后把同一 desired state 与 plan ID 交给 broker 重算并执行。
+开机健康门会实际完成无副作用握手，而不只检查
+unit 是否 active。该服务不启用会产生私有 mount namespace 的 systemd 隔离项，因为卷创建、挂载、
+`/etc` 配置与有限的块设备 sysfs 写入必须真实作用于宿主；安全边界由固定协议、root 侧计划重算、plan ID、socket
+所有权、peer UID、无 IP socket 及上层审批/审计共同构成。原生 Agent 已挂载完整 NAS 控制面；
+raw 包清单同时显式安装 Samba/VFS、NFS、mdadm、SMART、NUT、hdparm、quota 与 WSD 发现栈，构建时
+校验 Samba usershare 和 Time Machine `fruit` 基线。镜像还安装 ReadyMedia，但上游与 Echo DLNA
+unit 均保持禁用且不预置媒体目录；管理员批准后才为选中的已登记共享生成只读 bind namespace，并仅向
+RFC1918 IPv4 开放 UDP 1900/TCP 8200。批准 SMB/Time Machine、DLNA 或私网 NFS 变更时，
+同一 root broker 会事务式同步 `echo-public` 的最小 rich rules；root-only 状态、永久规则和运行规则
+任一不一致都会让操作或开机健康门失败关闭。Raw 镜像现显式安装 Debian Docker Engine，并由一次性
+root oneshot 在持久 `/var` 生成每设备 256-bit token；Agent 与降权回环代理只通过 systemd credential
+共享该 token，Agent 不挂 `docker.sock`。Hub 生命周期会经固定 root broker 从目录身份、完整容器标签、
+实际端口绑定和当前私网容器 IP 重算 rich forwarding；host-network 应用使用私网来源 INPUT，任何漂移
+关闭全部 Hub 放行。Raw 镜像还显式启用 Debian `contrib`，安装与镜像内核同批次的 headers、DKMS、
+`zfsutils-linux` 和 ZED；构建先以隔离的 mode-0700 skeleton 把 UKI 所用 UEFI `db` 身份放到
+DKMS 约定路径，使模块在压缩前只签名一次，装配阶段再逐内核拒绝缺失、错位或未签名模块并删除临时密钥。启动时
+`echo-zfs-health.service` 要求当前 `uname -r` 的 PKCS#7 模块可由 Secure Boot 内核实际加载、ZED 在线且
+`zfs`/`zpool` 可通信，失败会阻止存储 broker 与 A/B boot blessing。该链的真实 Docker/nftables 验收及
+新 raw 制品上的 OpenZFS Secure-Boot 加载仍待 dedicated Linux runner；在整镜像 Linux
+冷启动、异机协议和六项真机门绑定该 profile 前，本镜像仍按独立桌面产物
+发布，不能改称完整 NAS OS。
 
 原生 Agent 清单 v2 还把任务恢复能力列为镜像硬合同：wheel 必须同时提供只读
 `GET /api/task-runs/recovery-queue` 和显式
@@ -97,9 +128,13 @@ PKCS#7 签名、证书指纹、roothash 派生分区 UUID 和 UKI 内嵌 roothas
 真正组装前，构建脚本先取得 mkosi 的 JSON resolved summary，并由
 `verify-mkosi-summary.py` 要求主镜像确实解析成 x86-64 Debian Trixie disk、依赖唯一
 自定义 initrd、启用 Secure Boot、dm-verity、signed expected PCR、UKI 和 split
-partitions，且使用选定的六个密钥/证书/加密输入。它同时检查 initrd 已解析出
-dm-crypt、dm-verity、ext4、overlay 模块和 machine-state 服务，并拒绝 `rw` 或任何
-可变 `root=`。因此命令行参数拼写或 mkosi 默认值漂移不会等到成品启动时才暴露。
+partitions，且使用选定的六个密钥/证书/加密输入，并把由其中 Secure Boot 身份复制出的
+隔离 OpenZFS 模块签名目录精确绑定为只读 build source。发布身份会先完成权限、证书匹配和
+PCR 公钥校验，之后才会复制进临时 DKMS skeleton；该 skeleton 不得进入自定义 initrd。
+resolved-summary 同时检查 initrd 已解析出 dm-crypt、dm-verity、ext4、overlay 模块和
+machine-state 服务，并拒绝 `rw` 或任何可变 `root=`；成品检查再确认 initrd 与加密 `/var`
+均无 `mok.key`/`mok.pub`。因此命令行参数拼写、mkosi 默认值漂移或临时签名身份泄漏不会等到
+成品启动时才暴露。
 
 macOS 可以先生成并验证 Linux Electron payload，但不能生成 GPT 镜像：
 
@@ -241,9 +276,10 @@ Linux 镜像 workflow 已定义一次完整的临时 NBD 写盘：先验证签�
 Recovery、凭据驱动的真实 OEM 首启、生产 SDDM/X11、SDDM/Wayland 候选和直接桌面
 五个 Secure-Boot QEMU 门都以这块安装后 raw 为输入，而不是继续启动构建源 raw。
 OEM 门只在一次性副本注入 SDDM autologin；账户、密码哈希、地区状态和完成标记均由
-生产 OEM 程序在启动中生成，随机明文密码仅通过 VM systemd credential 传递。当前
-工作区尚未在 Linux runner 执行该未提交 workflow，因此这是可执行验收定义，不是
-已经成功安装或完成首启的运行证据。
+生产 OEM 程序在启动中生成，随机明文密码仅通过 VM systemd credential 传递。远端
+`os-image` 唯一一次运行在在线源预检即失败，未进入 dedicated Linux runner；根因是
+Debian source-contract 容器没有安装其调用的 `gh`。当前工作区已补依赖和回归合同，
+但尚未推送重跑，因此这些仍是可执行验收定义，不是已经成功安装或完成首启的运行证据。
 
 workflow 的最后一步还会运行 `verify-os-image-evidence.py`。只有安装、Recovery、
 换 TPM、factory reset、OEM/SDDM、X11/Wayland、独立备份盘、promoted restore 试运行和
@@ -458,7 +494,7 @@ eSpeak NG 离线语音 backend。自定义 Echo 会话不依赖 Plasma/GNOME aut
 监管 `/usr/libexec/at-spi-bus-launcher --launch-immediately`，验证
 `org.a11y.Bus.GetAddress`，并把 `QT_ACCESSIBILITY=1` 传给 D-Bus/systemd 激活环境。
 Electron 以 `--force-renderer-accessibility` 启动；只有独立 AT-SPI 进程在对应 Electron
-进程树中找到固定 `Echo OS 桌面` 节点，desktop-ready 才会写入
+进程树中找到固定 `ECHO OS 桌面` 节点，desktop-ready 才会写入
 `accessibility=ready`。Wayland compositor gate 对原生 GTK 控件执行同类检查。
 
 树探针有节点/深度/超时上限，只比较固定 marker，并且不会打印树中的窗口名、文本、

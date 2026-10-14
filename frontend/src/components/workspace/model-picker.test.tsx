@@ -15,6 +15,25 @@ import { AllProviders } from "@/test/harness";
 
 import { ModelPicker, type PickerModel } from "./model-picker";
 
+it("cannot open or select a model while disabled, even if previously open", async () => {
+  const onChange = vi.fn();
+  render(
+    withProviders(
+      <ModelPicker
+        models={[{ name: "task-model" }]}
+        value="task-model"
+        onChange={onChange}
+        disabled
+        open
+      />,
+    ),
+  );
+  expect(screen.getByTestId("model-picker-trigger")).toBeDisabled();
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByTestId("model-picker-trigger"));
+  expect(onChange).not.toHaveBeenCalled();
+});
+
 // Stub useOctLink — picker reads `link.oct_user_id` to auto-enable
 // unconfigured models.
 vi.mock("@/core/oct/hooks", () => ({
@@ -64,7 +83,7 @@ describe("<ModelPicker />", () => {
     );
   });
 
-  it("renders OpenCode Zen free model names in green without a duplicate badge", async () => {
+  it("renders OpenCode Zen free model names in the core tone without a duplicate badge", async () => {
     const user = userEvent.setup();
     render(
       withRouter(
@@ -92,18 +111,12 @@ describe("<ModelPicker />", () => {
     );
 
     const trigger = screen.getByTestId("model-picker-trigger");
-    expect(within(trigger).getByText("big-pickle")).toHaveClass(
-      "text-emerald-600",
-    );
+    expect(within(trigger).getByText("big-pickle")).toHaveClass("text-core");
 
     await user.click(trigger);
     const menu = await screen.findByTestId("model-picker-menu");
-    expect(within(menu).getByText("big-pickle")).toHaveClass(
-      "text-emerald-600",
-    );
-    expect(within(menu).getByText("mimo-v2.5-free")).toHaveClass(
-      "text-emerald-600",
-    );
+    expect(within(menu).getByText("big-pickle")).toHaveClass("text-core");
+    expect(within(menu).getByText("mimo-v2.5-free")).toHaveClass("text-core");
     expect(within(menu).queryByText("FREE")).not.toBeInTheDocument();
   });
 

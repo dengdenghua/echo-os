@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BROWSER_OPEN_URL_ACK_EVENT,
   BROWSER_OPEN_URL_REQUEST_EVENT,
-  BROWSER_OPEN_URL_REQUEST_KEY,
+  browserOpenUrlRequestStorageKey,
   type BrowserOpenUrlAck,
   type BrowserOpenUrlRequest,
 } from "@/components/browser/browser-store";
@@ -12,6 +12,26 @@ import { setLinkOpenTarget } from "@/core/settings/automation-preferences";
 import { openTarget, shouldRouteAnchorClick } from "./open-target";
 
 describe("openTarget", () => {
+  it("opens a browser target without replacing an existing desktop route", async () => {
+    window.location.hash = "#/desktop?workspace=retained";
+    const before = window.location.hash;
+    window.addEventListener(
+      BROWSER_OPEN_URL_REQUEST_EVENT,
+      (event) => {
+        const request = (event as CustomEvent<BrowserOpenUrlRequest>).detail;
+        window.dispatchEvent(
+          new CustomEvent<BrowserOpenUrlAck>(BROWSER_OPEN_URL_ACK_EVENT, {
+            detail: { requestId: request.requestId!, accepted: true },
+          }),
+        );
+      },
+      { once: true },
+    );
+    await expect(
+      openTarget("https://example.com/desktop", { target: "in_app" }),
+    ).resolves.toBe("in_app");
+    expect(window.location.hash).toBe(before);
+  });
   beforeEach(() => {
     window.localStorage.clear();
     window.location.hash = "#/workspace";
@@ -42,7 +62,7 @@ describe("openTarget", () => {
     expect(window.location.hash).toBe("#/browser");
     expect(
       JSON.parse(
-        window.localStorage.getItem(BROWSER_OPEN_URL_REQUEST_KEY) ?? "{}",
+        window.localStorage.getItem(browserOpenUrlRequestStorageKey()) ?? "{}",
       ),
     ).toMatchObject({ url: "https://example.com/docs", source: "message" });
   });
@@ -134,7 +154,7 @@ describe("openTarget", () => {
 
     expect(window.location.hash).toBe("#/workspace");
     expect(
-      window.localStorage.getItem(BROWSER_OPEN_URL_REQUEST_KEY),
+      window.localStorage.getItem(browserOpenUrlRequestStorageKey()),
     ).toBeNull();
     expect(windowOpen).toHaveBeenCalledWith(
       "https://example.com/no-browser-shell",

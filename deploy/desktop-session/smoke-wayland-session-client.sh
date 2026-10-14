@@ -69,27 +69,105 @@ export QT_QPA_PLATFORM=wayland
 /usr/bin/dbus-update-activation-environment \
   WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP QT_QPA_PLATFORM
 
-for _attempt in $(seq 1 150); do
+# The Liquid Glass effect is OpenGL-only. KWin's virtual backend composites
+# with OpenGL only when libdrm enumerates a DRM device; hosted CI runners expose
+# none, so KWin falls back to QPainter there and correctly refuses to load the
+# effect. Exercise native optics whenever KWin has OpenGL; otherwise prove that
+# the packaged effect is installed and reported unsupported (the shell then
+# keeps its WebGL/CSS material). ECHO_WAYLAND_SMOKE_REQUIRE_NATIVE_GLASS=1 makes
+# a missing OpenGL compositor fatal, for GPU-backed runners.
+KWIN_COMPOSITING_TYPE="$(gdbus call --session \
+  --dest org.kde.KWin \
+  --object-path /Compositor \
+  --method org.freedesktop.DBus.Properties.Get \
+  org.kde.kwin.Compositing compositingType)"
+case "$KWIN_COMPOSITING_TYPE" in
+  *"'gl2'"* | *"'gles'"*) KWIN_NATIVE_GLASS=1 ;;
+  *"'qpainter'"*) KWIN_NATIVE_GLASS=0 ;;
+  *)
+    echo "KWin reported an unexpected compositing type: $KWIN_COMPOSITING_TYPE" >&2
+    exit 1
+    ;;
+esac
+if [[ "$KWIN_NATIVE_GLASS" -eq 0 && "${ECHO_WAYLAND_SMOKE_REQUIRE_NATIVE_GLASS:-0}" == 1 ]]; then
+  echo "KWin composites with QPainter; native Liquid Glass needs an OpenGL compositor" >&2
+  exit 1
+fi
+
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  for _attempt in $(seq 1 150); do
+    if gdbus introspect --session \
+         --dest org.kde.KWin \
+         --object-path "$KWIN_LIQUID_GLASS_PATH" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.1
+  done
+  KWIN_GLASS_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
+    echo "KWin Liquid Glass effect did not publish its inactive state" >&2
+    exit 1
+  }
+  echo "  ✓ KWin loaded the native Liquid Glass effect"
+else
+  KWIN_EFFECTS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path /Effects \
+    --method org.freedesktop.DBus.Properties.Get \
+    org.kde.kwin.Effects listOfEffects)"
+  [[ "$KWIN_EFFECTS" == *"'org.echoos.liquidglass'"* ]] || {
+    echo "KWin did not discover the packaged Liquid Glass effect plugin" >&2
+    exit 1
+  }
+  [[ "$(gdbus call --session \
+          --dest org.kde.KWin \
+          --object-path /Effects \
+          --method org.kde.kwin.Effects.isEffectSupported \
+          org.echoos.liquidglass)" == "(false,)" ]] || {
+    echo "KWin claims QPainter supports the OpenGL-only Liquid Glass effect" >&2
+    exit 1
+  }
   if gdbus introspect --session \
        --dest org.kde.KWin \
-       --object-path "$KWIN_LIQUID_GLASS_PATH" >/dev/null 2>&1; then
-    break
+       --object-path "$KWIN_LIQUID_GLASS_PATH" 2>/dev/null | \
+       grep -q "$KWIN_LIQUID_GLASS_INTERFACE"; then
+    echo "Liquid Glass effect published its interface without an OpenGL compositor" >&2
+    exit 1
   fi
-  sleep 0.1
-done
-KWIN_GLASS_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
-  echo "KWin Liquid Glass effect did not publish its inactive state" >&2
+  echo "  ✓ KWin discovered the Liquid Glass effect and kept it unloaded on its QPainter compositor (no DRM device)"
+fi
+
+# KWin 6.3 sizes each virtual output by --scale (1600x1000 pixels), but its
+# output configuration store then assigns scale 1.0 to every output that
+# reports no physical size (chooseScale in outputconfigurationstore.cpp).
+# Apply the fractional scale the way System Settings does, over
+# kde_output_management_v2, and lay the two 1280x800 logical outputs side by
+# side; the bridge must then observe the change. kscreen-doctor talks to the
+# D-Bus-activated kscreen_backend_launcher (an in-process backend failed with
+# "Cannot find output with id 1"), which needs the session's runtime dir and
+# Wayland display in the activation environment.
+/usr/bin/dbus-update-activation-environment XDG_RUNTIME_DIR WAYLAND_DISPLAY
+QT_LOGGING_RULES='kscreen.*.debug=true' timeout 30s kscreen-doctor \
+  output.Virtual-0.scale.1.25 output.Virtual-0.position.0,0 \
+  output.Virtual-1.scale.1.25 output.Virtual-1.position.1280,0 \
+  >"$LOG_DIR/kscreen-doctor.log" 2>&1 || {
+  echo "kscreen-doctor could not apply the 1.25x output scale" >&2
   exit 1
 }
-echo "  ✓ KWin loaded the native Liquid Glass effect"
-
-COMPOSITOR_STATE="$(
-  "$BRIDGE" --socket "$BRIDGE_SOCKET" --request list
-)"
+for _attempt in $(seq 1 100); do
+  COMPOSITOR_STATE="$(
+    "$BRIDGE" --socket "$BRIDGE_SOCKET" --request list
+  )"
+  python3 -c '
+import json, math, sys
+outputs = json.loads(sys.argv[1]).get("outputs", [])
+raise SystemExit(0 if outputs and all(math.isclose(o.get("scale", 0), 1.25) for o in outputs) else 1)
+' "$COMPOSITOR_STATE" && break
+  sleep 0.1
+done
 python3 -c '
 import json
 import math
@@ -113,6 +191,7 @@ cleanup_client() {
   [[ -n "${CLIPBOARD_SOURCE_PID:-}" ]] && kill "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
   [[ -n "${CLIPBOARD_HOST_PID:-}" ]] && kill "$CLIPBOARD_HOST_PID" 2>/dev/null || true
   [[ -n "${ACCESSIBILITY_BUS_PID:-}" ]] && kill "$ACCESSIBILITY_BUS_PID" 2>/dev/null || true
+  [[ -n "${READYZ_STUB_PID:-}" ]] && kill "$READYZ_STUB_PID" 2>/dev/null || true
   rm -f -- "${NATIVE_APP_IPC_READY_FILE:-}" "${RENDERER_READY_FILE:-}"
 }
 trap cleanup_client EXIT
@@ -193,23 +272,40 @@ gdbus call --session \
 }
 
 CLIPBOARD_SENTINEL='echo-os-wayland-clipboard-persistence-smoke'
+# The source serves until Klipper has captured the sentinel and written the
+# item's data file, then quits like an application that copies and exits.
+# (--paste-once would exit the instant Klipper read the text, racing Klipper's
+# asynchronous KIO write of the data it re-offers.) Only the data file's
+# presence is checked, never its content.
 printf '%s' "$CLIPBOARD_SENTINEL" | \
-  wl-copy --foreground --paste-once \
+  wl-copy --foreground \
     >"$LOG_DIR/clipboard-source-wayland.log" 2>&1 &
 CLIPBOARD_SOURCE_PID=$!
+CLIPBOARD_ITEM_DATA="${CLIPBOARD_DATABASE%/*}/data"
+CLIPBOARD_CAPTURED=0
 for _attempt in $(seq 1 150); do
-  if ! kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then break; fi
   kill -0 "$CLIPBOARD_HOST_PID" 2>/dev/null || {
     echo "Klipper host exited while capturing the Wayland clipboard" >&2
     exit 1
   }
+  if [[ "$(gdbus call --session \
+         --dest org.kde.klipper \
+         --object-path /klipper \
+         --method org.kde.klipper.klipper.getClipboardContents \
+         2>/dev/null || true)" == "('$CLIPBOARD_SENTINEL',)" ]] && \
+     find "$CLIPBOARD_ITEM_DATA" -mindepth 2 -type f -size +0c 2>/dev/null | grep -q .; then
+    CLIPBOARD_CAPTURED=1
+    break
+  fi
   sleep 0.1
 done
-if kill -0 "$CLIPBOARD_SOURCE_PID" 2>/dev/null; then
-  echo "Klipper never captured the Wayland clipboard from its source owner" >&2
+[[ "$CLIPBOARD_CAPTURED" -eq 1 ]] || {
+  echo "Klipper never captured and stored the Wayland clipboard from its source owner" >&2
   exit 1
-fi
-wait "$CLIPBOARD_SOURCE_PID"
+}
+unset CLIPBOARD_CAPTURED
+kill "$CLIPBOARD_SOURCE_PID"
+wait "$CLIPBOARD_SOURCE_PID" 2>/dev/null || true
 unset CLIPBOARD_SOURCE_PID
 CLIPBOARD_VALUE=''
 for _attempt in $(seq 1 150); do
@@ -245,29 +341,88 @@ NATIVE_APP_IPC_BASELINE_IDS="$(
 )"
 rm -f -- "$NATIVE_APP_IPC_READY_FILE" "$RENDERER_READY_FILE"
 
+# Announce an active assistive technology the standard way, as Orca does, before
+# the shell starts: under Wayland the real desktop's document otherwise reached
+# AT-SPI empty (document web with no children), although the same build is
+# fully exposed on X11 with ACCESSIBILITY_ENABLED alone.
+gdbus call --session \
+  --dest org.a11y.Bus \
+  --object-path /org/a11y/bus \
+  --method org.freedesktop.DBus.Properties.Set \
+  org.a11y.Status IsEnabled '<true>' >/dev/null
+
+# In smoke mode the shell runs its IPC smoke and reports success only once its
+# backend answers /readyz (waitForSmokeBackendReady in frontend/electron/main.cjs).
+# On a device the Agent service answers it; this gate covers the shell and KWin,
+# not the Agent, so a loopback responder stands in. Like the X11 smoke it also
+# reports authentication disabled at /api/auth/status (an Agent configured
+# without auth); other API paths return 404.
+READYZ_PORT_FILE="$LOG_DIR/readyz-stub.port"
+rm -f -- "$READYZ_PORT_FILE"
+python3 -c '
+import http.server, os, sys
+
+ANSWERS = {
+    "/readyz": b"{\"status\":\"ready\"}",
+    "/api/auth/status": b"{\"enabled\":false,\"jwt_available\":false,\"allow_registration\":false,\"exempt_paths\":[],\"session_present\":false}",
+}
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # keep-alive: fewer sockets under load
+    def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        body = ANSWERS.get(path, b"{}")
+        self.send_response(200 if path in ANSWERS else 404)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args):
+        pass
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+with open(sys.argv[1] + ".tmp", "w", encoding="ascii") as stream:
+    stream.write(str(server.server_address[1]))
+os.replace(sys.argv[1] + ".tmp", sys.argv[1])
+server.serve_forever()
+' "$READYZ_PORT_FILE" >"$LOG_DIR/readyz-stub.log" 2>&1 &
+READYZ_STUB_PID=$!
+for _attempt in $(seq 1 50); do
+  [[ -s "$READYZ_PORT_FILE" ]] && break
+  sleep 0.1
+done
+[[ -s "$READYZ_PORT_FILE" ]] || {
+  echo "loopback readiness responder did not start" >&2
+  exit 1
+}
+export ECHO_BACKEND_URL="http://127.0.0.1:$(cat "$READYZ_PORT_FILE")"
+
 WAYLAND_ECHO_ARGUMENTS=(
   --class=echo-shell
   --ozone-platform=wayland
   --force-renderer-accessibility
   --enable-features=UseOzonePlatform
 )
-KWIN_GLASS_SYNC="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.SyncSurfaces" \
-  '{"version":2,"surfaces":[{"x":20,"y":20,"width":320,"height":180,"cornerRadius":28,"material":"thick"}]}')"
-[[ "$KWIN_GLASS_SYNC" == "(true,)" ]] || {
-  echo "KWin Liquid Glass effect rejected its bounded smoke region" >&2
-  exit 1
-}
-KWIN_GLASS_MATERIAL_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_MATERIAL_STATUS" == *ready:1:native-optics* ]] || {
-  echo "KWin Liquid Glass effect did not activate compositor-native optics" >&2
-  exit 1
-}
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  KWIN_GLASS_SYNC="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.SyncSurfaces" \
+    '{"version":2,"surfaces":[{"x":20,"y":20,"width":320,"height":180,"cornerRadius":28,"material":"thick"}]}')"
+  [[ "$KWIN_GLASS_SYNC" == "(true,)" ]] || {
+    echo "KWin Liquid Glass effect rejected its bounded smoke region" >&2
+    exit 1
+  }
+  KWIN_GLASS_MATERIAL_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_MATERIAL_STATUS" == *ready:1:native-optics* ]] || {
+    echo "KWin Liquid Glass effect did not activate compositor-native optics" >&2
+    exit 1
+  }
+fi
 if [[ "$(id -u)" -eq 0 ]]; then
   WAYLAND_ECHO_ARGUMENTS+=(--no-sandbox)
 fi
@@ -283,7 +438,9 @@ QT_QPA_PLATFORM=wayland \
   >"$LOG_DIR/echo-desktop-wayland.log" 2>&1 &
 ECHO_PID=$!
 
-for _attempt in $(seq 1 300); do
+# The shell itself waits up to 75 s for its backend before running the IPC
+# smoke; 30 s was shorter than a loaded runner needs for the real desktop.
+for _attempt in $(seq 1 900); do
   [[ -f "$NATIVE_APP_IPC_READY_FILE" && -f "$RENDERER_READY_FILE" ]] && break
   kill -0 "$ECHO_PID" 2>/dev/null || {
     echo "packaged Echo Desktop exited before completing its Wayland IPC smoke" >&2
@@ -365,10 +522,14 @@ printf '%s' "$CURRENT_WINDOWS_JSON" | \
 rm -f -- "$NATIVE_APP_IPC_READY_FILE"
 echo "ECHO_NATIVE_APP_IPC_READY session=wayland app=org.kde.kcalc path=preload-ipc-gio result=zero-exit cleanup=closed"
 
-timeout 20s python3 "$ACCESSIBILITY_PROBE" \
+# The real desktop needs its auth checks and lazily loaded chunks before the
+# landmark exists; on a loaded runner that has taken longer than 15 s. Stay
+# inside the shell's 45 s smoke hold (ECHO_SMOKE_HOLD_MS).
+timeout 45s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$ECHO_PID" \
-  --required-name "Echo OS 桌面" \
-  --timeout-seconds 15 \
+  --required-name "ECHO OS 桌面" \
+  --timeout-seconds 40 \
+  --report-on-failure \
   >"$LOG_DIR/accessibility-tree-echo-wayland.log"
 grep -Fxq 'ECHO_ACCESSIBILITY_TREE_READY provider=at-spi2 application=echo' \
   "$LOG_DIR/accessibility-tree-echo-wayland.log"
@@ -380,19 +541,23 @@ if ! wait "$ECHO_PID"; then
 fi
 unset ECHO_PID
 rm -f -- "$RENDERER_READY_FILE"
-gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Clear" >/dev/null
-KWIN_GLASS_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
-  echo "KWin Liquid Glass effect did not clear its smoke region" >&2
-  exit 1
-}
-echo "ECHO_KWIN_GLASS_EFFECT_READY provider=kwin-wayland-effect region=bounded cleanup=cleared optics=kwin"
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Clear" >/dev/null
+  KWIN_GLASS_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
+    echo "KWin Liquid Glass effect did not clear its smoke region" >&2
+    exit 1
+  }
+  echo "ECHO_KWIN_GLASS_EFFECT_READY provider=kwin-wayland-effect region=bounded cleanup=cleared optics=kwin"
+else
+  echo "ECHO_KWIN_GLASS_EFFECT_UNSUPPORTED provider=kwin-wayland-effect compositor=qpainter fallback=webgl"
+fi
 
 GDK_BACKEND=wayland python3 "$WAYLAND_APP" \
   >"$LOG_DIR/wayland-app.log" 2>&1 &

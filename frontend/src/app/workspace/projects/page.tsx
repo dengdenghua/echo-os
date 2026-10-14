@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -25,6 +25,7 @@ import {
   CircleIcon,
   ClipboardListIcon,
   FlagIcon,
+  FolderKanbanIcon,
   ListChecksIcon,
   MessageSquareIcon,
   PlayIcon,
@@ -37,19 +38,26 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { authHeaders, jsonAuthHeaders } from "@/core/auth/api";
+import { authHeaders, currentActorId, jsonAuthHeaders } from "@/core/auth/api";
 import { getBackendBaseURL } from "@/core/config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   WorkspaceBody,
   WorkspaceContainer,
 } from "@/components/workspace/workspace-container";
 import { useI18n } from "@/core/i18n/hooks";
 import { CreateProjectDialog } from "@/components/workspace/create-project-dialog";
-import { type Project, useEnsureProjectHome } from "@/core/projects/hooks";
+import {
+  projectQueryKey,
+  projectsQueryKey,
+  type Project,
+  useEnsureProjectHome,
+} from "@/core/projects/hooks";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 // ─── types（与 runtime/projectos/pm.py 的返回结构对应）───────────────
 
@@ -298,7 +306,7 @@ const HEALTH_LABEL: Record<string, string> = {
 };
 
 const HEALTH_TONE: Record<Health, string> = {
-  on_track: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  on_track: "bg-core/15 text-core border-core/30",
   at_risk: "bg-amber-500/15 text-amber-600 border-amber-500/30",
   overdue: "bg-orange-500/15 text-orange-600 border-orange-500/30",
   blocked: "bg-rose-500/15 text-rose-600 border-rose-500/30",
@@ -307,7 +315,7 @@ const HEALTH_TONE: Record<Health, string> = {
 
 const STATUS_TONE: Record<string, string> = {
   planning: "bg-muted text-muted-foreground",
-  running: "bg-emerald-500/15 text-emerald-600",
+  running: "bg-core/15 text-core",
   blocked: "bg-rose-500/15 text-rose-600",
   done: "bg-sky-500/15 text-sky-600",
   failed: "bg-rose-500/15 text-rose-600",
@@ -385,13 +393,15 @@ function MetricCard({
 
 export default function ProjectsPage() {
   const { t } = useI18n();
+  const { search } = useLocation();
   const navigate = useNavigate();
   const ensureProjectHome = useEnsureProjectHome();
+  const actor = currentActorId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
   const projectsQuery = useQuery<ProjectSummary[]>({
-    queryKey: ["projects"],
+    queryKey: projectsQueryKey(actor),
     queryFn: async () => {
       const res = await fetch(BASE(), { headers: authHeaders() });
       if (!res.ok) throw new ProjectRequestError(traceIdFromResponse(res));
@@ -420,7 +430,7 @@ export default function ProjectsPage() {
   }, [projects, selectedId]);
 
   const detailQuery = useQuery<ProjectFull>({
-    queryKey: ["project", selectedId],
+    queryKey: projectQueryKey(selectedId, actor),
     queryFn: async () => {
       const res = await fetch(`${BASE()}/${selectedId}`, {
         headers: authHeaders(),
@@ -471,9 +481,13 @@ export default function ProjectsPage() {
   const openProjectGroup = (project: Project) => {
     ensureProjectHome.mutate(project, {
       onSuccess: ({ threadId }) =>
-        navigate(`/workspace/realtime/${encodeURIComponent(threadId)}`, {
-          state: { openProjectWorkbench: true },
-        }),
+        navigate(
+          preserveWorkbenchPresentation(
+            `/workspace/realtime/${encodeURIComponent(threadId)}`,
+            search,
+          ),
+          { state: { openProjectWorkbench: true } },
+        ),
       onError: () => toast.error("项目工作群打开失败，请重试"),
     });
   };
@@ -484,13 +498,21 @@ export default function ProjectsPage() {
         <div className="flex h-full w-full min-h-0 flex-col items-stretch">
           {/* Header */}
           <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b px-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <h1>🗂️ {t.sidebar.navProjects}</h1>
-              <span className="text-xs font-normal text-muted-foreground">
+            {/* At phone width the subtitle squeezed the title into one
+                character per line; it gives way below sm. */}
+            <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <FolderKanbanIcon
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+              />
+              <h1 className="shrink-0 whitespace-nowrap">
+                {t.sidebar.navProjects}
+              </h1>
+              <span className="min-w-0 truncate text-xs font-normal text-muted-foreground max-sm:hidden">
                 里程碑健康度 · 风险 · 下一步 · 复盘 —— 真实 PM 视角
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -513,9 +535,7 @@ export default function ProjectsPage() {
           </div>
 
           {projectsQuery.isLoading ? (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              加载中…
-            </div>
+            <PanelLoading label="正在加载项目" className="flex-1" />
           ) : projectsQuery.isError ? (
             <ProjectLoadFailure
               error={projectsQuery.error}
@@ -530,7 +550,10 @@ export default function ProjectsPage() {
                 开启一个里程碑式项目，或先建一个项目。
               </div>
               <Link
-                to="/workspace/realtime/new"
+                to={preserveWorkbenchPresentation(
+                  "/workspace/realtime/new",
+                  search,
+                )}
                 className="text-xs text-primary underline-offset-4 hover:underline"
               >
                 去新建会话
@@ -560,7 +583,7 @@ export default function ProjectsPage() {
                         {p.status && (
                           <Badge
                             variant="outline"
-                            className={`shrink-0 text-[10px] ${STATUS_TONE[p.status] ?? ""}`}
+                            className={`shrink-0 text-xs ${STATUS_TONE[p.status] ?? ""}`}
                           >
                             {STATUS_LABEL[p.status] ?? p.status}
                           </Badge>
@@ -577,9 +600,7 @@ export default function ProjectsPage() {
               {/* Main PM view */}
               <div className="min-w-0 flex-1 overflow-y-auto">
                 {detailQuery.isLoading ? (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    加载中…
-                  </div>
+                  <PanelLoading label="正在加载项目详情" className="h-full" />
                 ) : detailQuery.isError ? (
                   <ProjectLoadFailure
                     error={detailQuery.error}
@@ -752,14 +773,14 @@ export default function ProjectsPage() {
                                     </span>
                                     <Badge
                                       variant="outline"
-                                      className={`gap-1 text-[10px] ${HEALTH_TONE[m.health] ?? ""}`}
+                                      className={`gap-1 text-xs ${HEALTH_TONE[m.health] ?? ""}`}
                                     >
                                       {healthIcon(m.health)}
                                       {HEALTH_LABEL[m.health] ?? m.health}
                                     </Badge>
                                     <Badge
                                       variant="outline"
-                                      className={`text-[10px] ${PRIORITY_TONE[m.priority] ?? ""}`}
+                                      className={`text-xs ${PRIORITY_TONE[m.priority] ?? ""}`}
                                     >
                                       优先级 {m.priority}
                                     </Badge>
@@ -793,7 +814,7 @@ export default function ProjectsPage() {
                                 </div>
                                 {m.overdue_tasks.length > 0 && (
                                   <div className="mt-3 space-y-2 border-t border-orange-500/15 pt-2.5">
-                                    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-orange-600/90">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-orange-600/90">
                                       <TimerIcon className="size-3" />
                                       逾期任务 · {m.overdue_tasks.length}
                                     </div>
@@ -805,7 +826,7 @@ export default function ProjectsPage() {
                                         <div className="text-xs leading-relaxed text-orange-800">
                                           {o.goal}
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1 text-[11px] text-orange-600/80">
+                                        <div className="mt-1 flex items-center gap-1 text-xs text-orange-600/80">
                                           <CalendarRangeIcon className="size-3" />
                                           截止 {fmtDate(o.due_at)} · 已逾期
                                         </div>
@@ -865,7 +886,7 @@ export default function ProjectsPage() {
                           <Card>
                             <CardHeader className="pb-2">
                               <CardTitle className="flex items-center gap-1.5 text-sm">
-                                <ListChecksIcon className="size-4 text-emerald-500" />
+                                <ListChecksIcon className="size-4 text-core" />
                                 下一步动作
                               </CardTitle>
                             </CardHeader>
@@ -882,7 +903,7 @@ export default function ProjectsPage() {
                                 >
                                   <Badge
                                     variant="outline"
-                                    className={`mt-0.5 shrink-0 text-[10px] ${PRIORITY_TONE[a.priority] ?? ""}`}
+                                    className={`mt-0.5 shrink-0 text-xs ${PRIORITY_TONE[a.priority] ?? ""}`}
                                   >
                                     {a.priority}
                                   </Badge>

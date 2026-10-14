@@ -8,7 +8,7 @@
   "module_id": "narrative",
   "version": "0.2.0",
   "release_summary": "0.2.0：支持角色、世界观、剧情分支与正典资产协作。",
-  "host_api": ">=0.2,<0.3",
+  "host_api": ">=0.2,<0.4",
   "dependencies": [],
   "entry": "dist/index.html",
   "runtime_plugin": "narrative_studio",

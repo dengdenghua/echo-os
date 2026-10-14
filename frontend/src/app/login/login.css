@@ -1,37 +1,37 @@
 .echo-login-shell,
 html:has(.echo-login-shell),
 body:has(.echo-login-shell) {
-  background: #020308;
+  background: #090a0c;
   color-scheme: dark;
 }
 
 html:has(.echo-login-shell)::-webkit-scrollbar-track {
-  background: #020308;
+  background: #090a0c;
 }
 
 html:has(.echo-login-shell) {
-  scrollbar-color: rgba(141, 167, 255, 0.3) #020308;
+  scrollbar-color: rgba(238, 241, 244, 0.3) #090a0c;
 }
 
 .echo-login-shell {
-  --background: #070a14;
-  --foreground: #f3f5fb;
-  --card: rgba(8, 12, 24, 0.82);
-  --card-foreground: #f3f5fb;
-  --popover: #0a0e1b;
-  --popover-foreground: #f3f5fb;
-  --primary: #8da7ff;
-  --primary-foreground: #050710;
-  --secondary: rgba(29, 38, 72, 0.72);
-  --secondary-foreground: #e4e9f7;
-  --muted: rgba(24, 31, 55, 0.72);
-  --muted-foreground: #9aa4b9;
-  --accent: rgba(54, 70, 128, 0.38);
-  --accent-foreground: #f4f6ff;
-  --border: rgba(161, 179, 231, 0.17);
-  --input: rgba(161, 179, 231, 0.2);
-  --ring: #7be9ff;
-  color: #f3f5fb;
+  --background: #090a0c;
+  --foreground: #eef1f4;
+  --card: rgba(9, 10, 12, 0.82);
+  --card-foreground: #eef1f4;
+  --popover: #101216;
+  --popover-foreground: #eef1f4;
+  --primary: #eef1f4;
+  --primary-foreground: #0a0b0d;
+  --secondary: rgba(23, 26, 31, 0.72);
+  --secondary-foreground: #eef1f4;
+  --muted: rgba(23, 26, 31, 0.72);
+  --muted-foreground: #9aa3ae;
+  --accent: rgba(23, 26, 31, 0.38);
+  --accent-foreground: #eef1f4;
+  --border: rgba(238, 241, 244, 0.17);
+  --input: rgba(238, 241, 244, 0.2);
+  --ring: #6fe3f0;
+  color: #eef1f4;
   isolation: isolate;
 }
 
@@ -48,11 +48,7 @@ html:has(.echo-login-shell) {
   z-index: -1;
   overflow: hidden;
   background:
-    radial-gradient(
-      circle at 70% 48%,
-      rgba(61, 78, 166, 0.12),
-      transparent 24%
-    ),
+    radial-gradient(circle at 70% 48%, rgba(23, 26, 31, 0.12), transparent 24%),
     linear-gradient(
       180deg,
       rgba(0, 0, 0, 0.18),
@@ -68,17 +64,17 @@ html:has(.echo-login-shell) {
   background:
     linear-gradient(
       90deg,
-      #020308 0,
+      #090a0c 0,
       transparent 11%,
       transparent 89%,
-      #020308 100%
+      #090a0c 100%
     ),
     linear-gradient(
       180deg,
-      rgba(2, 3, 8, 0.28),
+      rgba(9, 10, 12, 0.28),
       transparent 26%,
       transparent 78%,
-      rgba(2, 3, 8, 0.72)
+      rgba(9, 10, 12, 0.72)
     );
 }
 
@@ -93,7 +89,7 @@ html:has(.echo-login-shell) {
     ),
     radial-gradient(
       circle,
-      rgba(123, 233, 255, 0.28) 0 0.55px,
+      rgba(111, 227, 240, 0.28) 0 0.55px,
       transparent 0.85px
     );
   background-position:
@@ -122,7 +118,7 @@ html:has(.echo-login-shell) {
   right: 6%;
   width: min(46vw, 620px);
   height: min(46vw, 620px);
-  background: rgba(61, 104, 255, 0.42);
+  background: rgba(154, 163, 174, 0.42);
 }
 
 .echo-login-aurora-violet {
@@ -213,11 +209,11 @@ html:has(.echo-login-shell) {
 }
 
 .echo-age-particle:nth-child(3n) {
-  fill: #7be9ff;
+  fill: #6fe3f0;
 }
 
 .echo-age-particle:nth-child(5n) {
-  fill: #c197ff;
+  fill: #9aa3ae;
 }
 
 .echo-age-core {
@@ -238,7 +234,7 @@ html:has(.echo-login-shell) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(161, 179, 231, 0.09);
+  border-bottom: 1px solid rgba(238, 241, 244, 0.09);
 }
 
 /* Echo OS owns the single traffic-light row and overlays it above the iframe. */
@@ -354,18 +350,18 @@ html:has(.echo-login-shell) {
 .echo-login-eyebrow {
   justify-content: center;
   width: 100%;
-  color: #8da7ff;
+  color: #eef1f4;
   font-size: 8px;
   letter-spacing: 0.38em;
   text-indent: 0.38em;
-  text-shadow: 0 0 14px rgba(141, 167, 255, 0.5);
+  text-shadow: 0 0 14px rgba(238, 241, 244, 0.5);
 }
 
 .echo-login-title {
   margin-top: 18px;
   display: flex;
   flex-direction: column;
-  color: #f3f5fb;
+  color: #eef1f4;
   font-size: clamp(49px, 4.7vw, 72px);
   font-weight: 160;
   line-height: 0.94;
@@ -451,9 +447,9 @@ html:has(.echo-login-shell) {
   height: 1px;
   background: linear-gradient(
     90deg,
-    rgba(106, 132, 219, 0.1),
+    rgba(154, 163, 174, 0.1),
     #6173ae,
-    rgba(106, 132, 219, 0.1)
+    rgba(154, 163, 174, 0.1)
   );
 }
 
@@ -487,8 +483,8 @@ html:has(.echo-login-shell) {
   font-size: 7px;
   background: radial-gradient(
     circle,
-    rgba(69, 87, 160, 0.42),
-    rgba(6, 9, 20, 0.9) 68%
+    rgba(23, 26, 31, 0.42),
+    rgba(9, 10, 12, 0.9) 68%
   );
   box-shadow: 0 0 20px rgba(103, 128, 232, 0.15);
 }
@@ -516,13 +512,17 @@ html:has(.echo-login-shell) {
 
 .echo-login-card {
   position: relative;
-  border-color: rgba(161, 179, 231, 0.17) !important;
+  border-color: rgba(238, 241, 244, 0.17) !important;
   background:
-    radial-gradient(circle at 82% 0, rgba(80, 106, 214, 0.17), transparent 32%),
-    linear-gradient(165deg, rgba(10, 14, 27, 0.84), rgba(3, 5, 10, 0.9)) !important;
+    radial-gradient(
+      circle at 82% 0,
+      rgba(154, 163, 174, 0.17),
+      transparent 32%
+    ),
+    linear-gradient(165deg, rgba(10, 14, 27, 0.84), rgba(9, 10, 12, 0.9)) !important;
   box-shadow:
     0 34px 90px rgba(0, 0, 0, 0.42),
-    0 0 60px rgba(87, 93, 210, 0.06),
+    0 0 60px rgba(154, 163, 174, 0.06),
     inset 0 1px rgba(255, 255, 255, 0.025) !important;
 }
 
@@ -540,7 +540,7 @@ html:has(.echo-login-shell) {
     rgba(173, 124, 255, 0.52),
     transparent
   );
-  box-shadow: 0 0 18px rgba(118, 152, 255, 0.32);
+  box-shadow: 0 0 18px rgba(238, 241, 244, 0.32);
 }
 
 .echo-login-card-kicker {
@@ -554,7 +554,7 @@ html:has(.echo-login-shell) {
   height: 5px;
   border-radius: 50%;
   background: #8ea8ff;
-  box-shadow: 0 0 9px 2px rgba(118, 152, 255, 0.44);
+  box-shadow: 0 0 9px 2px rgba(238, 241, 244, 0.44);
 }
 
 .echo-login-form label {
@@ -564,27 +564,27 @@ html:has(.echo-login-shell) {
 }
 
 .echo-login-input {
-  border-color: rgba(161, 179, 231, 0.2) !important;
-  background: rgba(5, 8, 17, 0.68) !important;
-  color: #f3f5fb !important;
+  border-color: rgba(238, 241, 244, 0.2) !important;
+  background: rgba(9, 10, 12, 0.68) !important;
+  color: #eef1f4 !important;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.025) !important;
 }
 
 .echo-login-input:hover {
-  border-color: rgba(159, 183, 255, 0.34) !important;
+  border-color: rgba(238, 241, 244, 0.34) !important;
 }
 
 .echo-login-input:focus-visible {
-  border-color: rgba(123, 233, 255, 0.62) !important;
-  background: rgba(7, 11, 22, 0.9) !important;
-  box-shadow: 0 0 0 3px rgba(123, 233, 255, 0.08) !important;
+  border-color: rgba(111, 227, 240, 0.62) !important;
+  background: rgba(9, 10, 12, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(111, 227, 240, 0.08) !important;
 }
 
 .echo-login-input[aria-invalid="true"],
 .echo-login-input[aria-invalid="true"]:hover,
 .echo-login-input[aria-invalid="true"]:focus-visible {
-  border-color: rgba(248, 91, 114, 0.78) !important;
-  box-shadow: 0 0 0 3px rgba(248, 91, 114, 0.1) !important;
+  border-color: rgba(255, 107, 120, 0.78) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 120, 0.1) !important;
 }
 
 .echo-login-code-button {
@@ -596,28 +596,28 @@ html:has(.echo-login-shell) {
 
 .echo-login-code-button:hover {
   border-color: rgba(153, 177, 255, 0.48) !important;
-  background: rgba(28, 37, 75, 0.35) !important;
+  background: rgba(23, 26, 31, 0.35) !important;
 }
 
 .echo-login-primary-button {
   border: 1px solid rgba(167, 185, 239, 0.38);
   background: linear-gradient(
     120deg,
-    rgba(84, 108, 196, 0.94),
+    rgba(154, 163, 174, 0.94),
     rgba(105, 70, 171, 0.9)
   ) !important;
   color: #f7f9ff !important;
-  box-shadow: 0 14px 36px rgba(74, 91, 196, 0.2) !important;
+  box-shadow: 0 14px 36px rgba(154, 163, 174, 0.2) !important;
 }
 
 .echo-login-primary-button:hover {
-  border-color: rgba(159, 183, 255, 0.66);
+  border-color: rgba(238, 241, 244, 0.66);
   background: linear-gradient(
     120deg,
-    rgba(96, 124, 219, 0.98),
+    rgba(154, 163, 174, 0.98),
     rgba(121, 79, 195, 0.94)
   ) !important;
-  box-shadow: 0 17px 44px rgba(74, 91, 196, 0.3) !important;
+  box-shadow: 0 17px 44px rgba(154, 163, 174, 0.3) !important;
   transform: translateY(-1px);
 }
 
@@ -633,7 +633,7 @@ html:has(.echo-login-shell) {
 }
 
 .echo-login-security-note svg {
-  color: #83d5ad;
+  color: #6fe3f0; /* Graphite core: the sign-in shell is always dark */
 }
 
 .echo-login-footer {

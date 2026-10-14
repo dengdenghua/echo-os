@@ -1,6 +1,7 @@
 import { BotIcon, UsersIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
+import { AgentAvatarTile } from "@/components/brand/agent-avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -100,21 +101,13 @@ export function PresenceAvatars({
             <Tooltip key={agent.name}>
               <TooltipTrigger asChild>
                 <div className="relative flex h-8 shrink-0 items-center">
-                  {agent.avatar_url ? (
-                    <img
-                      src={agent.avatar_url}
-                      alt={name}
-                      className="size-5 rounded object-cover opacity-90"
-                    />
-                  ) : agent.icon?.trim() ? (
-                    <span className="text-base leading-none opacity-90">
-                      {agent.icon}
-                    </span>
-                  ) : (
-                    <span className="flex size-5 items-center justify-center rounded bg-muted text-xs font-semibold text-muted-foreground">
-                      {name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  <AgentAvatarTile
+                    agentId={agent.name}
+                    name={name}
+                    avatar={agent.icon}
+                    imageUrl={agent.avatar_url}
+                    className="size-5 rounded"
+                  />
                   <span className="absolute -bottom-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-background">
                     <BotIcon className="size-2 text-muted-foreground" />
                   </span>

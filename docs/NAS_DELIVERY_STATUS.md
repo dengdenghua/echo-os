@@ -1,75 +1,427 @@
 # Echo NAS 交付状态
 
-> 当前核查：2026-08-29。本文区分“代码已存在”“本机已证明”“仍需真机/产品化”，
+> 2026-09-09：消费级外部文件分享链已接入。文件管理器现在可对选中文件生成管理面板分享：
+> 创建和撤销均为 plan → 管理员密码一次性审批 → apply；令牌 256-bit、仅返回一次、状态端只存
+> HMAC，默认 7 天/100 次。匿名下载端点只接受令牌，不接受路径；每次下载重检创建者实时 ACL，
+> 并绑定设备/inode/大小/mtime，文件被替换或权限被撤回即失效。支持 HTTP Range、no-store、
+> no-referrer、nosniff，后台审计只记录 share ID，不写路径或令牌。后端新增 59 项定向回归全绿，
+> 前端分享 API/文件管理器回归与 TypeScript/ESLint 全绿。公网反向代理、真实手机/桌面跨网下载
+> 仍需在冻结制品上验收；该功能不等于已开放公网端口。最终工作树复核的公开源码门为
+> **3127 passed、114 skipped、0 failed**（421.42 秒）；前端定向分享/文件管理器测试、TypeScript、
+> ESLint、生产构建，以及 wheel 打包回归 7 项均通过。
+
+> 2026-09-07 装机复核：[当前验证记录](PROVISION_VALIDATION_2026-09-07.md)。
+> 诊断五载荷介质已完成 UEFI 干净安装；离线首启超时后手工续跑成功，重启后基础服务、ZFS 模块与健康接口通过。当前源码已将冷启动 502 改为带重试提示的结构化 503；前端只对精确的 `appliance_starting` 错误码按服务端提示自动重试，最多等待 120 秒，普通 503 仍立即显式报错；真实 NAS 入口 `/#/desktop` 在主认证或 appliance 会话未确认时失败关闭，仅明确 404 才兼容非 appliance 开发模式。登录方式探测会等待恢复窗口结束，不会提前耗尽自身重试而误报“服务未启用”。本机 Chromium 已覆盖自动恢复、普通 503 和 appliance 状态 503 三条链路；`clip_studio` 的可选媒体依赖也已改为按功能延迟加载。这些修复尚未进入正式制品，最终镜像验收仍未关闭。
+> 当前源码已取消 firstboot 的 60 分钟全局硬超时，避免低功耗 NAS 或软件模拟环境在
+> 本地 ZFS/Python 安装即将完成时被误杀；该修复仍需随最终 ISO 做一次全新首启验证。
+> Windows Codex 离线包已统一第三方许可文件的生成、运行时校验与 CI 预检路径；本机已从
+> 锁定依赖实际生成 20 文件 bundle 并通过生产运行时逐项验收。它仍不是签名安装包，正式
+> Windows artifact 及来源证明继续以受保护 CI 的同 revision 结果为准。
+> 随后修复原生账户 SecretStr 转换、SMB Unix 组映射及 usershare 定义目录只读权限；临时部署修复的隔离 VM 已通过真实账户、ACL、SMB3/NFSv4 读写与拒绝检查；当前相关回归 273 项通过、2 项跳过。VM 已还原；正式镜像重建及异机客户端验收仍未完成。
+> 2026-09-08 又将当前工作树原生存储面的 32 个同版本依赖模块临时部署到隔离 VM，在真实 ext4
+> 回环卷上经 HTTP 登录、管理员单次审批完成共享目录创建、根目录 POSIX ACL 更新、私网 NFS
+> 创建及 `exportfs` 活体回读、NFS 安全移除、保数据解除登记和空目录删除；所有写后验证通过，
+> 测试数据、认证、注册表、exports 与 VM 源码均已恢复。后端定向回归 109 项通过、2 项跳过，
+> 共享面前端 39 项及完整 TypeScript 检查通过；这仍不替代正式镜像和异机 NFS 客户端验收。
+> 2026-09-08 原生 Time Machine over SMB 窄写面已接入：独立受管 Samba 配置、单用户访问、
+> 空专用目录约束、容量上限、`fruit` 全局一致性、计划绑定、管理员审批、活体回读和精确回滚均已
+> 落地。Debian 13 x86_64 隔离 VM 已验证真实 `smbd/testparm` 配置、匿名访问拒绝、认证写入、
+> 停用后共享消失且数据 SHA-256 不变；证据
+> `_vmtest/time-machine-linux-runtime.json` 的 SHA-256 为
+> `4ff492986ca905cb49b042a2e148a85cc63bc6d3daa339f53dc35774416361b7`。该证据只关闭
+> Linux/Samba 数据面，不替代真实 macOS 客户端的首次备份、增量备份和恢复验收。
+> 严格离线系统包清单现显式包含 `samba-vfs-modules`，不再依赖被
+> `--no-install-recommends` 排除的推荐依赖；旧设备的 `nas-maintenance-v3` 升级迁移也会
+> 计划绑定并补装该包、受管配置和 Samba `[global]` include，`testparm` 或服务重载失败时
+> 恢复原配置。Debian 13 x86_64 隔离 VM 已完成 v2 基线到 v3 的真实 plan/apply：仅补入
+> Time Machine 配置与 include，未重复 `enable --now` 已启用单元，并通过 `testparm`、`smbd`
+> 活体和安装哈希回读；证据 `_vmtest/time-machine-host-migration-v3.json` 的 SHA-256 为
+> `44aeb397b9a30a3f4520ebcd6b2ed35522692995bc0f09fe781a2d5c8b7f686a`。相关升级/装机合同
+> 现为 58 项通过；冻结候选与真实旧物理设备升级仍属于发布验收门。
+> 同日 NAS 数据备份 CLI 在 Debian 13 x86_64 隔离 VM 的独立 1 GiB ext4 测试盘完成真实
+> 仓库初始化、全数据读取校验和路径脱敏的空索引列举，并验证旧 Compose 路径推导与伪造同盘
+> 状态根均失败关闭。实测修复了三个此前 mock 未覆盖的 Linux 阻塞：Debian `/run/lock` 权限与
+> 过严父目录检查冲突、restic 参数误写为不存在的 `--repository`，以及多条 restic 命令之间密码
+> memfd 未回卷。证据 `_vmtest/native-backup-layout-runtime.json` 的 SHA-256 为
+> `a67ef1ec91fede0c7b21119074ce90df04310cbac51649beb3c815ca020e6b4d`；旧 VM 基线缺少 restic，
+> 本次在只读快照来宾中临时安装 Debian 官方 0.18.0，当前严格离线包清单已显式包含该包。
+> 同一 Debian 13 x86_64 隔离 VM 随后用两块独立 Btrfs 数据盘和一块独立 ext4 仓库盘验证原生备份集
+> `plan-set`、`backup-set`、`list-sets`、`plan-restore-set` 与 `restore-set`：真实只读子快照完成加密
+> restic 备份和全数据读取校验，同一 set 重试命中原快照且不重复传输，认证集合索引可列举；删除
+> 两个原共享并重建空 Btrfs subvolume 后，两卷数据均恢复到各自同卷的新 staging subvolume，原子
+> 交换、内容复核和旧空 subvolume 清理全部通过。另在第一卷已交换而第二卷尚未交换、收据仍为
+> prepared 的精确窗口注入中断，重入根据第一卷新旧 subvolume UUID 对调关系识别已提交状态，再
+> 前向完成第二卷，没有重复恢复；错误父 subvolume 与 mode-0644
+> manifest 均失败关闭，公开结果不含宿主
+> 路径。实测同时修正了 Btrfs 不同 subvolume 可能获得不同 `st_dev`、不能以设备号判断同文件系统的
+> 假设，现以 filesystem UUID 与挂载源身份校验。证据
+> `_vmtest/backup-set-plan-runtime.json` 的 SHA-256 为
+> `d6fd7767c6042d68323de80be8aaaf108aabb4b5f6423ffb3ec78846b7fafd57`；旧 VM 基线缺少 restic，
+> 本次在只读系统快照中临时安装，当前严格离线包清单已经包含该依赖；VM 已停止。该证据覆盖两个
+> 独立 Btrfs 文件系统成员的同轮备份、正常恢复、重复验证，以及第一卷已提交/第二卷未提交窗口的
+> 跨卷中断重入；还覆盖新定时 runner 对共同自动快照批次的首次真实加密备份、全仓读取校验和同集合
+> 幂等重试，且 Debian `systemd-analyze verify` 已接受新 service/timer。双成员自动化合同测试也已通过。
+> 同一类 Debian 13 x86_64 隔离 VM 又完成浏览器管理面对应的一次性仓库凭据生命周期：在独立 ext4
+> 仓库盘初始化真实 Restic 仓库并全数据读取校验，确认 root/mode-0600 的 systemd 加密凭据可直接
+> 解密且可由临时 `LoadCredentialEncrypted` 服务加载；删除测试凭据后，错误口令连接被拒绝且没有
+> 写回凭据，正确口令则重新连接同一仓库身份并通过检查。公开计划不含口令或宿主路径。证据
+> `_vmtest/nas-backup-credential-runtime.json` 的 SHA-256 为
+> `8817b155da17f73e29d9268ba5dc468aa1909232442206ffd314e89855367ac9`；VM 已清理并停止。
+> 同类 VM 继续验证了该凭据的安全轮换和断电恢复：Restic 0.18.0 仓库先增加并验证新密钥，
+> 再原子切换 root/mode-0600 systemd 加密凭据，最后撤销旧密钥。真实块盘上又分别注入
+> “新密钥已写、凭据仍旧”和“凭据已新、旧密钥仍在”两个中断窗口：root/mode-0600
+> 私有收据不含新旧明文口令，前者自动删除未切换的新密钥并保留旧访问，后者使用新凭据撤销
+> 旧密钥；两条路径都精确复核仓库 ID/密钥集合并清除收据。最终仓库 ID 不变、
+> 旧口令被拒绝、仓库只剩一个可用新密钥，且新凭据可解密并由临时
+> `LoadCredentialEncrypted` 服务加载。公开计划不含新旧口令或宿主路径。证据
+> `_vmtest/nas-backup-credential-rotation-runtime.json` 的 SHA-256 为
+> `c276cc21fd9849ac3d5a6815ca684ba7394b90da1cb902b9d6f8d6ab322f109d`；VM 已清理并停止。
+> 此前 GRUB 卷标根因结论已撤回；本次正常介质安装未复现换盘提示。
+> 下文的旧版 VM 与测试证据不等于当前工作树已完成交付验收。
+
+> 当前工作树 2026-09-08 的完整公开源码门首轮发现一处 Windows 子进程编码测试缺陷：父进程
+> 以 GBK 解码显式 UTF-8 的 release manifest 错误输出，导致 tamper 拒绝断言没有取得 stderr。
+> 固定子进程与解码均为 UTF-8 后，发布安装文件 39 项通过，完整门复跑得到
+> **2583 passed、106 skipped、0 failed**。该次复跑已包含 Windows WSD 发现合同；运行期间仍有
+> 另一会话修改前端文件，因此该结果证明
+> 本轮 Python/公开源码集合全绿，但仍不能冒充冻结 revision 的最终放行门禁。
+> 本轮 Time Machine v3 升级保护与 NAS 备份快照索引合同落地后，同一公开源码门再次完整运行，
+> 得到 **2600 passed、106 skipped、0 failed**（347.69 秒）；跳过项仍为当前 Windows 主机无法
+> 证明的 Linux/POSIX、物理设备和真实构建边界，不能据此关闭冻结候选或实机门。
+> 原生布局显式状态/NAS 根、restic `--repo` 参数、受保护运行锁目录及逐进程密码句柄回卷修复后，
+> 同一公开源码门于当前工作树第三次完整运行，得到 **2605 passed、107 skipped、0 failed**
+> （346.54 秒，退出码 0）。新增跳过项是只在 POSIX 主机执行的密码文件所有权/模式测试；对应真实
+> Debian 运行时行为已由上文 VM 证据覆盖。该结果仍不是冻结 revision 的最终放行结论。
+> 原生多卷 `plan-set → backup-set → list-sets` 合同与真实 VM 证据落地后，公开源码门第四次完整
+> 运行得到 **2614 passed、108 skipped、0 failed**（365.92 秒，退出码 0）。新增跳过项是
+> mode-0600 manifest 的 POSIX 所有权/模式单测；真实 Debian VM 已同时证明 0600 接受和 0644
+> 拒绝。工作树仍有并发未提交变更，因此这依旧是当前源码回归，不是冻结候选放行。
+> 多卷 `plan-restore-set → restore-set`、私有事务收据和交换后未记账故障恢复落地后，公开源码门
+> 第五次完整运行得到 **2622 passed、109 skipped、0 failed**（349.72 秒，退出码 0）。新增
+> 通过项覆盖集合恢复计划、正常/重复恢复与 committed 状态判断；新增跳过项是 POSIX 收据权限测试，
+> 对应 mode-0600、真实 Btrfs 交换及中断重入均已由上文 Debian VM 证据覆盖。冻结候选仍须重跑。
+> 定时备份 runner、私有 32 条运行历史和 systemd 单元加入公开源码分类后，第六次完整运行得到
+> **2634 passed、109 skipped、0 failed**（364.23 秒，退出码 0）。同一轮真实 Debian VM 还完成
+> systemd 单元解析、双卷定时备份首次写入和同批次幂等重试；这仍是活动工作树结果，不替代冻结
+> revision 的 ISO 与实体机最终放行。
+> 随后补入 NAS 备份管理面：认证状态/脱敏历史查询、路径不回显的策略预览、管理员密码单次审批、
+> 计划陈旧拒绝、root 原子写入及 timer 失败回滚均已接通，存储中心可显示运行就绪度和最近结果。
+> 纳入新 API/UI 后的公开源码门完整得到 **2647 passed、109 skipped、0 failed**（444.46 秒）；
+> 前端独占资源复跑为 **483 个文件、3494 项通过、2 项跳过、0 项失败**，完整 TypeScript 检查也通过。
+> 这些仍是活动工作树结果，不替代冻结 revision、正式 ISO 和实体机最终放行。
+> 一次性 NAS 仓库凭据初始化/连接管理面、共享 worker 计划绑定和不可覆盖原子落盘加入后，完整公开
+> 源码门得到 **2656 passed、109 skipped、0 failed**（372.06 秒，退出码 0）。前端在两次运行中
+> 分别遇到其他任务改写浏览器路由和工作区布局文件，失败项在各自当前内容上定向复跑均通过；文件
+> 稳定后的第三次完整运行得到 **487 个文件、3503 项通过、2 项跳过、0 项失败**，随后 18 项 Node
+> 脚本合同、完整 TypeScript、受影响 ESLint 与全部 workbench + 主应用生产构建均通过。真实凭据
+> 生命周期的 Linux 权限、systemd 加载和 Restic 行为由上文独立 VM 证据覆盖；其后补入的“取消审批
+> 立即清空两次仓库口令”由该面 4 项定向回归、TypeScript、ESLint 和再次生产构建覆盖。当前工作树仍非冻结
+> revision。
+> 安全凭据轮换的策略、API、精确审批/脱敏审计和前端确认流程加入后，定向后端
+> 76 项与新增密钥上限回归均通过，前端完整运行为 **488 个文件、3510 项通过、2 项跳过、
+> 0 项失败**，18 项 Node 合同、Electron/原生壳合同和完整生产构建同时通过。公开源码门
+> 得到 **2661 passed、109 skipped**，但在与前端构建并行时有 2 项无关失败：文件整理夹具
+> 生成了不可执行计划，Windows CPU 限额子进程未在 8 秒内退出；两项在资源空闲后精确复跑
+> **2/2 通过**，相关文件运行期间未改写。因此该轮结论是轮换链路已闭环且无已知回归，
+> 但仍不把这次非冻结、有并发任务的本地运行写成最终发布放行。
+> 为覆盖主机在轮换中途掉电的窗口，当前实现又加入 root/mode-0600 私有恢复收据，并在真实
+> Debian 13/Restic 0.18.0 块盘上分别完成“凭据切换前回滚”和“凭据切换后前向完成”故障注入；
+> 两条路径都保留仓库身份、精确收敛密钥集合、拒绝旧口令且不在收据中保存明文。纳入该恢复链后，
+> 公开源码门顺序复跑为 **2667 passed、109 skipped、0 failed**（368.15 秒），前端顺序复跑为
+> **492 个文件、3516 项通过、2 项跳过、0 项失败**（262.32 秒），18 项 Node 合同、Electron/
+> 原生壳合同、完整 TypeScript、受影响 ESLint 及全部 workbench + 主应用生产构建均通过。测试期间
+> 工作树仍有其它任务改写，故这些
+> 结果继续只作为活动源码证据，不替代冻结 revision、正式 ISO 和实体机放行。
+> 随后接入原位多卷恢复管理面后，公开源码门再次顺序全量运行，得到 **2688 passed、109 skipped、
+> 0 failed**（362.44 秒）；前端完整 `test` 得到 **499 个文件、3527 项通过、2 项跳过、0 项失败**
+> （245.30 秒），18 项 Node 合同、Electron/原生壳合同、完整 ESLint、TypeScript 与再次生产构建均
+> 通过。随后已实现换新盘目标重映射：恢复请求把每个认证来源一对一绑定到当前未发布的受管 Btrfs
+> 共享卷，核心引擎同时绑定目标文件系统身份、subvolume、inode 与路径摘要，并维持持久收据续跑。
+> 当前新增切片已通过 117 项 NAS 备份/恢复回归（另 6 项仅 POSIX 环境执行）和 4 项前端定向回归；
+> 本轮公开源码门随后完整复跑为 **2694 passed、109 skipped、0 failed**（376.32 秒），前端在共享工作树
+> 停稳后完整复跑为 **501 个文件、3529 项通过、2 项跳过、0 项失败**（278.95 秒），18 项 Node 合同、
+> Electron/原生壳合同及生产构建同时通过。真实 Debian 13 VM 随后把两个来源交叉恢复到另一块 Btrfs
+> 文件系统的新目标，验证目标文件系统绑定、内容、subvolume、mode-0600 收据、重复续跑、全仓读取和
+> 公开路径脱敏全部通过；证据为 `C:\飞牛os\_vmtest\backup-set-plan-runtime.json`（SHA-256
+> `d2a2c200b8471a923840d54bd9da7a1c91415dbc5f9ed426a491161c7faf1f92`），其源码摘要与当前文件一致。
+> 随后又在全新的 Debian 13 x86_64 QEMU appliance 上通过真实 HTTP 路由完成登录、替换盘候选枚举、
+> 认证备份集读取、计划绑定、未审批拒绝、管理员单次审批、恢复落盘、审批重放拒绝、收据续跑、
+> 全仓读取和防篡改审计验链；恢复前源 Btrfs 盘已卸载，公开响应与审计均未泄漏挂载路径。实测同时
+> 修复了恢复策略调用 systemd-creds 解密 helper 时遗漏显式 runner/二进制依赖的 500，并补入回归。
+> 证据为 `C:\飞牛os\_vmtest\nas-backup-restore-http-runtime.json`（SHA-256
+> `6251a79508c7f9642103fc9e783e9951fc6ccb1ea9ffa19f82f9ff002880d6e0`），其 35 个源码摘要与当前文件
+> 一致，VM 已正常关机。新增凭据依赖回归纳入完整公开源码门后，安静环境复跑为
+> **2695 passed、109 skipped、0 failed**（382.49 秒）。随后在恢复已完成原子交换、私有收据仍为
+> `promoting/prepared` 的精确窗口由宿主直接终止 QEMU，并以同一系统、源、仓库和目标盘冷启动。
+> Btrfs 合法恢复为交换未提交前态，但预先 `syncfs` 的 staging 数据完整；系统扫描有上限的
+> root/mode-0600 未完成收据，以密码认证的 Restic `--no-lock cat config` 将当前仓库 ID 与收据绑定，
+> 再触发默认 stale-only `unlock`（未使用 `--remove-all`），清除断电前 PID 的独占锁。冷启动后的
+> 浏览器式 `/restore/sets` 首次请求已能自动恢复认证集合列表，随后正式 HTTP 投影
+> `resumeRestore`、重新审批、全仓读取和内容验证收敛到 `verified`，令牌重放仍被拒绝，四个 qcow2
+> 也全部通过结构检查。证据为
+> `C:\飞牛os\_vmtest\nas-backup-restore-powercut-runtime.json`（SHA-256
+> `11fb30a41d6076c272f367dfce2b2a14d3453b17c1ff45d25075bed62dfccb69`），35 个源码摘要与当前文件
+> 一致，两个 boot ID 不同且 QEMU 已正常退出。纳入 `syncfs`、有界收据清单、仓库身份绑定、
+> stale-only unlock 和刷新后集合恢复回归的完整公开源码门为
+> **2705 passed、109 skipped、0 failed**（387.80 秒）。该证据关闭虚拟
+> 硬断电恢复门；实体 NAS 拔电仍须在冻结候选上执行，不能据此宣称整机放行。
+> 同轮前端完整 Vitest 复跑得到 **473 个文件、3446 项通过、2 项跳过、0 项失败**，完整
+> TypeScript 检查通过；首次运行暴露的 artifact 详情裸渲染缺少 Router 测试夹具已经修复并由
+> 第二次全量运行覆盖。Python 全量结束后唯一继续变化的 realtime cerebrum 测试文件也已补跑
+> 51 项全绿。随后清除 5 个 ESLint warning，ESLint 零 warning、TypeScript、12 项受影响回归、
+> 11 项后续 artifact 回归、Electron/原生壳合同及全部 workbench + 主应用生产构建通过。
+> 最终冻结 revision 仍须重跑同组门禁和跨平台实机门。
+>
+> 随后的 HEIC/HEIF 照片补齐又通过 48 项照片、依赖锁、镜像打包合同回归（1 项 Windows
+> 上按设计跳过），双架构运行依赖锁复核为 34 包且未漂移；完整公开源码门运行至 100%，
+> 无失败。Debian 13 x86_64 快照机另完成真实编码、解码和 wheel 许可证落盘验证并正常关机。
+> 该轮运行时工作树仍有其它会话持续写入，因此依旧只算当前源码回归，不算冻结候选放行。
+>
+> 旧 ZFS 镜像复测暴露出“`zfsutils-linux` 已安装、但当前内核没有匹配 DKMS 模块”的假就绪窗口。
+> 运行态验收现新增显式 `--require-zfs-runtime` 门：同时要求当前 `uname -r` 的 `modinfo -k`
+> 成功、`/sys/module/zfs` 已加载、`zfs-load-module.service` 为 active，且 `zpool list` 能与内核接口
+> 通信；验收过程只读，不会自行加载模块。设备耐久、存储恢复和裸机恢复实验均强制启用该门，普通
+> 容器安全 CI 仍可不依赖宿主 ZFS。相关缺失模块、未加载、服务失败和内核接口失败回归均已纳入
+> 公开源码清单。完整 NAS 扩展、OEM 认证绑定和短时健康 JWT 接入后的基线为
+> **2997 passed、110 skipped、0 failed**（377.29 秒）。再加入 raw 核心 NAS 包、共享生命周期
+> 防火墙事务及其 11 项回归后，当前工作树完整公开源码门为
+> **3008 passed、110 skipped、0 failed**（373.59 秒）。更早首轮曾有一个无关的文档 worker 审计文件
+> 调度竞态；精确复跑及连续 10 次压力复跑均通过，随后第二次完整门全绿。
+> Raw Docker Engine、每设备 credential 与回环降权控制服务接线后，最新完整公开源码门为
+> **3012 passed、114 skipped、0 failed**（380.70 秒）；新增四项跳过均为明确要求 POSIX root 所有权
+> 与 mode 语义的凭据测试，须由 Debian 镜像工作流执行，Windows 没有把它们伪记为通过。
+> Hub 端口与 `StrictForwardPorts` 的目录/容器身份绑定、同步回滚和 boot-complete Docker 健康门加入后，
+> 最新完整公开源码门为 **3027 passed、114 skipped、0 failed**（376.44 秒）。
+> Raw OpenZFS 源码装配现进一步启用 Debian `contrib`，把 `linux-headers-amd64`、DKMS、
+> `zfsutils-linux` 与 ZED 固定进镜像；构建前用隔离 mode-0700 skeleton 把与 UKI 相同的 UEFI `db`
+> 发布身份预置到 DKMS 约定路径，使每个模块在压缩前只签名一次。post-install 对每个镜像内核逐项确认
+> headers、DKMS 目录、模块位置和 PKCS#7 元数据，再删除临时密钥/证书；制品门也拒绝任何残留身份。
+> 启动门要求当前内核实际加载模块、上游 load service 与 ZED 在线、
+> `zfs`/`zpool` 可通信，否则阻断 root storage broker 和 A/B blessing。源码健康与 resolved-summary
+> 五条正常 Secure Boot 冷启动成功条件均显式要求有界 `ECHO_ZFS_READY` 记录。resolved-summary
+> 定向回归已通过；shell 健康回归已接入 Linux image/A-B workflow，本机 Windows 无
+> POSIX bash 因而明确跳过。新 raw 制品尚未在 dedicated Linux Secure-Boot VM 产出，不能把源码闭环
+> 写成制品实证。
+> 上述一次签名、ZED 启动排序和五条冷启动观测门收口后，完整公开源码门再次为
+> **3027 passed、114 skipped、0 failed**（376.03 秒）；跳过项仍均为明确的平台/可选制品边界。
+> 随后又把发布密钥处理次序收紧为“先完整校验 Secure Boot/PCR 身份，再创建并填充临时 DKMS
+> skeleton”，resolved-summary 明确拒绝签名 skeleton 进入自定义 initrd，制品检查同时拒绝
+> initrd 与加密 `/var` 残留 `mok.key`/`mok.pub`。最新完整公开源码门仍为
+> **3027 passed、114 skipped、0 failed**（346.08 秒），没有新增跳过或失败。
+> 原生只读 DLNA、firewalld v3 迁移、Time Machine/DLNA 高风险审批动作及镜像/前端合同纳入固定
+> 清单后，2026-09-09 完整公开源码门先为 **3040 passed、114 skipped、0 failed**（376.55 秒）；
+> 新增 13 项通过且没有新增跳过。随后以 `-snapshot` QEMU 客体补跑真实 Debian 13 systemd/
+> firewalld/minidlnad：发现并修复 DLNA unit 缺少不可变 `PYTHONPATH`，以及防火墙健康脚本错误使用
+> firewalld `--get-*` 区域查询的问题；修复后实际 SSDP 发现、媒体索引、TCP 8200 字节级取回、
+> mount namespace 只读/隐藏、6 条 RFC1918 规则、卷身份失效拒绝及停用清理全部通过。该证据仍非
+> 新构建 raw 制品或异机播放器证据，二者必须另行实跑。把 VM 揭示的两项运行时合同固化后，当前
+> 工作树完整公开源码门为 **3042 passed、114 skipped、0 failed**（360.01 秒）。
+> 随后在同一 `disk-fresh2.qcow2` 的 `-snapshot` Debian 13 QEMU 客体中补跑真实
+> Docker 26.1.5、firewalld 2.3.1/nftables 与 systemd 链。实跑发现并修复了控制代理在 systemd
+> 沙箱内无法完成 root→`echo` 身份切换、直连 Docker 客户端误请求代理专属 runtime 路由，以及
+> Hub/容器停止仍沿用 5 秒查询超时三项产品缺陷。代理现由镜像内专用
+> `echo-docker-control` 系统账号直接启动，主组仅 `echo`、补充组仅 Docker socket，能力为零且
+> `NoNewPrivs=1`；broker 仍按固定 UID 白名单授权。VM 已验证无 token 为 401、正确 token 为 200、
+> raw images API 为 404、未批准发布端口不可达、批准后仅生成 3 条 RFC1918 转发、通用启动/停止
+> 对 Hub 容器返回 403、双视角计划一致的 stop/start 后转发恢复，以及 package digest 篡改后规则
+> 全清并从宿主不可达。证据为 `C:\飞牛os\_vmtest\native-docker-linux-runtime.json`（SHA-256
+> `18fe15d49d1ef2abcb82d77aaa2a9d833745bbaf1e9f65aea26b4d9e6926d267`）。这仍是旧基础镜像注入
+> 当前源码的隔离验证，不是新构建 raw 或物理机证据。固化修复后完整公开源码门为
+> **3047 passed、114 skipped、0 failed**（417.59 秒）。
+> 对照飞牛解包中的私有 WebDAV 服务、5005/5006 端口与无限深度配置后，Echo 没有用普通 nginx DAV
+> 绕过家庭账号和 ACL，而是接入 nginx 设备 TLS、回环 rclone auth proxy、每设备 SFTP gateway key、
+> 回环 OpenSSH 与逐账号 chroot/bind projection。2026-09-09 在同一基础盘的 `-snapshot` Debian 13
+> QEMU 客体中，rclone 1.60.1、nginx 1.26.3、OpenSSH 10.0p1 与真实 ext4 POSIX ACL 已通过：未认证
+> 401、PROPFIND 207、PUT/MKCOL/MOVE/DELETE、LOCK/UNLOCK、私有目录隐藏、只读目录拒写、管理员与
+> 成员文件所有者回读、设备证书 SAN/公私钥匹配，以及禁用成员后的 401、清单撤销和宿主空间旧 bind
+> mount 清理。WebDAV 及其 jail/refresh units 现在默认关闭，只有管理面完成 plan → 独立密码审批 →
+> apply 才写入 root policy 并启用；同一控制器的全局停用也已实测所有 unit/watcher 退出、全部 bind
+> mount 与运行时清单清理。当前源码的 v4 机器证据为 `C:\飞牛os\_vmtest\webdav-linux-runtime-v4.json`
+> （SHA-256 `96997562d8a966d88ea9e1cac80d4e1d366ea53daa4d259963324552b961c239`）；基础盘 SHA-256 仍为
+> `8dbb448b4722c7f1fe7f18b45d3bfea9ef6ad3f4940e3c5b08fc5a135afe47e3`。这证明当前源码的服务端
+> 运行闭环，不是新构建 raw、受信客户端证书部署或 Windows/macOS 实体 WebDAV 互操作证据。
+> 修正 WebDAV 轻量认证 ABI 边界、固化刷新挂载命名空间合同并加入默认关闭的审批式发布控制后，
+> 当前工作树完整公开源码门为 **3081 passed、114 skipped、0 failed**（394.51 秒）；该门现会先检查
+> `appliance/` 等源码根没有遗漏于 Git 索引的文件，再进入测试，避免活动树绿色而干净克隆缺失原生
+> 控制模块。同期共享面板/API 的 privileges、NFS 与 WebDAV 定向 Vitest 为 **2 个文件、46 项通过、
+> 0 项失败**。当前前端完整单元门为 **511 个 Vitest 文件、3596 项通过、2 项跳过、0 项失败**，
+> 另有 32 项 Node 脚本合同与全部 Electron 合同通过；仓库级 Prettier、ESLint、TypeScript 以及全部
+> workbench + 主应用生产构建也通过。工作树仍有并行未提交改动，因此这是一条源码健康基线，不是
+> 冻结发布放行。并行工作树停稳后又统一格式化此前
+> 未通过 Prettier 的 14 个文件；期间发现实时协议枚举生成器输出与 Prettier 规则冲突，现已让生成器
+> 直接产出格式化后的稳定 TypeScript，并通过生成器 `--check` 与完整前端回归。随后仓库级 Prettier、
+> ESLint、TypeScript、CI 实际 Ruff 格式与静态检查范围均通过。当前工作树仍未冻结且有大量未提交改动，
+> 因此该 revision 仍不能作为发布候选。
+> 当前源码的 Windows wheel 实物审计还发现唯一一个 Git symlink 技能入口在无 symlink checkout 中
+> 会退化为非法 Python 路径文本。它现已改为普通 `100644` 的可移植转发入口，并由 Git 模式与源码
+> 编译回归锁定。重新构建的 `echo_os-0.2.0-py3-none-any.whl` 已确认包含 10 个新增 NAS 核心模块及
+> 该兼容入口；隔离安装得到 5022 个文件，整棵安装目录 `compileall` 通过，完整 wheel 打包回归 7 项
+> 通过。该 wheel 来自活动 dirty 工作树，仅用于安装完整性验证，不作为发布制品留存或引用。
+> 同轮复核发现正式 `release.yml` 仍按旧分发名 `echo-agent-runtime` 查找 wheel，而当前
+> `pyproject.toml` 的权威分发名一直是 `echo-os`，首次标签发布会在上传前必然失败。发布链现已统一为
+> `echo-os`/`echo_os-*`，先生成 sdist、再只从该 sdist 构建最终 wheel，并在发布前执行整包
+> `compileall`、隔离导入 `native_storage_broker`/`native_webdav_control` 和 metadata/version 校验；
+> PyPI 环境 URL 与 QuoteHub 构建/部署 wheel 选择也同步修正。完整发布准备合同 32 项、QuoteHub 资产
+> 合同 9 项通过。仍需干净标签触发与 PyPI Trusted Publishing 实跑，源码测试不能替代外部发布凭据。
+> 本轮总门首次运行还复现了 Windows 连续启动大量受限文档 worker 时偶发的安全初始化
+> `unavailable`；文件整理本来会正确失败关闭，但使无关路由/权限回归随机失败。现在仅对“尚未读取文档
+> 内容”的初始化不可用使用相同 deadline 和取消信号重建一次隔离 worker；解析失败、超时、资源上限、
+> 取消和清理不确定性均不重试。196 项高压子集及随后两轮各 132 项复跑全绿；补入最终产品目录 profile
+> 防篡改回归后，第三次完整公开源码门即为上述 2955/109/0。
+> 对照飞牛 OS 解包环境的运维能力后，系统设置新增管理员主动下载的支持诊断包。服务端不读取或
+> 再脱敏任意日志/配置，而是只生成固定白名单 ZIP：平台与 Python 版本、十二个 NAS 必需命令的
+> 可用性、存储健康的数量/告警代码/探针状态汇总，以及审计链完整性；明确排除账号、主机/IP、
+> 环境变量、挂载与文件路径、磁盘身份、配置、凭据和原始命令输出。包内 manifest 逐文件绑定大小和
+> SHA-256，归档硬限制为 512 KiB，响应禁止缓存且只允许设备管理员，成功导出会进入防篡改审计链。
+> 后端隐私/授权/故障降级 4 项、前端下载/文件名/错误呈现 9 项定向测试通过，Ruff、ESLint、
+> TypeScript、Prettier 与主应用生产构建通过；真实试用反馈与支持流程仍属于阶段 E 验收。
+> 本轮又增加固定白名单 systemd 服务健康探针：只读取七个 NAS 关键 unit 的加载、启用、活动、
+> 结果和重启计数，未安装或显式禁用的可选 unit 不误报；应运行服务的 failed/inactive 以及
+> `start-limit-hit` 会形成稳定 warning/critical 告警，复用 Webhook/SMTP 的加密、去重和退避通道。
+> `echo-appliance.service` 同时增加 5 分钟 5 次的启动限制。支持包新增只含服务状态计数和固定告警码
+> 的白名单摘要，不带 journal、环境、路径或原始 systemctl 输出。主服务触发启动限制后会通过
+> `OnFailure` 立即运行独立 oneshot，另有五分钟持久化 timer 补偿；该 deadman 只在取得 `/data`
+> 独占状态锁后读取固定服务健康与既有加密 Webhook/SMTP 配置，复用同一告警 ID、去重游标和退避状态，
+> 在线后端或维护持锁时无副作用退出。相关 deadman、探针、告警、诊断、扩展、装机和隔离 wheel
+> 回归已纳入完整公开源码门。本地 Debian 13/systemd 257 QEMU 已以禁公网、易失 snapshot 实测扩展挂载、在线状态锁、
+> 5 次失败重启后的 `OnFailure` 新调用、禁用双通道的有界结果、主服务恢复、timer 自然触发和沙箱属性；
+> 基盘身份保持不变。证据 `_vmtest/deadman_systemd_result.json` 的 SHA-256 为
+> `f7fe8367a6bdd939d76a96e7bc11be8c537a1be07918ebfb88b09988b5c1779d`。实跑还发现原生 systemd
+> unit 未设置 `ECHO_REQUIRED_APP_EXTENSIONS=1` 会把 NAS 扩展 404 的通用 Agent 误判健康，以及正式 wheel
+> 漏装四个备份运行引擎；现均已修复，并由当前候选 wheel 的隔离导入回归覆盖。正式运行验收器也已
+> 新增受认证的 system capability 完整性探针，设备耐久和裸机恢复证据显式要求三项核心能力，避免
+> “通用 Agent 200、NAS 扩展 404”再次被误判为可交付。冻结候选、公网接收、
+> 长时断网恢复及真机重启风暴仍是正式发布前的验收项。
+> 同类失败关闭也已补到权威 dm-verity 原生镜像：`echo-agent.service` 现在要求完整
+> `appliance.extension` 必须成功加载，并要求 OEM 先把本机管理员口令在进程内转换为私有 NAS
+> 认证库；缺库时禁止随机生成并记录生产密码。`echo-agent-health.service` 会验证认证库 owner/mode，
+> 签发 60 秒本机探针 JWT，再只读验证完整扩展的任务投影后才允许 `boot-complete.target` 完成，
+> 不再只凭通用 Agent 健康和恢复队列放行。
+> 桌面首次使用卡片现按账号提供数据目录与共享、模型连接、执行权限和首个示例任务四步入口，
+> 前三步只打开既有真实设置，示例只预填输入框且不自动发送。系统“通用与更新”可随时重开引导；
+> 已有任务的老账号不会被自动打断。配套支持指南固定常见问题的安全处理、诊断包范围、最小工单
+> 信息及必须停止写操作的升级条件。真实浏览器已逐项验证四个入口和未发送草稿；两文件 12 项定向
+> 测试、完整前端回归、TypeScript、ESLint、Prettier 与生产构建通过。仍待 5–10 名用户两周受限试用。
+> 同轮还清除了两份在迁仓时误把 `sed: ... No such file` 诊断输出保存为 `.py` 的无引用伪脚本，
+> 并新增根级维护脚本 UTF-8/语法完整性门，防止同类损坏重新进入公开源码清单。项目自带的
+> production-readiness 静态门现为 scorecard 98、automation 96、质量 7/7、覆盖 7/7；该门按设计
+> 输出 `ready:false`，因为当前没有绑定候选的 14 用例、Echo/Codex 同任务各三次真实行为证据包。
+> 静态评分不能替代受保护行为 workflow、签名候选或 G1–G6 实机证据。
+
+> 当前核查：2026-09-08。本文区分“代码已存在”“本机已证明”“仍需真机/产品化”，
 > 防止把桌面演示或应用容器误报为已经可交付的 NAS 操作系统。
 >
-> 最新本机基线：appliance 1181 项、公开源码门 1181 项，均全部通过且无跳过；
-> 前端 66 个测试文件共 518 项、Electron 合同与生产构建全绿。
+> 2026-09-06 基线快照曾记录 appliance/公开源码门各 1181 项。前端全量 Vitest 两次均为
+> 467 个文件通过、3394 项通过、2 项跳过，但两次运行中源码指纹均被并发写入改变；最终变化
+> 已补 57 项定向回归并通过 TypeScript 与生产构建。正式放行仍须在冻结 revision 重跑全门禁。
+>
+> **P3 存储基线更新：** 当前分支已移除运行时 OpenMediaVault 依赖，读取由 Linux
+> 内核、`lsblk`、`df`、`smartctl`、mdraid 与 ZFS 工具提供；写面按能力逐项开放。
+> 共享文件夹创建/安全重命名/解除登记/空目录删除、账户、SMB、专用 Time Machine over SMB、ZFS/内核用户/组配额、根目录 POSIX ACL 权限、私网 NFS、严格空白双盘 ZFS mirror、mdadm RAID1 与 Btrfs RAID1 创建、ZFS/md 镜像和 Btrfs RAID1 的唯一故障成员安全换盘、ZFS scrub/resilver、md RAID1 一致性检查及已卸载受管 EXT4 的只读检查，以及 Echo 布局 ZFS 池的数据保留安全导出/导入
+> 已有原生窄写面；原生账户创建会写入显示名并加入 `users` 基础组，密码重置只接受
+> UID/`nologin`/家目录无 SSH 入口的受管普通用户；其余尚未接管的复杂写操作不发布能力并保持关闭，
+> 由对应入口明确失败。下文涉及
+> OMV 的历史交付证据只描述上一阶段，不再代表 P3 的目标运行时架构。
+>
+> **P3 装机基线更新：** Debian 13 hybrid ISO 已默认使用无 HDMI shell 的 NAS
+> profile，并在全新 UEFI VM 完成空盘安装、首次开机、断电式二次启动、
+> `multi-user.target`、六项核心服务与 HTTP 入口验证。ISO 内嵌当前提交的无父 Git
+> 快照和绑定同一 Git tree 的预构建 Web 载荷；目标机从本地 bundle 恢复精确源码树，
+> 校验 Web SHA/tree 后原子安装并消费载荷，不再依赖移动的远端分支，也不再安装
+> Node.js、npm、pnpm 或目标机 `node_modules`。提交 `eb50e47` 的制品
+> `echo-os-eb50e47.iso` 为 1,056,964,608 字节，SHA-256
+> `471929f5c8e798fa346ba9448938ef3ae4bb7c2c07515a7b45de46bc9ffd4db7`；VM 中镜像提交
+> `eb50e470a3b32bcf3b2dad9459b957abdca1fb13`、源码与 Web tree
+> `bb92553b693fd2c187b537bf483e8abfa2ca0072` 均已回读一致，firstboot 不足八分钟完成。
+> 当前源码已增加严格 NAS release 门：必须绑定 Debian 基础 ISO 的官方 SHA-256，并同时
+> 携带同一源码树的 Web、Python、Codex 与完整 system-deb 依赖仓；d-i 在该模式只安装介质
+> 内 Debian 基座，附加包及首次开机不允许回退公网。成品内的确定性 manifest 会绑定基础
+> ISO、源码 commit/tree、运行时身份和五份载荷摘要，首启校验源码 bundle 摘要并在目标机
+> 保留该清单；构建 wrapper 会重开并提取 ISO，复核 BIOS/UEFI 引导入口、介质
+> `md5sum.txt`、载荷及 Git bundle/tree。
+> 这些属于完整性/追溯门，不替代发布签名。普通开发镜像仍允许联网。对照飞牛随
+> `trimfs.tgz` 交付完整根系统，Echo 选择“netinst 基座 + 已校验离线依赖闭包”，但严格模式
+> 尚未在 Linux 构建机生成新 ISO 并完成拔网线干净安装，因此全离线交付门仍未关闭。
+> 该 d-i ISO 现明确降级为兼容/诊断路径。生产权威路径是 `packaging/image` 的
+> dm-verity/Secure Boot/A-B raw image 加 `deploy/installer` 的 GPG 签名整盘安装包；
+> 本机新增复核得到安装包 25 项、更新 20 项、镜像身份/证据/runner 策略 62 项通过，
+> 另 8 项因 POSIX 边界跳过。它仍缺 dedicated Linux runner 的 mkosi、NBD 写盘和
+> Secure-Boot QEMU 全链实跑，不能据此宣布生产镜像完成。
+> 远端 `os-image` 与 `ab-update-smoke` 各只有一次运行，均在在线源预检失败并跳过重型
+> job；候选汇总尚无运行。源码复核定位到 Debian 容器遗漏 `gh`，而预检固定调用
+> `gh auth/api`。当前工作树已给两条 workflow 补齐 `gh` 并加静态防回归合同，14 项通过，
+> 但该修复尚未推送和重跑。远端失败记录：
+> [`os-image` run 33510436630](https://github.com/dengdenghua/octopus-os/actions/runs/33510436630)、
+> [`ab-update-smoke` run 33510436618](https://github.com/dengdenghua/octopus-os/actions/runs/33510436618)。
 
 ## 结论
 
 Echo OS 目前已经形成一个可运行的 **NAS 桌面与 Agent 应用层**，基础文件传输闭环也
-已打通；但它还不是可替代群晖、飞牛或 OpenMediaVault 的完整 NAS 发行版。
+已打通；原生存储读取与多项受控写能力已经接管，但它还不是可替代成熟 NAS 产品的
+完整存储控制面。
 
 推荐交付架构保持清晰分层：
 
 ```text
-Debian + OpenMediaVault
-  ├─ 磁盘、SMART、阵列/文件系统、共享、用户/ACL、系统升级
+Debian + Linux 原生存储栈
+  ├─ 内核、mdraid、ZFS、SMART 与挂载文件系统
   └─ Echo appliance
        ├─ Echo OS 桌面与窗口系统
        ├─ Echo Agent 工作台
        ├─ 应用启动器与自动化
-       └─ NAS 文件管理器 / 文件管家
+       ├─ NAS 文件管理器 / 文件管家
+       └─ 原生存储控制面（按能力渐进开放）
 ```
 
-也就是说，OMV 负责“不丢数据、能维护的存储底座”，Echo 负责“桌面体验、Agent 和跨
-应用编排”。在存储控制面成熟前，不应让 Echo 自己直接取代 OMV。
+也就是说，Linux 标准存储组件负责数据面，Echo 负责受审批、可审计的控制面以及桌面、
+Agent 和跨应用编排。尚未原生实现的写能力必须保持关闭，不能用未验证命令或兼容层
+假装已经可交付。
 
 ## 已落地并有当前证据的能力
 
-| 能力                     | 当前状态                                | 证据与边界                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Echo OS 桌面、Dock、窗口 | 本机真实 HTTP 闭环                      | 真实 Agent 服务根路径已接管为 Echo OS；`/#/desktop` 锁屏及公共资源可加载；工作台使用 sibling Echo Agent UI                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Echo Hub                 | 本机协议/API/UI 闭环；真 Docker 待验   | 受信、大小受限目录；不可变镜像、固定端口/卷和双重计划校验；Jellyfin 10.11.11、Navidrome 0.63.2、Syncthing 2.1.3、Nextcloud 34.0.3、Immich 3.1.0、Open WebUI 0.11.1、qBittorrent 5.2.3、Paperless-ngx 3.1.0 与 Home Assistant 2026.8.3 已开放安装。Nextcloud、Immich、Open WebUI 沿用隔离服务图与联合回滚边界；qBittorrent、Syncthing 和 Paperless 只写入各自专属 NAS 目录。Paperless 固定 App/PostgreSQL/Valkey/Gotenberg/Tika 五服务，只暴露 3008，并默认启用中英文 OCR。Home Assistant 只保留 mDNS/SSDP 所需 host 网络，仍强制不可变镜像、`CapDrop ALL`、禁止提权且不挂 Docker socket、设备或 D-Bus；当前安全模式不承诺 USB/Bluetooth/Zigbee 直通。所有受控服务图候选均先验活，失败时还原状态卷、原容器名和原运行状态。Agent 插件/技能通过 Echo 认证的服务端适配器复用既有目录抽象，不读取私有 SQLite；适配器现只公开白名单文字字段、限制长度/控制字符并按身份去重，未知私有字段不会透传，插件与技能卡分别进入 Agent 对应管理页。安装、更新、卸载、整组启动、停止和重启均进入 Echo 自有加密后台任务账本，关窗或刷新后仍可查询真实阶段、失败码和恢复动作；同一应用禁止并发任务，重启中的未决任务明确标记中断。sidecar 新增内部有界进度流，只把 Docker 实际完成的镜像层计数、多镜像序号以及创建资源、快照、启停、健康检查、切换和回滚枚举阶段传给主进程；镜像名、layer ID 和 registry 原始文本不越界，也不伪造百分比。一次性初始凭据只经独立接口领取一次并随即从账本密文擦除，任务列表不返回秘密。已安装详情新增目录归属验证后的 `echo.hub.runtime.v1` 与固定码诊断，仅显示健康、服务数、CPU、内存、进程、重启次数和恢复动作；原始 inspect/stats/logs、环境、挂载和网络地址不越过 sidecar，伪造或重复容器失败关闭。九个 Hub 应用全部进入启动台和 Spotlight，Dock 独立限制为六项；Web UI label 只接受无凭据的本机/LAN HTTP(S)，最终入口统一绑定当前浏览器访问的 NAS 主机名。已安装卡以打开/启动为主操作，停止和卸载为次级受保护操作；启动/停止/重启均消费应用绑定的单次管理员审批并明确保留配置和 NAS 数据。正式运行验证器也会复核该接口的鉴权、字段白名单与有界条数。正式 x86/ARM 物理门已升级为 schema 9 九应用机器合同：首装后逐应用通过真实后台任务完成整组停止、启动和重启，停止后核对服务归零与 stopped 诊断，恢复后核对服务顺序、容器 ID、卷指纹、公开入口和健康状态不变；首装与重装还必须从目录绑定端口取得非 5xx HTTP 响应、读取全服务健康与真实聚合资源，并只归档有界摘要。同时要求 Syncthing 双设备 LAN 发现、Paperless Office/OCR 与 Home Assistant mDNS/SSDP 检查，但仍待实跑。各应用首次登录、大库负载、更新失败回滚、卸载重装读回与窗口打开也仍待验收 |
-| 本地智能照片             | 本机 API/UI/安全闭环；模型真机待验      | NAS 只读图片扫描、WebP 缩略图、文件名/语义搜索和后台索引状态已接桌面；排除回收站、上传内部目录与符号链接，不暴露绝对路径。语义、元数据、人脸、重复和清晰度 schema 复用 Agent `image_semantic_index`，建立索引需密码单次审批并审计；不开放自动删除。目标机仍需验证模型首次下载/离线缓存、CPU/GPU 性能和大图库耗时 |
-| 本机存储中心             | 本机 API/UI/安全闭环；大库真机待验      | 桌面统一展示真实磁盘容量、可上传空间、照片/视频/音频/文档/归档分布、顶层大目录、回收站、上传预留和共享配额；扫描不读取文件内容、不跟随链接、不暴露宿主路径，最多 20 万项并可显式刷新。磁盘健康、RAID/LVM、共享与家庭成员直接复用 OMV 现有真实页面；仍待实体 NAS 对百万级目录性能、容量变化和断盘状态做验收 |
-| 手机与端侧设备连接       | 本机 API/UI/安全闭环；真机客户端待验    | 桌面复用 Agent Tentacle 协议、连接池和能力上报；原生系统默认不监听，开启/关闭/配对/撤销均需管理员密码单次审批并审计。原生模式使用 5 分钟邀请、一机一凭据、摘要落盘和单设备撤销；Agent 已启用监听时只标记共享兼容模式。设备控制仍如实限定局域网，不把未加密 LAN WebSocket 冒充公网控制；仍待 Echo Mobile 真机配对、断线重连和凭据撤销验收 |
-| Tailscale 安全远程网页   | 部署/API/UI 闭环；Tailnet 真机待验      | 可选 overlay 使用固定多架构摘要的官方 Tailscale userspace 侧车和 Serve HTTPS；无宿主端口、无 Linux capabilities、只读根文件系统，auth key 只经 0400/0600 Compose secret 注入。Echo 自动信任精确 `*.ts.net` origin 并只读取固定健康端点；页面区分私网网页、LAN 设备控制与已安全挂载的文件/照片同步。仍待真实 Tailnet、HTTPS 证书启用、跨运营商网络和密钥失效后重启验收 |
-| 手机文件/照片自动备份   | 服务端、配对网络与 Android App 已闭环；真机待验 | 复用一机一凭据但另做按设备、按 scope 管理员授权；正式 appliance 关闭上游共享 Tentacle、发布审批后才监听的设备端口，并从桌面 LAN Host 生成可达 `ws/sync` 深链。Echo 自有 SQLite 只记幂等资源、会话归属、游标和冲突，不打开 Agent 私库；8 MiB 续传、容量/配额、SHA、原子提交、keep-both、跨设备隔离和 v1 协商已有机器合同。Echo Mobile 已正式接入加密 token、设备 ID、独立证书 pin、WorkManager、MediaStore 分批游标、SAF 持久 URI、Android 9 相册兼容、Wi-Fi/充电策略、显式深链确认与运行结果反馈；严格解析拦截重复字段、公共明文、错设备响应与外部凭据接收主机。Mobile 新增 11 条协议/安全行为测试并进入全量 1328 条绿色测试集；API 36 模拟器除确认/取消、密码遮蔽与加密、相册权限、SAF、JobScheduler 约束和 401 回显外，已通过生产服务组合完成真实 21-byte 上传、同 SHA 幂等跳过、内容变化 keep-both，以及 512 MiB 文件在服务端持久 8 MiB 后强制结束 App、重开续传和最终哈希一致。实跑发现并修复 Android 36 MediaStore 禁止在排序 SQL 拼接 `LIMIT` 的兼容问题，现改用结构化查询参数；详见 `docs/mobile/ANDROID_EMULATOR_ACCEPTANCE.md`。验收实验台另有 3 条防漂移测试；OS appliance 当前 1170 条通过、1 条仅因开发机缺 `dpkg-deb` 跳过。仍待省电/断网、海量相册、低容量和 Tailnet HTTPS 实体手机验收 |
-| Agent 集成窗口           | 本机可用                                | 仅保留 Agent 内部一排窗口控制；关闭、最小化、缩放通过受源校验的 `postMessage` 驱动 OS 窗口                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Agent 任务恢复           | 本机与镜像合同已验证                    | Task Space 可投影 Agent 租约、真实运行时检查点并执行“接管→恢复”两次确认；恢复仍进入 Agent 原线程和原审批链。原生 runtime 清单 v2 强制包含 recovery queue 与 resume API；Linux 镜像 CI 已接入加密 `/var` 中断任务种子、真实冷启动 `recovery=1` 和启动后任务状态逐字节未变门，仍待该 workflow 产出绿色 raw 证据                                                                                                                                                                                                                                               |
-| 家庭身份登录             | 本机身份、数据隔离与账户生命周期闭环；真机待验 | appliance JWT；旧 admin 凭据原位兼容迁移，管理员可把现有 OMV 成员映射为独立 `local:<username>` 与 Agent principal，成员使用独立 Echo 强密码。开通、停用/启用、独立 Echo 密码重置和停用后的映射移除均计划绑定、管理员一次性审批并脱敏审计；成员状态或密码变化会精确撤销该成员的 Cookie、Bearer 与在线 WebSocket，不影响其他成员。移除映射不删除 OMV 用户、SMB 密码、共享权限或 NAS 数据，角色固定为 member 而不开放提权。文件与照片 API 均实时投影 OMV 用户/组共享权限并在异常时失败关闭。Alice/Bob 登录、生命周期与数据隔离已测；成员自助改密和逐设备会话管理仍未开放，实体 OMV 挂载与权限变化仍待真机验收 |
-| 账户与会话安全           | 本机真实 HTTP 闭环                      | Echo OS 系统设置可轮换管理员密码或退出全部登录；真实进程已验旧密码、旧 JWT、Cookie/Bearer/WS 凭据及旧审批票据立即失效，新密码无需重启即生效                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 文件浏览与目录操作       | 已实现                                  | 根目录约束下的列出、建目录、移动/重命名                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 可恢复上传               | 本机逻辑闭环                            | 小文件兼容 multipart；16 MiB 以上自动 8 MiB 分块，逐块 SHA-256、严格偏移、失败进度查询/重试、暂停/继续/取消；会话 fsync 持久化、重启恢复、整文件摘要和同目录原子提交；重名默认 409                                                                                                                                                                                                                                                                                                                                                                          |
-| 共享目录配额             | 本机逻辑闭环                            | JSON 配置相对路径逻辑字节上限；父子规则同时生效，已有文件与未完成会话最终大小共同计量；上传、复制、跨共享移动和恢复统一返回 507，同共享重命名不重复计费；SMB/NFS 旁路仍需原生硬配额                                                                                                                                                                                                                                                                                                                                                                         |
-| OMV 用户/组硬配额        | 本机协议/UI 闭环                        | 已有可写文件系统 + 已有用户/组的 desired → plan → 密码审批 → apply → 回读验证/可验证回滚 → 审计；按所有者覆盖本机/SMB/NFS，不是共享目录独立配额，真 OMV 强制执行待真机验收                                                                                                                                                                                                                                                                                                                                                                                  |
-| OMV 共享用户/组权限      | 本机协议/UI 闭环；x86 门仅在本地工作区  | 已有在线共享 + 已有用户/组的单对象权限 desired → plan → 密码审批 → apply → Samba/Rsync 按需部署 → 全表回读/回滚 → 审计；不创建账户、不碰文件 ACL、不递归改文件；真实 users 组读写与 purge/reinstall 保留门尚未进入当前 `origin/os-main` 快照，也没有远端绿色 artifact                                                                                                                                                                                                                                                                                         |
-| OMV 家庭成员与用户组     | 本机协议/UI 闭环；x86 门仅在本地工作区  | 只创建空普通组和受限新成员，并可为仍满足 nologin、无 email/SSH key、禁止自改资料约束的已有成员重置密码。密码只经内存和固定 socket/一次性 `PASSWD_FD` 管道转交，不进入 argv、环境值、文件、响应、日志、证据或审计；本地 x86 门还要求真实 SMB3 上传/下载、旧密码拒绝、新密码认证及 purge/reinstall 后载荷摘要保持。其他更新和日常删除仍在 OMV；该门尚未进入当前 `origin/os-main` 快照，也没有远端绿色 artifact |
-| 流式下载                 | 本机逻辑闭环                            | 鉴权 `FileResponse`/Range；Chromium/Electron 通过文件句柄边读边写，失败从已写偏移续传并可取消；正式 Cookie 会话的旧浏览器交给原生下载管理器落盘，不创建页面 Blob 或凭据 URL                                                                                                                                                                                                                                                                                                                                                                                 |
-| 文件/目录复制与移动      | 本机真实 HTTP 闭环                      | 默认不覆盖；拒绝把目录复制/移动进自身和复制符号链接树；复制排除内部上传临时文件，含活动上传的目录禁止移动或回收                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 回收站                   | 已实现                                  | 删除只移入内部回收站；恢复/清空分离；内部目录不能从普通文件 API 直接访问                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 高风险审批与审计         | 本机真实 HTTP/UI 闭环                   | 应用启停、物理清空回收站、全会话退出、密码/审计密钥轮换、Echo 成员开通/停启/重置/移除、OMV 用户组/家庭成员创建、共享用户/组权限、SMB、私网 NFS 与用户/组硬配额写入均需管理员密码复核；真实服务已验未审批拦截、签发/消费、防重放、验链与凭据不落审计；令牌绑定 actor/action/target、90 秒/单次/重启失效 |
-| 前端构建                 | 已验证并进入主 CI                       | 维护源码格式、零警告 lint、TypeScript、66 个浏览器测试文件 518 项、Electron 合同和生产构建全部通过；静态/动态混合导入会直接使构建失败，浏览器首页只保留一套维护实现；生成资产单独由生产器验证，不再污染格式门                                                                                                                                                                                                                                                                                                                                               |
-| 文件功能测试             | 已验证                                  | 文件后端 53 项，并完成前端传输、管理器与存储中心回归；覆盖成员级 OMV 路径投影、容量分类、20 万项扫描上限、链接排除、回收站/上传预留/共享配额投影，以及容量/配额 507、嵌套规则、并发与重启预留、降额会话写前阻断、复制/移动/恢复旁路、上限 413、偏移 409、分块/整文件哈希、上传/下载取消、Range 重试和 Cookie 原生下载回退；真实大目录与断盘仍待实体机                                                                                                                                                                                                                                    |
-| Agent 同源交付包         | 本机已验证                              | 统一 `echo-os` wheel + 运行资源 + Codex 从同一 OS revision 冻结；schema 2 逐文件/整树 SHA-256；不含第二 WebUI，混版在 Docker 构建与启动时硬失败                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Agent 安全启动闭环       | 本机真实 HTTP 闭环                      | 从最终 bundle 启动服务；未登录 401、管理员登录/身份校验 200、工作台资源 200；运行 YAML 0600 且不落 bcrypt/JWT 原值                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Python 安装边界          | 本机已验证                              | 统一 `echo-os` wheel 同时提供 `echo` 与兼容 `echo-agent` 入口；容器只从哈希锁依赖和已验证本地 wheel 安装，不再拼接两份 Python 包                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 依赖与代码安全门         | 本机已验证                              | uv 0.11.25 对统一项目生成 SHA-256 精确锁；amd64/arm64 解析字节一致，构建与运行只装二进制包；迁入的 Python 源码已全部纳入 Ruff 格式与静态检查                                                                                                                                                                                                                                                                                                                                                                                                               |
-| Docker 最小权限控制面    | 本机协议/Hub 生命周期闭环               | 主服务不挂 socket；sidecar 仅有 ping/list/start/stop、目录验证的 Hub 安装/更新/卸载/整组启停重启及按受信应用 ID 返回的脱敏运行健康。调用方不能提交镜像、端口、卷或 Compose，也不能读取原始 inspect/stats/logs；代理独立重算目录摘要与计划，安装固定镜像摘要并在失败时移除容器、保留数据卷；卸载、控制和健康查询都只接受带完整受管标签和确定容器名的完整服务集合。更新卷复制器只使用当前受保护的 docker-control 镜像 ID，关闭网络、只读根文件系统、剥离全部能力后仅补复制所需的 CHOWN/DAC_OVERRIDE/FOWNER，源卷只读、目标卷可写。NAS 目录执行器只接受最多四段规范相对路径，从唯一受保护 `echo-os` 容器读取真实 bind 根目录，并拒绝路径逃逸、符号链接、重复或伪造提供者。真机 schema 9 脚本已要求两轮安装健康/资源摘要以及首装后的整组停止、启动、重启证据，仍待 x86/ARM 实跑并继续验 PID 1 非 root、`CapEff=0`、`NoNewPrivs=1` |
-| 容器数据目录身份         | 本机逻辑已验证                          | PUID/PGID 可配；仅迁移 appliance 状态并永久降权，明确跳过 NAS 数据挂载；真实 bind mount 待 Docker 验证                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 浏览器与登录边界         | 本机真实 HTTP/双用户数据隔离闭环        | 真实服务已验 CSP/安全头且浏览器零 CSP 报错；Host/Origin/WS 前置拒绝、精确 iframe 白名单、HttpOnly Lax cookie、Cookie 身份归因及双层限速均有测试。旧 admin 存储可原位补出家庭账户目录，已有 OMV 成员可经计划、管理员审批和脱敏审计开通独立 Echo 密码与 JWT/Agent principal；Alice/Bob 已验登录、账户目录不可见，以及按实时 OMV 共享权限隔离文件列表、上传、下载和照片库/原图                                                                                                                                                |
-| Docker TLS 入口          | 本机配置/密码学预检闭环，真 Engine 待验 | 固定摘要的官方 Nginx 双架构网关；80 仅跳转、443 终止 TLS，后端强制宿主回环发布，代理 IP 精确信任；证书/私钥格式、权限、匹配、七天有效期与 SAN 在 Compose 写前验证；多 GB/SSE/WS 不缓冲且查询参数不进访问日志                                                                                                                                                                                                                                                                                                                                                |
-| 设备状态备份与恢复       | 本机逻辑/编排闭环                       | 离线独占锁 + scrypt/AES-256-GCM；包含认证、审计与 Agent 状态，明确排除 NAS 用户数据；停机/校验/复机、暂存迁移与认证/审计预检、摘要确认、原子目录晋级、新实例健康复核、失败自动回滚、旧状态保留、校验后备份轮换及 systemd 定时模板已落地；备份只允许预先存在的精确活动挂载，挂载掉线、伪文件系统、符号链接或与部署/状态/NAS 同设备时会在接触 Docker 前失败，仍需真机拔盘/断网演练                                                                                                                                                    |
-| 审计证据外置             | 本机协议/UI/编排闭环                    | 历史可验证密钥环、Ed25519 设备锚点、锚点下载、scrypt/AES-256-GCM 最小证据包、设备指纹 pin、停机/验证/复机/校验后保留和 systemd 模板已落地；与状态备份共用外部文件系统 fail-closed 校验，不再仅凭目录位置推断外置；实时审计永不自动裁剪，仍需外置/远端介质和异机保存真机演练                                                                                                                                                                                                                                                 |
-| 设备状态版本闸门         | 本机逻辑闭环                            | 持久 schema 标记、显式 v0→v1→v2 单步迁移、备份清单携带版本；旧程序遇到未来版本拒绝降级启动，不静默改写状态                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Docker 安全升级编排      | 本机协议闭环                            | 只接受镜像摘要；升级前验证备份、目标 schema 预检、健康等待和双容器镜像核对；有迁移版本拒绝自动升级，无迁移版本失败恢复旧选择                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 多架构容器发布链         | 代码与本机构建契约已落地                | 正式 semver 标签触发 GHCR amd64/arm64 OCI 索引；基础镜像、Actions、解析器和 Python 闭包均固定；逐平台 SPDX、BuildKit provenance/SBOM、GitHub OIDC 镜像证明、依赖锁、发布清单/校验和均已接线；正式 Agent wheel 已按哈希锁真实构建，仍待第一次标签运行                                                                                                                                                                                                                                                                                                        |
-| 容器运维交付包           | 本机构建/攻击面测试闭环                 | 同一镜像摘要绑定确定性 Compose/TLS、首次安装、升级、备份、审计与恢复包；固定白名单、逐文件摘要/权限、外层校验和、SPDX、同源验证器和安全解包已接入正式发布，总清单同时绑定全部产物；仍待首次标签 artifact 与真实 Docker 新装/升级/恢复                                                                                                                                                                                                                                                                                                                      |
-| OMV 存储与共享接入       | 本机协议/UI 闭环；NFS/权限 x86 门仅在本地 | 宿主固定 RPC 显示物理盘、分区、md RAID、LVM、挂载卷、SMART、SMB/NFS、共享、用户/组和权限；现有可写卷上的基础共享文件夹创建、已有用户/组的单对象共享权限，以及已有文件夹的私有 SMB/私网 CIDR NFS 均具备 desired → plan → 密码审批 → apply → 回读验证/安全回滚 → 审计闭环；共享目录固定由便携名称推导并使用 2770/users，权限写入不更新文件 ACL 或递归文件权限；NFS 强制 root_squash/sync/subtree_check；本地 x86 门覆盖真实 Echo 文件夹创建、users 组读写权限、exports、NFSv4 读写→只读、purge/reinstall 保留，但尚未进入当前远端快照，也没有绿色 artifact 或物理客户端验收 |
-| 原生系统 A/B 更新/恢复   | 代码与测试契约已落地                    | 签名 root+UKI、inactive slot、三次启动回退、持久账号/网络/地区状态捕获及独立 Recovery UKI 已有脚本和 CI；仍待当前产物的 Linux VM/真机绿色证据                                                                                                                                                                                                                                                                                                                                                                                                               |
-| CI/Docker 构建门         | 代码已接入                              | 主 CI 已加入完整前端质量与生产构建门，并从当前 Echo revision 准备完整 bundle；Docker 失败即失败。本机没有 Docker，仍待远端 CI/真机执行证据                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 能力                     | 当前状态                                         | 证据与边界                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Echo OS 桌面、Dock、窗口 | 本机真实 HTTP 闭环                               | 真实 Agent 服务根路径已接管为 Echo OS；`/#/desktop` 锁屏及公共资源可加载；工作台使用 sibling Echo Agent UI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Echo Hub                 | 本机协议/API/UI 闭环；Docker/firewalld QEMU 已验 | 受信、大小受限目录；不可变镜像、固定端口/卷和双重计划校验；Jellyfin 10.11.11、Navidrome 0.63.2、Syncthing 2.1.3、Nextcloud 34.0.3、Immich 3.1.0、Open WebUI 0.11.1、qBittorrent 5.2.3、Paperless-ngx 3.1.0 与 Home Assistant 2026.8.3 已开放安装。Nextcloud、Immich、Open WebUI 沿用隔离服务图与联合回滚边界；qBittorrent、Syncthing 和 Paperless 只写入各自专属 NAS 目录。Paperless 固定 App/PostgreSQL/Valkey/Gotenberg/Tika 五服务，只暴露 3008，并默认启用中英文 OCR。Home Assistant 只保留 mDNS/SSDP 所需 host 网络，仍强制不可变镜像、`CapDrop ALL`、禁止提权且不挂 Docker socket、设备或 D-Bus；当前安全模式不承诺 USB/Bluetooth/Zigbee 直通。所有受控服务图候选均先验活，失败时还原状态卷、原容器名和原运行状态。Agent 插件/技能通过 Echo 认证的服务端适配器复用既有目录抽象，不读取私有 SQLite；适配器现只公开白名单文字字段、限制长度/控制字符并按身份去重，未知私有字段不会透传，插件与技能卡分别进入 Agent 对应管理页。安装、更新、卸载、整组启动、停止和重启均进入 Echo 自有加密后台任务账本，关窗或刷新后仍可查询真实阶段、失败码和恢复动作；同一应用禁止并发任务，重启中的未决任务明确标记中断。sidecar 新增内部有界进度流，只把 Docker 实际完成的镜像层计数、多镜像序号以及创建资源、快照、启停、健康检查、切换和回滚枚举阶段传给主进程；镜像名、layer ID 和 registry 原始文本不越界，也不伪造百分比。一次性初始凭据只经独立接口领取一次并随即从账本密文擦除，任务列表不返回秘密。已安装详情新增目录归属验证后的 `echo.hub.runtime.v1` 与固定码诊断，仅显示健康、服务数、CPU、内存、进程、重启次数和恢复动作；原始 inspect/stats/logs、环境、挂载和网络地址不越过 sidecar，伪造或重复容器失败关闭。九个 Hub 应用全部进入启动台和 Spotlight，Dock 独立限制为六项；Web UI label 只接受无凭据的本机/LAN HTTP(S)，最终入口统一绑定当前浏览器访问的 NAS 主机名。已安装卡以打开/启动为主操作，停止和卸载为次级受保护操作；启动/停止/重启均消费应用绑定的单次管理员审批并明确保留配置和 NAS 数据。正式运行验证器也会复核该接口的鉴权、字段白名单与有界条数。正式 x86/ARM 物理门已升级为 schema 9 九应用机器合同：首装后逐应用通过真实后台任务完成整组停止、启动和重启，停止后核对服务归零与 stopped 诊断，恢复后核对服务顺序、容器 ID、卷指纹、公开入口和健康状态不变；首装与重装还必须从目录绑定端口取得非 5xx HTTP 响应、读取全服务健康与真实聚合资源，并只归档有界摘要。同时要求 Syncthing 双设备 LAN 发现、Paperless Office/OCR 与 Home Assistant mDNS/SSDP 检查，但仍待实跑。各应用首次登录、大库负载、更新失败回滚、卸载重装读回与窗口打开也仍待验收 |
+| 本地智能照片             | 本机 API/UI/安全闭环；模型真机待验               | NAS 只读图片扫描、WebP 缩略图、文件名/语义搜索和后台索引状态已接桌面；除 JPEG/PNG/WebP 等格式外，手机同步已接受的 HEIC/HEIF 现在也可入库、按正确 MIME 返回原图并生成有尺寸上限的 WebP 预览，真实编码样本覆盖 `.heic`/`.heif`。解码 wheel 已锁定到双 Linux 架构，原生库版本、许可证和精确源码修订随镜像/发布证据显式通知；Debian 13 x86_64 快照机也已实测 `pillow-heif 1.7.0` 的两种容器生成/解码与许可证落盘，证据 `_vmtest/heic-linux-runtime.json` 的 SHA-256 为 `33d1898f922d37b568890b0be0cd538991f6f0d9253aedd2cf2e4eec36235420`。正式标签发布会校验四个精确上游 commit，生成可复现的完整对应源码包，并把清单、校验和、独立验证器和通知作为长期 GitHub Release 附件；本机真实四仓归档为 1,590 项、30,826,170 字节且独立验证通过。扫描排除回收站、上传内部目录与符号链接，不暴露绝对路径。语义、元数据、人脸、重复和清晰度 schema 复用 Agent `image_semantic_index`，建立索引需密码单次审批并审计；不开放自动删除。目标机仍需验证模型首次下载/离线缓存、CPU/GPU 性能、超大图库耗时与真实 iPhone HEIC 兼容性；RAW 与独立图片服务尚未实现                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 本机存储中心             | 本机 API/UI/安全闭环；大库/UPS 真机待验          | 桌面统一展示当前 NAS 数据卷容量、可上传空间、内容分布、顶层大目录、回收站、上传预留和共享配额；共享与家庭成员直接复用现有真实页面。“健康与保护”按磁盘状态、数据备份、维护与电源分组，只在用户进入对应分组时加载健康、备份或休眠/SMART/UPS 探针。存储池按 Btrfs RAID1、RAID1 + EXT4、ZFS 镜像三种互斥技术方案切换，仅挂载当前方案，避免把不相关工具链同时铺满页面或并发探测；共享面不可用时会根据磁盘/文件系统探针给出脱敏原因并引导到存储健康。本机 NUT/UPS 有界只读监控显示供电状态、充电量、续航、负载、电压和温度；不接受客户端指定设备或远端主机，不返回序列号、凭据、配置、端点或原始输出。仍待百万级目录、断盘、真实 UPS 与低电量关机验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 手机与端侧设备连接       | 本机 API/UI/安全闭环；真机客户端待验             | 桌面复用 Agent Tentacle 协议、连接池和能力上报；原生系统默认不监听，开启/关闭/配对/撤销均需管理员密码单次审批并审计。原生模式使用 5 分钟邀请、一机一凭据、摘要落盘和单设备撤销；Agent 已启用监听时只标记共享兼容模式。设备控制仍如实限定局域网，不把未加密 LAN WebSocket 冒充公网控制；仍待 Echo Mobile 真机配对、断线重连和凭据撤销验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Tailscale 安全远程网页   | 部署/API/UI 闭环；Tailnet 真机待验               | 可选 overlay 使用固定多架构摘要的官方 Tailscale userspace 侧车和 Serve HTTPS；无宿主端口、无 Linux capabilities、只读根文件系统，auth key 只经 0400/0600 Compose secret 注入。Echo 自动信任精确 `*.ts.net` origin 并只读取固定健康端点；页面区分私网网页、LAN 设备控制与已安全挂载的文件/照片同步。仍待真实 Tailnet、HTTPS 证书启用、跨运营商网络和密钥失效后重启验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 手机文件/照片自动备份    | 服务端、配对网络与 Android App 已闭环；真机待验  | 复用一机一凭据但另做按设备、按 scope 管理员授权；正式 appliance 关闭上游共享 Tentacle、发布审批后才监听的设备端口，并从桌面 LAN Host 生成可达 `ws/sync` 深链。Echo 自有 SQLite 只记幂等资源、会话归属、游标和冲突，不打开 Agent 私库；8 MiB 续传、容量/配额、SHA、原子提交、keep-both、跨设备隔离和 v1 协商已有机器合同。Echo Mobile 已正式接入加密 token、设备 ID、独立证书 pin、WorkManager、MediaStore 分批游标、SAF 持久 URI、Android 9 相册兼容、Wi-Fi/充电策略、显式深链确认与运行结果反馈；严格解析拦截重复字段、公共明文、错设备响应与外部凭据接收主机。Mobile 新增 11 条协议/安全行为测试并进入全量 1328 条绿色测试集；API 36 模拟器除确认/取消、密码遮蔽与加密、相册权限、SAF、JobScheduler 约束和 401 回显外，已通过生产服务组合完成真实 21-byte 上传、同 SHA 幂等跳过、内容变化 keep-both，以及 512 MiB 文件在服务端持久 8 MiB 后强制结束 App、重开续传和最终哈希一致。实跑发现并修复 Android 36 MediaStore 禁止在排序 SQL 拼接 `LIMIT` 的兼容问题，现改用结构化查询参数；详见 `docs/mobile/ANDROID_EMULATOR_ACCEPTANCE.md`。验收实验台另有 3 条防漂移测试；OS appliance 当前 1170 条通过、1 条仅因开发机缺 `dpkg-deb` 跳过。仍待省电/断网、海量相册、低容量和 Tailnet HTTPS 实体手机验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Agent 集成窗口           | 本机可用                                         | 仅保留 Agent 内部一排窗口控制；关闭、最小化、缩放通过受源校验的 `postMessage` 驱动 OS 窗口                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Agent 任务恢复           | 本机与镜像合同已验证                             | Task Space 可投影 Agent 租约、真实运行时检查点并执行“接管→恢复”两次确认；恢复仍进入 Agent 原线程和原审批链。原生 runtime 清单 v2 强制包含 recovery queue 与 resume API；Linux 镜像 CI 已接入加密 `/var` 中断任务种子、真实冷启动 `recovery=1` 和启动后任务状态逐字节未变门，仍待该 workflow 产出绿色 raw 证据                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 家庭身份登录             | 本机身份、数据隔离与账户生命周期闭环；真机待验   | appliance JWT；旧 admin 凭据原位兼容迁移，管理员可把现有 OMV 成员映射为独立 `local:<username>` 与 Agent principal，成员使用独立 Echo 强密码。开通、停用/启用、独立 Echo 密码重置和停用后的映射移除均计划绑定、管理员一次性审批并脱敏审计；成员状态或密码变化会精确撤销该成员的 Cookie、Bearer 与在线 WebSocket，不影响其他成员。移除映射不删除 OMV 用户、SMB 密码、共享权限或 NAS 数据，角色固定为 member 而不开放提权。文件与照片 API 均实时投影 OMV 用户/组共享权限并在异常时失败关闭。Alice/Bob 登录、生命周期与数据隔离已测；成员自助改密和逐设备会话管理仍未开放，实体 OMV 挂载与权限变化仍待真机验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 无人值守外部告警         | 本机后端/API/UI 闭环；公网与断电真机待验         | 不再依赖登录中的浏览器轮询：后台服务直接读取原生存储与本机 UPS 健康状态，把新出现的 warning/critical 告警分别投递到管理员配置的 Webhook 和 SMTP 邮箱。两个通道使用独立的加密状态、去重游标和退避，不会因其中一个失败而重复发送另一个。两者均采用 plan → 管理员单次审批 → apply，完整 URL、Bearer Token、SMTP 账号/应用密码和邮件地址以 JWT 派生 AES-GCM 密文写入设备私密状态，状态/API/审计只返回脱敏目标。Webhook 限制为公网 HTTPS 443；SMTP 只允许公网 DNS 名称与 465 TLS/587 STARTTLS。两个发送器都固定使用同一次公网解析得到的 IP，同时保留 TLS SNI 与证书主机名验证，消除 DNS 重绑定的二次解析窗口；邮件在 STARTTLS 成功前绝不发送凭据。活动告警持久去重、恢复后重新布防，失败按 30 秒至 1 小时退避重试；配置损坏时对应通道失败关闭但不阻塞 NAS 启动，设备状态恢复晋级前会解密鉴权并严格校验。设置页可独立启停并审批发送测试通知/邮件。当前后端 21 项、前端 4 项通道定向测试通过，另有 116 项审批、恢复、启动集成回归通过；仍需真实公网 Webhook/SMTP、DNS 变化、长时断网恢复、UPS/RAID/SMART 实际故障和断电重启验收，企业微信/钉钉适配尚未实现。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 账户与会话安全           | 本机真实 HTTP/UI 闭环；2FA 真机待验              | Echo OS 系统设置可轮换管理员密码、退出全部登录，并可经管理员密码单次审批启用/关闭标准 TOTP 动态验证码。只有管理员密码验证通过后才暴露第二因子挑战，家庭成员账号不受影响；验证码有独立 IP/账号双层限速，同一 30 秒时间片不可重放。八个一次性恢复码只在设置时显示，设备仅保存 JWT 派生 keyed hash，使用后立即原子删除。启用/关闭会撤销旧 JWT、Cookie/Bearer/WS 会话和审批票据；TOTP 私有状态随加密设备状态备份，并在恢复晋级前严格校验。RFC 6238 向量、真实 HTTP 设置/登录/恢复码重放/关闭和前端交互已通过本机回归；仍待实体手机验证器、时钟偏移与断电恢复验收。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 文件浏览与目录操作       | 已实现                                           | 根目录约束下的列出、建目录、移动/重命名                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 可恢复上传               | 本机逻辑闭环                                     | 小文件兼容 multipart；16 MiB 以上自动 8 MiB 分块，逐块 SHA-256、严格偏移、失败进度查询/重试、暂停/继续/取消；会话 fsync 持久化、重启恢复、整文件摘要和同目录原子提交；重名默认 409                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 共享目录配额             | 本机逻辑闭环                                     | JSON 配置相对路径逻辑字节上限；父子规则同时生效，已有文件与未完成会话最终大小共同计量；上传、复制、跨共享移动和恢复统一返回 507，同共享重命名不重复计费；SMB/NFS 旁路仍需原生硬配额                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 用户/组硬配额            | 本机协议/UI 闭环                                 | 原生面当前限定 NAS 数据挂载根下的可写 ZFS dataset，或已安装标准 quota 工具且挂载启用对应 user/group quota 的 ext2/3/4/XFS 卷；只接受已有用户/组，desired → plan → 密码审批 → apply → `zfs get`/`repquota` 回读验证与可验证回滚 → 审计。系统根卷不会进入配额写面。按所有者覆盖本机/SMB/NFS，不是共享目录独立配额；btrfs、未启用 quota 的卷和真机跨协议强制执行仍待验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| OMV 兼容共享用户/组权限  | 历史兼容面；x86 门仅在本地工作区                 | 仅针对 OMV 在线共享保留原有单对象服务权限协议；不创建账户、不碰文件 ACL、不递归改文件。原生登记共享目录的 POSIX ACL 已由独立能力接管；真实 OMV users 组读写与 purge/reinstall 保留门尚未进入当前 `origin/os-main` 快照，也没有远端绿色 artifact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| OMV 家庭成员与用户组     | 本机协议/UI 闭环；x86 门仅在本地工作区           | 只创建空普通组和受限新成员，并可为仍满足 nologin、无 email/SSH key、禁止自改资料约束的已有成员重置密码。密码只经内存和固定 socket/一次性 `PASSWD_FD` 管道转交，不进入 argv、环境值、文件、响应、日志、证据或审计；本地 x86 门还要求真实 SMB3 上传/下载、旧密码拒绝、新密码认证及 purge/reinstall 后载荷摘要保持。其他更新和日常删除仍在 OMV；该门尚未进入当前 `origin/os-main` 快照，也没有远端绿色 artifact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 流式下载                 | 本机逻辑闭环                                     | 鉴权 `FileResponse`/Range；Chromium/Electron 通过文件句柄边读边写，失败从已写偏移续传并可取消；正式 Cookie 会话的旧浏览器交给原生下载管理器落盘，不创建页面 Blob 或凭据 URL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 文件/目录复制与移动      | 本机真实 HTTP 闭环                               | 默认不覆盖；拒绝把目录复制/移动进自身和复制符号链接树；复制排除内部上传临时文件，含活动上传的目录禁止移动或回收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 回收站                   | 已实现                                           | 删除只移入内部回收站；恢复/清空分离；内部目录不能从普通文件 API 直接访问                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 高风险审批与审计         | 本机真实 HTTP/UI 闭环；共享 ACL/NFS 已验 VM      | 应用启停、物理清空回收站、全会话退出、密码/审计密钥轮换、Echo 成员开通/停启/重置/移除、OMV 用户组/家庭成员创建、共享用户/组权限、SMB、私网 NFS、共享文件夹重命名/解除登记/空目录删除、用户/组硬配额写入、双盘 ZFS mirror 创建、唯一故障成员换盘、ZFS scrub 与 md RAID1 consistency check 启动及数据保留的 ZFS 池导出/导入均需管理员密码复核；共享根目录 ACL、NFS 创建/安全移除、共享目录创建/解除登记/空目录删除已通过隔离 VM 的真实 HTTP 登录、审批、写入和活体回读；其余真实服务已验未审批拦截、签发/消费、防重放、验链与凭据不落审计；令牌绑定 actor/action/target、90 秒/单次/重启失效，完整实体机审批审计仍待验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 前端构建                 | 已验证并进入主 CI                                | 维护源码格式、零警告 lint、TypeScript、66 个浏览器测试文件 518 项、Electron 合同和生产构建全部通过；静态/动态混合导入会直接使构建失败，浏览器首页只保留一套维护实现；生成资产单独由生产器验证，不再污染格式门                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 文件功能测试             | 已验证                                           | 文件后端 53 项，并完成前端传输、管理器与存储中心回归；覆盖成员级 OMV 路径投影、容量分类、20 万项扫描上限、链接排除、回收站/上传预留/共享配额投影，以及容量/配额 507、嵌套规则、并发与重启预留、降额会话写前阻断、复制/移动/恢复旁路、上限 413、偏移 409、分块/整文件哈希、上传/下载取消、Range 重试和 Cookie 原生下载回退；真实大目录与断盘仍待实体机                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Agent 同源交付包         | 本机已验证                                       | 统一 `echo-os` wheel + 运行资源 + Codex 从同一 OS revision 冻结；schema 2 逐文件/整树 SHA-256；不含第二 WebUI，混版在 Docker 构建与启动时硬失败                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Agent 安全启动闭环       | 本机真实 HTTP 闭环                               | 从最终 bundle 启动服务；未登录 401、管理员登录/身份校验 200、工作台资源 200；运行 YAML 0600 且不落 bcrypt/JWT 原值                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Python 安装边界          | 本机已验证                                       | 统一 `echo-os` wheel 同时提供 `echo` 与兼容 `echo-agent` 入口；容器只从哈希锁依赖和已验证本地 wheel 安装，不再拼接两份 Python 包                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 依赖与代码安全门         | 本机已验证                                       | uv 0.11.25 对统一项目生成 SHA-256 精确锁；amd64/arm64 解析字节一致，构建与运行只装二进制包；迁入的 Python 源码已全部纳入 Ruff 格式与静态检查                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Docker 最小权限控制面    | 本机协议/Hub 生命周期闭环                        | 主服务不挂 socket；sidecar 仅有 ping/list/start/stop、目录验证的 Hub 安装/更新/卸载/整组启停重启及按受信应用 ID 返回的脱敏运行健康。调用方不能提交镜像、端口、卷或 Compose，也不能读取原始 inspect/stats/logs；代理独立重算目录摘要与计划，安装固定镜像摘要并在失败时移除容器、保留数据卷；卸载、控制和健康查询都只接受带完整受管标签和确定容器名的完整服务集合。更新卷复制器只使用当前受保护的 docker-control 镜像 ID，关闭网络、只读根文件系统、剥离全部能力后仅补复制所需的 CHOWN/DAC_OVERRIDE/FOWNER，源卷只读、目标卷可写。NAS 目录执行器只接受最多四段规范相对路径，从唯一受保护 `echo-os` 容器读取真实 bind 根目录，并拒绝路径逃逸、符号链接、重复或伪造提供者。真机 schema 9 脚本已要求两轮安装健康/资源摘要以及首装后的整组停止、启动、重启证据，仍待 x86/ARM 实跑并继续验 PID 1 非 root、`CapEff=0`、`NoNewPrivs=1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| 容器数据目录身份         | 本机逻辑已验证                                   | PUID/PGID 可配；仅迁移 appliance 状态并永久降权，明确跳过 NAS 数据挂载；真实 bind mount 待 Docker 验证                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 浏览器与登录边界         | 本机真实 HTTP/双用户数据隔离闭环                 | 真实服务已验 CSP/安全头且浏览器零 CSP 报错；Host/Origin/WS 前置拒绝、精确 iframe 白名单、HttpOnly Lax cookie、Cookie 身份归因及密码/第二因子双层限速均有测试。管理员启用 TOTP 后，登录页在密码成功后才切换到动态验证码/恢复码输入，不把第二因子写入浏览器存储。旧 admin 存储可原位补出家庭账户目录，已有 OMV 成员可经计划、管理员审批和脱敏审计开通独立 Echo 密码与 JWT/Agent principal；Alice/Bob 已验登录、账户目录不可见，以及按实时 OMV 共享权限隔离文件列表、上传、下载和照片库/原图。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Docker TLS 入口          | 本机配置/密码学预检闭环，真 Engine 待验          | 固定摘要的官方 Nginx 双架构网关；80 仅跳转、443 终止 TLS，后端强制宿主回环发布，代理 IP 精确信任；证书/私钥格式、权限、匹配、七天有效期与 SAN 在 Compose 写前验证；多 GB/SSE/WS 不缓冲且查询参数不进访问日志                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 设备状态备份与恢复       | 本机逻辑/编排闭环                                | 离线独占锁 + scrypt/AES-256-GCM；包含认证、管理员 TOTP/恢复码摘要、无人值守告警密文/去重游标、审计与 Agent 状态，明确排除 NAS 用户数据；恢复晋级前会对 TOTP 与告警文件的类型、权限、严格格式和密码学鉴权逐项失败关闭。停机/校验/复机、暂存迁移与认证/审计预检、摘要确认、原子目录晋级、新实例健康复核、失败自动回滚、旧状态保留、校验后备份轮换及 systemd 定时模板已落地；备份只允许预先存在的精确活动挂载，挂载掉线、伪文件系统、符号链接或与部署/状态/NAS 同设备时会在接触 Docker 前失败，仍需真机拔盘/断网演练。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 审计证据外置             | 本机协议/UI/编排闭环                             | 历史可验证密钥环、Ed25519 设备锚点、锚点下载、scrypt/AES-256-GCM 最小证据包、设备指纹 pin、停机/验证/复机/校验后保留和 systemd 模板已落地；与状态备份共用外部文件系统 fail-closed 校验，不再仅凭目录位置推断外置；实时审计永不自动裁剪，仍需外置/远端介质和异机保存真机演练                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 设备状态版本闸门         | 本机逻辑闭环                                     | 持久 schema 标记、显式 v0→v1→v2→v3 单步迁移、备份清单携带版本；v3 为管理员 TOTP 状态建立降级边界，旧程序遇到未来版本拒绝启动，不会因不认识第二因子文件而静默回退为纯密码登录。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Docker 安全升级编排      | 本机协议闭环                                     | 只接受镜像摘要；升级前验证备份、目标 schema 预检、健康等待和双容器镜像核对；有迁移版本拒绝自动升级，无迁移版本失败恢复旧选择                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 多架构容器发布链         | 代码与本机构建契约已落地                         | 正式 semver 标签触发 GHCR amd64/arm64 OCI 索引；基础镜像、Actions、解析器和 Python 闭包均固定；逐平台 SPDX、BuildKit provenance/SBOM、GitHub OIDC 镜像证明、依赖锁、发布清单/校验和均已接线。含原生库的 Python wheel 另生成 commit 固定、可复现、自校验的对应源码包，并永久附加到同标签 GitHub Release；正式 Agent wheel 已按哈希锁真实构建，仍待第一次标签运行                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 容器运维交付包           | 本机构建/攻击面测试闭环                          | 同一镜像摘要绑定确定性 Compose/TLS、首次安装、升级、备份、审计与恢复包；固定白名单、逐文件摘要/权限、外层校验和、SPDX、同源验证器和安全解包已接入正式发布，总清单同时绑定全部产物；仍待首次标签 artifact 与真实 Docker 新装/升级/恢复                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 原生存储与共享接入       | 本机协议/UI 闭环；Linux x86 数据面已实证         | 宿主固定 RPC 显示物理盘、分区、md RAID、LVM、挂载卷、SMART、SMB/NFS、共享、用户/组和权限；原生面已覆盖可写卷上的基础共享文件夹、安全同卷重命名、解除登记、空目录安全删除、已有用户/组的非递归根目录 POSIX ACL、已有文件夹的私有 SMB、私网 CIDR NFS、专用单用户 Time Machine over SMB，以及已有文件系统的用户/组硬配额，均具备 desired → plan → 密码审批 → apply → 回读验证/安全回滚 → 审计闭环；共享目录固定由便携名称推导并使用 2770/users；重命名保留数据、UUID 与 ACL，且要求先停用 SMB/NFS/Time Machine；NFS 强制 root_squash/sync/no_subtree_check；Time Machine 使用独立受管配置、空专用目录、`catia fruit streams_xattr` 与近似最大容量，且阻止和普通 SMB/NFS 复用同一目录。本地 x86 门已覆盖真实 Echo 文件夹、ACL、NFS、Samba Time Machine 配置、匿名拒绝、认证写入、停用保数据及服务活体状态；尚未进入冻结 revision 的绿色 artifact，NFS 异机客户端和真实 macOS 首次/增量备份及恢复仍待验收                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 原生系统 A/B 更新/恢复   | 代码与测试契约已落地                             | 签名 root+UKI、inactive slot、三次启动回退、持久账号/网络/地区状态捕获及独立 Recovery UKI 已有脚本和 CI；仍待当前产物的 Linux VM/真机绿色证据                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| CI/Docker 构建门         | 代码已接入                                       | 主 CI 已加入完整前端质量与生产构建门，并从当前 Echo revision 准备完整 bundle；Docker 失败即失败。本机没有 Docker，仍待远端 CI/真机执行证据                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 Agent 商城状态复用已升级为 `echo.agent-assets.v6` 公共合同：Echo Hub 区分工作台、插件、连接器与
 技能，并投影启用、停用、可更新、异常、可回滚及有界恢复点数量。目录和生命周期均来自 Agent 既有
@@ -118,6 +470,74 @@ inspect/stats/logs、环境、挂载和网络地址均不进入主进程，重�
 挂载缺失、路径不符或余量低于固定保守预留都会在拉取前阻断。正式运行验证器要求 Jellyfin 详情
 通过鉴权且两类容量均可观测，不得出现宿主路径。该门仍需在真实数据盘接近满载时补阻断/清理证据。
 
+### Btrfs 共享文件快照（2026-09-05）
+
+原生存储面已为 Echo 新建的 Btrfs 共享子卷接入手动只读快照：只接受登记为
+`btrfsSubvolume` 的共享，快照落在同卷私有 `.echo-snapshots/<share UUID>/` 树，名称为
+单个便携组件，每共享最多 256 个。创建和删除均执行 desired → plan → 管理员单次审批 →
+apply，并回读校验只读属性、父子卷 UUID、同一文件系统和源子卷身份；同名创建不覆盖，命令超时后
+会按精确目标对账，验证失败则只回滚本次新建子卷。公共响应不返回宿主路径。
+
+每日自动快照也已接入逐共享策略：固定在本地时间 02:15 后随机错峰，管理员审批一次启用或修改，
+可选择保留最新 1–64 个、最近 1–3650 天或最近 1–120 个月。旧 v1 最新数量策略会严格读取并在下次变更时迁移为
+v2。调度器独占 `auto-YYYYMMDDtHHMMSSz` 命名空间，按 UTC 名称时间执行年龄边界，自动清理只处理该命名空间，
+手工快照永不进入保留裁剪；停用策略在数据卷离线时仍可执行，且不会立即删除已有快照。systemd oneshot
+使用只读系统保护、无网络和仅 NAS 数据根可写边界，旧机迁移会补装并启用 timer。
+任一手工或自动快照还可经独立审批锁定；锁状态保存在 root 所有、mode 0600 的严格注册表中，清单会显式
+回报 `locked`，手工删除和自动保留策略都拒绝处理已锁快照。解锁同样需要重新预览和管理员审批。
+选中快照还可经独立 planId 与管理员审批恢复为同一 Btrfs 卷上的新可写共享目录：目标名必须是
+不存在的单段便携名称，创建后回读父快照 UUID、可写属性、root:users 2770 与注册表；失败时回滚
+新子卷和注册项。该流程不覆盖原共享、不修改只读快照，也不会自动发布 SMB/NFS。
+
+2026-09-06 已在隔离 x86_64 Debian 13 VM（kernel 6.12.94、btrfs-progs 6.14）的 512 MiB
+loop Btrfs 卷上完成真实功能验证：公开 HTTP 的 plan → 密码审批 → apply、手工只读快照、恢复为
+新可写共享、源数据保持、锁定后删除拒绝、解锁删除，以及按最近天数保留时“锁定旧快照保留、
+解锁后裁剪”均通过内核侧回读。生产 timer 还在临时压缩触发窗口后由 systemd 自主启动原生产
+service；InvocationID 和 LastTrigger 均变化、service 结果为 `success`，并确认恰好新增一个只读
+自动快照。实验逐字节恢复认证、共享登记、锁和调度策略，恢复临时部署的 VM 文件，移除挂载/镜像
+并确认服务健康；本地证据 `_vmtest/btrfs_snapshot_functional_result.json` 的 SHA-256 为
+`24ea7da56e35d191903e54f611aedf524b104802d0447753bf230eaf4f1bcde1`。实跑期间除修复 Btrfs 子卷
+UUID 的 RFC 4122 误限和匿名 `st_dev` 误判外，也修复了 hardened service 的状态锁目录只读，及
+`ReadWritePaths` bind 层导致 `findmnt` 重复观测同一文件系统身份的问题。该记录仍是本地 VM 功能证据，不是签名发行 artifact 或物理 NAS
+验收。快照只承诺崩溃一致性，不会暂停数据库或应用；原位整卷回滚、复制到异盘和备份仍未实现，
+不能把它视为独立备份。
+
+### Btrfs RAID1 创建（2026-09-06）
+
+严格空白双盘创建写面现已有隔离 x86_64 Debian 13 VM 的真实功能证据。实验机临时挂入两块
+各 2 GiB、带不同固定 virtio 序列号的 qcow2 整盘；公开候选接口只选中这两块无分区、无签名、
+不可移动且具有稳定身份的磁盘。随后经 HTTP 完成 plan → 密码审批 → apply，真实执行不带 force
+的 `mkfs.btrfs`，按文件系统 UUID 写入受管 `fstab` 并挂载到 `/data/btrfslab`。宿主侧确认两成员
+UUID 相同、data/metadata 均为 RAID1、两个成员全部在线且挂载可写；写入并 fsync 的 16 MiB
+探针逐字节读回一致，创建结果也进入维护清单并可启动 scrub。
+
+实验结束后已卸载卷、清除两盘 Btrfs 签名、恢复认证与 `fstab`、恢复临时部署的 VM 文件并确认
+服务健康，两块盘重新成为空白候选。本地证据 `btrfs_provision_functional_result.json` 的
+SHA-256 为 `62adae1c9f88c1a767347cfc6d9927f2fa807df9fcf74a7b9e9da167805cceae`。
+随后独立两阶段实验保留同一新建阵列并执行完整来宾关机；Windows WHPX 在虚拟 CPU reset 时报告
+`Unexpected VP exit code 4`，因此在关机已完成后用原系统盘和两块数据盘冷启动。新的 kernel boot ID
+下，卷按 `fstab` 文件系统 UUID 自动恢复为双成员可写 RAID1，16 MiB 探针摘要未变，维护 API 仍可
+回读；第二阶段完成后同样恢复全局状态和临时模块并清除两盘签名。本地证据
+`btrfs_provision_reboot_result.json` 的 SHA-256 为
+`cd1d3d605748231d8fd673916f217d3a14859e7fffb48665eed1d50714bfd5cf`。这证明同一虚拟硬件的
+冷启动持久挂载与数据保留，但仍不等于物理盘固件行为、断电崩溃恢复或签名发行 artifact。
+
+### Btrfs RAID1 scrub（2026-09-05）
+
+手动 scrub 与默认关闭的月度策略现已有隔离 Linux VM 真 Btrfs 证据。实验在同一台 x86_64
+Debian 13 VM（kernel 6.12.94、btrfs-progs 6.14）用两个独立 512 MiB loop 设备创建
+data/metadata 均为 RAID1 的文件系统，写入并同步 64 MiB 数据后，经公开 HTTP 完成
+plan → 密码审批 → apply。服务端回读到了真实内核 scrub 从短暂“尚无统计”过渡到 finished，
+error summary 为零；随后启用月度策略并直接运行生产调度 runner，第二次 scrub 同样由内核侧和
+HTTP 维护清单确认完成。实验确认底层镜像路径未进入公共响应，并逐字节恢复认证、`fstab` 与调度
+策略，恢复临时部署的 VM 文件，卸载并分离两个 loop 设备、删除镜像后确认服务健康。
+
+本地证据 `btrfs_scrub_functional_result.json` 的 SHA-256 为
+`97ac993d831ff151769f4738be181b4e2ac27b591da52d2d504684ebd85fee50`。实跑同时发现
+`btrfs scrub start` 返回后第一次状态读取可能仍为 “no stats available”；写面已改为有界轮询，
+避免把已经被内核接受的 scrub 误报为 503。该记录验证的是手动启动和生产调度 runner，不等于
+systemd timer 的自然日历触发、跨重启或物理盘 I/O/故障注入证据，也不是签名发行 artifact。
+
 ## 交付前仍缺的 P0
 
 ### 1. OMV 真机集成与安装形态
@@ -149,8 +569,9 @@ inspect/stats/logs、环境、挂载和网络地址均不进入主进程，重�
   `main`，覆盖审批/OMV 桥/客户端/路由、探针和对应测试路径；所有第三方 Action 固定到完整提交。
   绿色门会把同一次运行生成并验证的 `.deb`、校验和、SPDX、原始 evidence、验证报告、离线验证器
   和整套 SHA-256 清单放进同一 artifact，正式分支成功运行才为包、SBOM 和证据生成 GitHub OIDC
-  attestation。当前 workflow 仍是未跟踪的本地工作区文件，当前
-  `origin/os-main` 快照中不存在该路径。2026-08-29 已确认 GitHub CLI 登录有效，但远端最近一次
+  attestation。该 workflow 现已由 Git 索引跟踪；但当前 `p3-provision` 工作树仍有大量未提交改动、
+  未跟踪交付远端分支，且没有可核对的缓存 `os-main` 远端引用，因此还不能证明该版本已进入受审
+  发布源。2026-08-29 已确认 GitHub CLI 登录有效，但远端最近一次
   Wayland job 在分配 runner 前就被账户付款失败或 Actions 支出上限阻断，没有执行任何测试步骤；
   需先处理 Billing，再提交这些 workflow。因此这里只记“本地门已接线”，不把 x86_64 实机证据
   提前记成完成，也不把该 run 误记为 KWin 代码失败。
@@ -172,20 +593,61 @@ inspect/stats/logs、环境、挂载和网络地址均不进入主进程，重�
   假覆盖。PR 只运行 `contents:read` 的 portable/source contract；raw 镜像、A/B 与真实 OMV 的特权
   job 必须依赖该合同，只允许 `os-main/main` 的非 PR ref，并独占 OIDC/attestation 写权限。手工候选
   汇总进一步只接受 `os-main`，避免从任意分支运行带发布权限的 workflow。集中策略测试会拒绝漏掉
-  分支界限、PR 隔离、权限下沉、`os-main`、浮动 Action 标签及未审查的 Action 身份。当前这些
-  workflow 改动仍未进入 `origin/os-main`，且本机没有 Linux/KVM/容器运行条件；这里只证明交付合同
+  分支界限、PR 隔离、权限下沉、`os-main`、浮动 Action 标签及未审查的 Action 身份。当前发布源
+  预检仍无法证明这些 workflow 位于干净且与远端一致的 `os-main`，且本机没有 Linux/KVM/容器运行
+  条件；这里只证明交付合同
   接线正确，不把远端 CI、raw 冷启动、A/B 回滚或桌面会话提前记成绿色。
 - 统一发布源预检 `deploy/appliance/delivery_source_preflight.py` 已落地：在发布前只读检查精确
   `os-main`、干净工作树、七个必需 workflow 已跟踪、OS HEAD 与缓存/在线远端一致、无凭据 origin、
   内建 Agent 同源身份、Echo 提交在线可达及有效 GitHub 登录，并输出机器可读 blocker。离线模式
   必定保持 `ready:false`，报告只给变更数量而不泄露本地路径；当前工作区会按事实阻断，不能靠参数
-  放宽 dirty/unpushed/未跟踪来源。
+  放宽 dirty/unpushed/未跟踪来源。Windows 中文仓库路径不再经 Git 绝对路径反解；传入子目录或
+  非仓库路径时也会返回完整失败关闭报告，不再被检查项契约异常击穿。raw 镜像与 A/B workflow
+  会把实际 `GITHUB_REF_NAME` 传给预检，兼容 `main` 不再被默认 `os-main` 误拒；最终候选汇总仍只
+  接受 `os-main`。公开源码门命令拒绝所有未审查参数，`--help` 只显示用法，不会再意外启动全量测试。
+- 本地 VM 证据新增 `docs/LOCAL_VM_EVIDENCE_INDEX.json` 与严格审计器：schema 2 逐文件复验 SHA-256、
+  UTF-8 JSON 唯一键、类型判别、本机 Windows 绝对路径泄露、每份证据的显式完成断言，以及跨文件
+  摘要、池 GUID、载荷和 HEAD 绑定；布尔断言不会把整数 `1` 当成成功。当前索引的 14 份证据已全部
+  通过，包含 v4 主机升级和 HTTPS S3/Restic 互操作，审计器回报 `ready:true` 且无 blocker。旧 ZFS mirror
+  provisioning/reboot 对因摘要漂移、路径泄露和 pool GUID 跨轮次不一致而保留但退出索引；同轮重跑的
+  `zfs_mirror_rerun_result.json` / `zfs_mirror_rerun_reboot_result.json` 已替代它们。
 - 整机发布证据索引 `deploy/appliance/release_evidence_index.py` 已落地：它严格读取在线发布源预检、
   raw 镜像与 A/B 的自校验清单并实际复验两份 GPG 签名，绑定真实 OMV x86 报告对应的原证据与
   `.deb` 字节，再把 appliance 清单的不可变 OCI 摘要、OS commit 和 Agent commit 汇到一个只读
   `indexId`。不同 workflow 串版、错 OS/Agent SHA、改写清单、错 OMV 包/证据、重复 JSON key、
   符号链接或缺签名都会失败关闭。索引只允许给出 `ciReleaseCandidateReady:true`，固定保留
   `nasProductDeliveryReady:false` 和六项真机门，不把 CI/QEMU/容器证据冒充整机交付。
+  候选现在还必须携带并由现场工具失败关闭复核 `nasRuntimeProfile`：当前 NAS 交付物被明确限定为
+  `Debian 13 + OpenMediaVault 8` 宿主上的 OCI Compose appliance；同一候选内的 `packaging/image`
+  Echo OS 原生镜像被明确标为独立桌面产物，不再含糊地充当已被六门验证的 NAS 宿主系统。也就是说，
+  现有链可以最终证明“NAS appliance 可交付”，但还不能证明“Echo OS 原生镜像本身是一套完整 NAS OS”。
+  原生镜像侧已加载完整、强制认证的 NAS 控制面，并落下受限特权存储代理：root 服务只监听 root-owned Unix socket，校验 Linux
+  peer UID，只接受源码固定的 38 对原生存储 `plan`/`apply` 操作及共享总览/单共享 ACL 两条固定只读投影；普通 Agent 先请求 root 侧计划，完成
+  密码审批和 attempted 审计后再把同一 desired state 与 plan ID 交回 broker 重算并执行。这避免 root
+  写入的共享注册表及特权设备观测在下一次非 root 预览时形成状态断层。systemd 依赖和开机健康门还会
+  实际完成无副作用协议握手，broker 缺失、
+  socket 所有权不安全、返回 schema/请求身份不符均失败关闭。Windows broker 合同回归 34 项通过、
+  1 项因需要 Linux root-owned Unix socket 跳过；镜像 `source-contract` 现额外在 Debian root 容器中
+  启动真实 socket，强制验证允许和拒绝两条 `SO_PEERCRED` 路径，缺少 Linux/root/内核能力会直接失败、
+  不会静默跳过。该 Linux 步骤仍须由远端镜像 workflow 产出运行证据。broker
+  明确不使用会创建私有 mount namespace 的 `ProtectSystem`/`ProtectHome`/`PrivateTmp`：存储挂载必须
+  传播到宿主，其安全边界改由固定协议、plan ID、socket/peer UID 和上层审批审计承担。
+  当前源码定向验证为完整扩展/原生存储 **176 passed、3 skipped**，认证/审批切片 **77 passed**；
+  OEM 认证模块还由 wheel 打包回归证明进入发行包。原生 raw 装配源码现已显式纳入
+  Samba/VFS、NFS、SMART、NUT、mdadm、hdparm、quota 与 WSD，并由 root broker 在 SMB、Time Machine、
+  NFS 配置事务内同步仅限私网的 firewalld rich rules；状态文件、永久规则和运行规则不一致时操作与
+  开机门均失败关闭。新增防火墙/存储/Time Machine/打包定向回归 **181 passed、3 skipped**。
+  Raw 装配进一步加入 Debian Docker Engine、每设备原子生成的 256-bit credential、同 credential 的
+  非特权 Agent/回环 Docker 控制链，以及只读数据根容量观察；主 Agent 没有 socket，控制代理由专用
+  `echo-docker-control` 系统账号直接启动，只保留 broker 主组与 Docker socket 补充组、零能力并禁止
+  非回环 IP。Hub 成功或回滚后的生命周期现在同步调用
+  argument-free root broker：仅从当前目录摘要、完整受管标签、精确端口绑定、network mode 和 RFC1918
+  容器地址生成 rich forward/input rules；任一漂移会清空全部 Hub 放行，同时保留 SMB/NFS 规则事务。
+  Raw OpenZFS 源码装配现已包含 `contrib`、精确内核 headers、DKMS/ZED、与 UKI 同身份的模块签名和
+  当前内核 boot gate；真实 Docker/firewalld/nftables 转发、计划绑定停启与身份漂移关闭已在旧基础镜像
+  注入当前源码的 Debian 13 QEMU 中通过，仍需在新 raw Secure-Boot 制品和物理机上复验，再让安装、
+  冷启动、断电、恢复和异机
+  协议互通六门直接绑定该镜像身份；在此之前不得混用两种完成声明。
 - 远端候选汇总 workflow `delivery-release-candidate.yml` 已接线：它只接受四个精确 run ID、OS SHA
   和 appliance 标签，拒绝失败/错误 workflow、其他源码、PR/main、重复 run 或错标签；下载前后
   绑定同仓库 run 身份，并用固定 signer workflow、source SHA/ref 验证 raw、A/B、OMV、appliance
@@ -286,29 +748,41 @@ inspect/stats/logs、环境、挂载和网络地址均不进入主进程，重�
 
 ### 2. 存储控制面
 
-Echo 现在除了管理已经挂载好的 `ECHO_NAS_ROOT`，还可以经受限 OMV 桥查看物理盘与挂载卷，
-并读取 SMART 型号、健康、温度、通电时间和启停次数。物理盘只向 Echo 暴露 canonical 设备名，
-不暴露 OMV 返回的序列号或可能含序列号的 by-id 路径。桥需登录、不接收任意 RPC 方法，且
-不会把序列号或原始 SMART 文本带入 Echo。八类窄写控制面已经落地：可以创建严格命名的空普通
+Echo 现在以 Linux 内核、标准存储工具和系统账号作为存储权威，也保留可选的 OMV 兼容桥来查看
+物理盘与挂载卷，并读取 SMART 型号、健康、温度、通电时间和启停次数。物理盘只向 Echo 暴露
+canonical 设备名，不暴露 OMV 返回的序列号或可能含序列号的 by-id 路径。桥需登录、不接收任意
+RPC 方法，且不会把序列号或原始 SMART 文本带入 Echo。多项窄写控制面已经落地：可以创建严格命名的空普通
 用户组，以及使用强密码、现有普通附加组、`/usr/sbin/nologin`、无 email/SSH key、禁止自改资料的
-家庭成员。两者都经过 planId、设备管理员密码、审计和回读验证；密码用 HMAC 绑定计划，只经内存
-和固定 OMV engined Unix socket 转交，不进入进程参数、响应、日志、证据或审计。仍保持受限属性的
+家庭成员。两者都经过 planId、设备管理员密码、审计和回读验证；密码用 HMAC 绑定计划，只经受控
+原生系统命令或固定 OMV engined Unix socket 转交，不进入进程参数、响应、日志、证据或审计。仍保持受限属性的
 已有成员可通过独立计划和审批重置密码，写后回读确认其他账户属性未漂移；密码成功写入不可逆，
 结果不确定时明确要求重试和登录验证，不伪报旧密码回滚。其他更新和日常删除仍拒绝，创建失败回滚只撤销本次尚未交付的新对象。在 OMV 已挂载可写卷上还可按
-便携名称创建同名基础共享目录，固定为 2770/users，不接受任意路径、更新、删除或 ACL；
-该创建同样经过设备管理员密码、planId、审计、回读验证，失败回滚只移除配置不删除数据。一个
-已有用户或组也可在已有在线共享上设置继承、禁止、只读或读写服务权限；单次只改变一个对象，
-同时保留并回读其他权限，按需部署 Samba/Rsync，失败恢复原权限表。它不借共享权限接口创建账户、不调用文件 ACL
-或递归权限接口，并使用独立 `omv.share-privilege.apply` 审批与审计。已有
-OMV 共享文件夹可生成私有 SMB 期望状态计划，经设备管理员密码复核和单次 planId 审批后同步应用；写前拒绝
-OMV 未应用变更，写后回读验证，失败恢复原规则并进入 HMAC 审计链。同一已有文件夹也可为一个
-RFC1918/IPv6 ULA CIDR 创建或更新受限 NFS 规则，强制 root_squash、同步写入和 subtree_check；
-通配符、公网、主机名、任意高级参数与删除不在 Echo 控制范围。NFS 使用独立 `omv.nfs.apply`
-审批和同样的回读/回滚/审计链。已有可写文件系统上的
-已有用户/组也可生成硬配额计划，使用独立 `omv.quota.apply` 审批，失败时恢复并再次验证原限制。
+便携名称创建同名基础共享目录，固定为 2770/users，不接受任意路径、跨卷移动或非空删除；
+该创建同样经过设备管理员密码、planId、审计和回读验证，失败回滚只移除配置不删除数据。备注可在同一计划边界内更新；已登记且无 SMB/NFS 依赖的目录可经独立计划在同一可写卷内安全重命名，保留数据、UUID 和 ACL，并在目录或注册表写入失败时一并回滚；同样无依赖的空目录可通过独立删除能力安全移除。一个
+已有用户或组也可在已登记共享目录的根目录设置继承、禁止、只读或读写 POSIX ACL；单次只改变一个对象，
+不递归改动子项，并回读其他 ACL，失败恢复完整快照。它不借共享权限接口创建账户，并使用独立
+`omv.share-privilege.apply` 审批与审计。已有共享文件夹可生成私有 SMB 期望状态计划，经设备管理员密码复核和
+单次 planId 审批后同步应用；写前拒绝未应用变更，写后回读验证，失败恢复原规则并进入 HMAC 审计链。同一已有文件夹也可为一个
+RFC1918/IPv6 ULA CIDR 创建或更新受限 NFS 规则，强制 root_squash、sync 和 no_subtree_check；
+通配符、公网、主机名、任意高级参数与非 Echo 规则删除不在 Echo 控制范围。NFS 使用独立 `omv.nfs.apply`
+审批和同样的回读/回滚/审计链。NAS 数据挂载根下已有可写 ZFS dataset 上的已有用户/组也可生成硬配额计划；
+ext2/3/4/XFS 在已安装标准 quota 工具、且挂载启用对应 user/group quota 时也可生成计划，
+分别通过 `zfs get` 或 `repquota` 回读，失败时恢复并再次验证原限制；btrfs、未启用 quota 的卷仍不在原生写面内。
 该能力按文件所有者覆盖本机、SMB、NFS，不支持共享文件夹或路径级独立硬限制。
-人工真机验收器现有 SMB 和配额两种两阶段可逆写模式；NFS/共享权限/家庭账户已在独立 x86 CI 门接入真实 OMV
-创建、users 组读写、生成 exports、NFSv4 客户端读写、只读更新与 purge/reinstall 保留证据，仍待正式提交的
+原生面现另有一条刻意收窄的 ZFS 建池能力：只接受两块至少 1 GiB、整盘、不可移动、非只读、
+无分区/文件系统/RAID 签名且带稳定 serial 或 WWN 的设备，挂载点固定从小写池名推导到 `/data/<pool>`。
+计划绑定设备路径、容量、serial/WWN、当前池清单和挂载点状态；审批前盘位被替换会使 planId 失效。
+apply 不使用 `zpool create -f`，固定 mirror、ashift=12、lz4、关闭 atime、启用 Linux POSIX ACL/xattr，
+并回读 ONLINE、mirror 拓扑、精确设备和 dataset 属性；回读失败会在尚未交付数据前尝试 destroy 并验证回滚。
+候选盘接口只返回通过同一服务端检查的磁盘。当前证据是协议、路由、审批、设备替换拒绝和回滚单测；
+现有 Linux VM 已确认安装 `zpool`/`zfs`，但只有系统盘，没有两块隔离数据盘，因此尚未执行真实建池。
+前端已新增独立存储池页，只列服务端通过安全检查的候选盘，并按“选两盘 → 数据清除确认 → 身份绑定预览 → 管理员密码单次审批 → apply”闭环；
+目标 API、审批 action/header、能力缺失禁用和 OpenZFS 保留名称拒绝已有本机前端测试。
+同页现增加数据保留的窄生命周期：安全导出只列 ONLINE、无 scrub/resilver、无受管共享依赖、未加密且所有数据集挂载点都位于 `/data/<pool>` 的池，计划绑定名称、数字 GUID、健康、容量、数据集策略和状态摘要；apply 先 `zpool sync`，再使用不带 `-f` 的标准 export，并按 GUID 验证其成为安全导入候选。导入只接收 ONLINE 且无需强制参数的候选，审批后先按 GUID 以只读、`-N` 不挂载方式检查数据集和挂载策略，恢复导出状态并重验计划后再按 GUID 正常 `-N` 导入、逐数据集挂载和回读；失败会尝试非强制 export 恢复。`-f/-F/-X/-m/-D/-a`、加密密钥、缺失日志、已销毁池和任意外部挂载布局均不开放。该能力已有后端协议/路由/审批/回滚与前端交互测试，但尚未在隔离双盘 Linux VM 或实体盘执行。
+故障维护现另有一条更窄的双盘 mirror 换盘流程：只识别单一顶层双盘 mirror、恰好一个故障 leaf 和一个无 I/O 错误的 ONLINE leaf，且池没有已知永久数据错误；使用 `zpool status -g` 的 leaf GUID 绑定故障目标。新盘必须通过整盘、空白、不可移动、稳定 serial/WWN 检查，且容量不小于在线成员。计划同时绑定池 GUID、完整拓扑摘要和新盘身份；apply 只执行无 `-f/-s/-w` 的标准 `zpool replace`，确认新盘进入池后报告“resilver 已接受或进行中”，不会提前宣称修复完成，也不会在接受后自动拆盘。多 vdev、健康盘预防性更换、自动更换、热备、RAID-Z 换盘仍保持关闭；当前同样只有模拟协议/UI 证据。
+同页现从 `zpool status` 提取有界的 scrub/resilver 类型、进行状态、进度和错误数，不向浏览器返回原始路径或完整状态文本。只有 ONLINE、未加密、符合 `/data/<pool>` 策略且没有正在进行或未知维护任务的池才可生成 scrub 计划；计划绑定池 GUID、数据集策略和状态摘要，经独立 `omv.zfs.scrub.start` 审批后只执行不带 `-w/-s/-p` 的普通 `zpool scrub`。服务端再次读取状态，只有观察到新 scrub 正在进行或已瞬时完成才报告接受；高 I/O、不可回滚和与 resilver 互斥均在预览中明确。当前证据仍为后端协议/路由与本机 UI 测试，未进入运行中的 VM。
+人工真机验收器现有 SMB 和配额两种两阶段可逆写模式；NFS/共享权限/家庭账户已在独立 x86 CI 门接入真实
+系统工具与 OMV 兼容路径的创建、users 组读写、生成 exports、NFSv4 客户端读写、只读更新与 purge/reinstall 保留证据，仍待正式提交的
 第一次绿色 artifact，且不能替代物理 NAS/异机客户端互通。现有人工模式第一次只预览，第二次必须同时提交精确
 确认语与对应 require 开关。SMB 门只临时改备注并恢复完整简单规则快照；配额门只允许临时收紧
 专用对象的限制，确认语绑定文件系统、对象、原值和探针值，随后回读并恢复原值。两者都会验证
@@ -319,15 +793,38 @@ ARM64 Debian 13 + OMV 8.5.6 隔离 VM 已留下实际 SMB 创建/部署/幂等�
 
 它仍不能完成完整 NAS 写控制面；已实现的 SMB 窄写、复杂拓扑与告警也还需要真机证据：
 
-- 在真实 md RAID/LVM/Btrfs 多设备机器核对卷到物理盘映射、降级/重建/校验状态和告警恢复；
-- RAID/mdadm、Btrfs/ZFS/EXT4 的创建、扩容、降级与修复；
-- 存储池、共享文件夹修改/删除、复杂路径布局、路径/project/dataset 级容量配额和卷级只读保护；
-- UPS 断电策略、磁盘休眠和文件系统一致性检查。
+- 在真实 md RAID/LVM/Btrfs 多设备机器继续核对卷到物理盘映射、降级/重建/校验状态和告警恢复；Btrfs 换盘及换盘后冷启动已通过本地隔离 VM 验证，仍需实体盘验收；
+- mdadm 已具备严格空白双盘 RAID1 创建、唯一故障成员换盘、健康阵列一致性检查及默认关闭的月度检查策略。所有写操作均走 plan → 独立密码审批 → apply → 实际状态回读；不开放 `--force`、显式 repair、停止或暂停。月度检查只处理 Echo 管理的健康 RAID1，固定每月首个周日 00:45 后随机延迟最多 24 小时。双盘创建/检查、三盘换盘和换盘后冷启动均已有隔离 VM 证据；生产 timer 的自然触发也已通过压缩触发窗口验证，systemd 自主启动原生产 service，InvocationID/LastTrigger 变化，journal 回报 `started=1/errors=0`，第二次内核 check 完成且 `mismatch_cnt=0`。证据为 `_vmtest/mdraid_ext4_result.json`（SHA-256 `be10f81b5e2786f36671d78fdc2e8b8c6317856a0f9a68b59a20b1c3899242c0`）。实体盘仍待验收。
+- EXT4 创建只接受 Echo 登记、健康、未挂载且无签名的 RAID1，按文件系统 UUID 持久挂载；失败会卸载、恢复受管 `fstab` 并清除本次文件系统签名。它与下层 md RAID1 创建、冷启动自动组装、UUID 持久挂载和唯一故障成员换盘均已通过本地隔离 VM 验证；实体盘仍待验收。
+- Btrfs RAID1 创建只接受两块带稳定身份的空白整盘，强制 data/metadata RAID1 并按 UUID 持久挂载；失败会卸载、恢复 `fstab` 并清除本次新签名。读面回报缺失成员、profile、累计设备错误和内核 `exclusive_operation`；手动 scrub 和唯一缺失成员换盘均要求 Echo 登记、双 RAID1 profile、可写且无冲突维护，并分别经独立审批。scrub 的计划与 apply 会绑定并复核内核独占操作，balance、设备增删/换盘、resize 等期间 fail-closed；所有操作不使用 force/cancel、不伪造完成或回滚状态。新建在 Btrfs 卷上的共享目录现在创建为独立 Btrfs subvolume，计划绑定文件系统 UUID/type 与 `storageKind`，登记后公开 `snapshotCapable`；创建、空目录删除和失败回滚都使用 subvolume 命令并回读验证。该行为不追溯转换已有普通目录。当前已开放手工只读快照、删除、锁定、每日自动创建、按最新数量/最近天数/最近月数保留，以及恢复为新共享副本；原位整卷回滚与应用静默仍未开放。
+- Btrfs 双盘创建实验台和三盘换盘实验台已纳入受候选哈希绑定的 operations bundle。月度 scrub 策略默认关闭，经独立审批启用；固定每月首个周日 01:45 后随机延迟最多 24 小时，只处理 Echo 登记、完整可写、双 RAID1 profile、无历史设备错误且无活动维护的卷。新装与 `nas-maintenance-v3` 升级迁移都会安装受限 systemd timer。共享子卷快照/恢复副本/锁与按天保留、严格空白双盘 RAID1 创建写面及冷启动 UUID 持久挂载、双盘 RAID1 上的手动 scrub 和生产调度 runner，以及热拔一个成员后的候选 → plan → 管理员审批 → apply 换盘，已有本地 Linux VM 真 Btrfs 证据；换盘后再冷关机、完全断开旧成员并仅带幸存盘与替换盘启动，也确认原 UUID 自动 rw 挂载、64 MiB 载荷摘要不变且两成员错误计数均为零。冷启动证据为 `_vmtest/btrfs_replace_reboot_result.json`（SHA-256 `1fd77ad77711646c59cfab1e2762b039b9057bfcf238a1ee14fb247917e17e68`）。每日快照和月度 scrub 两个生产 timer 的自然触发均已在隔离 VM 验证：临时压缩触发窗口后由 systemd 自主启动原生产 service，InvocationID 和 LastTrigger 均变化；快照 service 成功创建唯一只读自动快照，证据为 `_vmtest/btrfs_snapshot_functional_result.json`（SHA-256 `24ea7da56e35d191903e54f611aedf524b104802d0447753bf230eaf4f1bcde1`）；scrub journal 回报 `started=1/errors=0`，前台 scrub 完成且内核回读无错误，证据为 `_vmtest/btrfs_scrub_functional_result.json`（SHA-256 `97ac993d831ff151769f4738be181b4e2ac27b591da52d2d504684ebd85fee50`）。实体盘仍待验收。
+- ZFS 当前提供严格空白双盘 mirror 创建、唯一故障成员换盘、scrub 状态/启动和 Echo 布局池的非强制导出/导入。
+  同一次隔离双盘 VM 实验已完成候选 → plan → 管理员审批 → apply、ONLINE mirror 回读、64 MiB
+  载荷摘要校验、手工 scrub、非强制导出、按 GUID 只读预检后导入，以及使用同一 OS/数据盘的第二次
+  冷启动。重启后池 GUID `13505768716223085417`、载荷 SHA-256 和 HEAD 绑定均与 provisioning
+  证据一致，池自动导入并读写挂载；最后销毁池、擦除实验盘、恢复认证文件并确认服务健康。
+  provisioning 证据为 `_vmtest/zfs_mirror_rerun_result.json`（SHA-256
+  `859032094af85b236457acd82cc29e0a845826ce3a909484cd396480f74a0edb`），冷启动证据为
+  `_vmtest/zfs_mirror_rerun_reboot_result.json`（SHA-256
+  `e67d661e2435943d10530b7358252386fa8647a58fdb765d143020612f77a965`）；本地严格审计的文件摘要、
+  pool GUID、载荷和 HEAD 四条绑定均通过。旧混批次证据仍保留用于追溯，但已从索引退出。用于重跑的旧
+  `disk-fresh2` 基线还暴露出内核升级后缺少匹配 ZFS DKMS 模块：仓库现行 firstboot 已要求先安装精确
+  `linux-headers-$(uname -r)`、再执行 `dkms autoinstall` 和 `modprobe zfs`，本次 disposable
+  overlay 也按该流程成功重建后才执行实验；因此本轮证明当前 HEAD 写面与现行修复路径，不把旧基线镜像
+  冒充为已修复的新发布镜像。正式运行验收现另以 `--require-zfs-runtime` 对匹配模块、已加载状态、
+  systemd 加载服务和 `zpool` 内核接口四层失败关闭，设备耐久、存储恢复和裸机恢复实验不能再只凭
+  用户态包存在通过。唯一故障成员换盘的独立三盘证据也通过摘要、类型和隐私检查：冷关机后完全
+  断开旧成员，仅挂幸存盘和带稳定序列号的空白替换盘；HTTP 只暴露一个 `UNAVAIL` leaf GUID 和唯一
+  合格替换盘，经 plan → 管理员审批 → apply 完成 resilver，池恢复 ONLINE 且 64 MiB 载荷摘要不变，
+  随后池、三块实验盘和认证状态均完成清理。证据为 `_vmtest/zfs_replace_result.json`（SHA-256
+  `1a637facb68fdf26141920d49d308c9f304b96137296479ec24f22aef9510cf3`）。实体盘仍待验收。
+- 存储池删除、外部/加密/降级池导入与恢复参数工作流、Btrfs 扩容/balance/自动降级挂载/多故障恢复、共享文件夹跨卷/任意路径修改、非空目录删除、复杂路径布局、路径/project 级容量配额、btrfs/未启用 quota 的文件系统配额和卷级只读保护；
+- UPS 已完成本机 NUT 有界监控、固定 USB 驱动白名单配置、审批式低电量关机策略与定时守卫，仍缺真实设备断电/恢复/关机验收。内置 HDD 休眠现提供默认关闭、30/60/120/240 分钟四档的 plan → 审批 → apply 流程，只绑定具备稳定身份且不承载 `/`、`/boot`、`/var` 等系统挂载的内置旋转 ATA/SATA 整盘，跳过系统盘、NVMe、USB、可移动盘、身份不明或挂载拓扑不完整的设备；后台 SMART 汇总对旋转盘使用 `smartctl -n standby,0`，盘处于 SLEEP/STANDBY 时保留休眠且把本次观测明确标成延后，只有用户主动读取完整 SMART 详情或启动自检才允许唤醒。`hdparm` 命令接受和策略持久化已回读，但固件实际休眠、启停计数及跨重启仍待 Linux VM/真机验证。飞牛另有“有用户登录即唤醒/仅存储读写时按需唤醒”偏好，Echo 尚未接入该跨登录链能力。非 ZFS 一致性检查现覆盖 Echo `fstab` 登记、位于健康 Echo md RAID1 且已经卸载的 EXT4：计划绑定文件系统 UUID、阵列身份、`fstab` 哈希和挂载状态，审批后临时屏蔽对应 systemd mount unit，只执行 `e2fsck -f -n`，将“干净/发现未修复错误”分开回报并恢复 unit 状态。隔离 VM 已验证挂载中候选拒绝、卸载后 plan → 审批 → apply、clean 回读、mount unit 状态恢复、外部复挂及 32 MiB 载荷摘要保持；证据与 mdadm 实验共存于 `_vmtest/mdraid_ext4_result.json`（SHA-256 `be10f81b5e2786f36671d78fdc2e8b8c6317856a0f9a68b59a20b1c3899242c0`）。它仍不会自动停止共享、卸载、重新挂载或修复；跨 SMB/NFS 的完整维护窗口和实体盘验收仍缺。
 
-这些继续优先通过 OMV API/受限系统服务适配，不让 Web 进程直接拿任意 root shell。当前只把
-“空普通用户组与受限家庭成员创建/密码重置”“现有可写卷上的基础共享文件夹创建”“已有用户/组在已有共享上的服务权限”“已有共享文件夹的简单私有 SMB / 私网 NFS 规则”和
-“已有文件系统的已有用户/组硬配额”标记为代码与本机协议/UI 闭环；格式化、阵列、共享文件夹
-更新/删除、密码以外的账户/组更新与日常删除、文件 ACL、目录级配额或复杂 SMB/NFS 配置不能伪装成已经
+这些继续优先通过原生标准工具或 OMV API/受限系统服务适配，不让 Web 进程直接拿任意 root shell。当前只把
+“空普通用户组与受限家庭成员创建/密码重置”“现有可写卷上的基础共享文件夹创建、安全同卷重命名与空目录安全删除”“已登记共享目录的根目录
+POSIX ACL”“已有共享文件夹的简单私有 SMB / 私网 NFS 规则”和“已有 ZFS dataset 或已启用 kernel quota 的 ext2/3/4/XFS 卷上的已有用户/组硬配额”标记为代码与本机协议/UI
+闭环；严格空白双盘 ZFS mirror 创建、scrub、非强制导出/按 GUID 导入、冷重启自动导入挂载及唯一故障成员空白盘换盘均已有上述本地隔离 VM 证据。严格空白双盘 mdadm RAID1 创建及其上的 EXT4 格式化、UUID 持久挂载现已有本地 VM 功能证据：两块 4 GiB 虚拟整盘经 HTTP 候选 → plan → 管理员审批 → apply 建成 `[UU]` RAID1，初始同步完成后创建 EXT4、写入 32 MiB 载荷并验证摘要；同一验证还经独立审批启动内核一致性 `check`，等待完成并确认 `mismatch_cnt=0`、未请求显式 repair。生产 timer 的自然触发也已验证：systemd 自主启动生产 service，journal 回报 `started=1/errors=0`，第二次 check 完成且 `mismatch_cnt=0`。同轮还在挂载状态确认 EXT4 离线检查 fail-closed，外部卸载后经独立 plan → 审批 → apply 完成只读 `e2fsck -f -n`，恢复挂载并确认载荷摘要不变。写面、手工 check、timer 与 EXT4 离线检查证据位于本地 `_vmtest/mdraid_ext4_result.json`，SHA-256 为 `be10f81b5e2786f36671d78fdc2e8b8c6317856a0f9a68b59a20b1c3899242c0`。随后冷关机并用同两块数据盘重启，确认新 boot ID 下 mdadm 按 UUID 自动组装、fstab 自动挂载、阵列健康且载荷摘要不变，最后停止阵列、恢复全局配置和清除实验盘；冷启动证据为 `_vmtest/mdraid_ext4_reboot_result.json`，SHA-256 为 `2fc082f06fd503dd187da8dd0278ec2d24cbb4ed6a3498ec96e88b179bff9283`。唯一故障成员换盘也已通过三盘本地 VM 验证：主动 fail/remove 原成员后，HTTP 只暴露唯一降级阵列和合格空白替换盘，经 plan → 管理员审批 → apply 进入 recovery，等待完成后为 2/2 clean 且 32 MiB 摘要不变；再冷关机并完全断开旧故障盘，仅带幸存盘和替换盘启动，确认 mdadm 按原 UUID 自动组装、EXT4 自动挂载且摘要不变。换盘功能证据位于 `_vmtest/mdraid_replace_result.json`，SHA-256 为 `79946f6755117026e45712ff78858f9739e7e8c0ff25542d02e7d0936ea1bcff`；换盘后冷启动证据为 `_vmtest/mdraid_replace_reboot_result.json`，SHA-256 为 `ec273f37073277edbad0554690ff35714e5e79ddc2c48701d30ec3aa21cfab51`。上述 md 功能仅余实体盘 I/O 验收。严格空白双盘 Btrfs RAID1 创建写面、UUID 冷启动持久挂载、手动 scrub、生产调度 runner、生产 timer 自然触发、唯一缺失成员换盘及换盘后冷启动已有本地 VM 功能证据。换盘实测覆盖 QEMU 热拔原成员、缺盘健康发现、候选 → plan → 管理员审批 → apply、64 MiB 载荷摘要不变和最终两成员零错误；证据位于本地 `_vmtest/btrfs_replace_hotplug_result.json`，SHA-256 为 `9b2db5324ee14b82fcd07fee5b8c94e59de3526d3cb602b92b477bc433015e7b`。换盘后再冷关机并完全断开旧成员，仅带幸存盘和替换盘启动，确认新 boot ID 下原 UUID 自动 rw 挂载、载荷摘要不变且设备错误计数全零；证据位于 `_vmtest/btrfs_replace_reboot_result.json`，SHA-256 为 `1fd77ad77711646c59cfab1e2762b039b9057bfcf238a1ee14fb247917e17e68`。实现按 `btrfs filesystem show` 确认缺失 devid，并容忍热拔后 sysfs 缺失位短暂陈旧；sysfs 仍须确认精确成员集合、幸存盘可写且零错误、无冲突维护。缺失盘因断开产生的预期 I/O 计数不再阻断修复，新盘仍须容量不小于安全下限且带稳定身份并为空白整盘；不使用 force/-r/-B/--enqueue，不自动扩容，命令接受后无自动回滚。实体盘交付仍待完成。Btrfs 扩容、balance/自动降级挂载/多故障恢复、ZFS 其他布局、删除/扩容/一般换盘/多故障修复与外部池恢复、共享文件夹跨卷/任意路径更新与非空删除、密码以外的账户/组更新与日常删除、递归文件 ACL、目录级配额或复杂 SMB/NFS 配置不能伪装成已经
 交付。
 
 ### 3. 网络共享、用户与权限
@@ -353,14 +850,49 @@ ARM64 Debian 13 + OMV 8.5.6 隔离 VM 已留下实际 SMB 创建/部署/幂等�
   后继续认证且载荷 SHA-256 不变；密码通过匿名 `PASSWD_FD` 管道传递，不进入 argv、环境值或文件。
   workflow 尚未进入当前 `origin/os-main` 快照，首次远端绿色证据尚未产生；
 - 基础共享文件夹创建已具备目标卷、便携名称和备注的受控期望状态，路径由名称推导，权限固定
-  2770/users，且已进入同一密码审批/回读/审计闭环；已有用户/组的共享服务权限也具备单对象
-  继承/禁止/只读/读写的预览、审批、全表保留、按需部署、回读和回滚闭环，且明确不碰文件 ACL；
+  2770/users，且已进入同一密码审批/回读/审计闭环；已登记共享目录的根目录 POSIX ACL 也具备
+  单对象继承/禁止/只读/读写的预览、审批、完整快照回滚和回读闭环，明确永不递归修改子项；
+  已登记且无 SMB/NFS 依赖的目录也可经独立 plan/apply 计划在同一可写卷内重命名，保留数据、UUID 与 ACL 并支持目录/注册表联合回滚；同样无依赖的空目录可安全删除，非空目录不会触碰；
+  2026-09-05 已在 Linux VM 的临时 ext4 卷上通过真实 HTTP 登录、计划、未审批 403、单次审批、
+  apply、目录/注册表回读和自清理恢复；2026-09-08 又以当前工作树 32 个同版本依赖模块复验共享目录
+  创建、ACL、NFS 创建/活体 `exportfs` 回读、NFS 安全移除、保数据解除登记和空目录删除，VM 源码与状态均恢复；
   SMB 已有文件夹规则具备启用、只读、发现、回收站和备注的受控期望状态，且已在真实 OMV 8.5.6
   配置库、生成的 `smb.conf` 和 445 监听上闭环；OMV 用户/组硬配额具备预览、审批、应用、验证和
-  回滚协议，并已由 ext4 内核配额读回。NFS 已具备单一私网 CIDR、只读/读写和备注的受控协议/UI
-  闭环，强制安全导出选项；独立 x86 CI 本地门已接入真实 users 组权限、exports 与同容器 NFSv4
-  客户端挂载检查，但尚未进入当前远端快照，绿色证据尚未产生。仍缺共享文件夹更新/删除与文件 ACL、密码以外的账户/组更新与日常删除、一般主机范围、目录级原生硬配额和物理
+  回滚协议，并已由 ext4 内核配额 `setquota`/`repquota` 读回。NFS 已具备单一私网 CIDR、只读/读写和备注的受控协议/UI
+  闭环，强制 root_squash/sync/no_subtree_check；独立 x86 CI 本地门已接入真实 users 组权限、exports 与同容器 NFSv4
+  客户端挂载检查，但尚未进入当前远端快照，绿色证据尚未产生。仍缺共享文件夹跨卷/任意路径更新、非空删除与递归文件 ACL、密码以外的账户/组更新与日常删除、一般主机范围、目录级原生硬配额、btrfs/未启用 quota 卷适配和物理
   设备上的 SMB/NFS 异机客户端互通；
+- 对照飞牛 MiniDLNA 实物后，Echo 已加入 Debian ReadyMedia 的原生只读控制面：只接受已登记共享
+  UUID 和四种固定媒体类型，不接受任意路径/端口；计划、管理员单次审批、应用、写后回读及配置/服务/
+  防火墙联合回滚已贯通。`echo-dlna.service` 以专用 `minidlna` 用户运行，无 capabilities/设备访问，
+  默认隐藏 `/data`、`/mnt`、`/srv`、`/fs`、`/volume`，仅用 UUID 目标把批准目录重新只读 bind；
+  每次启动前的固定 root 预检会重验共享 UUID、实时卷 UUID、实目录与受管防火墙，换盘或状态漂移会
+  阻止媒体守护进程启动；
+  firewalld v3 只向 RFC1918 IPv4 开放 UDP 1900/TCP 8200，并与 SMB/NFS/Hub 状态互不覆盖。镜像合同要求
+  上游及 Echo unit 出厂禁用且没有预置共享；前端已接入状态、媒体类型、预览和审批。当前后端审批/
+  DLNA/防火墙 76 项及前端 API/UI 44 项聚焦回归通过，TypeScript 类型检查通过。2026-09-09 又在
+  `disk-fresh2.qcow2` 的 `-snapshot` Debian 13 QEMU 客体中安装 `minidlna 1.3.3` 与 `firewalld 2.3.1`，
+  实际验证 unit 导入不可变 Python 包、服务沙箱、SSDP `200 OK`、媒体库索引，以及从 TCP 8200 取回
+  `proof.wav` 后 SHA-256 与源文件逐字节一致；mount namespace 中批准目录可读不可写，未批准目录不可见，
+  防火墙只出现 6 条固定 RFC1918 规则。伪造卷身份会使启动失败关闭，停用后服务/规则/配置均消失且媒体
+  保留。机器证据为 `_vmtest/dlna-linux-runtime.json`（SHA-256
+  `50ffb685d14e75245ba171beb155462c819c408d7bc8cb1bf8f0b61808565fcc`）。新 raw 镜像、电视或独立播放器
+  发现与播放仍未验证，因此仍不记为已交付异机能力；
+- 对照本地飞牛 OS 解包产物后，headless 安装链现显式纳入 Debian `wsdd2`，补齐 Windows
+  文件资源管理器依赖的 WSD 局域网发现。Echo 的 systemd drop-in 只启动 WSD，关闭并非发现
+  SMB 所必需的 LLMNR responder；drop-in 在 apt 事务前写入，避免包安装时短暂以默认参数启动，
+  最终服务阶段再幂等落盘，并强制 `smbd` 先于 `wsdd2` 启动且两者均为 active。系统包闭包与
+  装机合同 40 项本机通过；2026-09-08 又在 `-snapshot` 隔离的 Debian 13 VM 中从仓库实装
+  `wsdd2 1.8.7+dfsg-1.2`，确认实际进程为 `/usr/sbin/wsdd2 -w`、TCP/UDP 3702 已监听而
+  TCP/UDP 5355 未监听，且 `DynamicUser`、`PrivateDevices`、`ProtectHome` 与
+  `ProtectSystem=strict` 等服务沙箱实际生效；重启 Samba 后 WSD 进程随之更新且两者恢复 active。
+  机器可读证据保存在 `_vmtest/wsdd2_vm_result.json`（SHA-256
+  `a5afca2a6d8311ecba1de72b152e7ead99c854914fd50e3cd52bfaf546388229`）。仍需 Windows 实体客户端
+  在多网卡/VLAN/IPv4/IPv6 环境验证发现、休眠唤醒和防火墙策略；G3 的 Windows 阶段现已增加候选绑定
+  的 IPv4 WSD 组播 Probe/ProbeMatches 验证，直接输入 UNC 不能替代自动发现。该阶段尚未实跑，且
+  QEMU 用户网络不能代替真实组播互操作验证，不能把该 VM 证据记成 G3 已完成。增强后的协议实验室
+  已在 Debian 13 快照机通过 18 项回归；结果 `_vmtest/protocol-wsd-linux-test.json` 的 SHA-256 为
+  `3e53e2ca20c374a7afd2ca87136d4f139cf3eaf251cfd026dcca1afea6e4ccff`；
 - 家庭成员的多级角色、共享 ACL 模板、访客链接和邀请/找回流程；
 - 设备列表、逐设备会话管理和权限分级；设备管理员的全会话吊销、密码轮换、
   登录/审批失败限速及高风险动作二次复核已落地。
@@ -392,9 +924,10 @@ SMB、NFS 或其他容器的直接写入。新增的 OMV 用户/组硬配额可�
 
 ### 5. 生产安全
 
-- 最小权限 Docker 控制代理已落地；仍需在真实 Engine 上执行已经接入 CI 的验证脚本，证明
-  socket 组降权、内部网络隔离、容器重启、list/start/stop、Hub 固定摘要安装、主容器无 socket mount，并核对
-  两个 PID 1 的有效能力均为零且 `NoNewPrivs=1`；
+- 最小权限 Docker 控制代理已在 Debian 13 QEMU 的真实 Engine/firewalld/nftables 上验证专用 UID、
+  固定 broker/Docker 组、零能力、`NoNewPrivs=1`、token 鉴权、raw API 拒绝、计划绑定停启、私网精确
+  转发和身份漂移关闭；仍需由新构建 raw、x86/ARM 物理机及九个正式摘要应用复验首次安装、更新回滚、
+  主容器无 socket mount 和长时负载；
 - Host/Origin/WS、登录限速及严格 CSP/iframe 精确白名单已落地并进入真机烟测；Docker
   appliance 已补固定摘要、零 capability 的 TLS 终止 overlay、后端回环绑定、精确代理 IP、
   证书启动前密码学预检及 HTTPS 自动 Secure cookie 验收路径；仍需真实 Engine/证书跑通、
@@ -411,7 +944,7 @@ SMB、NFS 或其他容器的直接写入。新增的 OMV 用户/组硬配额可�
 
 - 原生镜像已有签名 A/B root+UKI、三次启动回退和独立 Recovery UKI 契约；仍需当前产物在 Linux
   VM 与目标硬件上的健康激活、三次失败自动回退和 Recovery 冷启动证据；
-- OMV/Docker appliance 已有 schema 标记、v0→v1→v2 单步迁移、未来版本降级保护，只允许不可变摘要
+- OMV/Docker appliance 已有 schema 标记、v0→v1→v2→v3 单步迁移、未来版本降级保护，只允许不可变摘要
   的备份优先升级编排，以及正式双架构 GHCR 发布/证明工作流；发布现会同时生成绑定该摘要的
   确定性运维包，包含独立本机配置、首次安装、TLS、升级、备份、审计和目录级恢复入口，并拒绝
   路径穿越、链接、额外文件、错权限、错摘要/SBOM/验证器。无 schema 变化的失败切换会恢复旧镜像，
@@ -423,7 +956,68 @@ SMB、NFS 或其他容器的直接写入。新增的 OMV 用户/组硬配额可�
   只在暂存副本迁移，验证 schema/认证/审计和私有文件，原子晋级宿主目录，并在新实例健康或容器内
   复核失败时自动切回旧目录。独立分区并不等于物理异机，仍需异机副本、拔盘/断网故障注入和一次
   真实 Docker 灾难恢复演练；
-- 应用容器数据与 NAS 用户文件仍分别依赖 OMV 快照/备份任务，不能被 Echo 状态包替代。
+- NAS 用户文件已有独立 `nas_data_backup.py`：只接受只读快照和经验证的异机/可移除挂载，使用
+  restic 加密、全仓库校验、空目标恢复、原子晋级与恢复收据；现已具备按真实时区排序、限量且不
+  暴露宿主源路径的认证快照列表合同，并支持显式验证原生布局的 `/data` 状态根与 `/data/nas`
+  数据根，不再误套 Compose 部署目录。原生多卷现新增 `echo.nas-backup-set.v1` 私有 manifest 与
+  `plan-set` → `backup-set` 两阶段链路：绑定共享/文件系统/快照 ID、受管路径布局、Btrfs 只读属性和
+  父子 subvolume lineage，写入 restic 认证成员标签，备份后全数据校验并再次复核 lineage，并以
+  `list-sets` 提供有上限的路径脱敏集合索引；计划和结果均不含宿主路径，单共享不能再伪装成整机
+  备份集。多卷 `plan-restore-set → restore-set` 现要求全部目标为空的受管 Btrfs subvolume，逐目标
+  同卷 staging、全仓库复核后原子交换，并以 mode-0600/fsync 事务收据处理交换后未记账的崩溃窗口；
+  两块独立 Btrfs 数据卷的同轮正常恢复、重复验证，以及第一卷已交换/第二卷未交换窗口的前向恢复
+  已有真实 VM 证据，双成员合同测试也已通过。默认不启用的原生每日 timer 与失败关闭 runner 已
+  落地：复用受管自动快照策略，优先选择 26 小时内所有共享共同拥有的最新批次，缺批次时先补齐，
+  任何成员失败均在读取 systemd credential 前停止；确定性集合 ID 使同批次重试幂等。认证的
+  状态/历史查询及策略 plan/apply API 已落地，存储中心可填写异机挂载点和仓库、查看就绪条件与
+  最近 32 次脱敏结果，并以管理员密码单次审批启停；管理面还会从 `/mnt`、`/media`、`/run/media`
+  只读枚举已挂载的 USB/NFS/CIFS/rclone 目标，只显示通过独立可写文件系统校验的挂载点、类型和容量，
+  不回显设备源或远端地址，选择后自动生成默认 Restic 子目录。发现失败不阻断手工填写，实际计划与
+  应用阶段仍重新执行完整边界校验。Debian 13 x86_64 快照 VM 已用真实 ext4、只读 bind、tmpfs 和
+  `fuse.rclone` 验证该枚举：仅 ext4 与 `fuse.rclone` 入选，源设备/远端路径不出现在结果；证据
+  `_vmtest/external-mount-candidates-runtime.json` 的 SHA-256 为
+  `7a7d23d6b28717b9572ff3fb75b68bae92d6d686199f2e7e1384197de9b7f0d8`。实测暴露并修正了正式包
+  闭包遗漏 `fuse3/fusermount3`：mkosi、离线首启包仓与安装事务现显式包含 `fuse3`，镜像组装检查
+  工具存在，制品检查还要求 `/usr/bin/fusermount3` 为 root:root mode-4755。旧 VM 为本次验证临时
+  安装 Debian `fuse3 3.17.2-3`，rclone 来自同级飞牛解包（`v3.67.6-DEV`）；该证据不替代冻结 raw
+  重建后的依赖验收。管理面现已能为通用 S3 兼容服务审批创建/撤销 rclone 挂载：访问密钥不进入
+  计划、响应、注册表或审计，只经 `systemd-creds` 加密；挂载成功后再执行真实写入和路径边界验证，
+  被当前备份策略引用时拒绝撤销。Debian 13 x86_64 VM 已用加密凭据和本地 rclone alias 验证真实
+  systemd 启停、宿主可见 `fuse.rclone`、候选入选及停止后卸载；证据
+  `_vmtest/rclone-backup-mount-runtime.json` 的 SHA-256 为
+  `239799a283c8de344733bf255d48b9f4a3ad9cf66dc342271ae6d8805bbd2ed2`。随后使用官方 SHA-256
+  校验的 MinIO Linux amd64 服务，在 VM 回环地址建立受信临时 HTTPS，经生产 plan/apply 创建
+  加密挂载，完成 8 MiB Restic 备份、全仓 `--read-data`、服务重启后的恢复与 SHA-256 核对，再经
+  生产撤销链确认卸载、删凭据和清注册表；28 个 S3 对象实际落盘。证据
+  `_vmtest/s3-backup-interop.json` 的 SHA-256 为
+  `61103dfd1a11ea8124ca2f87ffd080900403b3e951d5eba8c58f65c8720fd67d`。这关闭通用 HTTPS S3
+  的本地互操作门，但仍未覆盖公网厂商、长时断网或 OneDrive/Google Drive/百度网盘等 OAuth 原生账号。当前 `nas-maintenance-v4`
+  升级计划会补装 `rclone/fuse3`、挂载模板、失败关闭 wrapper 与所需安全目录；Debian 13 快照 VM
+  已从 v3 等价基线完成真实 plan/apply，确认缺包补装、root 权限、文件哈希、systemd 解析、主服务
+  存活、无凭据实例不误启用和二次规划幂等。证据 `_vmtest/host-migration-v4.json` 的 SHA-256 为
+  `681b5d416b2173e511d3b697dc175cdc3910dca48d77750c0d23bbcce18b4808`；真实旧物理设备升级仍待验收。
+  后端不会回显路径，计划绑定仓库挂载、unit、
+  credential 与 timer 身份，失败时回滚配置和 timer。浏览器内的一次性凭据向导现可初始化空仓库或
+  验证并连接已有仓库：口令不写浏览器存储、不进入计划/响应/审计，经 `systemd-creds` 加密和反向
+  核对后再以 root/mode-0600 不可覆盖地原子落盘；现有凭据会失败关闭。备份 timer 停用时现可以
+  安全轮换口令：新 Restic 密钥验证后才原子切换本机凭据，然后撤销所有旧口令密钥；
+  新密钥验证前的失败会清理并保留旧凭据，凭据切换后的失败则保留已验证的新访问以防锁死。
+  每次密钥变更前先 fsync root/mode-0600 私有恢复收据，管理面状态读取会自动按活跃凭据选择
+  安全回滚或前向完成旧密钥撤销；异机盘离线时保留收据并锁住新变更。两个中断方向已由真实
+  Restic/systemd-creds VM 证据覆盖。存储中心现已接入路径脱敏的多卷恢复向导：仓库路径只经 POST
+  请求体提交，不进入 URL、响应或审计；服务端用现有 systemd 加密凭据读取认证集合索引，并用已恢复
+  的原共享目录注册元数据重建和认证原始私有 manifest。向导要求把每个来源显式一对一映射到当前受管
+  Btrfs 共享卷，支持新硬盘和新文件系统；新事务要求目标为空，持久收据续跑可识别已晋级的非空目标。
+  恢复前必须停用备份与目标自动快照并解除 SMB/NFS/Time Machine/DLNA 发布；计划重新绑定仓库/集合/目标
+  文件系统、subvolume、inode 与脱敏路径摘要，完整确认句与管理员单次审批通过后才调用已有全仓读取、
+  逐卷原子晋级及持久收据续跑。该映射切片已过本地后端/前端回归及真实 Debian 13 双 Btrfs 文件系统
+  交叉恢复；正式 appliance HTTP 链也已在源盘离线条件下验证候选枚举、认证集合、审批拒绝/消费/
+  重放拒绝、恢复、收据续跑与审计验链。宿主强制终止 QEMU 的交换窗口硬断电也已验证：数据盘
+  `syncfs`、私有收据、有界回执扫描、密码认证的仓库 ID 绑定、stale-only Restic 解锁、同盘冷启动、
+  页面刷新后的集合重载和 HTTP 续跑均闭环；冻结候选上的实体机拔电仍待执行。普通 EXT4/XFS 目录共享
+  仍缺少一致性快照/停写备份方案。
+  应用容器数据仍依赖各应用的专用备份/迁移流程；
+  两者都不能被 Echo 设备状态包替代。
 
 ### 7. 当前 Agent 发布提交
 
@@ -457,9 +1051,9 @@ Docker Engine 上的 TLS/Secure cookie、浏览器证书信任、实际第三方
 回退、第一次 Docker 标签发布/真实升级、双 timer 触发、双挂载掉线、安装/移除失败回滚、无残留卸载、
 审计/状态异机副本及完整灾难恢复真机演练仍未闭环。G2 已有
 OMV 只读物理盘/挂载卷/SMART、复杂拓扑、SMB/NFS/权限概览和主动告警的本机协议闭环，且宿主
-安装生命周期和最小校验包已落地；仍缺全部真机故障测试。G3 已具备 SMB/NFS 窄写和用户/组硬
+安装生命周期和最小校验包已落地；仍缺全部真机故障测试。G3 已具备 SMB/NFS 窄写、通过 Debian 13 QEMU 运行验证的只读 DLNA 控制面和用户/组硬
 配额协议/UI 闭环，基础共享文件夹创建、单对象共享权限及真实 NFSv4 读写→只读/插件生命周期门已在
 本地工作区接线；候选绑定的 Windows/macOS/Linux 五类客户端、权限、跨协议配额和 1 GiB 大文件
 机器证据链也已落地并通过模拟测试。但这些改动尚未进入当前远端快照并产出首个绿色 artifact，
-物理 NAS 与五类异机客户端尚未实际运行，因此 G3 仍未完成；x86/ARM 的四阶段设备耐久机器证据链
+物理 NAS、DLNA 异机播放器与五类协议客户端尚未实际运行，因此 G3 仍未完成；x86/ARM 的四阶段设备耐久机器证据链
 已落地，但两台实体机尚未完成 24 小时运行和真实物理断电，因此 G6 仍未完成。**

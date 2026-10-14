@@ -16,7 +16,7 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ import {
 } from "@/core/settings/permissions-api";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 function useCapabilities() {
   return useQuery({
@@ -82,6 +84,7 @@ function useSaveCapabilities() {
 export default function AutomationSettingsPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { data, isLoading, error, refetch, isFetching } = useCapabilities();
   const save = useSaveCapabilities();
 
@@ -107,7 +110,7 @@ export default function AutomationSettingsPage() {
 
   const openComputerTool = () => {
     window.dispatchEvent(new Event("echo:close-settings"));
-    navigate("/workspace/computer");
+    navigate(preserveWorkbenchPresentation("/workspace/computer", search));
   };
 
   async function onSave() {
@@ -148,14 +151,11 @@ export default function AutomationSettingsPage() {
 
   if (isLoading) {
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="flex items-center py-8 text-sm text-muted-foreground"
-      >
-        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-        {t.settings.automation.loading}
-      </div>
+      <PanelLoading
+        label={t.settings.automation.loading}
+        caption={t.settings.automation.loading}
+        className="min-h-40"
+      />
     );
   }
 
@@ -351,9 +351,10 @@ export default function AutomationSettingsPage() {
 function LocalToolsSection() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const openTool = (path: string) => {
     window.dispatchEvent(new Event("echo:close-settings"));
-    navigate(path);
+    navigate(preserveWorkbenchPresentation(path, search));
   };
 
   return (
@@ -541,10 +542,10 @@ export function ApprovalRulesSection() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-          {t.settings.automation.rules.loading}
-        </div>
+        <PanelLoading
+          label={t.settings.automation.rules.loading}
+          caption={t.settings.automation.rules.loading}
+        />
       ) : error ? (
         <div
           role="alert"

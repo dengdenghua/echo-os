@@ -15,6 +15,7 @@ const {
   isValidApplicationId,
   listApplicationRecords,
   launchApplicationById,
+  runLauncher,
 } = require("./system-shell.cjs");
 
 const tests = [];
@@ -205,6 +206,64 @@ test("isLaunchableApp:NoDisplay / Hidden / 无 Exec / 非 Application 被排除"
     ),
     false, // 非 Application
   );
+});
+
+function runLauncherAsync(args, timeout) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+    runLauncher(process.execPath, args, { timeout }, (error) =>
+      resolve({ error, elapsed: Date.now() - started }),
+    );
+  });
+}
+
+test("启动器在自身退出时完成，不等被启动的应用关闭继承的 stdio", async () => {
+  // The launcher starts a long-lived child and exits at once, like gio
+  // starting an application. The child inherits the launcher's stdio; a
+  // pipe-based runner would wait for it (or for the timeout).
+  const { error, elapsed } = await runLauncherAsync(
+    [
+      "-e",
+      'require("child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 4000)"], { stdio: "inherit", detached: true }).unref()',
+    ],
+    10_000,
+  );
+  assert.strictEqual(error, null);
+  assert.ok(elapsed < 3000, `launcher completion waited ${elapsed} ms`);
+});
+
+test("启动器超时与非零退出都是有界失败", async () => {
+  const timedOut = await runLauncherAsync(
+    ["-e", "setTimeout(() => {}, 5000)"],
+    300,
+  );
+  assert.ok(timedOut.error);
+  assert.strictEqual(timedOut.error.killed, true);
+
+  const failed = await runLauncherAsync(["-e", "process.exit(3)"], 10_000);
+  assert.ok(failed.error);
+  assert.strictEqual(failed.error.code, 3);
+
+  const desktopRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), "echo-native-exit-"),
+  );
+  fs.writeFileSync(path.join(desktopRoot, "org.gimp.GIMP.desktop"), GIMP);
+  const result = await launchApplicationById("org.gimp.GIMP", {
+    appDirs: [desktopRoot],
+    iconRoots: [],
+    execFile: (_command, _args, options, callback) =>
+      runLauncher(
+        process.execPath,
+        ["-e", "process.exit(1)"],
+        options,
+        callback,
+      ),
+  });
+  assert.deepStrictEqual(result, {
+    ok: false,
+    error: "application launch failed",
+  });
+  fs.rmSync(desktopRoot, { recursive: true, force: true });
 });
 
 async function main() {

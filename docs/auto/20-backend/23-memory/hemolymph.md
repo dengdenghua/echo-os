@@ -15,6 +15,10 @@
 
 | Module | Summary |
 | --- | --- |
+| `_image_index_builder.py` | Atomic incremental snapshot construction for the local photo library. |
+| `_image_index_state.py` | Bounded commit receipts for the local image index. |
+| `_image_model_runtime.py` | Local image model configuration and non-loading runtime observations. |
+| `_image_prototype_identity.py` | Model identities for named image prototypes, stored in existing settings. |
 | `_image_semantic_vectors.py` | Pure image/vector helpers for the semantic image index. |
 | `code_index.py` | Auto-retrieve relevant *source* chunks for planner grounding. |
 | `composer.py` | — |

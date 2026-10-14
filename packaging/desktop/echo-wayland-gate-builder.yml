@@ -15,6 +15,15 @@ files:
   - "!electron/**/*.node-test.cjs"
   - package.json
 
+# Same external resources as the production build (frontend/package.json):
+# an `echo-os-desktop` executable without the native-shell identity marker
+# refuses to start (frontend/electron/shell-profile.cjs).
+extraResources:
+  - from: ../packaging/image/native-shell-profile.json
+    to: native-shell-profile.json
+  - from: public/echo/wallpaper-echo.jpg
+    to: liquid-glass/wallpaper-echo.jpg
+
 linux:
   category: System
   executableName: echo-os-desktop

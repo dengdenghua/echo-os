@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from runtime.memory.cowork.group import GroupMode, normalize_group_mode
 
@@ -131,6 +131,21 @@ class CollabTaskBody(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     run: bool = False
     room: EnsureRoomBody | None = None
+
+
+class CoordinationTaskBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    assignee: str = Field(min_length=1, max_length=160)
+    prompt: str = Field(min_length=1, max_length=12000)
+    request_id: str = Field(min_length=1, max_length=160)
+    dependencies: list[str] = Field(default_factory=list, max_length=32)
+
+
+class CoordinationReceiptBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    task_id: str = Field(min_length=1, max_length=160)
+    action: Literal["ack", "cancel"]
+    message_id: str = ""
 
 
 __all__ = [

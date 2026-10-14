@@ -4,7 +4,7 @@
 > 上验证;在此之前的所有功能均已用 pytest + 浏览器预览验证过(见各 commit)。
 > 跑完把结果按"反馈给开发"一节回填即可。
 
-适用环境:任意装了 Docker 的 Linux 主机 / 群晖 / 飞牛 / CasaOS / ZimaOS / 绿联,
+适用环境:任意装了 Docker 的 Linux 主机 / 群晖 / 参考 NAS / CasaOS / ZimaOS / 绿联,
 或 Mac/Windows 上的 Docker Desktop。
 
 ---
@@ -15,7 +15,7 @@ Agent runtime、设备能力和工作台都在 Echo 仓库中。构建前从同�
 **wheel + resources + Codex + bundle manifest**：
 
 ```bash
-git clone https://github.com/dengdenghua/echo-os.git
+git clone https://github.com/dengdenghua/octopus-os.git
 cd echo-os
 
 # ⓪ 发布/远端重型门必须先得到 ready:true；--offline 永远不能批准发布
@@ -110,13 +110,28 @@ G2 存储门必须使用运维包内的 `storage_recovery_lab.py plan/run`。只
 再下载摘要；九项 G2 结论逐项绑定实际日志字节。缺少重连日志、跨候选计划、设备身份漂移、手写
 `true`、非 ENOSPC 写失败或仅做 API 冒烟都不能进入签名 manifest。
 
+当实验机最初只有两块空白牺牲整盘时，先运行同一运维包的
+`storage_provisioning_lab.py plan/run`。其 `provision` 阶段必须通过候选的真实 HTTP
+plan/一次性审批/apply 链创建 md RAID1 和 EXT4；真实重启后再运行 `reboot-verify`，证明阵列自动组装、
+UUID 挂载恢复且 1 MiB fsync 探针摘要未变。计划仅保留稳定磁盘身份摘要；两份 mode-0444 日志应作为
+辅助附件随 G2 归档，但不能替代既有八阶段 `storage_recovery_lab.py` 证据。该工具保留创建结果供 G2
+继续破坏性测试，不负责自动擦盘。
+
+新增第三块 4–64 GiB 空白实验盘时，还必须运行候选运维包中的
+`mdraid_replacement_lab.py plan/run`，补足“同盘重连”无法证明的新盘替换路径。它消费已完成的
+provisioning plan，三阶段分别执行受绑定牺牲盘 fail/remove 后的真实 HTTP 换盘审批、等待新盘重建
+并复核原探针、真实重启后再次核对双成员健康/UUID 挂载/数据摘要。缺任一固定日志、使用生产盘、
+替换盘身份变化、跳过审批或只看到 recovery 启动而没有重建与重启验证，均不能作为换盘证据。
+
 G3 协议门必须使用候选运维包内的 `protocol_interoperability_lab.py`。计划绑定候选、运维包、服务器
 名称和专用共享 UUID；每个 SMB/NFS 挂载根在探针开始前只能含同一候选授权标记。分别在真实 Windows
 SMB、macOS SMB/NFS、Linux SMB/NFS 客户端完成 8 MiB 写入、读回、重命名和删除；再由 Linux 专用
 身份完成 SMB/NFS 允许/拒绝权限、同一账户跨协议硬配额拒绝和 SMB 写入—NFS 读回/删除的 1 GiB
 非稀疏文件。收齐八份 mode-0444 日志后执行 `verify --candidate-index ... --bundle-root ...`，重新绑定
 候选索引、运维包清单和执行器字节并生成 `protocol-interoperability-lifecycle.json`。容器内回环挂载、
-伪造系统名、只做服务端配置、已有用户文件的共享或手写八项 `true` 都不能满足 G3。
+伪造系统名、只做服务端配置、已有用户文件的共享或手写八项 `true` 都不能满足 G3。Windows 阶段还
+必须由计划服务器的 LAN IPv4 地址在四秒内返回关联同一 MessageID 的 WSD `ProbeMatches`，声明
+`wsdp:Device pub:Computer` 且 `XAddrs` 与响应源地址一致；直接输入 UNC 能访问但不能自动发现不算通过。
 
 - [ ] 使用完整候选 artifact、六门目录和 public-only acceptance keyring 执行
       `product_delivery_bundle.py build`，不能只给它一份候选索引
@@ -190,7 +205,7 @@ docker compose up -d --build
 - [ ] `/api/appliance/config` 中的 `agent_ui_base` 与 `agent_workspace_url` 均为 `null`
 - [ ] `docker compose logs | grep "appliance admin password"` → 未设密码时看初始密码
 - [ ] 执行 `ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python
-      verify-running-appliance.py --require-clean-bundle`，输出确认主容器无 socket、代理无宿主
+      verify-running-appliance.py --require-clean-bundle --require-zfs-runtime`，输出确认主容器无 socket、代理无宿主
       端口、两个 PID 1 均非特权身份、`CapEff=0`、`NoNewPrivs=1`，并包含
       `origin_guard: 403`、`host_guard: 400`、`login_rate_limit: 429`
 
@@ -448,7 +463,7 @@ curl -s http://localhost:8000/api/appliance/config
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --nas-transfer-test-bytes 1073741824 \
+  --require-clean-bundle --require-zfs-runtime --nas-transfer-test-bytes 1073741824 \
   --nas-transfer-test-path verification --nas-transfer-restart-main
 ```
 
@@ -458,7 +473,7 @@ ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
 ```bash
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --nas-transfer-test-bytes 1073741824 \
+  --require-clean-bundle --require-zfs-runtime --nas-transfer-test-bytes 1073741824 \
   --nas-transfer-test-path verification --require-nas-transfer \
   --nas-transfer-restart-main \
   --nas-transfer-write-confirm \
@@ -610,7 +625,7 @@ export ECHO_OMV_ADMIN_URL=https://nas.example.com
 export OMV_BRIDGE_GID="$(getent group echo-omv | cut -d: -f3)"
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
   deploy/appliance/verify-running-appliance.py \
-  --require-clean-bundle --require-omv --expected-gid "$OMV_BRIDGE_GID"
+  --require-clean-bundle --require-zfs-runtime --require-omv --expected-gid "$OMV_BRIDGE_GID"
 ```
 
 脚本会重新确认宿主是 Debian 13 + OMV 8，并同时检查宿主插口 `0660`/数字组、未登录 `401`、
@@ -767,11 +782,11 @@ x86_64/物理设备、浏览器 Workbench 视觉、物理 SMART/阵列及 SMB/NF
 ```bash
 # x86_64 机器
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
-  deploy/appliance/verify-running-appliance.py --require-clean-bundle --expected-arch amd64
+  deploy/appliance/verify-running-appliance.py --require-clean-bundle --require-zfs-runtime --expected-arch amd64
 
 # ARM64 机器
 ECHO_ADMIN_PASSWORD="$ECHO_ADMIN_PASSWORD" python \
-  deploy/appliance/verify-running-appliance.py --require-clean-bundle --expected-arch arm64
+  deploy/appliance/verify-running-appliance.py --require-clean-bundle --require-zfs-runtime --expected-arch arm64
 ```
 
 | 项目 | amd64 | arm64 |

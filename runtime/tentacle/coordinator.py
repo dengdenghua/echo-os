@@ -36,8 +36,10 @@ if TYPE_CHECKING:
     from .mobile.vlm import VlmConfig
 
 from runtime.pet import PetUdpBridge
+from runtime.platform.process.paths import app_paths
 
 from .base import Heartbeat, ToolCall, ToolResult
+from .execution import DeviceActionExecutor
 from .mobile.cerebrum_adapter import CerebrumDecisionAdapter
 from .mobile.device import MobileDevice
 from .mobile.pc_screen_capture import (
@@ -69,6 +71,15 @@ def _build_device_from_hello(
         hello: 设备上报的元信息（含 platform / ios 专属字段）
         ws_server: WebSocket 服务器（Android 设备用于收发指令，iOS 忽略）
     """
+    if hello.platform in {"windows", "linux", "darwin"}:
+        from .remote_device import RemoteDesktopDevice
+
+        return RemoteDesktopDevice(
+            tentacle_id=hello.tentacle_id,
+            device_meta=hello.to_meta(),
+            ws_server=ws_server,
+            capabilities=hello.capabilities,
+        )
     if hello.platform == "ios":
         from .ios.device import IOSDevice
 
@@ -118,7 +129,13 @@ class TentacleCoordinator:
         dashboard_jwt_issuer: str | None = None,
         dashboard_jwt_audience: str | None = None,
     ) -> None:
+        from .discovery import DeviceDiscovery
+
+        self.discovery = DeviceDiscovery()
+        self.transfer_journal_path = app_paths().data_dir / "tentacle" / "transfers.sqlite3"
+        self._discovery_host = host
         self.pool = TentaclePool()
+        self.device_executor = DeviceActionExecutor(self.pool)
         self._pet_bridge = PetUdpBridge()
         self.pool.subscribe_screen_changes(self._pet_bridge.on_pool_event)
         # 屏幕流中继服务
@@ -135,6 +152,7 @@ class TentacleCoordinator:
             host=host,
             port=port,
             auth_token=auth_token,
+            action_executor=self.device_executor,
             on_device_hello=self._on_device_hello,
             on_device_disconnect=self._on_device_disconnect,
             on_heartbeat=self._on_heartbeat,
@@ -143,6 +161,7 @@ class TentacleCoordinator:
             on_screen_frame=self._on_screen_frame,
             on_remote_input=self._on_remote_input,
         )
+        self.ws_server.on_task_workspace = self._on_task_workspace
         self._decision_engine = decision_engine
         self._dashboard_port = dashboard_port
         self._dashboard_host = dashboard_host
@@ -161,6 +180,7 @@ class TentacleCoordinator:
     async def start(self) -> None:
         """启动协调器（WebSocket + 可选 Dashboard + 可选 PC屏幕捕获）."""
         await self.ws_server.start()
+        await self.discovery.start(self._discovery_host)
         logger.info("TentacleCoordinator started (ws port=%d)", self.ws_server.port)
 
         # 启动 PC 屏幕捕获
@@ -237,12 +257,16 @@ class TentacleCoordinator:
 
     async def stop(self) -> None:
         """停止协调器."""
+        if hasattr(self, "task_workspace"):
+            await self.task_workspace.shutdown()
+            del self.task_workspace
         # 停止 PC 屏幕捕获
         if self.pc_screen_capture is not None:
             await self.pc_screen_capture.stop()
         # 断开所有设备
         for t in self.pool.all():
             await t.disconnect()
+        self.discovery.stop()
         await self.ws_server.stop()
         self._pet_bridge.close()
         # 停止 Dashboard
@@ -328,6 +352,32 @@ class TentacleCoordinator:
             return {"success": False, "error": "Remote input not enabled"}
         return await self.remote_input_handler.handle_input(event)
 
+    async def _on_task_workspace(
+        self, source: str, message: dict[str, Any], ws: WebSocketConnection
+    ) -> None:
+        from .task_workspace import get_task_workspace
+
+        if self.ws_server._connections.get(source) is not ws:
+            return
+        try:
+            if len(json.dumps(message, ensure_ascii=False).encode("utf-8")) > 64000:
+                raise ValueError("任务请求过大")
+            command = message["method"].removeprefix("task/workspace/")
+            result = await get_task_workspace(self).dispatch(
+                command,
+                message.get("params", {}),
+                actor=f"device:{source}",
+                source=source,
+            )
+            reply = {"jsonrpc": "2.0", "id": message.get("id"), "result": result}
+        except (ValueError, TypeError, PermissionError) as exc:
+            reply = {
+                "jsonrpc": "2.0",
+                "id": message.get("id"),
+                "error": {"code": -32004, "message": str(exc)},
+            }
+        await ws.send(json.dumps(reply, ensure_ascii=False))
+
     async def _on_task_execute(self, request: TaskExecuteRequest, ws: WebSocketConnection) -> None:
         """处理 task/execute —— 手机请求母体决策任务.
 
@@ -381,14 +431,15 @@ class TentacleCoordinator:
             tool_calls = await self._decision_engine(request.task, device)
             logger.info("decision engine generated %d tool calls", len(tool_calls))
 
-            # 逐个执行
-            results: list[ToolResult] = []
-            for call in tool_calls:
-                result = await device.execute(call)
-                results.append(result)
-                if not result.success:
-                    logger.warning("tool call failed: %s error=%s", call.tool, result.error_message)
-                    break  # 有错误时停止
+            # 经租约 + 回执账本的统一执行路径逐个下发（失败即停止）
+            results = await self.device_executor.execute_sequence(
+                device,
+                tool_calls,
+                owner=f"coordinator:{request.task_id}",
+                task_id=request.task_id,
+            )
+            if results and not results[-1].success:
+                logger.warning("tool call failed: error=%s", results[-1].error_message)
 
             # 汇总结果
             success = all(r.success for r in results)

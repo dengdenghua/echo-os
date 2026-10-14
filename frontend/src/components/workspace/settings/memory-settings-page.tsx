@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -714,9 +715,11 @@ export default function MemorySettingsPage() {
           <PersonalWorkRulesSettings />
         </div>
         {isLoading ? (
-          <div className="text-muted-foreground text-sm">
-            {t.common.loading}
-          </div>
+          <PanelLoading
+            label={t.common.loading}
+            caption={t.common.loading}
+            className="min-h-24"
+          />
         ) : error ? (
           <div
             role="alert"
@@ -915,7 +918,11 @@ export default function MemorySettingsPage() {
                   <DownloadIcon className="mr-1.5 size-3.5" />
                   {isExporting ? t.common.loading : exportButton}
                 </Button>
-                <Button variant="outline" size="sm" onClick={openCreateFactDialog}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openCreateFactDialog}
+                >
                   <PlusIcon className="mr-1.5 size-3.5" />
                   {addFactLabel}
                 </Button>

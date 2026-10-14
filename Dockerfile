@@ -20,6 +20,7 @@ RUN pnpm build
 # Fail before dependency installation if the three Agent surfaces are missing,
 # mixed between commits, or changed after the manifest was assembled.
 FROM python:3.12-slim@sha256:7a8b475003c4fe15a2cd4e55e5cfc2f3560bdc9333d624f24cdd6d4340fd7a17 AS agent-bundle-verifier
+ARG TARGETARCH
 
 WORKDIR /build
 COPY deploy/appliance/agent_bundle.py ./agent_bundle.py
@@ -30,6 +31,7 @@ COPY deploy/appliance/agent-codex/ ./agent-codex/
 RUN python agent_bundle.py verify \
       --bundle-root /build \
       --manifest /build/agent-bundle.json
+RUN python -c 'import json,sys; targets={"amd64":"x86_64-unknown-linux-musl","arm64":"aarch64-unknown-linux-musl"}; actual=json.load(open("/build/agent-bundle.json"))["codex"]["target"]; expected=targets.get(sys.argv[1]); assert expected and actual == expected, "Codex bundle and container architecture differ"' "$TARGETARCH"
 
 
 FROM python:3.12-slim@sha256:7a8b475003c4fe15a2cd4e55e5cfc2f3560bdc9333d624f24cdd6d4340fd7a17 AS py-builder
@@ -85,6 +87,7 @@ COPY --from=agent-bundle-verifier /build/agent-resources/ /app/resources/
 COPY --from=agent-bundle-verifier /build/agent-codex/ /app/codex/
 COPY --from=agent-bundle-verifier /build/agent-bundle.json /app/agent-bundle.json
 COPY config.example.yaml /etc/echo/config.example.yaml
+COPY deploy/appliance/PYTHON_RUNTIME_NOTICES.md /usr/share/doc/echo-os/PYTHON_RUNTIME_NOTICES.md
 RUN chown -R echo:echo /app /etc/echo
 
 # The entrypoint starts with only uid/gid/chown capabilities, repairs the

@@ -19,11 +19,11 @@ def test_chrome_extension_manifest_declares_side_panel() -> None:
     assert "connect-src" in csp
     assert "ws://127.0.0.1:8000" in csp
     assert "ws://localhost:8000" in csp
-    assert manifest["name"] == "EchoAI Browser Relay"
+    assert manifest["name"] == "ECHO Browser Relay"
     assert manifest["description"] == (
         "Connect the active browser tab to EchoOS automation."
     )
-    assert manifest["action"]["default_title"] == "Open EchoAI Browser Relay"
+    assert manifest["action"]["default_title"] == "Open ECHO Browser Relay"
 
 
 def test_extension_visible_copy_uses_echo_brand() -> None:
@@ -31,15 +31,15 @@ def test_extension_visible_copy_uses_echo_brand() -> None:
     bookmarklet = (EXTENSION / "bookmarklet.js").read_text(encoding="utf-8")
     background = (EXTENSION / "background.js").read_text(encoding="utf-8")
 
-    assert readme.startswith("# EchoAI Browser Relay")
-    assert "Echo Agent" not in readme
-    assert "Echo Browser Relay" not in readme
+    # Family naming: the extension is "ECHO Browser Relay", the agent is "Echo".
+    assert readme.startswith("# ECHO Browser Relay")
+    assert "EchoAI" not in readme
     assert "WebSocket token query" not in readme
     assert "never placed in the connection URL" in readme
-    assert "Echo Page Agent" not in bookmarklet
-    assert "已发送到 Echo 对话" not in bookmarklet
-    assert "已发送到 EchoAI 对话" in bookmarklet
-    assert "Echo Browser Relay:" not in background
+    assert "EchoAI" not in bookmarklet.replace("openInEchoAI", "")
+    assert "已发送到 Echo 对话" in bookmarklet
+    assert "ECHO Browser Relay:" in background
+    assert "EchoAI" not in background
 
 
 def test_tdx_oauth_bridge_is_early_scoped_and_validated() -> None:
@@ -149,7 +149,7 @@ def test_sidepanel_is_extension_native_not_page_overlay() -> None:
     assert 'href="sidepanel.css"' in html
     assert 'src="sidepanel.js"' in html
     assert "<script>" not in html
-    assert "EchoAI" in html
+    assert "<h1>ECHO</h1>" in html
     assert '<span class="mark" aria-hidden="true">E</span>' in html
     assert ">Echo<" not in html
     assert "页面轻面板" in html

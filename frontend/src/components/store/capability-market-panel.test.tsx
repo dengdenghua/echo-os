@@ -264,7 +264,7 @@ describe("CapabilityMarketPanel", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/请在 EchoAI 桌面版中完成授权/),
+        screen.getByText(/请在 ECHO OS 桌面版中完成授权/),
       ).toBeInTheDocument(),
     );
     expect(open).not.toHaveBeenCalled();
@@ -408,9 +408,7 @@ describe("CapabilityMarketPanel", () => {
 
     renderWithProviders(<CapabilityMarketPanel />, { locale: "zh-CN" });
     fireEvent.click(await screen.findByRole("button", { name: "安装" }));
-    fireEvent.click(
-      await screen.findByRole("button", { name: "确认并配置" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "确认并配置" }));
 
     expect(
       await screen.findByRole("heading", {
@@ -450,9 +448,7 @@ describe("CapabilityMarketPanel", () => {
     mocks.connectCapability.mockResolvedValue({ connected: true });
 
     renderWithProviders(<CapabilityMarketPanel />, { locale: "zh-CN" });
-    fireEvent.click(
-      await screen.findByRole("button", { name: "配置并启用" }),
-    );
+    fireEvent.click(await screen.findByRole("button", { name: "配置并启用" }));
 
     expect(
       await screen.findByRole("heading", {

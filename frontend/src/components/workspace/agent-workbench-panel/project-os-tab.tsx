@@ -44,7 +44,7 @@ import {
   UsersIcon,
   XCircleIcon,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,9 +52,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RoutedWebLink } from "@/components/ui/routed-web-link";
-import { authHeaders, jsonAuthHeaders } from "@/core/auth/api";
+import { authHeaders, currentActorId, jsonAuthHeaders } from "@/core/auth/api";
 import { getBackendBaseURL } from "@/core/config";
 import { cn } from "@/lib/utils";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
+import { projectByThreadQueryKey } from "@/core/projects/hooks";
 
 import type { WorkbenchRosterSeat } from "./helpers";
 
@@ -283,15 +285,15 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_TONE: Record<string, string> = {
   planning: "border-border-default bg-muted text-muted-foreground",
   pending: "border-border-default bg-muted text-muted-foreground",
-  ready: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  active: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  in_progress: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  running: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  blocked: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  done: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  completed: "border-sky-500/25 bg-sky-500/10 text-sky-600",
-  failed: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  rejected: "border-orange-500/25 bg-orange-500/10 text-orange-600",
+  ready: "border-core/30 bg-core/10 text-core",
+  active: "border-core/30 bg-core/10 text-core",
+  in_progress: "border-core/30 bg-core/10 text-core",
+  running: "border-core/30 bg-core/10 text-core",
+  blocked: "border-breach/30 bg-breach/10 text-breach",
+  done: "border-core/30 bg-core/10 text-core",
+  completed: "border-core/30 bg-core/10 text-core",
+  failed: "border-breach/30 bg-breach/10 text-breach",
+  rejected: "border-warning/30 bg-warning/10 text-warning",
 };
 
 const HEALTH_LABEL: Record<Health, string> = {
@@ -303,24 +305,24 @@ const HEALTH_LABEL: Record<Health, string> = {
 };
 
 const HEALTH_TONE: Record<Health, string> = {
-  on_track: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600",
-  at_risk: "border-amber-500/25 bg-amber-500/10 text-amber-700",
-  overdue: "border-orange-500/25 bg-orange-500/10 text-orange-600",
-  blocked: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  completed: "border-sky-500/25 bg-sky-500/10 text-sky-600",
+  on_track: "border-core/30 bg-core/10 text-core",
+  at_risk: "border-warning/30 bg-warning/10 text-warning",
+  overdue: "border-warning/30 bg-warning/10 text-warning",
+  blocked: "border-breach/30 bg-breach/10 text-breach",
+  completed: "border-core/30 bg-core/10 text-core",
 };
 
 const HEALTH_DOT: Record<Health, string> = {
-  on_track: "bg-emerald-500",
-  at_risk: "bg-amber-500",
-  overdue: "bg-orange-500",
-  blocked: "bg-rose-500",
-  completed: "bg-sky-500",
+  on_track: "bg-core",
+  at_risk: "bg-warning",
+  overdue: "bg-warning",
+  blocked: "bg-breach",
+  completed: "bg-primary",
 };
 
 const PRIORITY_TONE: Record<string, string> = {
-  P0: "border-rose-500/25 bg-rose-500/10 text-rose-600",
-  P1: "border-amber-500/25 bg-amber-500/10 text-amber-700",
+  P0: "border-breach/30 bg-breach/10 text-breach",
+  P1: "border-warning/30 bg-warning/10 text-warning",
   P2: "border-border-default bg-muted/70 text-muted-foreground",
   P3: "border-border-default bg-muted/40 text-muted-foreground/80",
 };
@@ -592,9 +594,7 @@ function SectionTitle({
         {title}
       </h4>
       {meta ? (
-        <span className="shrink-0 text-[10px] text-muted-foreground">
-          {meta}
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>
       ) : null}
     </div>
   );
@@ -632,9 +632,16 @@ export function boundProjectRefetchInterval(
   return data === null ? false : 15_000;
 }
 
+/** An unbound thread answers `{"project": null}` (older backends: 404). */
+export function boundProjectFromBody(body: unknown): ProjectFullState | null {
+  const state = body as Partial<ProjectFullState> | null;
+  return state?.project ? (state as ProjectFullState) : null;
+}
+
 export function useBoundProjectState(threadId: string | undefined | null) {
+  const actor = currentActorId();
   return useQuery<ProjectFullState | null>({
-    queryKey: ["project", "by-thread", threadId ?? ""],
+    queryKey: projectByThreadQueryKey(threadId, actor),
     queryFn: async () => {
       const res = await fetch(
         `${getBackendBaseURL()}/api/projects/by-thread/${threadId}`,
@@ -642,7 +649,7 @@ export function useBoundProjectState(threadId: string | undefined | null) {
       );
       if (res.status === 404) return null;
       if (!res.ok) throw new Error(`Failed to load project: ${res.status}`);
-      return (await res.json()) as ProjectFullState;
+      return boundProjectFromBody(await res.json());
     },
     enabled: !!threadId,
     retry: false,
@@ -681,7 +688,7 @@ export function ProjectOsTabError({ onRetry }: { onRetry?: () => void }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center bg-background/70 p-5">
       <div role="alert" className="max-w-64 text-center">
-        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600">
+        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-breach/10 text-breach">
           <AlertTriangleIcon className="size-5" />
         </div>
         <div className="mt-3 text-sm font-medium">项目工作台加载失败</div>
@@ -724,6 +731,7 @@ export function ProjectOsTab({
   /** Conversation title fallback for non-group project threads. */
   currentThreadTitle?: string | null;
 }) {
+  const { search } = useLocation();
   const { project, pm } = state;
   const [activeTab, setActiveTab] = useState<ProjectWorkbenchTabId>("overview");
   const [taskFilter, setTaskFilter] = useState<
@@ -1032,7 +1040,7 @@ export function ProjectOsTab({
               <Badge
                 variant="outline"
                 className={cn(
-                  "h-5 shrink-0 px-1.5 text-[10px]",
+                  "h-5 shrink-0 px-1.5 text-xs",
                   STATUS_TONE[project.status],
                 )}
               >
@@ -1040,7 +1048,7 @@ export function ProjectOsTab({
               </Badge>
             </div>
             {projectGoal && projectGoal !== projectName ? (
-              <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                 {projectGoal}
               </p>
             ) : null}
@@ -1048,7 +1056,7 @@ export function ProjectOsTab({
         </div>
         <div
           className={cn(
-            "flex items-center gap-2 text-[10px] text-muted-foreground",
+            "flex items-center gap-2 text-xs text-muted-foreground",
             titleRepeatsConversation ? "mt-1.5" : "mt-2.5",
           )}
         >
@@ -1066,7 +1074,7 @@ export function ProjectOsTab({
           />
           <span>{totalTasks} 个事项</span>
           <Link
-            to="/workspace/projects"
+            to={preserveWorkbenchPresentation("/workspace/projects", search)}
             className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="打开完整项目管理页"
           >
@@ -1095,7 +1103,7 @@ export function ProjectOsTab({
                 data-testid={`project-workbench-tab-${id}`}
                 onClick={() => setActiveTab(id)}
                 className={cn(
-                  "relative flex h-10 min-w-[3.35rem] flex-1 items-center justify-center gap-1 px-1.5 text-[11px] font-medium transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  "relative flex h-10 min-w-[3.35rem] flex-1 items-center justify-center gap-1 px-1.5 text-xs font-medium transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   selected
                     ? "text-primary"
                     : "text-muted-foreground hover:bg-muted/45 hover:text-foreground",
@@ -1190,6 +1198,7 @@ function OverviewTab({
   onAction: (spec: ProjectActionSpec, key: string) => void;
   onNavigate: (tab: ProjectWorkbenchTabId) => void;
 }) {
+  const { search } = useLocation();
   const { project, pm, retro, action_specs: actionSpecs = [] } = state;
   const nextActions = pm?.next_actions ?? [];
   const risks = uniqueProjectRisks(pm);
@@ -1210,7 +1219,7 @@ function OverviewTab({
           <h4 className="mt-3 text-sm font-semibold text-foreground">
             从第一个里程碑开始
           </h4>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             在群聊中明确项目计划，或打开管理页创建里程碑和事项；后续进展会自动汇总到这里。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -1224,7 +1233,7 @@ function OverviewTab({
                     type="button"
                     size="sm"
                     variant={index === 0 ? "default" : "outline"}
-                    className="h-8 rounded-lg px-2.5 text-[11px]"
+                    className="h-8 rounded-lg px-2.5 text-xs"
                     disabled={!!pendingAction}
                     onClick={() => onAction(spec, key)}
                   >
@@ -1240,8 +1249,13 @@ function OverviewTab({
                 );
               })
             ) : (
-              <Button asChild size="sm" className="h-8 rounded-lg text-[11px]">
-                <Link to="/workspace/projects">
+              <Button asChild size="sm" className="h-8 rounded-lg text-xs">
+                <Link
+                  to={preserveWorkbenchPresentation(
+                    "/workspace/projects",
+                    search,
+                  )}
+                >
                   打开项目管理
                   <ArrowRightIcon className="size-3" />
                 </Link>
@@ -1258,7 +1272,7 @@ function OverviewTab({
       <section className="rounded-xl border border-border-default bg-card/70 p-3 shadow-[var(--shadow-xs)]">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] font-medium text-muted-foreground">
+            <div className="text-xs font-medium text-muted-foreground">
               整体进度
             </div>
             <div className="mt-0.5 text-2xl font-semibold tracking-tight">
@@ -1268,7 +1282,7 @@ function OverviewTab({
               </span>
             </div>
           </div>
-          <div className="text-right text-[10px] leading-relaxed text-muted-foreground">
+          <div className="text-right text-xs leading-relaxed text-muted-foreground">
             <div>
               {doneTasks}/{totalTasks} 个事项完成
             </div>
@@ -1349,18 +1363,18 @@ function OverviewTab({
               return (
                 <article
                   key={decision.id}
-                  className="rounded-lg border border-sky-500/15 bg-sky-500/[0.045] px-2.5 py-2"
+                  className="rounded-lg border border-core/30 bg-sky-500/[0.045] px-2.5 py-2"
                 >
-                  <h5 className="text-[11px] font-medium leading-relaxed text-foreground">
+                  <h5 className="text-xs font-medium leading-relaxed text-foreground">
                     {decision.title}
                   </h5>
                   {decision.body ? (
-                    <p className="mt-1 line-clamp-3 text-[10px] leading-relaxed text-muted-foreground">
+                    <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground">
                       {decision.body}
                     </p>
                   ) : null}
                   {meta.length > 0 ? (
-                    <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground/85">
+                    <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground/85">
                       {meta.map((item) => (
                         <span key={item}>{item}</span>
                       ))}
@@ -1389,7 +1403,7 @@ function OverviewTab({
                   type="button"
                   size="sm"
                   variant={index === 0 ? "default" : "outline"}
-                  className="h-7 rounded-md px-2 text-[11px]"
+                  className="h-7 rounded-md px-2 text-xs"
                   disabled={!!pendingAction}
                   onClick={() => onAction(spec, key)}
                 >
@@ -1426,17 +1440,17 @@ function OverviewTab({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "mt-px h-4 px-1 text-[9px]",
+                    "mt-px h-5 px-1 text-xs",
                     PRIORITY_TONE[action.priority],
                   )}
                 >
                   {action.priority}
                 </Badge>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[11px] font-medium">
+                  <span className="block truncate text-xs font-medium">
                     {action.task}
                   </span>
-                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                     {action.milestone || "未关联里程碑"}
                     {action.due_at ? ` · ${fmtDate(action.due_at)} 截止` : ""}
                   </span>
@@ -1450,7 +1464,7 @@ function OverviewTab({
         <div className="rounded-xl border border-dashed border-border-default bg-muted/25 px-3 py-4 text-center">
           <CircleDotDashedIcon className="mx-auto size-5 text-muted-foreground" />
           <div className="mt-2 text-xs font-medium">项目正在等待拆解</div>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             开始推进后，这里会出现里程碑、下一步事项和风险提醒。
           </p>
         </div>
@@ -1467,7 +1481,7 @@ function OverviewTab({
             {blockers.map((blocker, index) => (
               <div
                 key={`blocker:${index}`}
-                className="flex items-start gap-2 rounded-lg border border-rose-500/15 bg-rose-500/[0.06] px-2.5 py-2 text-[11px] text-rose-700 dark:text-rose-300"
+                className="flex items-start gap-2 rounded-lg border border-breach/30 bg-breach/5 px-2.5 py-2 text-xs text-breach"
               >
                 <XCircleIcon className="mt-px size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1">{blocker}</span>
@@ -1476,7 +1490,7 @@ function OverviewTab({
             {risks.slice(0, 4).map((risk, index) => (
               <div
                 key={`risk:${risk.task_id ?? risk.milestone ?? index}`}
-                className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-2 text-[11px] text-amber-800 dark:text-amber-300"
+                className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-500/[0.06] px-2.5 py-2 text-xs text-warning"
               >
                 <AlertTriangleIcon className="mt-px size-3.5 shrink-0" />
                 <span className="min-w-0 flex-1">{safeRiskDetail(risk)}</span>
@@ -1487,9 +1501,9 @@ function OverviewTab({
       ) : null}
 
       {retro ? (
-        <section className="space-y-2 rounded-xl border border-sky-500/20 bg-sky-500/[0.05] p-3">
+        <section className="space-y-2 rounded-xl border border-core/30 bg-sky-500/[0.05] p-3">
           <SectionTitle
-            icon={<ClipboardListIcon className="size-3.5 text-sky-600" />}
+            icon={<ClipboardListIcon className="size-3.5 text-core" />}
             title="项目复盘"
             meta={
               retro.duration_days == null
@@ -1510,9 +1524,9 @@ function OverviewTab({
               {retro.recommendations.map((recommendation, index) => (
                 <li
                   key={`${recommendation}:${index}`}
-                  className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground"
+                  className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground"
                 >
-                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-sky-600" />
+                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-core" />
                   <span>{recommendation}</span>
                 </li>
               ))}
@@ -1543,7 +1557,7 @@ function MetricCard({
       {...(onClick ? { type: "button" as const, onClick } : {})}
       className={cn(
         "flex min-w-0 items-center gap-2 rounded-xl border bg-card/60 p-2.5 text-left shadow-[var(--shadow-xs)]",
-        tone === "warning" && "border-amber-500/20 bg-amber-500/[0.05]",
+        tone === "warning" && "border-warning/30 bg-amber-500/[0.05]",
         onClick &&
           "transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
@@ -1551,13 +1565,13 @@ function MetricCard({
       <span
         className={cn(
           "flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/70 text-muted-foreground",
-          tone === "warning" && "bg-amber-500/10 text-amber-700",
+          tone === "warning" && "bg-warning/10 text-warning",
         )}
       >
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[10px] text-muted-foreground">
+        <span className="block truncate text-xs text-muted-foreground">
           {label}
         </span>
         <span className="mt-0.5 block truncate text-sm font-semibold">
@@ -1572,7 +1586,7 @@ function RetroMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-background/70 px-1.5 py-2">
       <div className="text-xs font-semibold">{value}</div>
-      <div className="mt-0.5 text-[9px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -1601,9 +1615,9 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
           className="rounded-xl border border-border-default bg-card/60 p-3 shadow-[var(--shadow-xs)]"
         >
           <div className="flex min-w-0 items-start gap-2.5">
-            <div className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-border-default bg-background text-[10px] font-semibold text-muted-foreground">
+            <div className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-border-default bg-background text-xs font-semibold text-muted-foreground">
               {milestone.health === "completed" ? (
-                <CheckCircle2Icon className="size-3.5 text-sky-600" />
+                <CheckCircle2Icon className="size-3.5 text-core" />
               ) : (
                 index + 1
               )}
@@ -1622,7 +1636,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
                 <Badge
                   variant="outline"
                   className={cn(
-                    "h-4 px-1.5 text-[9px]",
+                    "h-5 px-1.5 text-xs",
                     HEALTH_TONE[milestone.health],
                   )}
                 >
@@ -1630,7 +1644,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
                 </Badge>
               </div>
               {milestone.goal ? (
-                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                   {milestone.goal}
                 </p>
               ) : null}
@@ -1642,18 +1656,18 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
               aria-label={`${milestone.name}进度 ${milestone.progressPercent}%`}
               className="h-1.5 rounded-full"
             />
-            <span className="w-8 shrink-0 text-right text-[10px] font-medium text-muted-foreground">
+            <span className="w-9 shrink-0 text-right text-xs font-medium text-muted-foreground">
               {milestone.progressPercent}%
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span>
               {milestone.total > 0
                 ? `${milestone.done}/${milestone.total} 个事项`
                 : "事项待拆解"}
             </span>
             {milestone.failed > 0 ? (
-              <span className="text-rose-600">{milestone.failed} 个异常</span>
+              <span className="text-breach">{milestone.failed} 个异常</span>
             ) : null}
             {milestone.due_at ? (
               <span className="inline-flex items-center gap-1">
@@ -1667,7 +1681,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
           </div>
           {(milestone.success_criteria?.length ?? 0) > 0 ? (
             <div className="mt-2.5 border-t border-border-subtle pt-2">
-              <div className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 达成标准
               </div>
               <ul className="mt-1 space-y-1">
@@ -1676,9 +1690,9 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
                   .map((criterion, criterionIndex) => (
                     <li
                       key={`${criterion}:${criterionIndex}`}
-                      className="flex items-start gap-1.5 text-[10px] leading-relaxed text-muted-foreground"
+                      className="flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground"
                     >
-                      <CheckCircle2Icon className="mt-0.5 size-3 shrink-0 text-emerald-600/70" />
+                      <CheckCircle2Icon className="mt-0.5 size-3 shrink-0 text-core" />
                       <span>{criterion}</span>
                     </li>
                   ))}
@@ -1734,7 +1748,7 @@ function TasksTab({
               aria-pressed={filter === item.id}
               onClick={() => onFilter(item.id)}
               className={cn(
-                "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 filter === item.id
                   ? "bg-foreground/10 text-foreground"
                   : "text-muted-foreground hover:bg-muted/55 hover:text-foreground",
@@ -1775,11 +1789,11 @@ function TasksTab({
                     className={cn(
                       "mt-1 size-2 shrink-0 rounded-full",
                       task.status === "done"
-                        ? "bg-sky-500"
+                        ? "bg-primary"
                         : task.status === "running"
-                          ? "animate-pulse bg-emerald-500"
+                          ? "animate-pulse bg-core"
                           : ATTENTION_TASK_STATUSES.has(task.status)
-                            ? "bg-rose-500"
+                            ? "bg-breach"
                             : "bg-muted-foreground/45",
                     )}
                   />
@@ -1791,18 +1805,18 @@ function TasksTab({
                       <Badge
                         variant="outline"
                         className={cn(
-                          "h-4 px-1.5 text-[9px]",
+                          "h-5 px-1.5 text-xs",
                           STATUS_TONE[task.status],
                         )}
                       >
                         {STATUS_LABEL[task.status] ?? task.status}
                       </Badge>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <Badge
                         variant="outline"
                         className={cn(
-                          "h-4 px-1 text-[8px]",
+                          "h-5 px-1 text-xs",
                           PRIORITY_TONE[task.priority],
                         )}
                       >
@@ -1819,7 +1833,7 @@ function TasksTab({
                         <span>{fmtDate(task.due_at)} 截止</span>
                       ) : null}
                     </div>
-                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                       {task.assigned_agent ? (
                         <BotIcon className="size-3" />
                       ) : (
@@ -1835,7 +1849,7 @@ function TasksTab({
                       ) : null}
                     </div>
                     {(task.acceptance_criteria?.length ?? 0) > 0 ? (
-                      <div className="mt-2 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
+                      <div className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         完成标准：{task.acceptance_criteria.join("；")}
                       </div>
                     ) : null}
@@ -1852,7 +1866,7 @@ function TasksTab({
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="h-6 rounded-md px-2 text-[9px]"
+                                className="h-6 rounded-md px-2 text-xs"
                                 disabled={!!pendingAction}
                                 onClick={() => onAction(spec, key)}
                               >
@@ -1918,18 +1932,18 @@ function AssetsTab({
                 {asset.kind ? (
                   <Badge
                     variant="outline"
-                    className="h-4 px-1 text-[8px] text-muted-foreground"
+                    className="h-5 px-1 text-xs text-muted-foreground"
                   >
                     {asset.kind}
                   </Badge>
                 ) : null}
               </div>
               {asset.summary ? (
-                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                   {asset.summary}
                 </p>
               ) : null}
-              <div className="mt-1.5 flex min-w-0 items-center gap-1 text-[9px] text-muted-foreground">
+              <div className="mt-1.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                 {asset.sourceTask ? (
                   <span className="min-w-0 truncate">
                     来自：{asset.sourceTask}
@@ -2004,7 +2018,7 @@ function MembersTab({
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 shrink-0 gap-1.5 rounded-lg px-2 text-[10px]"
+            className="h-7 shrink-0 gap-1.5 rounded-lg px-2 text-xs"
             onClick={() => void onInvitePeople()}
           >
             <UserPlusIcon className="size-3.5" />
@@ -2044,10 +2058,10 @@ function MembersTab({
                 className={cn(
                   "rounded-xl text-xs font-semibold",
                   member.kind === "agent"
-                    ? "bg-violet-500/10 text-violet-600"
+                    ? "bg-core/10 text-core"
                     : member.kind === "role"
-                      ? "bg-amber-500/10 text-amber-700"
-                      : "bg-sky-500/10 text-sky-600",
+                      ? "bg-warning/10 text-warning"
+                      : "bg-core/10 text-core",
                 )}
               >
                 {member.kind === "agent" ? (
@@ -2065,17 +2079,17 @@ function MembersTab({
                   {member.name}
                 </h5>
                 {member.isOwner ? (
-                  <Badge className="h-4 bg-primary/10 px-1 text-[8px] text-primary">
+                  <Badge className="h-5 bg-primary/10 px-1 text-xs text-primary">
                     负责人
                   </Badge>
                 ) : null}
               </div>
-              <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
                 {member.role}
                 {member.status ? ` · ${member.status}` : ""}
               </div>
             </div>
-            <div className="shrink-0 text-right text-[9px] leading-relaxed text-muted-foreground">
+            <div className="shrink-0 text-right text-xs leading-relaxed text-muted-foreground">
               {ownedTasks.length > 0 ? (
                 <>
                   <div>{activeCount} 项进行中</div>

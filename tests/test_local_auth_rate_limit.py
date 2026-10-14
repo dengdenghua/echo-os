@@ -5,7 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import threading
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from runtime.adapters.integrations.local_auth import router as local_auth_router
@@ -38,18 +38,25 @@ def _client(
     lockout_seconds: float = 20.0,
     max_entries: int = 100,
     allow_any_username: bool = False,
+    allowed_usernames: list[str] | None = None,
+    second_factor_verifier=None,
 ) -> tuple[TestClient, object]:
     config = LocalAuthConfig(
         enabled=True,
         users=users or {},
         allow_any_username=allow_any_username,
+        allowed_usernames=allowed_usernames or [],
         login_max_failures=max_failures,
         login_ip_max_failures=ip_max_failures,
         login_failure_window_seconds=window_seconds,
         login_lockout_seconds=lockout_seconds,
         login_rate_limit_max_entries=max_entries,
     )
-    router = local_auth_router.create_local_auth_router(config=config, clock=clock)
+    router = local_auth_router.create_local_auth_router(
+        config=config,
+        clock=clock,
+        second_factor_verifier=second_factor_verifier,
+    )
     app = FastAPI()
     app.include_router(router)
     return TestClient(app), router
@@ -61,10 +68,13 @@ def _login(
     password: str | None,
     *,
     headers: dict[str, str] | None = None,
+    second_factor: str | None = None,
 ):
     body = {"username": username}
     if password is not None:
         body["password"] = password
+    if second_factor is not None:
+        body["secondFactor"] = second_factor
     return client.post("/api/auth/local/login", json=body, headers=headers or {})
 
 
@@ -254,3 +264,56 @@ def test_passwordless_dev_mode_is_not_rate_limited() -> None:
     assert router.login_failure_limiter.entry_count == 0
     assert router.login_ip_failure_limiter.entry_count == 0
 
+
+def test_allowlist_rejection_is_the_generic_sign_in_failure(monkeypatch) -> None:
+    """A name outside the passwordless allowlist must not reveal the allowlist.
+
+    It answers exactly like a wrong password, so the response does not tell a
+    caller whether the username exists or which sign-in mode is configured.
+    """
+    monkeypatch.setattr(local_auth_router, "_DUMMY_BCRYPT_HASH", _TEST_BCRYPT_HASH)
+    allowlist_client, _ = _client(_Clock(), allowed_usernames=["admin"])
+    password_client, _ = _client(_Clock(), users={"admin": _TEST_BCRYPT_HASH})
+
+    unknown = _login(allowlist_client, "intruder", None)
+    wrong_password = _login(password_client, "admin", "wrong")
+
+    assert unknown.status_code == wrong_password.status_code == 401
+    assert unknown.json() == wrong_password.json() == {"detail": "用户名或密码错误"}
+    assert "白名单" not in unknown.text
+    assert _login(allowlist_client, "admin", None).status_code == 200
+
+
+def test_second_factor_has_an_independent_bounded_lockout() -> None:
+    def verify(_username, factor, _request) -> None:
+        if factor != "123456":
+            raise HTTPException(401, "invalid second factor")
+
+    clock = _Clock()
+    client, router = _client(
+        clock,
+        users={"admin": _TEST_BCRYPT_HASH},
+        max_failures=2,
+        second_factor_verifier=verify,
+    )
+
+    assert _login(
+        client,
+        "admin",
+        "correct-password",
+        second_factor="000000",
+    ).status_code == 401
+    locked = _login(
+        client,
+        "admin",
+        "correct-password",
+        second_factor="111111",
+    )
+    assert locked.status_code == 429
+    assert router.second_factor_failure_limiter.entry_count == 1
+    assert _login(
+        client,
+        "admin",
+        "correct-password",
+        second_factor="123456",
+    ).status_code == 429

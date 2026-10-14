@@ -4,7 +4,103 @@ All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 Versions follow [SemVer](https://semver.org/), pre-1.0 so breaking changes are allowed.
 
+Release tags: `v<version>` publishes the desktop installers, the Python
+distribution and the GHCR image (`.github/workflows/release.yml`);
+`echo-appliance-v<version>` publishes the NAS appliance image and its operations
+bundle (`.github/workflows/appliance-release.yml`). Both use the version below.
+`v<version>-preview.<n>` publishes unsigned installers and the wheel/sdist as a
+GitHub pre-release (`.github/workflows/preview-release.yml`); see
+[docs/RELEASING.md](docs/RELEASING.md).
+
 ---
+
+## [0.3.0] — 2026-10 · Echo OS 首个正式发行版
+
+自 0.2.0 基线（`octopus-agent` 导入，2026-06-11）以来的用户可见变化。0.2.0 从未打过标签，
+这是第一个带标签的版本。NAS 物理验收门 G2–G6 尚未全部通过，见文末“已知限制”。
+
+### 桌面与应用
+
+- 浏览器桌面成为系统主页：菜单栏、Dock、启动台、Spotlight、Mission Control；应用在可拖拽
+  窗口中打开，最小化不丢会话。
+- 文件、照片、Hub、存储中心、设备连接、Task Space、系统设置、活动监视器和 AI 浏览器都在
+  桌面窗口中运行。
+- 统一 ECHO 品牌：原创图标、壁纸和废纸篓，石墨与 neural-glass 主题，中文最小字号 12px；
+  默认头像不再是章鱼。
+- 菜单栏和 Dock 支持键盘焦点与方向键，Esc 关闭菜单和弹窗，锁屏显示登录错误。
+- Electron 原生壳：开机直接进入全屏 Agent 桌面，Dock 显示本机真实应用。
+- 多设备互联：设备工作区、可续传文件传输、手机悬浮窗口和带校验的跨设备任务交接。
+
+### Agent 与任务
+
+- 桌面意图框按 Enter 即作为后台持久任务运行；需要审批时任务挂起，在 Task Space 决定后
+  继续执行同一轮。
+- 审批收件箱与“已验证文件变更”面板，任务授权绑定到具体任务。
+- 网络访问审批收紧：自动审批模式下每次联网仍经审查，被拒站点换工具访问同样被拒。
+- 读取不可信内容后，高风险工具强制人工审批，并延续到子 Agent 与并行执行（防提示注入）。
+- 团队房间发言治理：静音、轮流发言、点名、主持模式和委托发言。
+- 流式输出改为服务端合帧，发送失败恢复草稿，长线程分页加载。
+- 崩溃记录落盘，提供 `/api/crashes` 与 doctor 检查。
+- 连接器商城改为按需下载；Codex 引擎不可用时给出中文原因，版本探测失败不再使进程崩溃。
+- RK3576 NPU（`managed_rknn`）探测与租约，NPU 未就绪时明确报错而不静默回落 CPU。
+
+### NAS 与存储
+
+- 存储面改由 Linux 原生工具（`lsblk`、`smartctl`、mdraid、ZFS、Btrfs）提供，不再依赖
+  OpenMediaVault 管理存储。
+- 原生写操作统一为“计划 → 管理员审批 → 执行 → 回读校验”：共享文件夹、用户/组、SMB、
+  私网 NFS、根目录 ACL、用户/组硬配额。
+- 共享文件夹安全重命名、保留数据的解除登记、删除空目录、改备注、安全移除 NFS 规则。
+- 存储池：ZFS 镜像创建、换盘、scrub、导入/导出；mdraid1 + ext4 创建、修复、定时检查；
+  Btrfs RAID1、换盘、定时 scrub、子卷共享、快照（保留策略、快照锁、恢复为新共享）。
+- 磁盘健康：SMART 自检与每周检查、数据盘休眠策略、桌面健康告警；USB UPS 监控与经审批的
+  低电量关机。
+- WebDAV、DLNA、防火墙、Time Machine over SMB、可撤销的文件外链分享、基于 restic 的远程备份。
+- 文件管理器删除默认进回收站，大文件可续传上传与下载。
+- Echo Hub 一键安装 9 款应用（Jellyfin、Immich、Nextcloud 等）；本地智能照片（含 HEIC）、
+  手机文件/照片自动备份、Tailscale 远程网页访问。
+
+### 安全
+
+- 首次启动设置管理员密码；TOTP 二步验证与恢复码；一键注销全部会话。
+- fs/terminal 接口默认拒绝，tentacle WebSocket 需令牌并按设备鉴权，客户端审批旁路默认关闭。
+- 工作区挂载需管理员权限，拦截 SSRF，校验 SSH 主机密钥；Electron 校验 IPC 发送方并加固导航。
+- 停用未审计的旧 NAS 写路由，共享清单与计划中隐藏宿主路径。
+- 依赖安全：前端 `pnpm audit --prod` 与 Python `pip-audit` 清零（含 dompurify 3.4.17、
+  katex 0.18.10、pypdf 6.19+、urllib3 2.8），Bandit 中高危告警清零，新增运行时安全契约门禁。
+
+### 安装、打包与发布
+
+- 单一 `echo-os` wheel，提供 `echo` 与 `echo-agent` 命令；开发与发布依赖均由 `uv` 锁定
+  （`uv sync --locked`），不再使用 `pip install -e`。
+- Docker appliance：Compose 部署、固定摘要的 TLS 网关、GHCR amd64/arm64 多架构镜像与运维包。
+- 整机安装镜像默认无头 NAS（`--profile desktop` 才装 HDMI 桌面），首启可离线完成；新增
+  RK3576 ARM64 固件装配线。
+- 桌面安装包流水线：Windows NSIS、macOS DMG、Linux AppImage，均以源码提交命名并附 SLSA
+  来源证明；Windows 在未配置签名证书时产出明确标记为 unsigned、不可发布的测试包。
+- 文档：[10 分钟上手路径](docs/GOLDEN_PATH.md) 按 uv + corepack pnpm 的真实流程重写。
+
+### 破坏性变更与迁移
+
+- 包名 `octopus-agent` → `echo-os`；命令 `octopus`/`octopus-agent`/`octopus-lint` →
+  `echo`/`echo-agent`/`echo-lint`。
+- 环境变量 `OCTOPUS_*` → `ECHO_*`（无兼容别名）；安装路径 `/opt/echo-os`、`/etc/echo-os`，
+  服务名 `echo-*`；`deploy/fnos` → `deploy/provision`。
+- OMV 不再管理存储，旧 OMV Web 路由已删除，仅保留可选桥接。
+- 移除“工作模式”（company 项目管理，移交企业版插件）、molili 集成、NATS/Redis 总线与
+  13 个金融/电商垂直 Agent。
+- 连接器商城源码改为 git submodule：源码检出后需执行 `git submodule update --init`。
+- 插件宿主兼容范围随产品版本：内置工作台、`echo-recorder` 与商城打包默认的 `host_api` 由
+  `>=0.2,<0.3` 放宽为 `>=0.2,<0.4`。按旧范围安装的工作台/插件包在 0.3.0 上显示为不兼容，
+  需从商城或内置目录重新安装。
+
+### 已知限制
+
+- NAS 可交付判定门：G2（存储故障）、G3（多客户端互操作）、G5（真机升级/回滚/灾难恢复）、
+  G6（x86/ARM 断电耐久）未完成真机验收；G4 仍缺真实 Docker Engine 上的 TLS 与审批审计验收。
+- 桌面安装包的 Authenticode / Apple 公证签名依赖受保护环境中的证书，未配置时不能发布。
+- Hub 应用、手机备份、Tailscale、TOTP、Time Machine 目前只有本机或虚拟机证据。
+- 尚不支持 Btrfs 配额、RAW 照片、企业微信/钉钉告警与成员自助改密；AI Network 面板仍为演示数据。
 
 ## [Unreleased] — 2026-05 · multi-author audit sweep
 

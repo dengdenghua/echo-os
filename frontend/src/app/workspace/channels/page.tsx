@@ -2,13 +2,20 @@
 import { swallow } from "@/core/utils/log";
 import { getBackendBaseURL } from "@/core/config";
 import {
+  BellIcon,
   CheckIcon,
   ChevronRightIcon,
+  GlobeIcon,
+  HouseIcon,
+  MailIcon,
   MessageCircleIcon,
+  MessageSquareTextIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  WebhookIcon,
   XIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -66,61 +73,15 @@ type AgentLite = {
 type ChannelFilter = "all" | "connected" | "unlinked";
 
 // Implementation note.
-const PLATFORM_COLORS: Record<string, string> = {
-  wechat: "bg-[#07c160] text-white",
-  dingtalk: "bg-[#1677ff] text-white",
-  feishu: "bg-[#3370ff] text-white",
-  telegram: "bg-[#26a5e4] text-white",
-  slack: "bg-[#4a154b] text-white",
-  discord: "bg-[#5865f2] text-white",
-  signal: "bg-[#3a76f0] text-white",
-  whatsapp: "bg-[#25d366] text-white",
-  email: "bg-[#ea4335] text-white",
-  sms: "bg-[#f22f46] text-white",
-  mattermost: "bg-[#0058cc] text-white",
-  matrix: "bg-[#0dbd8b] text-white",
-  wecom: "bg-[#07c160] text-white",
-  qqbot: "bg-[#12b7f5] text-white",
-  teams: "bg-[#6264a7] text-white",
-  line: "bg-[#06c755] text-white",
-  homeassistant: "bg-[#41bdf5] text-white",
-  bluebubbles: "bg-[#34c759] text-white",
-  ntfy: "bg-[#317f6e] text-white",
-  webhooks: "bg-[#f59e0b] text-white",
-  google_chat: "bg-[#00ac47] text-white",
-  simplex: "bg-[#f76b1c] text-white",
-  open_webui: "bg-[#8b5cf6] text-white",
-  yuanbao: "bg-[#006eff] text-white",
-  other: "bg-muted/70 text-muted-foreground",
-};
-
-// Implementation note.
-const PLATFORM_ICONS: Record<string, string> = {
-  wechat: "💬",
-  dingtalk: "📌",
-  feishu: "🐦",
-  telegram: "✈️",
-  slack: "#",
-  discord: "🎮",
-  signal: "🔒",
-  whatsapp: "📱",
-  email: "✉️",
-  sms: "📩",
-  mattermost: "📡",
-  matrix: "🟢",
-  wecom: "💼",
-  qqbot: "🐧",
-  teams: "👥",
-  line: "💬",
-  homeassistant: "🏠",
-  bluebubbles: "🔵",
-  ntfy: "🔔",
-  webhooks: "🪝",
-  google_chat: "💬",
-  simplex: "🔐",
-  open_webui: "🌐",
-  yuanbao: "💎",
-  other: "•",
+// Channels are told apart by name; the glyph only says what kind of
+// transport it is (ECHO: lucide line icons, no emoji).
+const PLATFORM_ICONS: Record<string, LucideIcon> = {
+  email: MailIcon,
+  sms: MessageSquareTextIcon,
+  homeassistant: HouseIcon,
+  ntfy: BellIcon,
+  webhooks: WebhookIcon,
+  open_webui: GlobeIcon,
 };
 
 const PLATFORM_CATEGORIES: Record<string, string> = {
@@ -634,10 +595,12 @@ function ChannelCard({
   onRequestPairings: () => void;
 }) {
   const { t } = useI18n();
+  // Third-party brand colours stay out: a connected channel is a graphite
+  // tile with a snow line icon, an unconnected one a muted tile.
   const colorCls = row.connected
-    ? (PLATFORM_COLORS[row.platform] ?? PLATFORM_COLORS.other)
+    ? "bg-[var(--echo-surface-raised)] text-[color:var(--echo-ink)]"
     : "bg-muted/70 text-muted-foreground";
-  const icon = PLATFORM_ICONS[row.platform] ?? "•";
+  const PlatformIcon = PLATFORM_ICONS[row.platform] ?? MessageCircleIcon;
   const assignedAgent = agents.find((a) => a.id === row.assigned_agent_id);
 
   return (
@@ -658,12 +621,13 @@ function ChannelCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div
+            data-echo-theme={row.connected ? "graphite" : undefined}
             className={cn(
               "flex size-11 items-center justify-center rounded-lg text-lg shadow-[var(--shadow-xs)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
               colorCls,
             )}
           >
-            <span>{icon}</span>
+            <PlatformIcon aria-hidden="true" className="size-5" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold leading-5">

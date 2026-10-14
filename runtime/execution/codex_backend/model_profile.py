@@ -292,6 +292,41 @@ def codex_proxy_route_available(router: Any, model: str) -> bool:
     return isinstance(default_model, str) and default_model.strip() == model
 
 
+def resolve_system_model(stack: Any) -> str | None:
+    """The Echo system model a "follow system" Codex turn uses.
+
+    Precedence is the configured planner model, then the planner's own model,
+    then the router default. A candidate without an exact route is skipped
+    while a later one has one: a fresh device ships a config template naming a
+    model nobody has a key for, and after the owner connects their first model
+    (the router default) Codex kept reporting "not connected". The first
+    candidate is still returned when none is routable so the reason is shown.
+    """
+
+    config_model = getattr(getattr(getattr(stack, "config", None), "planner", None), "model", None)
+    planner = getattr(stack, "planner", None)
+    router = getattr(planner, "router", None)
+    candidates = [
+        candidate.strip()
+        for candidate in (
+            config_model,
+            getattr(planner, "planner_model", None),
+            getattr(router, "default_model", None),
+        )
+        if isinstance(candidate, str) and candidate.strip()
+    ]
+    if not candidates:
+        return None
+    if router is not None and callable(getattr(router, "has", None)):
+        for candidate in candidates:
+            try:
+                if router.has(candidate):
+                    return candidate
+            except Exception:  # noqa: BLE001 - routing probes must fail closed
+                break
+    return candidates[0]
+
+
 def _resolve_custom_entry(
     custom_models: dict[str, Any],
     selected_model: str | None,
@@ -382,4 +417,5 @@ __all__ = [
     "codex_proxy_route_available",
     "is_disallowed_coder_system_model",
     "resolve_codex_execution_profile",
+    "resolve_system_model",
 ]

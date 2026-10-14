@@ -72,6 +72,7 @@ export const zhCN: Translations = {
       `${method} ${path} 返回了桩数据。在真实后端接口启用前，请把当前工作区状态视为开发 fallback。`,
     openSidebarMenu: "打开侧栏菜单",
     loadingWorkspace: "正在加载工作区...",
+    startingSystem: "系统服务正在启动，请稍候...",
   },
 
   // Home
@@ -106,7 +107,7 @@ export const zhCN: Translations = {
 
     createYourOwnSkill: "创建你自己的 Agent Skill",
     createYourOwnSkillDescription:
-      "创建自定义 Agent Skill 是 EchoAI 的核心功能之一,EchoAI\n会根据你的描述自动生成代码,你可以随时修改和优化\n这个 Skill,让它更好地为你服务。",
+      "创建自定义 Agent Skill 是 Echo 的核心功能之一,Echo\n会根据你的描述自动生成代码,你可以随时修改和优化\n这个 Skill,让它更好地为你服务。",
 
     scenes: {
       daily: "日常办公",
@@ -286,6 +287,7 @@ export const zhCN: Translations = {
     makeSimilar: "做同款",
     makeSimilarHint: "用相同诉求开启新任务",
     retryTask: "重试",
+    openModelSettings: "接入模型",
     retryTaskHint: "用相同诉求重新发起任务",
     taskFailedReason: "失败原因",
     resultUrl: "结果链接",
@@ -447,10 +449,12 @@ export const zhCN: Translations = {
     maxSubagents: "最大子代理数",
     maxSearches: "最大搜索数",
     permissionModeLabel: "权限",
-    permissionModeDefault: "默认",
-    permissionModeDefaultDesc: "任何写入和命令都会先征求你的同意，最安全。",
-    permissionModeAcceptEdits: "接受编辑",
-    permissionModeAcceptEditsDesc: "修改文件自动执行，执行命令前仍会问你。",
+    permissionModeDefault: "询问审批",
+    permissionModeDefaultDesc:
+      "可读写当前工作区并运行常规命令；访问网络或超出工作区时询问你。",
+    permissionModeAcceptEdits: "代我审批",
+    permissionModeAcceptEditsDesc:
+      "保持相同工作区边界，越界操作交给独立审核代理决定。",
     permissionModeBypass: "完全访问",
     permissionModeBypassDesc: "所有操作自动执行、不再询问，最高权限。",
     permissionModeBypassConfirmTitle: "切换到完全访问？",
@@ -472,8 +476,8 @@ export const zhCN: Translations = {
     projectWriteAccess: "项目写入",
     projectReadOnly: "只读项目",
     permissionFullAccess: "完全访问",
-    permissionAcceptEdits: "接受编辑",
-    permissionConfirm: "默认",
+    permissionAcceptEdits: "代我审批",
+    permissionConfirm: "询问审批",
     addImage: "添加图片（粘贴 / 拖拽 / 选择）",
     addAppshot: "附加当前窗口快照",
     capturingAppshot: "正在附加当前窗口…",
@@ -691,7 +695,7 @@ export const zhCN: Translations = {
     readFile: "查看文件",
     updateFile: "更新文件",
     runAction: "执行操作",
-    teammateTimeout: "团队成员暂未返回，EchoAI 接管",
+    teammateTimeout: "团队成员暂未返回，Echo 接管",
     factSummaryPath: (value: string) => `已确认：${value}`,
     factSummaryCount: (value: string) => `已确认：共 ${value} 项`,
     factSummaryStatus: (value: string) => `已确认：${value}`,
@@ -1026,7 +1030,7 @@ export const zhCN: Translations = {
       idle: "REC：录制本轮对话并学习为可复用回放技能",
     },
     replay: {
-      titleDefault: "EchoAI 运行回放",
+      titleDefault: "ECHO OS 运行回放",
       footer: "自包含离线回放",
     },
     composer: {
@@ -1775,6 +1779,12 @@ export const zhCN: Translations = {
     officeEditPlaceholder: "例如：把第三页改成风险矩阵，并保持现有配色",
     officeEditHint: "修改会发送到当前任务，完成后自动刷新预览",
     previewError: "预览加载失败，请检查登录状态后重试",
+    fileAccessDenied:
+      "无法读取此文件。请确认已登录，且当前任务有权访问所在目录。",
+    fileMissing: "文件不存在，可能已被移动或删除。请检查原件位置后重试。",
+    fileUnavailable: "文件暂时无法读取，请稍后重试。",
+    fileTooLarge:
+      "文件超过此处的读取上限，无法在此预览或下载。请通过文件管理器访问原件。",
     previewRetry: "重新加载预览",
     officeFidelity: "原貌预览",
     humanEdit: "直接编辑",
@@ -1856,7 +1866,7 @@ export const zhCN: Translations = {
     navDatabase: "本地数据库",
     navKnowledgeGraph: "知识库",
     navReflex: "反射规则",
-    navIntelligence: "订阅",
+    navIntelligence: "自动化",
     navAssistant: "助手",
     navPaperTrading: "模拟炒股",
     navPaperTradingDesc:
@@ -1926,8 +1936,8 @@ export const zhCN: Translations = {
     sectionChats: "对话",
     sectionSessions: "会话",
     noChatsYet: "暂无对话",
-    collapseSidebar: "收起侧栏 (⌘B)",
-    expandSidebar: "展开侧栏 (⌘B)",
+    collapseSidebar: (shortcut: string) => `收起侧栏 (${shortcut})`,
+    expandSidebar: (shortcut: string) => `展开侧栏 (${shortcut})`,
     collapseSection: (label: string) => `收起${label}`,
     expandSection: (label: string) => `展开${label}`,
     projectNamePlaceholder: "项目名称",
@@ -2071,8 +2081,8 @@ export const zhCN: Translations = {
       "限制智能体能同时保留的标签页数量。使用 retain=true 打开的页面在任务结束后不会被自动关闭。",
     saveConfig: "保存配置",
     configSaved: "配置已保存",
-    installExtensionTitle: "安装 EchoAI Browser Relay",
-    installExtensionDesc: "安装扩展以将浏览器连接到 EchoAI。",
+    installExtensionTitle: "安装 ECHO Browser Relay",
+    installExtensionDesc: "安装扩展以将浏览器连接到 ECHO OS。",
     step1Title: "打开 Chrome 扩展管理页面并启用开发者模式",
     step1Desc: "在浏览器地址栏输入并打开扩展管理页面",
     step1Action: "打开 chrome://extensions",
@@ -2088,7 +2098,7 @@ export const zhCN: Translations = {
     relayDisconnected: "扩展未连接",
     relayVersion: "版本",
     compareTitle: "选择连接方式",
-    compareDesc: "两种方式均可将浏览器连接到 EchoAI，选择最适合你的方案。",
+    compareDesc: "两种方式均可将浏览器连接到 ECHO OS，选择最适合你的方案。",
     compareFeature: "功能",
     compareExtension: "扩展方式",
     compareCdp: "CDP 直连",
@@ -2121,7 +2131,7 @@ export const zhCN: Translations = {
     allVersions: "所有版本",
     // Page Agent integration
     pageAgentDesc:
-      "Page Agent 是阿里巴巴开源的 GUI Agent 框架，通过文本 DOM 操作控制网页，无需截图或多模态模型。通过 MCP 协议集成到 EchoAI。",
+      "Page Agent 是阿里巴巴开源的 GUI Agent 框架，通过文本 DOM 操作控制网页，无需截图或多模态模型。通过 MCP 协议集成到 ECHO OS。",
     pageAgentDocs: "查看文档",
     pageAgentFeature1: "页内 JS 集成",
     pageAgentFeature1Desc: "无需 Python、无需 headless 浏览器，纯前端注入。",
@@ -2163,7 +2173,7 @@ export const zhCN: Translations = {
     extConNeedExtension: "需要安装一个 Chrome 扩展。",
     cdpProNoExtension: "无需安装任何扩展。",
     cdpProChrome144: "Chrome 144+ 即可用。",
-    cdpConReAuth: "每次重启 EchoAI 后需重新授权。",
+    cdpConReAuth: "每次重启 ECHO OS 后需重新授权。",
     cdpConChrome144Only: "仅支持 Chrome 144+。",
   },
 
@@ -2405,7 +2415,7 @@ export const zhCN: Translations = {
     loadoutReady: "能力已接入",
     saved: "Agent 配置已保存",
     saveFailed: (msg) => `保存失败：${msg}`,
-    officialFaction: "EchoAI 指挥部",
+    officialFaction: "ECHO 指挥部",
     authorFaction: (author) => `${author} Lab`,
     categoryRoles: {
       assistant: "支援",
@@ -2676,11 +2686,11 @@ export const zhCN: Translations = {
       "你好!我是你的智能体 {name},请帮我定义我的 **SOUL**?",
     save: "保存智能体",
     saving: "正在保存智能体...",
-    saveRequested: "已收到保存请求,EchoAI 将自动创建必要的文件和配置",
+    saveRequested: "已收到保存请求,Echo 将自动创建必要的文件和配置",
     saveHint: "你可以继续与智能体对话来完善它的功能,或者现在就开始使用",
     saveCommandMessage:
       "如果你想修改智能体的配置,可以直接编辑工作目录中的文件。系统提示词存储在 SOUL.md 中,你可以使用 setup_agent 命令来更新配置",
-    agentCreatedPendingRefresh: "智能体已创建,EchoAI 正在刷新以应用更改",
+    agentCreatedPendingRefresh: "智能体已创建,Echo 正在刷新以应用更改",
     more: "更多操作",
     agentCreated: "智能体创建成功!",
     startChatting: "开始对话",
@@ -2904,13 +2914,13 @@ export const zhCN: Translations = {
 
   // Workspace
   workspace: {
-    officialWebsite: "访问 EchoAI 官网",
-    githubTooltip: "查看 EchoAI 的 Github 仓库",
+    officialWebsite: "访问 ECHO OS 官网",
+    githubTooltip: "查看 ECHO OS 的 Github 仓库",
     settingsAndMore: "设置和更多",
-    visitGithub: "在 Github 上关注 EchoAI",
+    visitGithub: "在 Github 上关注 ECHO OS",
     reportIssue: "报告问题",
     contactUs: "联系我们",
-    about: "关于 EchoAI",
+    about: "关于 ECHO OS",
     modes: {
       chat: "对话",
       team: "团队",
@@ -2922,7 +2932,7 @@ export const zhCN: Translations = {
       badge: "Agent OS 控制中心",
       headline: "赋予智能体目标，然后监督工作。",
       description:
-        "EchoAI 将目标转化为计划，在限定运行时中执行工具，记录轨迹，并为下一次运行保留有用的记忆。",
+        "Echo 将目标转化为计划，在限定运行时中执行工具，记录轨迹，并为下一次运行保留有用的记忆。",
       newTask: "新任务",
       codeTask: "代码任务",
       systemLoop: {
@@ -3041,7 +3051,7 @@ export const zhCN: Translations = {
 
   // Page titles (document title)
   pages: {
-    appName: "EchoAI",
+    appName: "ECHO OS",
     chats: "对话",
     newChat: "新对话",
     untitled: "未命名",
@@ -3066,7 +3076,7 @@ export const zhCN: Translations = {
     writeFile: "写入文件",
     clickToViewContent: "点击查看内容",
     writeTodos: "创建 To-do 列表",
-    skillInstallTooltip: "点击安装此技能到 EchoAI 工作区",
+    skillInstallTooltip: "点击安装此技能到 ECHO OS 工作区",
     toastSkillInstallFailed: "安装技能失败",
     toastExportConversationFailed: "导出对话失败",
   },
@@ -3085,19 +3095,20 @@ export const zhCN: Translations = {
     thoughtProcess: "实时工作日志",
     connectionLost: "本次回复已中断，可继续发送消息或重试。",
     networkLost: "网络连接中断，任务已自动暂停。发送消息即可从断点恢复。",
+    eventStreamOverloaded: "事件流暂时拥堵，已保留已完成步骤，请重试继续。",
     turnFailed: "本轮任务未完成。可继续发送消息或重试。",
     guardBlocked: "结果已保留，但完成条件未通过。请按下方原因继续收敛。",
     lifecycleFailed: "任务运行状态未能可靠落盘，请重试或重启后端。",
     workspaceWriteRequired:
       "该任务要求修改项目文件，但本轮没有产生有效的文件变更。",
     verificationRequired:
-      "代码改动需要先完成验证，EchoAI 才会结束本轮。请运行测试、lint、typecheck 或构建后继续。",
+      "代码改动需要先完成验证，Echo 才会结束本轮。请运行测试、lint、typecheck 或构建后继续。",
     environmentBlocked: "任务被环境约束阻塞，原因见下方。",
     environmentBlockedAuthorizeCommon: "授权「常用域名」并重试",
     environmentBlockedAuthorizeFull: "授权完整网络并重试",
     blockedOnUser: "任务需要你的输入才能继续。",
     streamEndpointUnavailable:
-      "当前后端未启用或暂不可用对话/团队流接口，请启动完整 EchoAI 后端或检查前端代理。",
+      "当前后端未启用或暂不可用对话/团队流接口，请启动完整 ECHO OS 后端或检查前端代理。",
     iteration: (count: number) => `第 ${count} 轮`,
     toolCalls: (count: number) => `${count} 次调用`,
     generating: "生成中…",
@@ -3194,7 +3205,7 @@ export const zhCN: Translations = {
     noResults: "没有找到匹配的操作",
     actions: "操作",
     keyboardShortcuts: "键盘快捷键",
-    keyboardShortcutsDescription: "使用键盘快捷键更高效地使用 EchoAI",
+    keyboardShortcutsDescription: "使用键盘快捷键更高效地使用 ECHO OS",
     openCommandPalette: "打开命令面板",
     commandPaletteDescription: "搜索要执行的命令...",
     toggleSidebar: "切换侧边栏",
@@ -3280,7 +3291,7 @@ export const zhCN: Translations = {
   // Settings
   settings: {
     title: "设置",
-    description: "管理你的 EchoAI 账户和偏好设置",
+    description: "管理你的 ECHO 账户和偏好设置",
     sections: {
       account: "账户",
       subscription: "订阅与用量",
@@ -3432,7 +3443,7 @@ export const zhCN: Translations = {
     memory: {
       title: "记忆",
       description:
-        "管理 EchoAI 保存的事实与对话摘要，并控制何时记录、何时用于回答。",
+        "管理 Echo 保存的事实与对话摘要，并控制何时记录、何时用于回答。",
       empty: "还没有记忆信息",
       rawJson: "原始 JSON",
       exportButton: "导出记忆",
@@ -3441,7 +3452,7 @@ export const zhCN: Translations = {
       importConfirmTitle: "确认导入记忆？",
       importConfirmDescription: "导入的记忆将覆盖现有的记忆数据",
       importFileLabel: "选择记忆文件",
-      importInvalidFile: "文件格式无效，请选择由 EchoAI 导出的 JSON 记忆文件",
+      importInvalidFile: "文件格式无效，请选择由 ECHO OS 导出的 JSON 记忆文件",
       importFileTooLarge: "记忆文件不能超过 5 MB",
       importSuccess: "记忆导入成功",
       manualFactSource: "手动添加",
@@ -3594,7 +3605,7 @@ export const zhCN: Translations = {
       createSkill: "创建技能",
       emptyTitle: "还没有自定义技能",
       emptyDescription:
-        "自定义 Agent Skill 可以放在 EchoAI 工作区的 `/skills/custom` 目录中",
+        "自定义 Agent Skill 可以放在 ECHO OS 工作区的 `/skills/custom` 目录中",
       emptyButton: "了解如何创建技能",
       enabledDescription:
         "已启用的技能会进入 Agent 可用工具目录；关闭后模型不可见，也不能执行。",
@@ -3617,16 +3628,16 @@ export const zhCN: Translations = {
     notification: {
       title: "通知",
       description:
-        "窗口不在前台时，EchoAI 会在任务完成后提醒你，适合需要切换去处理其他工作的长任务。",
+        "窗口不在前台时，Echo 会在任务完成后提醒你，适合需要切换去处理其他工作的长任务。",
       enableNotification: "启用通知",
       permissionGranted: "权限已允许",
       permissionPrompt: "需要授权",
       permissionDenied: "权限被拒绝",
       requestPermission: "请求通知权限",
       deniedHint:
-        "通知权限已被拒绝，请前往系统或浏览器的通知设置，为 EchoAI 开启通知。",
+        "通知权限已被拒绝，请前往系统或浏览器的通知设置，为 ECHO OS 开启通知。",
       testButton: "发送测试通知",
-      testTitle: "EchoAI",
+      testTitle: "ECHO OS",
       testBody: "这是一条测试通知。",
       testSent: "测试通知已发送",
       requestFailed: "无法请求通知权限",
@@ -3877,16 +3888,16 @@ export const zhCN: Translations = {
       },
     },
     echoMix: {
-      title: "EchoAI Mix · 多模型协同",
+      title: "Echo Mix · 多模型协同",
       description:
-        "选 2+ 个模型作为 proposer(各自独立起草、无工具),再选一个 aggregator 综合出最终答案。聊天里选 “EchoAI Mix” 即走此配置;proposer 留空则用默认模型 × 数量。",
+        "选 2+ 个模型作为 proposer(各自独立起草、无工具),再选一个 aggregator 综合出最终答案。聊天里选 “Echo Mix” 即走此配置;proposer 留空则用默认模型 × 数量。",
       proposersLabel: "Proposers(参与起草的模型)",
       noCandidates: "暂无可选模型",
       aggregatorLabel: "Aggregator",
       aggregatorDefault: "默认",
       nLabel: "无池时数量",
       saveButton: "保存",
-      saveSuccess: "EchoAI Mix 配置已保存",
+      saveSuccess: "Echo Mix 配置已保存",
       saveFailed: (status: number) => `保存失败 (${status})`,
       saveFailedFallback: "保存失败",
     },
@@ -4027,7 +4038,7 @@ export const zhCN: Translations = {
     reject: "拒绝",
     approveExecute: "批准并执行",
     startQuest: "开始 Quest",
-    questDesc: "描述一个复杂任务,让 EchoAI 自主规划、执行和验证",
+    questDesc: "描述一个复杂任务,让 Echo 自主规划、执行和验证",
     requirementPlaceholder: "描述你想要完成的任务...",
     executionPlan: "执行计划",
     verificationPassed: "验证通过",
@@ -4170,7 +4181,7 @@ export const zhCN: Translations = {
       listFailed: "插件列表读取失败",
       installFailed: "插件安装失败",
       statusFailed: "插件状态更新失败",
-      removeConfirm: "从 EchoAI 移除此插件？本地文件不会被删除。",
+      removeConfirm: "从 ECHO OS 移除此插件？本地文件不会被删除。",
       removeFailed: "插件移除失败",
       enabled: "启用",
       disabled: "停用",
@@ -4180,7 +4191,7 @@ export const zhCN: Translations = {
       emptyWeb: "当前 localhost 预览无法访问 Electron 插件接口。",
       placeholderTitle: "插件目录占位",
       placeholderDesc:
-        "本地预览不能访问桌面端插件接口，但这里会展示 EchoAI 支持的插件类型。",
+        "本地预览不能访问桌面端插件接口，但这里会展示 ECHO OS 支持的插件类型。",
       placeholderBrowserTitle: "浏览器插件",
       placeholderBrowserDesc:
         "Chrome / Edge 扩展，让 Agent 能读取页面、点击控件和截图。",
@@ -4511,7 +4522,7 @@ export const zhCN: Translations = {
 
     extensionMarketplace: {
       title: "拓展",
-      subtitle: "管理 EchoAI 浏览器拓展能力",
+      subtitle: "管理 ECHO OS 浏览器拓展能力",
       installLocal: "安装本地拓展",
       refreshAriaLabel: "刷新拓展",
       closeAriaLabel: "关闭拓展",
@@ -4537,7 +4548,7 @@ export const zhCN: Translations = {
       errorInstallFailed: "拓展安装失败",
       errorStatusFailed: "拓展状态更新失败",
       errorRemoveFailed: "拓展移除失败",
-      confirmRemove: "从 EchoAI 移除此拓展？本地文件不会被删除。",
+      confirmRemove: "从 ECHO OS 移除此拓展？本地文件不会被删除。",
       categoryFeatured: "精选",
       categoryEfficiency: "效率",
       categoryResearch: "研究",
@@ -4564,16 +4575,16 @@ export const zhCN: Translations = {
       openDirectory: "打开目录",
       extPluginTitle: "外部浏览器插件",
       extPluginDesc:
-        "给 Chrome / Edge 使用。插件连接本机 EchoAI，让外部网页也能被 Agent 读取和操作。",
+        "给 Chrome / Edge 使用。插件连接本机 ECHO OS，让外部网页也能被 Agent 读取和操作。",
       dragToBookmarks: "拖到书签栏",
       dragToBookmarksDesc: "轻量 Page Agent 模式，适合临时连接当前网页。",
       dragToBookmarksTitle: "拖到 Chrome/Edge 书签栏",
       step1Temporary:
-        "1. 临时使用：把上面的 EchoAI Agent 拖到书签栏，在目标网页点击它。",
+        "1. 临时使用：把上面的 ECHO 按钮拖到书签栏，在目标网页点击它。",
       step2LongTerm:
         '2. 长期使用：打开 Chrome/Edge 扩展管理页，启用"开发者模式"。',
       step3LoadExtension:
-        '3. 点击"加载已解压的扩展程序"，选择 EchoAI 插件目录。',
+        '3. 点击"加载已解压的扩展程序"，选择 ECHO Browser Relay 目录。',
       pluginDirectory: "插件目录",
       pluginDirectoryOpened: (path: string) => `插件目录已打开: ${path}`,
       pluginPathCopied: "插件目录路径已复制",
@@ -4744,7 +4755,7 @@ export const zhCN: Translations = {
       searchOrUrl: "搜索或输入网址",
       siteInfo: "站点信息",
       siteInfoDesc:
-        "登录态、Cookie 和本地数据会保留在 EchoAI 浏览器中，并在标签页之间共享。",
+        "登录态、Cookie 和本地数据会保留在 ECHO OS 浏览器中，并在标签页之间共享。",
       clearData: "清除数据",
       openExternally: "外部打开",
       confirmClearSiteData:
@@ -5342,11 +5353,17 @@ export const zhCN: Translations = {
     cancelledTasks: (count: number) => `${count} 个取消`,
     coordinationWarnings: (count: number) => `${count} 个协调告警`,
     rerunnableTasks: (count: number) => `${count} 个可续跑任务`,
+    recoveryResume: "按快照重跑可安全任务",
+    recoveryResuming: "正在重新执行…",
+    recoveryResumeFailed: "恢复启动失败，请刷新快照后重试",
     failedTasks: (count: number) => `${count} 个失败`,
     dependencyBlocked: (count: number) => `${count} 个依赖阻塞`,
     checkpointSequence: (sequence: number) => `检查点 #${sequence}`,
     recoverySafe: "已脱敏",
     recoveryUnsafe: "包含原始数据",
+    durableRecovery: "持久恢复视图",
+    durableRecoveryHint:
+      "进程重启后已隐藏 worker 输出；继续前请先检查恢复队列。",
     statusLabels: {
       pending: "等待中",
       running: "运行中",
@@ -5788,13 +5805,13 @@ export const zhCN: Translations = {
 
   intelligencePanel: {
     examplePrompts: [
-      "每天跟踪 EchoAI Agent 相关 GitHub release、issue 和竞品动态，只保留和产品决策有关的变化",
+      "每天跟踪 Echo Agent 相关 GitHub release、issue 和竞品动态，只保留和产品决策有关的变化",
       "每周汇总 AI Agent、浏览器自动化、多智能体框架的新论文和开源项目，过滤重复新闻",
       "关注三个竞品的价格、插件生态、企业版功能变化，发现重要更新时提醒我",
     ],
     goalLabel: "描述你想持续追踪的内容",
     goalPlaceholder:
-      "例如：每天跟踪 EchoAI Agent、browser-use 和 OpenAI Agent SDK 的 release、issue 与重要讨论，只保留影响产品路线的变化。",
+      "例如：每天跟踪 Echo Agent、browser-use 和 OpenAI Agent SDK 的 release、issue 与重要讨论，只保留影响产品路线的变化。",
     subscriptionName: "订阅名称",
     keywords: "关键词（用逗号分隔）",
     cadence: "执行频率",
@@ -6090,10 +6107,10 @@ export const zhCN: Translations = {
   // Onboarding
   onboarding: {
     title: "新手引导",
-    welcomeToEcho: "欢迎使用 EchoAI",
+    welcomeToEcho: "欢迎使用 ECHO OS",
     yourAIPlatform: "你的 AI 智能体平台",
     welcomeDesc:
-      "EchoAI 是一个开源的超级智能体平台，可以编排子智能体、记忆和沙箱来完成几乎任何事情 \u2014 由可扩展的技能驱动。",
+      "ECHO OS 是一个开源的超级智能体平台，可以编排子智能体、记忆和沙箱来完成几乎任何事情 \u2014 由可扩展的技能驱动。",
     chatModes: "任务能力",
     chatModesDesc: "从一个任务开始，按需要接入能力和协作者",
     modeChat: "对话",
@@ -6285,6 +6302,8 @@ export const zhCN: Translations = {
     readingGitDiff: (running) =>
       running ? "正在读取 Git 差异" : "已读取 Git 差异",
     committingGit: (running) => (running ? "正在提交 Git" : "已提交 Git"),
+    subagentUsage: (tokens, costUsd) =>
+      `治理用量：${tokens.toLocaleString()} tokens · $${costUsd.toFixed(4)}`,
   },
 
   // Store utilities
@@ -6303,7 +6322,7 @@ export const zhCN: Translations = {
     },
     technicalDetails: "技术细节",
     createPluginPrompt:
-      "使用 $plugin-creator 创建一个新的 EchoAI 插件。\n请先询问插件名称、用途、是否包含 skills/apps/MCP，然后 scaffold 到个人插件目录，补齐 manifest，并验证插件可被市场识别。",
+      "使用 $plugin-creator 创建一个新的 ECHO OS 插件。\n请先询问插件名称、用途、是否包含 skills/apps/MCP，然后 scaffold 到个人插件目录，补齐 manifest，并验证插件可被市场识别。",
   },
 
   // Local skill directory panel
@@ -6466,7 +6485,7 @@ export const zhCN: Translations = {
   // Bundle Info
   bundleInfo: {
     title: "构建信息",
-    appVersion: "EchoAI 版本",
+    appVersion: "ECHO OS 版本",
     license: "开源许可",
     environment: "环境",
     vite: "Vite",
@@ -6528,7 +6547,7 @@ export const zhCN: Translations = {
     confirmDelete: "确认删除",
     factoryResetTitle: "恢复出厂设置",
     factoryResetDescription:
-      "清除本地对话、工作区、记忆、安装状态和浏览器侧 EchoAI 缓存，保留源码与内置角色。",
+      "清除本地对话、工作区、记忆、安装状态和浏览器侧 ECHO OS 缓存，保留源码与内置角色。",
     factoryResetDialogDescription:
       "这会删除本机运行数据和本地缓存，操作后需要重启或刷新应用。源码、内置角色目录不会被删除。",
     factoryResetTypeToConfirm: "输入 RESET ECHO 确认",
@@ -6563,7 +6582,7 @@ export const zhCN: Translations = {
     totalCredits: (total) => `共 ${total} 积分`,
     billingUnavailableTitle: "套餐暂时不可用",
     billingUnavailableDescription:
-      "当前 EchoAI 账号已登录，但计费服务尚未连接。请重试刷新账号关联与可购买套餐。",
+      "当前 ECHO 账号已登录，但计费服务尚未连接。请重试刷新账号关联与可购买套餐。",
     subscriptionUnavailable: "订阅信息暂时无法加载。",
     plansUnavailable: "套餐加载失败。",
     noPlans: "当前暂无可购买的套餐。",
@@ -6806,7 +6825,7 @@ export const zhCN: Translations = {
   // App Authorization page
   appAuth: {
     pageTitle: "应用授权",
-    pageSubtitle: "授权第三方平台，让 EchoAI 代表你访问数据。",
+    pageSubtitle: "授权第三方平台，让 Echo 代表你访问数据。",
     searchPlaceholder: "搜索应用授权...",
     connectedCount: (n: number) => `${n} 个已连接`,
     tabAll: "全部",
@@ -7503,7 +7522,7 @@ export const zhCN: Translations = {
   evolutionPanel: {
     title: "自进化状态",
     description:
-      "EchoAI 会在任务结束后复盘，把稳定有用的经验带到下一次任务里。这里展示它目前学到了什么、会怎样影响之后的执行。",
+      "Echo 会在任务结束后复盘，把稳定有用的经验带到下一次任务里。这里展示它目前学到了什么、会怎样影响之后的执行。",
     summaryEmpty: "还在积累经验",
     summaryReady: (learned: number, total: number) =>
       `已从 ${total} 次任务中沉淀 ${learned} 条可复用经验`,
@@ -7528,7 +7547,7 @@ export const zhCN: Translations = {
     statAllTrajsTooltip: (total: number) =>
       `${total} 个历史任务已进入复盘池。样本越多，经验越接近稳定规律，而不是单次偶然结果。`,
     statAllTrajsDesc:
-      "这里统计已经进入复盘池的历史任务。EchoAI 会从这些样本里寻找稳定做法和风险模式。",
+      "这里统计已经进入复盘池的历史任务。Echo 会从这些样本里寻找稳定做法和风险模式。",
     statAllTrajsPoints: (total: number, learned: number) => [
       `${total} 个样本已进入复盘池，用来判断哪些规律足够稳定。`,
       `${learned} 条经验已沉淀完成，后续同类任务会自动参考。`,
@@ -7557,7 +7576,7 @@ export const zhCN: Translations = {
     noMitigationsHint:
       "还没有发现稳定重复的问题。这里不是错误日志，而是“反复出现、值得下次避开”的模式；等某类错误多次出现后，会沉淀成避坑提醒。",
     noMemoriesHint:
-      "还没有足够稳定的成功经验。当前 0 条表示还没有某个做法连续成功到可以复用；EchoAI 不会因为一次偶然成功就把它写进记忆。",
+      "还没有足够稳定的成功经验。当前 0 条表示还没有某个做法连续成功到可以复用；Echo 不会因为一次偶然成功就把它写进记忆。",
     linesSuffix: (n: number) => `${n} 条`,
     forgetLineTitle: "遗忘这条（让系统忘记这次学到的内容）",
     forgetLineButton: "忘记",
@@ -7595,7 +7614,7 @@ export const zhCN: Translations = {
   privacySettings: {
     identityLockTitle: "身份锁 · Identity Lock",
     identityLockDesc:
-      "开启时 · 模型回复里的厂家 / 型号名（Claude / Kimi / Anthropic / 月之暗面 等）会被替换成 EchoAI · 用户看到的永远是产品身份。关闭后进入开发模式 · LLM 真身会原样显示 · 方便调 prompt / 验证路由。",
+      "开启时 · 模型回复里的厂家 / 型号名（Claude / Kimi / Anthropic / 月之暗面 等）会被替换成 Echo · 用户看到的永远是产品身份。关闭后进入开发模式 · LLM 真身会原样显示 · 方便调 prompt / 验证路由。",
     lockedTag: "LOCKED",
     unlockedTag: "UNLOCKED",
     sourceLabel: "source",
@@ -7632,9 +7651,11 @@ export const zhCN: Translations = {
     aiModeRecommended: (label: string) =>
       `根据本机设备配置，推荐使用：${label}`,
     efficiencyMode: "效率模式",
-    efficiencyModeDesc: "优先使用云端高性能模型，响应更快、能力更强。",
+    efficiencyModeDesc:
+      "允许使用云端模型；任务内容、文件片段及历史上下文可能发送到所选服务。",
     privacyMode: "隐私模式",
-    privacyModeDesc: "优先使用本地模型，数据不离开本机。",
+    privacyModeDesc:
+      "仅使用本机模型，不可用时停止。联网工具和未验证的执行方式将被阻止。",
     detectButton: "重新检测设备能力",
     recommendedTag: "推荐",
     enabledTag: "已启用",
@@ -7671,7 +7692,7 @@ export const zhCN: Translations = {
   sandboxSettings: {
     title: "沙箱与执行权限",
     description:
-      "执行环境与权限粒度是两个独立维度，可自由组合：例如「沙箱 + 完全访问」在隔离环境内全自动，或「本地 + 接受编辑」在本机执行但命令仍需确认。",
+      "权限档位会决定执行边界和审核人：「询问审批」与「代我审批」留在工作区沙箱内，「完全访问」使用本机执行。网络访问单独配置。",
     activeTag: "当前",
     scopeNote:
       "改动保存到本地设置，对之后发起的所有新任务生效；当前正在运行的任务不受影响。",
@@ -7706,12 +7727,13 @@ export const zhCN: Translations = {
     },
     permission: {
       default: {
-        label: "默认",
-        description: "任何写入和命令都会先征求你的同意，最安全。",
+        label: "询问审批",
+        description:
+          "可读写当前工作区并运行常规命令；访问网络或超出工作区时询问你。",
       },
       acceptEdits: {
-        label: "接受编辑",
-        description: "修改文件自动执行，执行命令前仍会问你。",
+        label: "代我审批",
+        description: "保持相同工作区边界，越界操作交给独立审核代理决定。",
       },
       bypassPermissions: {
         label: "完全访问",
@@ -7805,13 +7827,13 @@ export const zhCN: Translations = {
   // Register page
   registerPage: {
     loadingText: "加载中...",
-    badgeText: "创建你的 EchoAI 账户",
+    badgeText: "创建你的 ECHO 账户",
     heroTitleLine1: "加入后立即开始",
     heroTitleLine2: "多智能体工作流",
     heroDescription:
       "建立自己的工作区，接入技能、工具和模型，把研究、协作与自动化任务统一到一个平台里。",
     cardTitle: "创建账户",
-    cardDescription: "加入 EchoAI 开始你的智能体之旅",
+    cardDescription: "加入 ECHO OS 开始你的智能体之旅",
     usernameLabel: "用户名",
     usernamePlaceholder: "至少 3 个字符",
     emailLabel: "邮箱（可选）",
@@ -7892,7 +7914,7 @@ export const zhCN: Translations = {
       privacyPolicy: "隐私政策",
     },
     page: {
-      title: "安全访问你的 EchoAI 工作区",
+      title: "安全访问你的 ECHO OS 工作区",
       subtitle: "登录后继续你的",
       description:
         "继续你的研究、编码、协作与自动化任务，在统一工作区里管理上下文、技能与执行结果。",
@@ -8026,8 +8048,8 @@ export const zhCN: Translations = {
   },
 
   hero: {
-    releaseBadge: "EchoAI 2.0 已发布",
-    withEcho: "与 EchoAI 一起",
+    releaseBadge: "ECHO OS 2.0 已发布",
+    withEcho: "与 Echo 一起",
     heroDescription:
       "一个开源的 SuperAgent 框架，能做研究、写代码、产内容。借助沙箱、记忆、工具、技能和子智能体，它可以处理从几分钟到几小时不等的不同层级任务。",
   },
@@ -8756,13 +8778,13 @@ export const zhCN: Translations = {
   desktop: {
     disabledTitle: "桌面助手未开启",
     disabledDescription:
-      "EchoAI 默认进入欢迎、登录与工作区。需要处理系统桌面文件时，可以单独开启透明桌面助手。",
+      "ECHO OS 默认进入欢迎、登录与工作区。需要处理系统桌面文件时，可以单独开启透明桌面助手。",
     enableButton: "开启桌面助手",
     pluginSettingsButton: "打开插件设置",
     backToWorkspaceButton: "回到工作区",
     header: {
       workspaceTooltip: "打开工作台",
-      brand: "EchoAI",
+      brand: "工作台",
       accountModels: "官方模型",
       desktopAssistant: "桌面助手",
       desktopCount: (count) => `桌面 ${count || "--"}`,
@@ -8999,6 +9021,10 @@ export const zhCN: Translations = {
     batchEventTitle: (status) => `批次 ${status}`,
     subagentEventTitle: (name, status) => `${name} ${status}`,
     subagentFallback: "子代理",
+    durableRecovery: "持久恢复视图",
+    durableRecoveryHint:
+      "已隐藏 worker 输出；请先检查恢复队列，再决定是否继续。",
+    recoveryRequired: "需要恢复核查",
     statusComplete: "完成",
     statusUpdated: "已更新",
     routeBlocked: "路由已阻断",
@@ -9025,7 +9051,7 @@ export const zhCN: Translations = {
       "当前打开的是网页环境，所以右键菜单安装/移除会保持禁用。切到桌面版后，这两项才会真正生效。",
     contextMenuTitle: "系统右键菜单",
     contextMenuDescription:
-      '在 Windows 桌面空白处右键显示 "EchoAI 一键整理桌面"。',
+      '在 Windows 桌面空白处右键显示 "Echo 一键整理桌面"。',
     installButton: "安装右键命令",
     installingButton: "安装中",
     removeButton: "移除",
@@ -9038,7 +9064,7 @@ export const zhCN: Translations = {
     backToWorkspace: "回到工作区",
     confirmRemoveTitle: "移除系统右键菜单？",
     confirmRemoveDescription:
-      "将从 Windows 桌面右键菜单中移除 EchoAI 一键整理命令。",
+      "将从 Windows 桌面右键菜单中移除 Echo 一键整理命令。",
   },
 
   // Knowledge page
@@ -9109,9 +9135,12 @@ export const zhCN: Translations = {
       credentialsExpired: "本地知识库已启动，但连接凭据已失效。正在重新连接…",
       notFound:
         "未找到 echo-storage，请安装本地知识库服务，或设置 ECHO_STORAGE_CMD 后重试。",
+      browseOnly: "知识索引服务未连接，本机目录仍可浏览和引用。",
       startFailed: "本地知识库服务启动失败，请检查后端日志后重试。",
       notConnected: "本地知识库服务仍未连接：{url}",
       networkError: "无法连接到本地知识库服务，请确认服务已启动后重试。",
+      folderPickerUnavailable:
+        "无法打开系统文件夹选择器，请确认桌面桥接或本地后端可用后重试。",
     },
     toolbar: {
       authorize: "授权",
@@ -9245,9 +9274,9 @@ export const zhCN: Translations = {
       colType: "类型",
       colItems: "项目",
       footerOnline:
-        "常用位置与 EchoAI NAS 已接入。本地数据库只保存路径、缩略图、OCR 文本和向量索引。",
+        "常用位置与 ECHO NAS 已接入。本地数据库只保存路径、缩略图、OCR 文本和向量索引。",
       footerOffline:
-        "常用位置可直接浏览；EchoAI NAS 正等待连接。本地数据库只保存路径、缩略图、OCR 文本和向量索引。",
+        "常用位置可直接浏览；ECHO NAS 正等待连接。本地数据库只保存路径、缩略图、OCR 文本和向量索引。",
       folderType: "文件夹",
     },
     sources: {

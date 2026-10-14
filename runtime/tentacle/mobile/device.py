@@ -73,6 +73,8 @@ class MobileDevice:
 
     @property
     def capabilities(self) -> list[str]:
+        if "reported_capabilities" in self.meta:
+            return list(self.meta["reported_capabilities"])
         return list(self._capabilities)
 
     @property
@@ -143,7 +145,7 @@ class MobileDevice:
         start = time.time()
         if not self.is_online:
             return ToolResult.fail(call.call_id, -32011, "Device offline", 0)
-        if call.tool not in self._capabilities:
+        if call.tool not in self.capabilities:
             return ToolResult.fail(call.call_id, -32003, f"Unknown tool: {call.tool}", 0)
         if self._ws_server is None:
             # Mock 模式：模拟成功执行

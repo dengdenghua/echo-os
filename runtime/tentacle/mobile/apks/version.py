@@ -27,7 +27,7 @@ ECHO_MOBILE_VERSION = EchoMobileVersion(
     recommended="0.1.0",
     protocol_version="1.0",
     notes=(
-        "Phase 0 概念验证：Echo Mobile 0.0.1（github.com/echo-agent/echo-mobile）"
+        "Phase 0 概念验证：Echo Mobile 0.0.1（github.com/dengdenghua/echo-mobile）"
         "可作为基础；Echo Mobile 在此基础上加 RPC 客户端。"
         "Echo Mobile 1.0 计划 2026-Q3 发布。"
     ),

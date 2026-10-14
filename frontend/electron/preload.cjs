@@ -152,6 +152,7 @@ const api = {
     setMousePassthrough: invoke("window:setMousePassthrough"),
     openDevTools: invoke("window:openDevTools"),
     isFullScreen: invoke("window:isFullScreen"),
+    getScreenBounds: invoke("window:getScreenBounds"),
   },
 
   bridge: {

@@ -740,7 +740,7 @@ describe("MessageList process trace lifecycle", () => {
     expect(
       screen.getByTestId("conversation-activity-pulse"),
     ).toBeInTheDocument();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
 
     const planning: AIMessage = {
       id: "assistant-plan",
@@ -796,7 +796,7 @@ describe("MessageList process trace lifecycle", () => {
       screen.getByTestId("conversation-activity-pulse"),
     ).toBeInTheDocument();
     expect(screen.queryByText(/web_search/)).not.toBeInTheDocument();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
 
     const searchResult = {
       id: "search-result-long",
@@ -839,7 +839,7 @@ describe("MessageList process trace lifecycle", () => {
       screen.queryByTestId("conversation-activity-pulse"),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("keeps hidden user actions out of the document flow", () => {
@@ -879,9 +879,10 @@ describe("MessageList process trace lifecycle", () => {
 
     expect(screen.getByText("Eve")).toBeInTheDocument();
     expect(screen.getByText("队长")).toBeInTheDocument();
-    expect(screen.getByAltText("Eve")).toHaveAttribute(
-      "src",
-      expect.stringContaining("/api/agents/general/avatar"),
+    // The default Echo agent draws the ECHO mark instead of its image.
+    expect(screen.getByRole("img", { name: "Eve" })).toHaveAttribute(
+      "data-agent-avatar",
+      "echo",
     );
   });
 
@@ -982,7 +983,7 @@ describe("MessageList process trace lifecycle", () => {
     expect(
       screen.getByTestId("conversation-activity-pulse"),
     ).toBeInTheDocument();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("shows the assistant avatar even before the optimistic user row mounts", () => {
@@ -1004,7 +1005,7 @@ describe("MessageList process trace lifecycle", () => {
     expect(
       screen.getByTestId("conversation-activity-pulse"),
     ).toBeInTheDocument();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("keeps waiting status attached to the existing assistant lane", () => {
@@ -1036,7 +1037,7 @@ describe("MessageList process trace lifecycle", () => {
       },
     });
 
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
     const continuation = screen.getByTestId("assistant-continuation-activity");
     expect(continuation).toHaveClass("ml-11");
     expect(
@@ -1079,7 +1080,7 @@ describe("MessageList process trace lifecycle", () => {
       },
     });
 
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
     expect(screen.getByText("我先核对两个文件。")).toBeInTheDocument();
     expect(screen.getByText("两个文件的字段定义一致。")).toBeInTheDocument();
   });
@@ -1221,7 +1222,7 @@ describe("MessageList process trace lifecycle", () => {
       execution[1]!.compareDocumentPosition(answer) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("keeps intent and final fact anchors when compacting a long public timeline", () => {
@@ -1322,7 +1323,7 @@ describe("MessageList process trace lifecycle", () => {
       },
     });
 
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("shows a new avatar when the speaking agent changes within a turn", () => {
@@ -1368,8 +1369,8 @@ describe("MessageList process trace lifecycle", () => {
       ],
     });
 
-    expect(screen.getByAltText("Eve")).toBeInTheDocument();
-    expect(screen.getByAltText("Coder")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Eve" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Coder" })).toBeInTheDocument();
   });
 
   test("does not render a completed process trace block in chat answers", () => {
@@ -1583,7 +1584,7 @@ describe("MessageList process trace lifecycle", () => {
     expect(
       screen.getAllByTestId("process-timeline-event-execution").length,
     ).toBeGreaterThan(0);
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("keeps the current action visible before the first answer token", () => {
@@ -1995,7 +1996,7 @@ describe("MessageList stalled-run warning", () => {
     renderMessageList({ thread });
 
     expect(
-      screen.getByText(/Code changes need verification before EchoAI/i),
+      screen.getByText(/Code changes need verification before Echo/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/This reply was interrupted/i),
@@ -2061,7 +2062,7 @@ describe("MessageList stalled-run warning", () => {
       },
     });
 
-    expect(screen.getByAltText("Eve")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Eve" })).toBeInTheDocument();
     expect(
       screen.getByText(/This response was interrupted during generation/i),
     ).toBeInTheDocument();
@@ -2133,7 +2134,7 @@ describe("MessageList stalled-run warning", () => {
       execution.compareDocumentPosition(receipt) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(screen.getAllByAltText("Eve")).toHaveLength(1);
+    expect(screen.getAllByRole("img", { name: "Eve" })).toHaveLength(1);
   });
 
   test("does not leave an orphan assistant avatar for hidden auto-verification steps", () => {
@@ -2174,7 +2175,7 @@ describe("MessageList stalled-run warning", () => {
     expect(
       screen.queryByText(/verification required/i),
     ).not.toBeInTheDocument();
-    expect(screen.queryByAltText("Echo")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Echo" })).not.toBeInTheDocument();
   });
 
   test("does not leave an orphan assistant avatar for leaked control-only text", () => {
@@ -2204,7 +2205,7 @@ describe("MessageList stalled-run warning", () => {
     });
 
     expect(screen.queryByText(/read_only/i)).not.toBeInTheDocument();
-    expect(screen.queryByAltText("Echo")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Echo" })).not.toBeInTheDocument();
   });
 
   test("warns only after a loading run stops making visible progress", () => {

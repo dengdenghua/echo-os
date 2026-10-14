@@ -1,0 +1,126 @@
+# 命名约定
+
+> 本文回答一个问题：**代码里还能看到的 `octopus` 到底是残留还是契约？**
+> 结论是——**几乎全是契约，不能删**。误删会破坏已落盘的数据，或让老装机机器起不来。
+> 契约由 `tests/test_naming_contract.py` 强制，改动前先看那里。
+
+## 一、速查表
+
+| 维度 | 名字 | 性质 |
+| --- | --- | --- |
+| 产品名 | **Echo OS** | 对外品牌，已统一 |
+| Python 发行包 | `echo-os` | 已统一 |
+| CLI 命令 | `echo` / `echo-agent` / `echo-storage` | 已统一 |
+| 桌面应用 | `Echo OS Desktop`（`com.echo.os.desktop`） | 已统一 |
+| 容器镜像 | `ghcr.io/dengdenghua/echo-os` | **有意保留 echo 品牌，禁改** |
+| **git 仓库** | **`github.com/dengdenghua/echo-os`** | 已统一（旧名 octopus-os 为重定向） |
+| 执行引擎 ID | `octopus` | **持久化契约，禁改** |
+
+## 二、仓库名：为什么曾经是 octopus-os，以及后来为什么改回来
+
+这是 fork 后的历史结果。**时间线：**
+
+| 时间 | 事实 | 仓库内写法 |
+| --- | --- | --- |
+| ~2026-09-05 | `dengdenghua/echo-os` **返回 404**，`octopus-os` 是唯一可用地址 | 全部指向 `octopus-os` |
+| 2026-09-09 | 统一修正（31 个文件、60 处），并写下本文档锁定该结论 | `octopus-os` |
+| **2026-10-12** | **仓库已改名为 `echo-os`，旧名保留 HTTP 重定向** | **`echo-os`（本文档更新）** |
+
+2026-09-09 当时写 `octopus-os` 是**被迫的保守选择**，不是疏忽：仓库内曾大量指向
+不存在的 `echo-os`，包括 `scripts/install.sh`、`pyproject.toml` 的 `[project.urls]`、
+前端「关于」页四种语言的 GitHub 链接，以及首页取 star 数的 API 地址。
+
+仓库改名后两个 URL 指向同一个仓库（旧名自动重定向），原先的阻塞条件已消失，
+因此全量改回 `echo-os`（25 个代码/配置/测试文件，另同步 12 个测试文件的期望值）。
+`tests/test_naming_contract.py` 的对应断言方向也已反转。
+
+**GHCR 镜像名保持 `echo-os` 不变**——它在 `appliance-release.yml:106` 里是显式指定的
+对外品牌，与仓库名无关；本次改名前后它都叫 `echo-os`，未受影响。
+
+## 三、`octopus` 的四类不可改契约（P0）
+
+### 1. 执行引擎 ID
+
+`runtime/execution/engines.py:19-22`
+
+```python
+class EngineId(StrEnum):
+    OCTOPUS = "octopus"
+    # Backward-compatible name used by the pre-unified host tests and older
+    # callers.  It intentionally resolves to the same durable engine id.
+    NATIVE = "octopus"
+    CODEX = "codex"
+    OPENCODE = "opencode"
+```
+
+`NATIVE = "octopus"` **不是笔误**，是故意的向后兼容别名。引擎 ID 会写进已持久化的
+任务记录，改成 `echo` 会让老记录读不出来。
+
+### 2. 持久化 schema 命名空间
+
+| 位置 | 常量 |
+| --- | --- |
+| `runtime/memory/semantics.py:17` | `octopus.memory_origin.v1` |
+| `runtime/execution/agents/collaboration_quality.py:15-17` | `octopus.collaboration_quality.v1` 等 |
+| `runtime/execution/agents/team_patterns.py:20` | `octopus.team_pattern_decision.v1` |
+| `runtime/execution/host_boundary.py:120` | `octopus.execution.v1` |
+| `runtime/execution/parallel_agents/_batch_host.py:66` | `octopus.execution.v1` |
+
+这些前缀**已经写进磁盘上的记录**，改了等于让旧数据失联。
+
+### 3. 历史装机账号
+
+`deploy/provision/base/provision-lib.sh:961-969`（原文注释）：
+
+> 历史教训: rebrand 曾把 unit 的 `User=octopus` 一并改成 `echo`,但两代装机介质建的用户
+> 不一致(vmtest preseed 建 `echo`; 更早的裸机/老 ISO 建 `octopus`),写死任一名字在另一种
+> 装机上就是 **217/USER crash-loop**。以机器上真实存在的账号为准。
+
+```sh
+for u in echo octopus admin; do
+  if id -u "$u" >/dev/null 2>&1; then echo "$u"; return; fi
+done
+```
+
+`octopus` 这一项删掉，用老 ISO 装过的机器会直接崩。
+
+### 4. 清理遗留 octopus 单元的逻辑本身
+
+`deploy/provision/base/provision-lib.sh:1083-1087` 主动清理 `octopus-*.service`
+与 `/etc/nginx/sites-enabled/octopus`。**这是清理逻辑，不是残留**，删了反而留下残留：
+
+> 8000 端口被 `octopus-appliance` 占用会让 `echo-appliance` 起不来。必须清掉。
+
+## 四、强制方式
+
+`tests/test_naming_contract.py` 用 9 条断言锁住上述契约，覆盖：
+
+- `EngineId.OCTOPUS` / `NATIVE` 的值
+- 四类持久化 schema 前缀
+- `probe_run_user` 仍探测 `echo octopus admin`
+- 清理逻辑仍在
+- 仓库 URL 指向真实存在的 `octopus-os`（且不含 404 的 `echo-os`）
+- GHCR 镜像仍保留 `echo-os` 品牌
+
+已做负向验证：把 `OCTOPUS = "octopus"` 改成 `"echo"` 后该测试立即失败，恢复后转绿。
+
+> ℹ️ 该测试位于 `tests/` 根目录，而 `pyproject.toml` 的 `testpaths` 只写了
+> `tests/appliance`，因此**裸跑 `pytest` 不会执行它**。
+> 但 CI 不受影响：`ci.yml` 的 cross-platform job 显式传了 `tests/` 路径
+> （`uv run pytest tests/ --collect-only -q` 与 `uv run pytest tests/ -q -rf`），
+> 实测可收集 17420 个用例、本文件相关的 9 个全部在内。
+> 本地想跑守门测试请显式指定：`pytest tests/test_naming_contract.py`。
+
+## 五、统一成 echo-os 的条件（已于 2026-10-12 满足）
+
+本文档最初写下时，`echo-os` 仓库不存在，所以约定「满足以下全部条件后才能改」。
+仓库改名为 `echo-os`（旧名保留 HTTP 重定向）后，条件已达成，改动已完成：
+
+1. ✅ GitHub 上创建/改名为 `echo-os` 仓库 —— 已完成，旧名重定向可用
+2. ✅ 全文替换 `dengdenghua/octopus-os` → `dengdenghua/echo-os`（**仅限 git 仓库 URL，GHCR 除外**）
+   —— 25 个代码/配置/测试文件，另同步 12 个测试文件的期望值
+3. ✅ 引擎 ID 与 schema 前缀**保持不变**，无需数据迁移（它们从来就不在本次改动范围内）
+4. ✅ `provision-lib.sh` 的账号探测仍保留 `octopus`，老装机机器不受影响
+5. ✅ 更新本文档与 `tests/test_naming_contract.py`（断言方向已反转）
+
+仍然禁改的三项，见第一节速查表：容器镜像名、执行引擎 ID、schema 命名空间。

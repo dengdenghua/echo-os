@@ -1,0 +1,943 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2Icon,
+  DatabaseIcon,
+  HardDriveIcon,
+  Loader2Icon,
+  RefreshCwIcon,
+  ShieldAlertIcon,
+} from "lucide-react";
+
+import { requestHighRiskApproval } from "@/appliance/approval";
+import {
+  applyOmvBtrfsRaid1,
+  applyOmvBtrfsReplace,
+  applyOmvBtrfsScrub,
+  applyOmvBtrfsScrubSchedule,
+  fetchNativeStatus,
+  fetchOmvBtrfsMaintenance,
+  fetchOmvBtrfsScrubSchedule,
+  fetchOmvBtrfsRaid1Candidates,
+  fetchOmvBtrfsReplacementCandidates,
+  planOmvBtrfsRaid1,
+  planOmvBtrfsReplace,
+  planOmvBtrfsScrub,
+  planOmvBtrfsScrubSchedule,
+  type OmvBtrfsMaintenance,
+  type OmvBtrfsRaid1Candidate,
+  type OmvBtrfsRaid1DesiredState,
+  type OmvBtrfsRaid1Plan,
+  type OmvBtrfsReplacementCandidate,
+  type OmvBtrfsReplacePlan,
+  type OmvBtrfsScrubPlan,
+  type OmvBtrfsScrubSchedule,
+  type OmvBtrfsScrubSchedulePlan,
+  type OmvStatus,
+} from "@/appliance/omv";
+import { cn } from "@/lib/utils";
+
+function formatBytes(bytes: number) {
+  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+  let value = Math.max(0, bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`;
+}
+
+function identity(device: OmvBtrfsRaid1Candidate) {
+  return device.wwn || device.serial || "无稳定标识";
+}
+
+function scanLabel(item: OmvBtrfsMaintenance) {
+  const scan = item.scan;
+  if (scan.state === "inProgress")
+    return `scrub 进行中${scan.progressPercent == null ? "" : ` · ${scan.progressPercent}%`}`;
+  if (scan.state === "completed")
+    return scan.errors
+      ? `上次 scrub 完成 · ${scan.errors} 个错误`
+      : "上次 scrub 已完成";
+  if (scan.state === "failed") return "上次 scrub 未完成";
+  return "尚未运行 scrub";
+}
+
+function exclusiveOperationLabel(item: OmvBtrfsMaintenance) {
+  const operation = (
+    item as OmvBtrfsMaintenance & { exclusiveOperation?: string }
+  ).exclusiveOperation;
+  if (!operation || operation === "none") return null;
+  const labels: Record<string, string> = {
+    balance: "balance 进行中",
+    "balance paused": "balance 已暂停",
+    "device add": "正在添加设备",
+    "device delete": "正在移除设备",
+    "device replace": "正在换盘",
+    resize: "正在调整容量",
+    "swapfile activate": "正在启用交换文件",
+  };
+  return labels[operation] ?? `Btrfs 维护：${operation}`;
+}
+
+export function BtrfsRaid1Panel() {
+  const [status, setStatus] = useState<OmvStatus | null>(null);
+  const [candidates, setCandidates] = useState<OmvBtrfsRaid1Candidate[]>([]);
+  const [maintenance, setMaintenance] = useState<OmvBtrfsMaintenance[]>([]);
+  const [replacements, setReplacements] = useState<
+    OmvBtrfsReplacementCandidate[]
+  >([]);
+  const [replacementChoices, setReplacementChoices] = useState<
+    Record<string, string>
+  >({});
+  const [selected, setSelected] = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [createPlan, setCreatePlan] = useState<OmvBtrfsRaid1Plan | null>(null);
+  const [createPassword, setCreatePassword] = useState("");
+  const [scrubPlan, setScrubPlan] = useState<OmvBtrfsScrubPlan | null>(null);
+  const [scrubPassword, setScrubPassword] = useState("");
+  const [scrubSchedule, setScrubSchedule] =
+    useState<OmvBtrfsScrubSchedule | null>(null);
+  const [scrubSchedulePlan, setScrubSchedulePlan] =
+    useState<OmvBtrfsScrubSchedulePlan | null>(null);
+  const [scrubSchedulePassword, setScrubSchedulePassword] = useState("");
+  const [replacePlan, setReplacePlan] = useState<OmvBtrfsReplacePlan | null>(
+    null,
+  );
+  const [replacePassword, setReplacePassword] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const createAvailable = status?.capabilities.includes(
+    "storage.volume.btrfs-raid1.create-mount.v1",
+  );
+  const scrubAvailable = status?.capabilities.includes(
+    "storage.volume.btrfs.scrub.start.v1",
+  );
+  const scrubScheduleAvailable = status?.capabilities.includes(
+    "storage.volume.btrfs.scrub.schedule.v1",
+  );
+  const replaceAvailable = status?.capabilities.includes(
+    "storage.volume.btrfs-raid1.replace-missing.blank.v1",
+  );
+  const validName = /^[a-z][a-z0-9_-]{0,15}$/.test(name);
+
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    setCreatePlan(null);
+    setScrubPlan(null);
+    setScrubSchedulePlan(null);
+    setReplacePlan(null);
+    setCreatePassword("");
+    setScrubPassword("");
+    setScrubSchedulePassword("");
+    setReplacePassword("");
+    try {
+      const nextStatus = await fetchNativeStatus();
+      setStatus(nextStatus);
+      const [
+        nextCandidates,
+        nextMaintenance,
+        nextReplacements,
+        nextScrubSchedule,
+      ] = await Promise.all([
+        nextStatus.capabilities.includes(
+          "storage.volume.btrfs-raid1.create-mount.v1",
+        )
+          ? fetchOmvBtrfsRaid1Candidates()
+          : Promise.resolve([]),
+        nextStatus.capabilities.includes("storage.volume.btrfs.scrub.start.v1")
+          ? fetchOmvBtrfsMaintenance()
+          : Promise.resolve([]),
+        nextStatus.capabilities.includes(
+          "storage.volume.btrfs-raid1.replace-missing.blank.v1",
+        )
+          ? fetchOmvBtrfsReplacementCandidates()
+          : Promise.resolve([]),
+        nextStatus.capabilities.includes(
+          "storage.volume.btrfs.scrub.schedule.v1",
+        )
+          ? fetchOmvBtrfsScrubSchedule()
+          : Promise.resolve(null),
+      ]);
+      setCandidates(nextCandidates);
+      setMaintenance(nextMaintenance);
+      setReplacements(nextReplacements);
+      setScrubSchedule(nextScrubSchedule);
+      setReplacementChoices((current) =>
+        Object.fromEntries(
+          nextReplacements.map((item) => {
+            const currentChoice = current[item.filesystem.uuid] ?? "";
+            const retained = item.replacementDevices.some(
+              (disk) => disk.devicefile === currentChoice,
+            );
+            return [
+              item.filesystem.uuid,
+              retained
+                ? currentChoice
+                : (item.replacementDevices[0]?.devicefile ?? ""),
+            ];
+          }),
+        ),
+      );
+      setSelected((current) =>
+        current.filter((devicefile) =>
+          nextCandidates.some((item) => item.devicefile === devicefile),
+        ),
+      );
+    } catch (reason) {
+      setCandidates([]);
+      setMaintenance([]);
+      setReplacements([]);
+      setScrubSchedule(null);
+      setError(
+        reason instanceof Error ? reason.message : "无法读取 Btrfs 存储能力",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  const desired = useMemo<OmvBtrfsRaid1DesiredState | null>(() => {
+    if (selected.length !== 2 || !confirmed || !validName) return null;
+    return {
+      schema: "echo.omv.btrfs-raid1-desired.v1",
+      name,
+      devices: [...selected].sort() as [string, string],
+      dataLossConfirmed: true,
+    };
+  }, [confirmed, name, selected, validName]);
+
+  const changeSelection = (devicefile: string) => {
+    setCreatePlan(null);
+    setSuccess(null);
+    setSelected((current) =>
+      current.includes(devicefile)
+        ? current.filter((item) => item !== devicefile)
+        : current.length < 2
+          ? [...current, devicefile]
+          : current,
+    );
+  };
+
+  const previewCreate = async () => {
+    if (!desired) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    setScrubPlan(null);
+    try {
+      setCreatePlan(await planOmvBtrfsRaid1(desired));
+    } catch (reason) {
+      setCreatePlan(null);
+      setError(
+        reason instanceof Error ? reason.message : "无法生成 Btrfs 创建预览",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const create = async () => {
+    if (!createPlan || !createPassword) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const approval = await requestHighRiskApproval(
+        "omv.btrfs-raid1.create",
+        createPlan.planId,
+        createPassword,
+      );
+      const result = await applyOmvBtrfsRaid1(
+        createPlan.desired,
+        createPlan.planId,
+        approval.approvalToken,
+      );
+      const mountpoint = result.filesystem?.mountpoint ?? createPlan.mountpoint;
+      setSelected([]);
+      setName("");
+      setConfirmed(false);
+      await refresh();
+      setSuccess(`Btrfs RAID1 已创建、挂载并验证：${mountpoint}`);
+    } catch (reason) {
+      setCreatePassword("");
+      setError(
+        reason instanceof Error ? reason.message : "Btrfs RAID1 创建失败",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const previewScrub = async (item: OmvBtrfsMaintenance) => {
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    setCreatePlan(null);
+    setScrubPassword("");
+    try {
+      setScrubPlan(
+        await planOmvBtrfsScrub({
+          schema: "echo.omv.btrfs-scrub-desired.v1",
+          filesystemUuid: item.filesystem.uuid,
+          operation: "start",
+        }),
+      );
+    } catch (reason) {
+      setScrubPlan(null);
+      setError(
+        reason instanceof Error ? reason.message : "无法生成 scrub 预览",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startScrub = async () => {
+    if (!scrubPlan || !scrubPassword) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const approval = await requestHighRiskApproval(
+        "omv.btrfs.scrub.start",
+        scrubPlan.planId,
+        scrubPassword,
+      );
+      const result = await applyOmvBtrfsScrub(
+        scrubPlan.desired,
+        scrubPlan.planId,
+        approval.approvalToken,
+      );
+      await refresh();
+      setSuccess(
+        result.maintenanceState === "completed"
+          ? "Btrfs scrub 已完成且未报告错误"
+          : result.maintenanceState === "completedWithErrors"
+            ? "Btrfs scrub 已完成，但报告了错误，请检查存储健康"
+            : "Btrfs scrub 已启动，可刷新查看进度",
+      );
+    } catch (reason) {
+      setScrubPassword("");
+      setError(
+        reason instanceof Error ? reason.message : "Btrfs scrub 启动失败",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const previewScrubSchedule = async () => {
+    if (!scrubSchedule) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    setScrubSchedulePassword("");
+    try {
+      setScrubSchedulePlan(
+        await planOmvBtrfsScrubSchedule({
+          schema: "echo.btrfs-scrub-schedule-desired.v1",
+          enabled: !scrubSchedule.enabled,
+        }),
+      );
+    } catch (reason) {
+      setScrubSchedulePlan(null);
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "无法生成 scrub 定时策略预览",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const applyScrubSchedule = async () => {
+    if (!scrubSchedulePlan || !scrubSchedulePassword) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const desired = {
+        schema: "echo.btrfs-scrub-schedule-desired.v1" as const,
+        enabled: scrubSchedulePlan.desired.enabled,
+      };
+      const approval = await requestHighRiskApproval(
+        "storage.btrfs.scrub.schedule",
+        scrubSchedulePlan.planId,
+        scrubSchedulePassword,
+      );
+      await applyOmvBtrfsScrubSchedule(
+        desired,
+        scrubSchedulePlan.planId,
+        approval.approvalToken,
+      );
+      await refresh();
+      setSuccess(
+        desired.enabled ? "Btrfs 月度 scrub 已启用" : "Btrfs 月度 scrub 已停用",
+      );
+    } catch (reason) {
+      setScrubSchedulePassword("");
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Btrfs scrub 定时策略更新失败",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const previewReplacement = async (item: OmvBtrfsReplacementCandidate) => {
+    const replacementDevice = replacementChoices[item.filesystem.uuid];
+    if (!replacementDevice) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    setCreatePlan(null);
+    setScrubPlan(null);
+    setReplacePassword("");
+    try {
+      setReplacePlan(
+        await planOmvBtrfsReplace({
+          schema: "echo.omv.btrfs-replace-desired.v1",
+          filesystemUuid: item.filesystem.uuid,
+          missingDevid: item.missingMember.devid,
+          replacementDevice,
+          dataPreserved: true,
+        }),
+      );
+    } catch (reason) {
+      setReplacePlan(null);
+      setError(
+        reason instanceof Error ? reason.message : "无法生成 Btrfs 换盘预览",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startReplacement = async () => {
+    if (!replacePlan || !replacePassword) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const approval = await requestHighRiskApproval(
+        "omv.btrfs-raid1.replace",
+        replacePlan.planId,
+        replacePassword,
+      );
+      const result = await applyOmvBtrfsReplace(
+        replacePlan.desired,
+        replacePlan.planId,
+        approval.approvalToken,
+      );
+      await refresh();
+      setSuccess(
+        result.maintenanceState === "acceptedOrCompleted"
+          ? "Btrfs 换盘已完成并回读验证"
+          : result.maintenanceState === "completedWithErrors"
+            ? "Btrfs 换盘已完成但报告错误，请立即检查存储健康"
+            : "Btrfs 换盘已启动；请保持设备运行并刷新查看状态",
+      );
+    } catch (reason) {
+      setReplacePassword("");
+      setError(reason instanceof Error ? reason.message : "Btrfs 换盘启动失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-[980px] px-7 pt-7">
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[25px] font-semibold tracking-tight text-foreground">
+            Btrfs RAID1 卷
+          </h1>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            两块空盘直接创建、UUID 持久挂载，并管理校验 scrub
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={loading || busy}
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-card/78 px-3.5 text-[12px] font-semibold text-muted-foreground shadow-sm ring-1 ring-border disabled:opacity-50"
+        >
+          <RefreshCwIcon
+            className={cn("size-3.5", loading && "animate-spin")}
+          />
+          刷新 Btrfs
+        </button>
+      </header>
+
+      {error && (
+        <div
+          role="alert"
+          className="mt-5 rounded-2xl bg-breach/10 px-4 py-3 text-xs text-breach ring-1 ring-breach/30"
+        >
+          {error}
+        </div>
+      )}
+      {success && (
+        <div
+          role="status"
+          className="mt-5 flex items-center gap-2 rounded-2xl bg-core/10 px-4 py-3 text-xs text-core ring-1 ring-core/30"
+        >
+          <CheckCircle2Icon className="size-4" /> {success}
+        </div>
+      )}
+
+      {loading && !status ? (
+        <div className="grid min-h-36 place-items-center text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <Loader2Icon className="size-5 animate-spin" /> 正在核验 Btrfs 能力…
+          </span>
+        </div>
+      ) : !createAvailable &&
+        !scrubAvailable &&
+        !scrubScheduleAvailable &&
+        !replaceAvailable ? (
+        <section className="mt-5 rounded-[22px] bg-card/78 p-5 text-sm text-muted-foreground ring-1 ring-border">
+          当前主机未提供受控 Btrfs RAID1 创建、换盘或 scrub 能力。
+        </section>
+      ) : (
+        <>
+          {createAvailable && (
+            <>
+              <section className="mt-5 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+                <div className="flex items-center gap-2">
+                  <HardDriveIcon className="size-5 text-core" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    1. 选择两块空盘
+                  </h2>
+                </div>
+                <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
+                  只显示服务端确认的整盘、空白、未挂载、不可移动且带稳定身份的磁盘；不提供强制覆盖入口。
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {candidates.map((device) => {
+                    const active = selected.includes(device.devicefile);
+                    return (
+                      <button
+                        key={device.devicefile}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => changeSelection(device.devicefile)}
+                        className={cn(
+                          "rounded-2xl p-4 text-left ring-1 transition",
+                          active
+                            ? "bg-core/10 ring-core/30"
+                            : "bg-background/80 ring-border hover:bg-card",
+                        )}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <HardDriveIcon className="size-4" />{" "}
+                          {device.devicefile}
+                        </span>
+                        <span className="mt-2 block text-xs text-muted-foreground">
+                          {device.model || "未知型号"} ·{" "}
+                          {formatBytes(device.sizeBytes)}
+                        </span>
+                        <span className="mt-1 block break-all font-mono text-[10px] text-muted-foreground">
+                          {identity(device)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {candidates.length === 0 && (
+                    <p className="col-span-full rounded-2xl bg-warning/10 p-4 text-xs leading-5 text-warning">
+                      没有通过安全检查的空盘；这里不会清除已有签名来制造候选盘。
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+                <h2 className="text-sm font-semibold text-foreground">
+                  2. 命名并确认数据清除
+                </h2>
+                <label className="mt-4 block text-xs font-medium text-foreground">
+                  Btrfs 卷名称
+                  <input
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      setCreatePlan(null);
+                    }}
+                    placeholder="例如 family"
+                    pattern="[a-z][a-z0-9_-]{0,15}"
+                    className="mt-2 h-10 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-core/30"
+                  />
+                  <span className="mt-1 block text-[12px] font-normal text-muted-foreground">
+                    小写字母开头，可含数字、下划线和短横线，最多 16 字符
+                  </span>
+                </label>
+                <label className="mt-4 flex items-start gap-2 rounded-2xl bg-breach/10 p-4 text-xs leading-5 text-breach ring-1 ring-breach/30">
+                  <input
+                    type="checkbox"
+                    checked={confirmed}
+                    onChange={(event) => {
+                      setConfirmed(event.target.checked);
+                      setCreatePlan(null);
+                    }}
+                    className="mt-1"
+                  />
+                  我确认：选中的两块磁盘将创建新 Btrfs
+                  RAID1，现有数据会被不可逆清除。
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void previewCreate()}
+                  disabled={!desired || busy}
+                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+                >
+                  {busy && <Loader2Icon className="size-4 animate-spin" />} 生成
+                  Btrfs 创建预览
+                </button>
+              </section>
+            </>
+          )}
+
+          {createPlan && (
+            <section
+              data-echo-theme="graphite"
+              className="mt-4 rounded-[22px] border border-breach/40 bg-[#101216] p-5 text-foreground shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlertIcon className="size-5 text-breach" />
+                <h2 className="text-sm font-semibold">最终破坏性复核</h2>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-breach">
+                两块磁盘将格式化为 data/metadata 双 RAID1，并按文件系统 UUID
+                挂载到 {createPlan.mountpoint}。 不使用
+                force；失败时尝试卸载、恢复 fstab 并清除本次新签名。
+              </p>
+              <label className="mt-4 block text-xs font-medium text-breach">
+                Btrfs 创建管理员密码
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={createPassword}
+                  onChange={(event) => setCreatePassword(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-breach/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-breach/30"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void create()}
+                disabled={!createPassword || busy}
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-breach px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                {busy && <Loader2Icon className="size-4 animate-spin" />}{" "}
+                确认清空并创建 Btrfs RAID1
+              </button>
+            </section>
+          )}
+
+          {replaceAvailable && (
+            <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+              <div className="flex items-center gap-2">
+                <ShieldAlertIcon className="size-5 text-warning" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Btrfs RAID1 缺盘换盘
+                </h2>
+              </div>
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
+                只显示服务端确认的 Echo 自管双盘 RAID1：已挂载可写、恰好一个
+                devid 缺失、存活盘无历史错误且没有 scrub、balance
+                或其他换盘任务。新盘必须为空白整盘并达到保守容量下限。
+              </p>
+              <div className="mt-4 space-y-3">
+                {replacements.map((item) => {
+                  const selectedReplacement =
+                    replacementChoices[item.filesystem.uuid] ?? "";
+                  return (
+                    <article
+                      key={item.filesystem.uuid}
+                      className="rounded-2xl bg-warning/10 p-4 ring-1 ring-warning/30"
+                    >
+                      <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                          <strong className="block text-sm text-foreground">
+                            {item.filesystem.mountpoint}
+                          </strong>
+                          <span className="mt-1 block text-[12px] text-muted-foreground">
+                            缺失 devid {item.missingMember.devid} · 存活盘{" "}
+                            {item.survivingMember.devicefile} · 最小安全容量{" "}
+                            {formatBytes(item.minimumReplacementBytes)}
+                          </span>
+                          <span className="mt-1 block break-all font-mono text-[10px] text-muted-foreground">
+                            {item.filesystem.uuid}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-end gap-2">
+                          <label className="text-[12px] font-medium text-muted-foreground">
+                            空白替换盘
+                            <select
+                              aria-label={`${item.filesystem.mountpoint} 空白替换盘`}
+                              value={selectedReplacement}
+                              onChange={(event) => {
+                                setReplacementChoices((current) => ({
+                                  ...current,
+                                  [item.filesystem.uuid]: event.target.value,
+                                }));
+                                setReplacePlan(null);
+                                setSuccess(null);
+                              }}
+                              className="mt-1 block h-9 min-w-48 rounded-xl border border-warning/30 bg-card px-3 text-xs outline-none focus:border-warning/30"
+                            >
+                              {item.replacementDevices.length === 0 && (
+                                <option value="">没有合格空盘</option>
+                              )}
+                              {item.replacementDevices.map((disk) => (
+                                <option
+                                  key={disk.devicefile}
+                                  value={disk.devicefile}
+                                >
+                                  {disk.devicefile} ·{" "}
+                                  {formatBytes(disk.sizeBytes)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => void previewReplacement(item)}
+                            disabled={!selectedReplacement || busy}
+                            className="h-9 rounded-xl bg-warning px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
+                          >
+                            预览缺盘换盘
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+                {replacements.length === 0 && (
+                  <p className="rounded-xl bg-background px-3 py-3 text-xs text-muted-foreground">
+                    当前没有满足严格安全条件的 Btrfs 单缺盘卷。
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {replacePlan && (
+            <section
+              data-echo-theme="graphite"
+              className="mt-4 rounded-[22px] border border-warning/40 bg-[#101216] p-5 text-foreground shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlertIcon className="size-5 text-warning" />
+                <h2 className="text-sm font-semibold">确认 Btrfs 缺盘换盘</h2>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-warning">
+                将用空白盘 {replacePlan.replacement.devicefile} 替换{" "}
+                {replacePlan.filesystem.mountpoint} 的缺失 devid{" "}
+                {replacePlan.missingMember.devid}。数据从剩余 RAID1
+                副本重建；不使用 force、-r、-B 或队列等待，也不自动扩容。
+                一旦内核接受任务，此页面不会伪造回滚或提前宣称完成。
+              </p>
+              <p className="mt-2 text-[12px] leading-5 text-warning">
+                换盘期间请勿休眠、冻结文件系统或关机；新内核可能因此取消任务，需要重新预览并启动。
+              </p>
+              <label className="mt-4 block text-xs font-medium text-warning">
+                Btrfs 换盘管理员密码
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={replacePassword}
+                  onChange={(event) => setReplacePassword(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-warning/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-warning/30"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void startReplacement()}
+                disabled={!replacePassword || busy}
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-warning px-4 text-xs font-semibold text-warning disabled:opacity-40"
+              >
+                {busy && <Loader2Icon className="size-4 animate-spin" />} 启动
+                Btrfs 缺盘换盘
+              </button>
+            </section>
+          )}
+
+          {scrubAvailable && (
+            <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+              <div className="flex items-center gap-2">
+                <DatabaseIcon className="size-5 text-core" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Btrfs scrub 校验
+                </h2>
+              </div>
+              <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
+                只允许 Echo 登记、完整、可写且 data/metadata 都为 RAID1
+                的卷。scrub
+                会读取全部数据，并可能从冗余副本修复校验错误；运行后不可由此页面回滚或取消。
+              </p>
+              <div className="mt-4 space-y-3">
+                {maintenance.map((item) => (
+                  <article
+                    key={item.filesystem.uuid}
+                    className="rounded-2xl bg-background p-4 ring-1 ring-border"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <strong className="block text-sm text-foreground">
+                          {item.filesystem.mountpoint}
+                        </strong>
+                        <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
+                          {item.filesystem.uuid}
+                        </span>
+                        <span className="mt-1 block text-[12px] text-muted-foreground">
+                          {scanLabel(item)} · {item.filesystem.activeDevices}/
+                          {item.filesystem.totalDevices} 成员 · 错误计数{" "}
+                          {item.filesystem.deviceErrorCount}
+                          {exclusiveOperationLabel(item)
+                            ? ` · ${exclusiveOperationLabel(item)}`
+                            : ""}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void previewScrub(item)}
+                        disabled={!item.canStartScrub || busy}
+                        className="h-9 rounded-xl bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
+                      >
+                        预览 scrub
+                      </button>
+                    </div>
+                    {!item.canStartScrub && (
+                      <p className="mt-2 text-[12px] text-warning">
+                        当前拓扑、挂载状态或维护任务不满足安全启动条件。
+                      </p>
+                    )}
+                  </article>
+                ))}
+                {maintenance.length === 0 && (
+                  <p className="rounded-xl bg-background px-3 py-3 text-xs text-muted-foreground">
+                    当前没有 Echo 登记并挂载的 Btrfs RAID1 卷。
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {scrubScheduleAvailable && scrubSchedule && (
+            <section className="mt-4 rounded-[22px] bg-card/78 p-5 shadow-sm ring-1 ring-border">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">
+                    月度 Btrfs scrub
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-[12px] leading-5 text-muted-foreground">
+                    当前{scrubSchedule.enabled ? "已启用" : "未启用"}
+                    。每月首个周日 01:45 后随机延迟最多 24
+                    小时，只处理健康、完整、可写、无历史设备错误且空闲的 Echo
+                    RAID1；高 I/O，可能从冗余副本修复数据。
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void previewScrubSchedule()}
+                  disabled={busy}
+                  className="h-9 rounded-xl bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40"
+                >
+                  {scrubSchedule.enabled
+                    ? "预览停用月度 scrub"
+                    : "预览启用月度 scrub"}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {scrubSchedulePlan && (
+            <section
+              data-echo-theme="graphite"
+              className="mt-4 rounded-[22px] border border-border bg-[#101216] p-5 text-foreground shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlertIcon className="size-5 text-core" />
+                <h2 className="text-sm font-semibold">
+                  确认{scrubSchedulePlan.desired.enabled ? "启用" : "停用"}月度
+                  scrub
+                </h2>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-core">
+                调度固定且不可自定义；不会处理降级、只读、有设备错误或已有维护任务的卷，不使用
+                force，也不自动取消正在运行的 scrub。
+              </p>
+              <label className="mt-4 block text-xs font-medium text-core">
+                scrub 调度管理员密码
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={scrubSchedulePassword}
+                  onChange={(event) =>
+                    setScrubSchedulePassword(event.target.value)
+                  }
+                  className="mt-2 h-10 w-full rounded-xl border border-core/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-core/30"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void applyScrubSchedule()}
+                disabled={!scrubSchedulePassword || busy}
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                {busy && <Loader2Icon className="size-4 animate-spin" />}
+                确认更新月度 scrub
+              </button>
+            </section>
+          )}
+
+          {scrubPlan && (
+            <section
+              data-echo-theme="graphite"
+              className="mt-4 rounded-[22px] border border-border bg-[#101216] p-5 text-foreground shadow-lg"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlertIcon className="size-5 text-core" />
+                <h2 className="text-sm font-semibold">确认启动 Btrfs scrub</h2>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-core">
+                目标 {scrubPlan.filesystem.mountpoint}。任务为高
+                I/O、非阻塞启动，可能利用 RAID1
+                冗余副本修复数据；接受后没有自动回滚。
+              </p>
+              <label className="mt-4 block text-xs font-medium text-core">
+                scrub 管理员密码
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={scrubPassword}
+                  onChange={(event) => setScrubPassword(event.target.value)}
+                  className="mt-2 h-10 w-full rounded-xl border border-core/30 bg-card/10 px-3 text-sm text-white outline-none focus:border-core/30"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void startScrub()}
+                disabled={!scrubPassword || busy}
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+              >
+                {busy && <Loader2Icon className="size-4 animate-spin" />} 启动
+                Btrfs scrub
+              </button>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

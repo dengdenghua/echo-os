@@ -62,11 +62,21 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  // Bumped after a failed login; the effect below moves focus back to the code
+  // field once React has committed submitting=false. Focusing earlier (e.g. in
+  // a timeout) can hit the still-disabled input, which ignores focus().
+  const [codeFocusRequest, setCodeFocusRequest] = useState(0);
   const emailInputRef = useRef<HTMLInputElement | null>(null);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
   const cooldownDeadlineRef = useRef(0);
+
+  useEffect(() => {
+    if (codeFocusRequest > 0 && !submitting) {
+      codeInputRef.current?.focus();
+    }
+  }, [codeFocusRequest, submitting]);
   const [sendStatus, setSendStatus] = useState<{
     kind: "success" | "error";
     message: string;
@@ -167,7 +177,7 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
       submittingRef.current = false;
       setSubmitting(false);
       if (focusCodeAfterSubmit) {
-        window.setTimeout(() => codeInputRef.current?.focus(), 0);
+        setCodeFocusRequest((request) => request + 1);
       }
     }
   }
@@ -284,9 +294,7 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
           <p
             aria-live="polite"
             className={`px-1 text-xs ${
-              sendStatus.kind === "error"
-                ? "text-destructive"
-                : "text-emerald-600 dark:text-emerald-400"
+              sendStatus.kind === "error" ? "text-destructive" : "text-core"
             }`}
             id="email-send-feedback"
             role={sendStatus.kind === "error" ? "alert" : "status"}
@@ -426,13 +434,13 @@ function LocalLoginForm({
 
 function EchoBrand() {
   return (
-    <div className="echo-login-brand" aria-label="ECHO AGE 回响纪元">
+    <div className="echo-login-brand" aria-label="ECHO OS">
       <span className="echo-login-brand-mark" aria-hidden="true">
         <EchoMark tone="light" />
       </span>
       <span className="echo-login-brand-copy">
-        <strong>ECHO AGE</strong>
-        <small>回响纪元</small>
+        <strong>ECHO</strong>
+        <small>OS</small>
       </span>
     </div>
   );
@@ -593,8 +601,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = authReturnToFromSearch(location.search);
-  const { authError, authStatus, isLoading, isAuthenticated, retryAuth } =
-    useAuth();
+  const {
+    authError,
+    authStatus,
+    isBackendStarting,
+    isLoading,
+    isAuthenticated,
+    retryAuth,
+  } = useAuth();
   const { t } = useI18n();
   const [authProviders, setAuthProviders] = useState<AuthProviderInfo[] | null>(
     null,
@@ -602,6 +616,14 @@ export default function LoginPage() {
   const [providerReloadKey, setProviderReloadKey] = useState(0);
 
   useEffect(() => {
+    // AuthProvider owns the appliance cold-start recovery window. Starting a
+    // second, shorter provider probe here would exhaust its retries first and
+    // leave a healthy appliance looking as if login had been disabled.
+    if (isLoading || authError) {
+      setAuthProviders(null);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadAuthProviders() {
@@ -627,7 +649,7 @@ export default function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [providerReloadKey]);
+  }, [authError, isLoading, providerReloadKey]);
 
   const providersReady = authProviders !== null;
   const hasOct = authProviders?.some((p) => p.id === "oct") ?? false;
@@ -655,7 +677,7 @@ export default function LoginPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-sm text-muted-foreground">
-          {t.common.loading}
+          {isBackendStarting ? t.common.startingSystem : t.common.loading}
         </div>
       </div>
     );
@@ -669,6 +691,7 @@ export default function LoginPage() {
 
   return (
     <div
+      data-echo-theme="graphite"
       className={`echo-login-shell relative min-h-screen overflow-hidden${embeddedWindow ? " echo-login-shell-embedded" : ""}`}
     >
       <div className="echo-login-cosmos" aria-hidden="true">
@@ -758,7 +781,7 @@ export default function LoginPage() {
               {backendUnavailable ? (
                 <ErrorState
                   className="min-h-40 rounded-xl border border-destructive/20 bg-destructive/5"
-                  title="暂时无法连接 EchoAI 服务"
+                  title="暂时无法连接 ECHO OS 服务"
                   detail="本地服务可能仍在启动或已停止。请确认服务运行后重试。"
                   actionLabel="重试连接"
                   onAction={retryBackend}
@@ -828,7 +851,7 @@ export default function LoginPage() {
           </Card>
 
           <p className="echo-login-footer">
-            AN AGE BEGINS · © {new Date().getFullYear()} ECHO AGE
+            AN AGE BEGINS · © {new Date().getFullYear()} ECHO
           </p>
         </section>
       </main>

@@ -1,27 +1,49 @@
+import { RetainedShellRoutes } from "@/components/retained-shell-routes";
+import { DesktopWorkspaceEntry } from "@/components/desktop-workspace-entry";
+import { useAuth } from "@/providers/AuthProvider";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, useLocation } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PanelLoading } from "@/components/ui/progress-line";
 import {
   ElectronTitleBar,
   ElectronTitleBarProvider,
 } from "@/components/electron-title-bar";
 import { useI18n } from "@/core/i18n/hooks";
 import { createWorkspaceRoute } from "@/app/workspace/workspace-routes";
+import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 const AboutPage = lazy(() => import("./app/about/page"));
 const TermsPage = lazy(() => import("./app/terms/page"));
 const PrivacyPage = lazy(() => import("./app/privacy/page"));
 const PublicThreadSharePage = lazy(() => import("./app/share/[token]/page"));
 const DesktopPage = lazy(() => import("./app/desktop/page"));
-const TopBrowserPage = lazy(() => import("./app/browser/page"));
+const TopBrowserPage = lazy(() => import("./components/desktop-browser-entry"));
 const MediaAppPage = lazy(() => import("./app/apps/media/page"));
 const SLOW_PAGE_LOADING_MS = 8_000;
 
 function LegacyAccountRouteRedirect() {
   const location = useLocation();
-  return <Navigate to={`/desktop${location.search}`} replace />;
+  return (
+    <Navigate
+      to={`/desktop${location.search}`}
+      state={location.state}
+      replace
+    />
+  );
+}
+
+function LegacyWorkspaceRouteRedirect({ to }: { to: string }) {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={preserveWorkbenchPresentation(to, location.search)}
+      state={location.state}
+      replace
+    />
+  );
 }
 
 export function PageLoading() {
@@ -37,58 +59,36 @@ export function PageLoading() {
   }, []);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="flex h-full min-h-[320px] w-full items-start justify-center p-4 sm:p-6"
+    <PanelLoading
+      label={t.common.loading}
+      caption={isSlow ? t.common.loadingWorkspace : undefined}
+      className="h-full min-h-[320px]"
+      data-testid="page-loading"
     >
-      {!isSlow ? <span className="sr-only">{t.common.loading}</span> : null}
-      <div
-        className="w-full max-w-6xl animate-pulse space-y-4"
-        data-testid="page-loading-skeleton"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="h-5 w-32 rounded-md bg-muted" />
-            <div className="h-3 w-56 max-w-[60vw] rounded bg-muted/70" />
-          </div>
-          <div className="h-8 w-24 rounded-lg bg-muted" />
+      {isSlow ? (
+        <div className="flex justify-center pt-3">
+          <button
+            type="button"
+            className="rounded-md border border-border-default px-3 py-1.5 text-caption text-foreground transition hover:bg-muted"
+            onClick={() => window.location.reload()}
+          >
+            {t.conversation.retry}
+          </button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-28 rounded-xl border border-border-subtle bg-muted/35"
-            />
-          ))}
-        </div>
-        {isSlow ? (
-          <div className="flex animate-none flex-col items-center gap-2 pt-2 text-center">
-            <div className="text-sm text-muted-foreground">
-              {t.common.loadingWorkspace}
-            </div>
-            <button
-              type="button"
-              className="rounded-md border border-border-default px-3 py-1.5 text-xs text-foreground transition hover:bg-muted"
-              onClick={() => window.location.reload()}
-            >
-              {t.conversation.retry}
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </div>
+      ) : null}
+    </PanelLoading>
   );
 }
 
 export function AppRouter() {
+  const { user } = useAuth();
+  const sessionIdentity = user?.actor_id || user?.user_id || "signed-out";
   return (
     <ErrorBoundary>
       <ElectronTitleBarProvider>
         <ElectronTitleBar />
         <Suspense fallback={<PageLoading />}>
-          <Routes>
+          <RetainedShellRoutes key={sessionIdentity}>
             <Route path="/" element={<Navigate to="/desktop" replace />} />
             <Route path="/login" element={<LegacyAccountRouteRedirect />} />
             <Route path="/register" element={<LegacyAccountRouteRedirect />} />
@@ -106,7 +106,9 @@ export function AppRouter() {
             <Route element={<ProtectedRoute />}>
               <Route
                 path="/settings"
-                element={<Navigate to="/workspace/settings" replace />}
+                element={
+                  <LegacyWorkspaceRouteRedirect to="/workspace/settings" />
+                }
               />
               <Route path="/browser" element={<TopBrowserPage />} />
               <Route
@@ -120,18 +122,17 @@ export function AppRouter() {
               <Route
                 path="/plugins"
                 element={
-                  <Navigate
-                    to="/workspace/agents?surface=chat&tab=plugins"
-                    replace
-                  />
+                  <LegacyWorkspaceRouteRedirect to="/workspace/agents?surface=chat&tab=plugins" />
                 }
               />
 
-              {createWorkspaceRoute()}
+              <Route element={<DesktopWorkspaceEntry />}>
+                {createWorkspaceRoute()}
+              </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          </RetainedShellRoutes>
         </Suspense>
       </ElectronTitleBarProvider>
     </ErrorBoundary>

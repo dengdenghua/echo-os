@@ -2,19 +2,11 @@ import { Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { PanelLoading } from "@/components/ui/progress-line";
 import { useI18n } from "@/core/i18n/hooks";
 
 function WorkspaceRoutePending({ label }: { label: string }) {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className="flex h-full min-h-[220px] items-center justify-center px-4 text-sm text-muted-foreground"
-    >
-      {label}
-    </div>
-  );
+  return <PanelLoading label={label} className="h-full min-h-[220px]" />;
 }
 
 /**
