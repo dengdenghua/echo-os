@@ -341,6 +341,16 @@ NATIVE_APP_IPC_BASELINE_IDS="$(
 )"
 rm -f -- "$NATIVE_APP_IPC_READY_FILE" "$RENDERER_READY_FILE"
 
+# Announce an active assistive technology the standard way, as Orca does, before
+# the shell starts: under Wayland the real desktop's document otherwise reached
+# AT-SPI empty (document web with no children), although the same build is
+# fully exposed on X11 with ACCESSIBILITY_ENABLED alone.
+gdbus call --session \
+  --dest org.a11y.Bus \
+  --object-path /org/a11y/bus \
+  --method org.freedesktop.DBus.Properties.Set \
+  org.a11y.Status IsEnabled '<true>' >/dev/null
+
 # In smoke mode the shell runs its IPC smoke and reports success only once its
 # backend answers /readyz (waitForSmokeBackendReady in frontend/electron/main.cjs).
 # On a device the Agent service answers it; this gate covers the shell and KWin,
