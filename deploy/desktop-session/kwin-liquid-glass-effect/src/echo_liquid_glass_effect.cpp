@@ -200,10 +200,10 @@ bool EchoLiquidGlassEffect::isEchoShellWindow(const EffectWindow *w) const
         return false;
     }
     // Wayland app id "echo-os-desktop"; on X11 Electron's WM_CLASS is the app
-    // name ("echo os desktop Echo OS Desktop") because it ignores --class.
+    // name, package.json "name" ("echo-frontend"), because it ignores --class.
     const QString identity = w->windowClass().toLower();
     return identity.contains(QStringLiteral("echo-os-desktop"))
-        || identity.contains(QStringLiteral("echo os desktop"))
+        || identity.contains(QStringLiteral("echo-frontend"))
         || identity.contains(QStringLiteral("echo-shell"));
 }
 
