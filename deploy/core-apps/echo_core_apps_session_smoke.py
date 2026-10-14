@@ -425,7 +425,16 @@ class WindowProvider:
 
     def list(self) -> list[dict[str, Any]]:
         if self.session == "x11":
-            return parse_x11_windows(_run(WMCTRL, ["-l", "-x", "-p"]))
+            for attempt in range(5):
+                try:
+                    return parse_x11_windows(_run(WMCTRL, ["-l", "-x", "-p"]))
+                except SessionSmokeError as error:
+                    # wmctrl lists the windows, then reads each one's properties;
+                    # a window closing in between fails the call with BadWindow.
+                    if "BadWindow" not in str(error) or attempt == 4:
+                        raise
+                    time.sleep(POLL_SECONDS)
+            raise SessionSmokeError("X11 window list stayed unavailable")
         if self.bridge_socket is None:
             raise SessionSmokeError("Wayland session requires the KWin bridge socket")
         return parse_wayland_windows(

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -149,6 +150,30 @@ class CoreAppsSessionSmokeTests(unittest.TestCase):
         }
         self.assertIsNone(smoke.case_window([window], {"0x4"}, case))
         self.assertIsNone(smoke.case_window([{**window, "title": "unrelated.pdf"}], set(), case))
+
+    def test_x11_window_list_retries_a_window_closing_mid_listing(self) -> None:
+        listing = "0x03a00007  0 4242   kate.kate  host echo-core-text.txt — Kate\n"
+        bad_window = smoke.SessionSmokeError(
+            "fixed diagnostic command failed: wmctrl (exit 1): X Error of failed "
+            "request: BadWindow (invalid Window parameter)"
+        )
+        provider = smoke.WindowProvider("x11", None)
+        with (
+            unittest.mock.patch.object(
+                smoke, "_run", side_effect=[bad_window, bad_window, listing]
+            ) as run,
+            unittest.mock.patch.object(smoke.time, "sleep"),
+        ):
+            windows = provider.list()
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(windows[0]["wmClass"], "kate.kate")
+
+        other = smoke.SessionSmokeError("fixed diagnostic command failed: wmctrl")
+        with (
+            unittest.mock.patch.object(smoke, "_run", side_effect=other),
+            self.assertRaises(smoke.SessionSmokeError),
+        ):
+            provider.list()
 
     def test_cli_requires_explicit_ci_sentinel_before_runtime_access(self) -> None:
         environment = {**os.environ, "XDG_SESSION_TYPE": "x11"}
