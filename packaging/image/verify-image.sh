@@ -1487,6 +1487,8 @@ require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" '^    os
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" '^    os\.environ\["XDG_CONFIG_HOME"\] = str\(config_home\)$' "Klipper configuration writes stay in volatile session storage"
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" '^    os\.environ\["XDG_CACHE_HOME"\] = str\(cache_home\)$' "Klipper cache writes stay in volatile session storage"
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" '^    os\.environ\["XDG_CONFIG_DIRS"\] = "/etc/xdg"$' "Klipper always reads the signed-root privacy defaults"
+require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" '^    os\.environ\["XDG_DATA_HOME"\] = str\(data_home\)$' "Klipper data-home reads stay in volatile session storage"
+require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" 'target = "\.\./\.\./data"$' "Klipper re-offers copied items from the same runtime item-data directory it writes"
 require_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" 'org\.kde\.klipper\.debug=false' "Klipper payload-bearing debug logs are forcibly disabled"
 forbid_pattern "$REPO_ROOT/deploy/desktop-session/echo-clipboard-host" 'mimeData|clipboardContents|getClipboardContents|stdout.*clipboard' "clipboard host never reads or logs user clipboard payloads"
 require_pattern "$REPO_ROOT/deploy/desktop-session/klipperrc" '^KeepClipboardContents=false$' "clipboard history is not retained across login sessions"

@@ -78,6 +78,40 @@ class ClipboardHostPolicyTests(unittest.TestCase):
                     with self.assertRaises(SystemExit):
                         HOST.prepare_runtime_database(str(database))
 
+    def test_klipper_reads_item_data_from_where_it_writes_it(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = self.make_runtime(Path(temp))
+            database = runtime / "echo-os" / "clipboard" / "history3.sqlite"
+            with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": str(runtime)}):
+                HOST.prepare_runtime_database(str(database))
+            data_home = HOST.link_klipper_item_data(database.parent, os.getuid())
+            # Klipper writes <dirname(KLIPPER_DATABASE)>/data/<item>/<hash> and
+            # re-offers from $XDG_DATA_HOME/klipper/data/<item>/<hash>.
+            written = database.parent / "data" / "item" / "hash"
+            written.parent.mkdir()
+            written.write_bytes(b"x")
+            read_back = data_home / "klipper" / "data" / "item" / "hash"
+            self.assertEqual(read_back.resolve(), written.resolve())
+            self.assertEqual(data_home.stat().st_mode & 0o777, 0o700)
+            # Idempotent across restarts of the host in the same session.
+            self.assertEqual(HOST.link_klipper_item_data(database.parent, os.getuid()), data_home)
+
+    def test_rejects_foreign_klipper_item_data_link(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = self.make_runtime(root)
+            database = runtime / "echo-os" / "clipboard" / "history3.sqlite"
+            with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": str(runtime)}):
+                HOST.prepare_runtime_database(str(database))
+            klipper_home = database.parent / "share" / "klipper"
+            klipper_home.mkdir(parents=True, mode=0o700)
+            os.chmod(database.parent / "share", 0o700)
+            os.chmod(klipper_home, 0o700)
+            (klipper_home / "data").symlink_to(root / "home")
+            with redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    HOST.link_klipper_item_data(database.parent, os.getuid())
+
     def test_wayland_environment_requires_owned_socket(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             runtime = self.make_runtime(Path(temp))

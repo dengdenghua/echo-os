@@ -90,6 +90,32 @@ def prepare_runtime_database(database_arg: str) -> Path:
     return database
 
 
+def link_klipper_item_data(clipboard_dir: Path, uid: int) -> Path:
+    """Give Klipper one item-data directory for writing and for reading back.
+
+    Plasma 6.3 Klipper writes each history item's data next to
+    ``KLIPPER_DATABASE`` (``<clipboard>/data``) but reads it back from
+    ``$XDG_DATA_HOME/klipper/data`` when it re-offers the newest item after the
+    copying application quits. With the database pinned below the runtime
+    directory those paths differ, the re-offered item carries no data, and the
+    copied text vanishes. Point Klipper's data home at the same volatile
+    directory. The host only creates directories and one link; it never opens
+    item data. Returns the directory to use as ``XDG_DATA_HOME``.
+    """
+    item_data = clipboard_dir / "data"
+    data_home = clipboard_dir / "share"
+    for directory in (item_data, data_home, data_home / "klipper"):
+        ensure_private_directory(directory, uid)
+    link = data_home / "klipper" / "data"
+    target = "../../data"
+    try:
+        os.symlink(target, link)
+    except FileExistsError:
+        if not link.is_symlink() or os.readlink(link) != target:
+            fail(f"Klipper item-data link is not the expected runtime link: {link}")
+    return data_home
+
+
 def name_has_owner() -> bool:
     try:
         result = subprocess.run(
@@ -149,9 +175,11 @@ def main() -> int:
     cache_home = database.parent / "cache"
     ensure_private_directory(config_home, os.getuid())
     ensure_private_directory(cache_home, os.getuid())
+    data_home = link_klipper_item_data(database.parent, os.getuid())
     os.environ["KLIPPER_DATABASE"] = str(database)
     os.environ["XDG_CONFIG_HOME"] = str(config_home)
     os.environ["XDG_CACHE_HOME"] = str(cache_home)
+    os.environ["XDG_DATA_HOME"] = str(data_home)
     os.environ["XDG_CONFIG_DIRS"] = "/etc/xdg"
     # Upstream has debug-only statements that can include clipboard text.
     # This dedicated host never permits that category to be enabled by an
