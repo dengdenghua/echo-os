@@ -510,10 +510,13 @@ printf '%s' "$CURRENT_WINDOWS_JSON" | \
 rm -f -- "$NATIVE_APP_IPC_READY_FILE"
 echo "ECHO_NATIVE_APP_IPC_READY session=wayland app=org.kde.kcalc path=preload-ipc-gio result=zero-exit cleanup=closed"
 
-timeout 20s python3 "$ACCESSIBILITY_PROBE" \
+# The real desktop needs its auth checks and lazily loaded chunks before the
+# landmark exists; on a loaded runner that has taken longer than 15 s. Stay
+# inside the shell's 45 s smoke hold (ECHO_SMOKE_HOLD_MS).
+timeout 45s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$ECHO_PID" \
   --required-name "ECHO OS 桌面" \
-  --timeout-seconds 15 \
+  --timeout-seconds 40 \
   --report-on-failure \
   >"$LOG_DIR/accessibility-tree-echo-wayland.log"
 grep -Fxq 'ECHO_ACCESSIBILITY_TREE_READY provider=at-spi2 application=echo' \
