@@ -442,6 +442,35 @@ def test_projection_uses_agent_lease_health_for_interrupted_work(tmp_path) -> No
     assert task["resultArtifacts"][0]["name"] == "checkpoint-result.txt"
 
 
+def test_an_approval_whose_lease_died_is_not_offered_until_takeover(tmp_path) -> None:
+    supervisor = TaskSupervisor.from_path(tmp_path / "task-runs.json", holder_id="old-worker")
+    supervisor.start_task(task_id="held", kind="realtime_codex", owner_id="local:admin", title="ls")
+    supervisor.transition(
+        "held",
+        TaskRunStatus.WAITING_APPROVAL,
+        metadata_patch={
+            "approval_required": True,
+            "approval_tool_name": "exec_shell",
+            "approval_delivery": "server_hold",
+        },
+    )
+    supervisor.store.mutate(
+        "held",
+        lambda current: current.model_copy(
+            update={"lease": current.lease.model_copy(update={"expires_at": 1})}, deep=True
+        ),
+    )
+    app = FastAPI()
+    app.include_router(create_task_projection_router(supervisor=supervisor, jwt_secret=JWT_SECRET))
+
+    task = _client(app).get("/api/appliance/tasks").json()["tasks"][0]
+
+    # The process that held the request is gone; a decision would answer 409.
+    assert task["displayStatus"] == "disconnected"
+    assert task["leaseHealth"]["recommendedAction"] == "takeover_for_approval"
+    assert task["approval"]["required"] is False
+
+
 def test_task_detail_and_takeover_reclaim_the_agent_lease_with_audit(tmp_path) -> None:
     audit = ApplianceAudit.from_data_dir(tmp_path / "audit", jwt_secret=JWT_SECRET)
     supervisor = TaskSupervisor.from_path(

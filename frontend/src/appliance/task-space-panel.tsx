@@ -110,6 +110,24 @@ const FILTERS: Array<{ id: TaskFilter; label: string }> = [
   { id: "failed", label: "异常" },
 ];
 
+// Lease health reaches the panel as runtime identifiers (expired,
+// takeover_for_approval …). The owner reads what they mean; an identifier
+// the panel does not know is left out rather than shown raw.
+const LEASE_STATE_LABELS: Record<string, string> = {
+  ok: "正常",
+  expired: "已失效",
+  missing_lease: "没有租约",
+  terminal: "已结束",
+};
+const RECOVERY_ACTION_LABELS: Record<string, string> = {
+  takeover: "建议：接管任务",
+  takeover_and_resume: "建议：接管后从检查点继续",
+  takeover_for_approval: "建议：接管后再处理审批",
+  resume_from_checkpoint: "建议：从检查点继续",
+  restart: "建议：重新运行",
+  resume_paused_task: "建议：继续已暂停的任务",
+};
+
 function statusMeta(status: EchoTaskStatus) {
   return STATUS[status] ?? UNKNOWN_STATUS;
 }
@@ -422,14 +440,23 @@ function TaskDetailDrawer({
                   : "当前没有可直接恢复的检查点。接管只会重新取得任务控制权，不会假装任务已经继续执行。"}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5 text-[12px]">
-                <span className="rounded-md bg-card/70 px-2 py-1 text-breach">
-                  租约 {task.leaseHealth.state}
-                </span>
-                {task.leaseHealth.recommendedAction && (
-                  <span className="rounded-md bg-card/70 px-2 py-1 font-mono text-breach">
-                    {task.leaseHealth.recommendedAction}
+                {LEASE_STATE_LABELS[task.leaseHealth.state] && (
+                  <span className="rounded-md bg-card/70 px-2 py-1 text-breach">
+                    租约{LEASE_STATE_LABELS[task.leaseHealth.state]}
                   </span>
                 )}
+                {task.leaseHealth.recommendedAction &&
+                  RECOVERY_ACTION_LABELS[
+                    task.leaseHealth.recommendedAction
+                  ] && (
+                    <span className="rounded-md bg-card/70 px-2 py-1 text-breach">
+                      {
+                        RECOVERY_ACTION_LABELS[
+                          task.leaseHealth.recommendedAction
+                        ]
+                      }
+                    </span>
+                  )}
               </div>
             </section>
           )}

@@ -390,6 +390,10 @@ describe("Echo task space", () => {
       screen.getByRole("complementary", { name: "任务详情" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Agent 租约需要恢复")).toBeInTheDocument();
+    // Runtime identifiers are worded, not shown raw.
+    expect(screen.getByText("租约已失效")).toBeInTheDocument();
+    expect(screen.getByText("建议：接管任务")).toBeInTheDocument();
+    expect(screen.queryByText(/^takeover$|expired/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "接管任务租约…" }));
     expect(

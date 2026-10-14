@@ -376,9 +376,12 @@ def _project_task(
     approval = None
     if status == "waiting_approval":
         approval = {
-            # False when a policy or disabled capability holds the task: no
-            # operator decision can release it, so clients must not offer one.
-            "required": approval_block_reason(task) is None,
+            # False when a policy or disabled capability holds the task, or when
+            # its lease died with the process that held the request (a restart
+            # while waiting): no decision can be recorded then (the runtime
+            # answers 409 until the lease is taken over), so clients must not
+            # offer one. Takeover makes it decidable again.
+            "required": approval_block_reason(task) is None and not recovery_needed,
             "version": approval_request_version(task),
             "tool": _optional_text(metadata.get("approval_tool_name"), limit=128),
             "action": _optional_text(metadata.get("approval_action"), limit=128),
