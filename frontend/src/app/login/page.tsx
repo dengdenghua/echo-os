@@ -62,11 +62,21 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  // Bumped after a failed login; the effect below moves focus back to the code
+  // field once React has committed submitting=false. Focusing earlier (e.g. in
+  // a timeout) can hit the still-disabled input, which ignores focus().
+  const [codeFocusRequest, setCodeFocusRequest] = useState(0);
   const emailInputRef = useRef<HTMLInputElement | null>(null);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
   const cooldownDeadlineRef = useRef(0);
+
+  useEffect(() => {
+    if (codeFocusRequest > 0 && !submitting) {
+      codeInputRef.current?.focus();
+    }
+  }, [codeFocusRequest, submitting]);
   const [sendStatus, setSendStatus] = useState<{
     kind: "success" | "error";
     message: string;
@@ -167,7 +177,7 @@ function EmailLoginForm({ returnTo }: { returnTo: string }) {
       submittingRef.current = false;
       setSubmitting(false);
       if (focusCodeAfterSubmit) {
-        window.setTimeout(() => codeInputRef.current?.focus(), 0);
+        setCodeFocusRequest((request) => request + 1);
       }
     }
   }
