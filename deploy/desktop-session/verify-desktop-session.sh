@@ -98,7 +98,7 @@ if grep -q '^export QT_ACCESSIBILITY=1$' \
      "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" && \
    grep -q -- '--force-renderer-accessibility' \
      "$REPO_ROOT/deploy/desktop-session/echo-wayland-shell-session.sh" && \
-   grep -q 'required-name "Echo OS 桌面"' \
+   grep -q 'required-name "ECHO OS 桌面"' \
      "$REPO_ROOT/deploy/desktop-session/echo-desktop-session.sh" && \
    grep -q '^Exec=/usr/bin/orca$' \
      "$REPO_ROOT/deploy/desktop-session/echo-screen-reader.desktop"; then

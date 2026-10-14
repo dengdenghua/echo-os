@@ -448,7 +448,7 @@ done
 }
 timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$SHELL_PID" \
-  --required-name "Echo OS 桌面" \
+  --required-name "ECHO OS 桌面" \
   --timeout-seconds 15
 printf 'provider=ewmh-x11 window=%s auth=ready power=ready notifications=ready input=ready clipboard=ready accessibility=ready\n' \
   "$SHELL_WINDOW_ID" >"$READY_TEMP_FILE"

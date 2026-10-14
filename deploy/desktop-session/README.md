@@ -243,7 +243,7 @@ Echo 不把“镜像里装了一个屏幕阅读器”当作无障碍完成。X11
 `--force-renderer-accessibility` 启动；桌面根和 Dock 动作有稳定 accessible name。
 
 `echo-accessibility-smoke.py` 不序列化或打印 AT-SPI 树，只在最多 10000 个节点、64 层
-深度内寻找固定的 `Echo OS 桌面` 标记，并核对该对象属于刚启动的 Electron PID 或其
+深度内寻找固定的 `ECHO OS 桌面` 标记，并核对该对象属于刚启动的 Electron PID 或其
 子进程。生产 desktop-ready、Linux X11 smoke 和四道安装后冷启动门都要求这一真实树
 标记。Wayland compositor smoke 还会打开一个原生 GTK 按钮并从另一个进程通过 AT-SPI
 找到固定标记，避免只证明 Electron 自己的 DOM。

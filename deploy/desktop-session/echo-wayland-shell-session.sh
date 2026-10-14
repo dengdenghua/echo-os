@@ -462,7 +462,7 @@ done
 }
 timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$SHELL_PID" \
-  --required-name "Echo OS 桌面" \
+  --required-name "ECHO OS 桌面" \
   --timeout-seconds 15
 if [[ "$WAYLAND_NATIVE_APP_IPC_REQUESTED" -eq 1 ]]; then
   for _attempt in $(seq 1 300); do

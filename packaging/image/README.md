@@ -494,7 +494,7 @@ eSpeak NG 离线语音 backend。自定义 Echo 会话不依赖 Plasma/GNOME aut
 监管 `/usr/libexec/at-spi-bus-launcher --launch-immediately`，验证
 `org.a11y.Bus.GetAddress`，并把 `QT_ACCESSIBILITY=1` 传给 D-Bus/systemd 激活环境。
 Electron 以 `--force-renderer-accessibility` 启动；只有独立 AT-SPI 进程在对应 Electron
-进程树中找到固定 `Echo OS 桌面` 节点，desktop-ready 才会写入
+进程树中找到固定 `ECHO OS 桌面` 节点，desktop-ready 才会写入
 `accessibility=ready`。Wayland compositor gate 对原生 GTK 控件执行同类检查。
 
 树探针有节点/深度/超时上限，只比较固定 marker，并且不会打印树中的窗口名、文本、

@@ -386,7 +386,7 @@ echo "ECHO_NATIVE_APP_IPC_READY app=org.kde.kcalc path=preload-ipc-gio result=ze
 
 timeout 20s python3 "$ACCESSIBILITY_PROBE" \
   --root-pid "$ECHO_PID" \
-  --required-name "Echo OS 桌面" \
+  --required-name "ECHO OS 桌面" \
   --timeout-seconds 15 \
   >"$LOG_DIR/accessibility-tree-x11.log"
 grep -q 'ECHO_ACCESSIBILITY_TREE_READY provider=at-spi2 application=echo' \
