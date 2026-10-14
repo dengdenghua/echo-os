@@ -67,8 +67,22 @@ def run_check(root: Path, label: str, args: list[str]) -> tuple[str, int, str]:
     return label, result.returncode, (result.stdout + result.stderr).strip()
 
 
+def scratch_parent() -> Path:
+    """Scratch space next to the repository (the system temp drive may be full)."""
+    path = subprocess.run(
+        ["git", "rev-parse", "--git-path", "echo-hook-cache"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    parent = (REPO_ROOT / path).resolve()
+    parent.mkdir(parents=True, exist_ok=True)
+    return parent
+
+
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="echo-lint-ratchets-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="lint-ratchets-", dir=scratch_parent()) as temporary:
         root = REPO_ROOT
         if not head_matches_working_tree():
             root = Path(temporary)

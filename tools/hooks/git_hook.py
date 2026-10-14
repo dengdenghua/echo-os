@@ -66,7 +66,9 @@ def main(argv: list[str]) -> int:
             status |= run([*pre_commit, "run", "--hook-stage", "pre-commit", "--files", *batch])
         return 1 if status else 0
     if stage == "pre-push":
-        return run([*pre_commit, "run", "--hook-stage", "pre-push", "--all-files"])
+        # Only the ratchet hook, never the fixers: with --all-files they would
+        # rewrite whitespace in every file of the shared working tree.
+        return run([*pre_commit, "run", "lint-ratchets", "--hook-stage", "pre-push", "--all-files"])
     print(f"git_hook.py: unsupported hook stage {stage!r}", file=sys.stderr)
     return 2
 

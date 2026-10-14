@@ -156,7 +156,7 @@ def snapshot_root():
             time.sleep(0.1)
     if descriptor is None:
         # Another commit holds the mirror; fall back to a private copy.
-        with tempfile.TemporaryDirectory(prefix="echo-docs-auto-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="docs-auto-", dir=mirror.parent) as temporary:
             sync_mirror(Path(temporary))
             yield Path(temporary)
         return
