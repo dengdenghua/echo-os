@@ -26,6 +26,12 @@ describe("global appearance chrome rules", () => {
     );
   });
 
+  it("keeps a submenu inside the viewport at phone width", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)\s*\{\s*\[data-radix-popper-content-wrapper\]:has\(\s*>\s*\[data-slot="dropdown-menu-sub-content"\]\s*\)\s*\{[\s\S]*?left:\s*8px\s*!important;[\s\S]*?right:\s*8px\s*!important;[\s\S]*?transform:\s*none\s*!important;/,
+    );
+  });
+
   it("never applies implicit all-property transitions to shared controls", () => {
     expect(css).toMatch(
       /\[data-slot="switch"\][\s\S]*?transition-property:\s*[\s\S]*?color,[\s\S]*?background-color,[\s\S]*?box-shadow,[\s\S]*?transform\s*!important;/,

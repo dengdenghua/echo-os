@@ -356,7 +356,10 @@ export function MacWorkspaceDropdown({
         aria-expanded={open}
         aria-label="空间与模式控制"
         className={cn(
-          "flex items-center gap-1.5 h-[22px] px-2.5 rounded-full text-xs transition-all border cursor-pointer",
+          // Never wraps: at phone width the label used to break into two
+          // lines (全局总 / 览) inside the 22px pill; there it shows only the
+          // room icon and chevron and keeps the label for screen readers.
+          "flex shrink-0 items-center gap-1.5 h-[22px] px-2.5 whitespace-nowrap rounded-full text-xs transition-all border cursor-pointer",
           open
             ? "bg-current/20 text-inherit border-current/25 shadow-xs"
             : "bg-current/10 text-inherit border-current/15 hover:bg-current/15",
@@ -371,11 +374,13 @@ export function MacWorkspaceDropdown({
         />
         <span className="flex items-center gap-1 text-[12px] font-medium tracking-tight">
           {desktopMode === "pure" ? (
-            "意图纯净态"
+            <span className="max-sm:sr-only">意图纯净态</span>
           ) : (
             <>
               <CurrentRoomIcon className="size-3" aria-hidden />
-              {currentRoom.title.split(" ")[0]}
+              <span className="max-sm:sr-only">
+                {currentRoom.title.split(" ")[0]}
+              </span>
             </>
           )}
         </span>

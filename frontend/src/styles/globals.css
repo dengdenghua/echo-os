@@ -1024,6 +1024,28 @@
     }
   }
 
+  /* A submenu opens beside its trigger. On a phone neither side has room for
+     it (the composer's 技能 list is 24rem), and Radix only shifts a popper
+     along its cross axis, so it ran off the right edge. There it becomes a
+     sheet across the viewport, above the Dock. */
+  @media (max-width: 640px) {
+    [data-radix-popper-content-wrapper]:has(
+      > [data-slot="dropdown-menu-sub-content"]
+    ) {
+      left: 8px !important;
+      right: 8px !important;
+      top: auto !important;
+      bottom: 88px !important;
+      transform: none !important;
+      min-width: 0 !important;
+    }
+    [data-slot="dropdown-menu-sub-content"] {
+      width: auto !important;
+      max-width: none !important;
+      max-height: min(60vh, 28rem) !important;
+    }
+  }
+
   .container-md {
     width: 100%;
     @media (width >= 40rem) {

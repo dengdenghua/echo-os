@@ -1083,6 +1083,9 @@ describe("Echo desktop shell", () => {
     const trigger = screen.getByRole("button", { name: "空间与模式控制" });
     expect(trigger).toBeVisible();
     expect(trigger).toHaveTextContent("调研室");
+    // One line at any width; at phone width the label is screen-reader only.
+    expect(trigger).toHaveClass("whitespace-nowrap", "shrink-0");
+    expect(screen.getByText("调研室")).toHaveClass("max-sm:sr-only");
 
     // Open dropdown
     await user.click(trigger);
