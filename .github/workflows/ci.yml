@@ -252,7 +252,9 @@ jobs:
       - name: Install Electron runtime system dependencies
         working-directory: frontend
         run: |
-          pnpm exec playwright install-deps electron
+          # Playwright has no "electron" install-deps target; Electron needs
+          # the same system libraries as Chromium.
+          pnpm exec playwright install-deps chromium
           sudo apt-get install -y --no-install-recommends xvfb
 
       - name: Run the Electron desktop smoke
