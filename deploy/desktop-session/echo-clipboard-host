@@ -172,6 +172,12 @@ def main() -> int:
     QCoreApplication.setOrganizationDomain("echoos.local")
     app = QApplication([sys.argv[0]])
     app.setQuitOnLastWindowClosed(False)
+    # Qt 6 also quits automatically when the last QEventLoopLocker is released.
+    # Klipper's KDE Frameworks dependencies take and drop such lockers while
+    # the module starts, which posted a Quit event and made app.exec() return
+    # immediately after the ready marker. A windowless daemon must only stop on
+    # SIGINT/SIGTERM below.
+    app.setQuitLockEnabled(False)
 
     engine = QQmlApplicationEngine()
     engine.loadData(QByteArray(QML_SOURCE), QUrl("qrc:/echo-clipboard-host.qml"))
