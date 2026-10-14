@@ -69,23 +69,76 @@ export QT_QPA_PLATFORM=wayland
 /usr/bin/dbus-update-activation-environment \
   WAYLAND_DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP QT_QPA_PLATFORM
 
-for _attempt in $(seq 1 150); do
+# The Liquid Glass effect is OpenGL-only. KWin's virtual backend composites
+# with OpenGL only when libdrm enumerates a DRM device; hosted CI runners expose
+# none, so KWin falls back to QPainter there and correctly refuses to load the
+# effect. Exercise native optics whenever KWin has OpenGL; otherwise prove that
+# the packaged effect is installed and reported unsupported (the shell then
+# keeps its WebGL/CSS material). ECHO_WAYLAND_SMOKE_REQUIRE_NATIVE_GLASS=1 makes
+# a missing OpenGL compositor fatal, for GPU-backed runners.
+KWIN_COMPOSITING_TYPE="$(gdbus call --session \
+  --dest org.kde.KWin \
+  --object-path /Compositor \
+  --method org.freedesktop.DBus.Properties.Get \
+  org.kde.kwin.Compositing compositingType)"
+case "$KWIN_COMPOSITING_TYPE" in
+  *"'gl2'"* | *"'gles'"*) KWIN_NATIVE_GLASS=1 ;;
+  *"'qpainter'"*) KWIN_NATIVE_GLASS=0 ;;
+  *)
+    echo "KWin reported an unexpected compositing type: $KWIN_COMPOSITING_TYPE" >&2
+    exit 1
+    ;;
+esac
+if [[ "$KWIN_NATIVE_GLASS" -eq 0 && "${ECHO_WAYLAND_SMOKE_REQUIRE_NATIVE_GLASS:-0}" == 1 ]]; then
+  echo "KWin composites with QPainter; native Liquid Glass needs an OpenGL compositor" >&2
+  exit 1
+fi
+
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  for _attempt in $(seq 1 150); do
+    if gdbus introspect --session \
+         --dest org.kde.KWin \
+         --object-path "$KWIN_LIQUID_GLASS_PATH" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.1
+  done
+  KWIN_GLASS_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
+    echo "KWin Liquid Glass effect did not publish its inactive state" >&2
+    exit 1
+  }
+  echo "  ✓ KWin loaded the native Liquid Glass effect"
+else
+  KWIN_EFFECTS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path /Effects \
+    --method org.freedesktop.DBus.Properties.Get \
+    org.kde.kwin.Effects listOfEffects)"
+  [[ "$KWIN_EFFECTS" == *"'org.echoos.liquidglass'"* ]] || {
+    echo "KWin did not discover the packaged Liquid Glass effect plugin" >&2
+    exit 1
+  }
+  [[ "$(gdbus call --session \
+          --dest org.kde.KWin \
+          --object-path /Effects \
+          --method org.kde.kwin.Effects.isEffectSupported \
+          org.echoos.liquidglass)" == "(false,)" ]] || {
+    echo "KWin claims QPainter supports the OpenGL-only Liquid Glass effect" >&2
+    exit 1
+  }
   if gdbus introspect --session \
        --dest org.kde.KWin \
-       --object-path "$KWIN_LIQUID_GLASS_PATH" >/dev/null 2>&1; then
-    break
+       --object-path "$KWIN_LIQUID_GLASS_PATH" 2>/dev/null | \
+       grep -q "$KWIN_LIQUID_GLASS_INTERFACE"; then
+    echo "Liquid Glass effect published its interface without an OpenGL compositor" >&2
+    exit 1
   fi
-  sleep 0.1
-done
-KWIN_GLASS_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
-  echo "KWin Liquid Glass effect did not publish its inactive state" >&2
-  exit 1
-}
-echo "  ✓ KWin loaded the native Liquid Glass effect"
+  echo "  ✓ KWin discovered the Liquid Glass effect and kept it unloaded on its QPainter compositor (no DRM device)"
+fi
 
 COMPOSITOR_STATE="$(
   "$BRIDGE" --socket "$BRIDGE_SOCKET" --request list
@@ -251,23 +304,25 @@ WAYLAND_ECHO_ARGUMENTS=(
   --force-renderer-accessibility
   --enable-features=UseOzonePlatform
 )
-KWIN_GLASS_SYNC="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.SyncSurfaces" \
-  '{"version":2,"surfaces":[{"x":20,"y":20,"width":320,"height":180,"cornerRadius":28,"material":"thick"}]}')"
-[[ "$KWIN_GLASS_SYNC" == "(true,)" ]] || {
-  echo "KWin Liquid Glass effect rejected its bounded smoke region" >&2
-  exit 1
-}
-KWIN_GLASS_MATERIAL_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_MATERIAL_STATUS" == *ready:1:native-optics* ]] || {
-  echo "KWin Liquid Glass effect did not activate compositor-native optics" >&2
-  exit 1
-}
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  KWIN_GLASS_SYNC="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.SyncSurfaces" \
+    '{"version":2,"surfaces":[{"x":20,"y":20,"width":320,"height":180,"cornerRadius":28,"material":"thick"}]}')"
+  [[ "$KWIN_GLASS_SYNC" == "(true,)" ]] || {
+    echo "KWin Liquid Glass effect rejected its bounded smoke region" >&2
+    exit 1
+  }
+  KWIN_GLASS_MATERIAL_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_MATERIAL_STATUS" == *ready:1:native-optics* ]] || {
+    echo "KWin Liquid Glass effect did not activate compositor-native optics" >&2
+    exit 1
+  }
+fi
 if [[ "$(id -u)" -eq 0 ]]; then
   WAYLAND_ECHO_ARGUMENTS+=(--no-sandbox)
 fi
@@ -380,19 +435,23 @@ if ! wait "$ECHO_PID"; then
 fi
 unset ECHO_PID
 rm -f -- "$RENDERER_READY_FILE"
-gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Clear" >/dev/null
-KWIN_GLASS_STATUS="$(gdbus call --session \
-  --dest org.kde.KWin \
-  --object-path "$KWIN_LIQUID_GLASS_PATH" \
-  --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
-[[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
-  echo "KWin Liquid Glass effect did not clear its smoke region" >&2
-  exit 1
-}
-echo "ECHO_KWIN_GLASS_EFFECT_READY provider=kwin-wayland-effect region=bounded cleanup=cleared optics=kwin"
+if [[ "$KWIN_NATIVE_GLASS" -eq 1 ]]; then
+  gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Clear" >/dev/null
+  KWIN_GLASS_STATUS="$(gdbus call --session \
+    --dest org.kde.KWin \
+    --object-path "$KWIN_LIQUID_GLASS_PATH" \
+    --method "$KWIN_LIQUID_GLASS_INTERFACE.Status")"
+  [[ "$KWIN_GLASS_STATUS" == *inactive* ]] || {
+    echo "KWin Liquid Glass effect did not clear its smoke region" >&2
+    exit 1
+  }
+  echo "ECHO_KWIN_GLASS_EFFECT_READY provider=kwin-wayland-effect region=bounded cleanup=cleared optics=kwin"
+else
+  echo "ECHO_KWIN_GLASS_EFFECT_UNSUPPORTED provider=kwin-wayland-effect compositor=qpainter fallback=webgl"
+fi
 
 GDK_BACKEND=wayland python3 "$WAYLAND_APP" \
   >"$LOG_DIR/wayland-app.log" 2>&1 &
