@@ -473,7 +473,7 @@ class ParentProcessLimits:
     def _kill_group(self, pid: int) -> None:
         try:
             leader = _linux_stat(pid)
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):  # exited before or during the read
             leader = None
         if leader is not None and leader["identity"] != self._groups[pid]:
             raise DocumentProcessLimitError("worker_group_identity_changed")

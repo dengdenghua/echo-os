@@ -99,7 +99,9 @@ def _alive(pid: int) -> bool:
             api.CloseHandle(handle)
     try:
         return limits._linux_stat(pid)["state"] not in {"Z", "X"}
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
+        # /proc/<pid>/stat vanishes (ENOENT) or the process exits between
+        # open() and read() (ESRCH): either way it is gone.
         return False
 
 
