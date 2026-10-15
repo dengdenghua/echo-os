@@ -46,7 +46,10 @@ export function ModuleEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className="max-h-[80vh] gap-0 overflow-hidden p-0 sm:max-w-2xl"
+      >
         <DialogHeader className="flex-row items-center justify-between space-y-0 border-b border-border-subtle px-5 py-3">
           <div className="min-w-0">
             <DialogTitle className="text-base">

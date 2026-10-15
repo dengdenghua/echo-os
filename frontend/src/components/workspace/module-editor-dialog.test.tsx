@@ -80,6 +80,9 @@ describe("ModuleEditorDialog", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "完成" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+    // The header's 完成 is the only close control; the dialog's own corner
+    // close button sat on top of it and took its clicks.
+    expect(document.querySelector("[data-slot=dialog-close]")).toBeNull();
   });
 
   it("localizes group headings", () => {
