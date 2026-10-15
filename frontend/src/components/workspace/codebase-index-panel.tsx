@@ -292,7 +292,7 @@ function StatsSection({ stats }: { stats: IndexStats | null }) {
       {/* Config */}
       {stats.config && (
         <div className="rounded border bg-card p-2">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">
             {t.codebaseIndex.configuration}
           </div>
           <div className="space-y-0.5 text-muted-foreground">
@@ -329,7 +329,7 @@ function StatsSection({ stats }: { stats: IndexStats | null }) {
       {/* Languages */}
       {langEntries.length > 0 && (
         <div className="rounded border bg-card p-2">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">
             {t.codebaseIndex.languages}
           </div>
           <div className="flex flex-wrap gap-1">
@@ -348,7 +348,7 @@ function StatsSection({ stats }: { stats: IndexStats | null }) {
       {/* Chunk types */}
       {typeEntries.length > 0 && (
         <div className="rounded border bg-card p-2">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">
             {t.codebaseIndex.chunkTypes}
           </div>
           <div className="flex flex-wrap gap-1">

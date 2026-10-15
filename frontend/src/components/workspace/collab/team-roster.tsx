@@ -52,7 +52,7 @@ export function TeamRoster({
       {/* AI members — workstation seats, always in attendance */}
       {agents.length > 0 && (
         <div className="mb-3">
-          <div className="mb-1.5 flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1.5 flex items-center gap-1.5 px-0.5 text-xs font-medium text-muted-foreground">
             <BotIcon className="size-3" /> {t.collab.roster.workstationGroup}
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -101,7 +101,7 @@ export function TeamRoster({
 
       {/* Human collaborators */}
       <div>
-        <div className="mb-1.5 px-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="mb-1.5 px-0.5 text-xs font-medium text-muted-foreground">
           {t.collab.roster.collaboratorsGroup}
         </div>
         {humans.length === 0 ? (

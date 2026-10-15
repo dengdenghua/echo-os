@@ -537,14 +537,14 @@ function AgentDetailView({
       {/* Info section */}
       <div className="space-y-3 border-b px-4 py-3">
         <div>
-          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <span className="text-muted-foreground text-xs font-medium">
             {t.a2a.endpoint}
           </span>
           <p className="mt-0.5 truncate text-xs">{agent.base_url}</p>
         </div>
         {agent.description && (
           <div>
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+            <span className="text-muted-foreground text-xs font-medium">
               {t.a2a.description}
             </span>
             <p className="text-foreground/80 mt-0.5 text-xs leading-relaxed">
@@ -553,7 +553,7 @@ function AgentDetailView({
           </div>
         )}
         <div>
-          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <span className="text-muted-foreground text-xs font-medium">
             {t.a2a.capabilities}
           </span>
           <div className="mt-1 flex flex-wrap gap-1.5">
@@ -576,7 +576,7 @@ function AgentDetailView({
       {/* Skills */}
       {agent.skills.length > 0 && (
         <div className="border-b px-4 py-3">
-          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <span className="text-muted-foreground text-xs font-medium">
             {t.a2a.skills} ({agent.skills.length})
           </span>
           <div className="mt-2 space-y-2">
@@ -661,7 +661,7 @@ function AgentDetailView({
 
       {/* Send task */}
       <div className="px-4 py-3">
-        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+        <span className="text-muted-foreground text-xs font-medium">
           {t.a2a.sendTask}
         </span>
         <form onSubmit={handleSendTask} className="mt-2 flex gap-2">

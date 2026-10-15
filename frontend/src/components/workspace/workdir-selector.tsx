@@ -745,7 +745,7 @@ export function WorkDirSelector({
             isMutedVariant ? "px-1.5 py-1.5" : "px-2.5 py-2",
           )}
         >
-          <div className="pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="pb-1 text-xs font-semibold text-muted-foreground">
             {t.codeMode.recentWorkspaces}
           </div>
           {recentWorkdirs.length > 0 ? (
@@ -812,7 +812,7 @@ export function WorkDirSelector({
           open={isBrowserOpen}
           onToggle={(event) => setBrowserOpen(event.currentTarget.open)}
         >
-          <summary className="cursor-pointer list-none rounded-md px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground">
+          <summary className="cursor-pointer list-none rounded-md px-1 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
             <span className="inline-flex items-center gap-1">
               <ChevronDownIcon className="size-3 transition-transform group-open:rotate-180" />
               {t.codeMode.browseCurrentFolder}
@@ -897,7 +897,7 @@ export function WorkDirSelector({
     >
       <div className={cn("shrink-0", isMutedVariant ? "p-1.5" : "p-2.5")}>
         <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             {trRemote.switcherTitle}
           </span>
           <button

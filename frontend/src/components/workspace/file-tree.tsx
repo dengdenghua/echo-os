@@ -343,7 +343,7 @@ export function FileTree({
   return (
     <div className={cn("overflow-y-auto text-xs", className)}>
       <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
-        <span className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">
+        <span className="text-muted-foreground font-semibold text-xs">
           {t.codeMode.explorer}
         </span>
         <button

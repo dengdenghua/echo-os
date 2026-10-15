@@ -56,7 +56,7 @@ export function MarketCard({
         </span>
         {item.sold && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-            <span className="rotate-[-12deg] rounded border-2 border-border px-4 py-1 text-sm font-bold tracking-widest text-white">
+            <span className="rotate-[-12deg] rounded border-2 border-border px-4 py-1 text-sm font-bold text-white">
               已售出
             </span>
           </div>

@@ -388,7 +388,7 @@ export function ReflexMonitorContent() {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="text-xs text-muted-foreground">
               <tr className="border-b border-border-default">
                 <th className="pb-2 text-left font-medium">
                   {t.reflexPage.colRule}

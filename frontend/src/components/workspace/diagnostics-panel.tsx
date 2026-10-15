@@ -244,7 +244,7 @@ function Section({
 }) {
   return (
     <div>
-      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+      <div className="text-xs font-semibold text-muted-foreground mb-1">
         {title}
       </div>
       <div className="space-y-0.5 ml-1">{children}</div>

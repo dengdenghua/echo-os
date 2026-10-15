@@ -1694,7 +1694,7 @@ function MilestonesTab({ milestones }: { milestones: MilestoneView[] }) {
           </div>
           {(milestone.success_criteria?.length ?? 0) > 0 ? (
             <div className="mt-2.5 border-t border-border-subtle pt-2">
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="text-xs font-medium text-muted-foreground">
                 达成标准
               </div>
               <ul className="mt-1 space-y-1">

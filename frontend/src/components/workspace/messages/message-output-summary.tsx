@@ -1178,7 +1178,7 @@ function HunkDecisionRow({
           ) : (
             <span
               className={cn(
-                "rounded px-1.5 py-0.5 text-xs font-medium uppercase tracking-wide",
+                "rounded px-1.5 py-0.5 text-xs font-medium",
                 decision === "accepted"
                   ? "bg-success/15 text-success"
                   : "bg-destructive/15 text-destructive",

@@ -1401,7 +1401,7 @@ export function IntelligencePanel() {
                 )}
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{t.intelligencePanel.todayPush}</span>
                   <span>
                     {reportDateParts(selectedReport.created_at, t).monthDay}

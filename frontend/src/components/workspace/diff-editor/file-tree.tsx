@@ -139,7 +139,7 @@ export function DiffFileTree({
       {/* Header with stats */}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             {t.diffEditor.changedFiles}
           </span>
           <span className="flex items-center gap-1 rounded-lg bg-muted/70 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">

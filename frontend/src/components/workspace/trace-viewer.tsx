@@ -291,7 +291,7 @@ function SpanDetail({
         {/* Attributes */}
         {span.attributes && Object.keys(span.attributes).length > 0 && (
           <div>
-            <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+            <div className="text-muted-foreground mb-1 text-xs font-medium">
               {t.traces.attributes}
             </div>
             <div className="rounded-lg border">
@@ -307,7 +307,7 @@ function SpanDetail({
         {/* Events */}
         {span.events && span.events.length > 0 && (
           <div>
-            <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+            <div className="text-muted-foreground mb-1 text-xs font-medium">
               {t.traces.events(span.events.length)}
             </div>
             <div className="space-y-1">

@@ -268,7 +268,7 @@ function ConfigPreview({
 
   return (
     <div className="space-y-1">
-      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+      <p className="text-muted-foreground text-xs font-medium">
         {t.deploy.generatedConfigs}
       </p>
       {configs.map((cfg, i) => (
@@ -658,7 +658,7 @@ export function DeployPanel({
 
                 {/* Provider selection */}
                 <div className="space-y-2">
-                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                  <p className="text-muted-foreground text-xs font-medium">
                     {t.deploy.deployTarget}
                   </p>
                   <div className="grid gap-2">
@@ -806,7 +806,7 @@ export function DeployPanel({
                 {/* Meta info */}
                 {Object.keys(currentDeploy.meta).length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    <p className="text-muted-foreground text-xs font-medium">
                       {t.deploy.details}
                     </p>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">

@@ -1674,7 +1674,7 @@ function GroupedTimeline({
             <button
               type="button"
               onClick={() => emitAgentWorkbenchFocus({ agentId })}
-              className="mb-1 flex w-full items-center gap-1.5 rounded-md px-3 py-1 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
+              className="mb-1 flex w-full items-center gap-1.5 rounded-md px-3 py-1 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
             >
               <span
                 className={cn(

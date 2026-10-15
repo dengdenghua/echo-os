@@ -128,7 +128,7 @@ function EngineCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {label}
           </div>
           <h3 className="mt-1 text-sm font-semibold">{name}</h3>

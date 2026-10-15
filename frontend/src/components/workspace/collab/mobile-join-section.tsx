@@ -72,7 +72,7 @@ export function MobileJoinSection() {
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div>
-            <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="mb-1 text-xs font-medium text-muted-foreground">
               {t.collab.mobileJoin.connectCodeLabel}
             </div>
             <div className="flex gap-2">

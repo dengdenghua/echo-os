@@ -1098,7 +1098,7 @@ export default function NarrativePage() {
                 ) : (
                   volumes.map((volume) => (
                     <div key={volume.id} className="mb-3">
-                      <div className="px-2 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                         {volume.title}
                       </div>
                       <div className="space-y-1">

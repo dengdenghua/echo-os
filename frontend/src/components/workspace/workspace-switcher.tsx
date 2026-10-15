@@ -388,7 +388,7 @@ export function WorkspaceSwitcher({
                                     {ws.name}
                                   </span>
                                   {isActive && (
-                                    <span className="shrink-0 text-xs uppercase tracking-wide text-primary/80">
+                                    <span className="shrink-0 text-xs text-primary/80">
                                       {tr.activeWorkspace}
                                     </span>
                                   )}

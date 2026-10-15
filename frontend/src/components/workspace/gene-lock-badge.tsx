@@ -173,7 +173,7 @@ export function GeneLockBadge() {
           {panic ? g.panicBadge : (g.levelNames[lvl] ?? "?")}
         </span>
         {status.mode === "production" && (
-          <Badge className="ml-1 h-4 bg-foreground/40 px-1 text-xs uppercase tracking-wider text-muted-foreground">
+          <Badge className="ml-1 h-4 bg-foreground/40 px-1 text-xs text-muted-foreground">
             {g.productionBadge}
           </Badge>
         )}

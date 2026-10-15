@@ -2140,7 +2140,7 @@ export function BrowserPreviewPanel({
                 !actionLogExpanded && "-rotate-90",
               )}
             />
-            <span className="text-muted-foreground truncate text-xs font-medium uppercase tracking-wide">
+            <span className="text-muted-foreground truncate text-xs font-medium">
               {t.browser.actionLog}
             </span>
           </span>

@@ -453,7 +453,7 @@ function SwarmPanel() {
                 connected ? "bg-success animate-pulse" : "bg-muted",
               )}
             />
-            <span className="text-xs text-muted-foreground uppercase tracking-wide">
+            <span className="text-xs text-muted-foreground">
               {connected
                 ? t.observabilityPage.connected
                 : t.observabilityPage.idle}
@@ -1474,7 +1474,7 @@ function HemolymphPanel() {
                     info.alloc > 0 ? (info.used / info.alloc) * 100 : 0;
                   return (
                     <div key={b} className="rounded-md bg-muted/30 p-2">
-                      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide">
+                      <div className="flex items-center gap-1.5 text-xs">
                         <span
                           className={cn(
                             "size-1.5 rounded-full",
@@ -1712,9 +1712,7 @@ function StatTile({
       data-testid={testId}
       className="rounded-lg border border-border-default bg-muted/20 p-3"
     >
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-bold font-mono">{value}</div>
     </div>
   );
@@ -1817,7 +1815,7 @@ function PanelGroup({
   return (
     <section className="workspace-panel px-5 py-4">
       <div className="mb-4 space-y-1.5">
-        <div className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+        <div className="text-xs font-semibold text-muted-foreground">
           {eyebrow}
         </div>
         <h2 className="text-base font-semibold">{title}</h2>

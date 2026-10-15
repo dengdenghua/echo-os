@@ -824,7 +824,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                           visibleSections[index - 1]?.group !== group ? (
                             <li
                               aria-hidden="true"
-                              className="hidden items-center gap-2 px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground/80 first:pt-0 md:flex"
+                              className="hidden items-center gap-2 px-2 pb-1 pt-3 text-xs font-semibold text-muted-foreground/80 first:pt-0 md:flex"
                             >
                               <span className="h-px flex-1 bg-border-subtle" />
                               <span>{sectionGroupLabels[group]}</span>

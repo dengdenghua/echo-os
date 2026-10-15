@@ -282,7 +282,7 @@ export function WorkingSetPanel({
           <div className="space-y-3">
             {editingFiles.length > 0 && (
               <div>
-                <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-chart-1/70 dark:text-chart-1/70">
+                <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-chart-1/70 dark:text-chart-1/70">
                   <PencilIcon className="size-2.5" />
                   <span>{t.workingSet?.editing}</span>
                   <span className="text-muted-foreground/40">
@@ -298,7 +298,7 @@ export function WorkingSetPanel({
             )}
             {readingFiles.length > 0 && (
               <div>
-                <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground/50">
+                <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground/50">
                   <EyeIcon className="size-2.5" />
                   <span>{t.workingSet?.reading}</span>
                   <span className="text-muted-foreground/40">

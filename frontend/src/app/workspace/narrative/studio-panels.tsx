@@ -88,7 +88,7 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+      <h3 className="text-xs font-semibold text-muted-foreground">
         {children}
       </h3>
       {typeof count === "number" ? (

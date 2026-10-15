@@ -1723,7 +1723,7 @@ export function CoderEngineSettings() {
                   <div className="mt-3 space-y-4 border-t border-border pt-3">
                     <div className="space-y-2">
                       <div>
-                        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <div className="text-xs font-medium text-muted-foreground">
                           {copy.connectors}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -1779,7 +1779,7 @@ export function CoderEngineSettings() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="text-xs font-medium text-muted-foreground">
                       {copy.allowance}
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">

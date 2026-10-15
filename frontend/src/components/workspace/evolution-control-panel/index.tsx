@@ -235,7 +235,7 @@ function Pill({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium uppercase tracking-wider",
+        "inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium",
         tones[tone],
       )}
     >
@@ -1127,7 +1127,7 @@ function ProtocolDriftSection() {
         </div>
       }
     >
-      <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-3 text-xs font-semibold text-muted-foreground">
         {t.evolutionControl.drift.eventsHeader}
       </div>
       {!events.length && !loading && (
@@ -1162,7 +1162,7 @@ function ProtocolDriftSection() {
         ))}
       </div>
 
-      <div className="mt-4 mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mt-4 mb-2 text-xs font-semibold text-muted-foreground">
         {t.evolutionControl.drift.repairsHeader}
       </div>
       {!repairs.length && !loading && (
@@ -1396,7 +1396,7 @@ export function EvolutionControlPanel() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 border-b border-border-default pb-2 text-xs">
-        <div className="flex items-center gap-1.5 font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center gap-1.5 font-semibold text-muted-foreground">
           <CheckCircle2Icon className="size-3.5" />
           {t.evolutionControl.panelTitle}
         </div>

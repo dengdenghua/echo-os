@@ -786,7 +786,7 @@ export function AgentOperatorPanel() {
     <section className="workspace-panel px-5 py-4">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-eyebrow text-muted-foreground">
+          <div className="text-xs font-semibold text-muted-foreground">
             {to("Operator loop")}
           </div>
           <h2 className="mt-1 text-base font-semibold">

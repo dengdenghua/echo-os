@@ -323,7 +323,7 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
             aria-label={t.sidebar.navigate}
             className="border-b border-border-subtle px-3 py-3"
           >
-            <div className="mb-1.5 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+            <div className="mb-1.5 px-1 text-xs font-medium text-muted-foreground/70">
               {t.sidebar.navigate}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -377,7 +377,7 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between px-4 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+          <div className="mt-3 flex items-center justify-between px-4 text-xs font-medium text-muted-foreground/70">
             <span className="flex items-center gap-1.5">
               <MessageSquareIcon className="size-3" />
               {t.sidebar.recentChats}

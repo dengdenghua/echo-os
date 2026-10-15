@@ -172,7 +172,7 @@ function StepItem({
             <div className="mt-2 space-y-2 rounded-md border border-border-default bg-muted/30 p-2">
               {step.inputText && (
                 <div className="space-y-1">
-                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+                  <div className="text-xs font-medium text-muted-foreground/70">
                     {t.agentWorkflow.input}
                   </div>
                   <pre className="whitespace-pre-wrap break-all font-mono text-xs text-muted-foreground/85">
@@ -182,7 +182,7 @@ function StepItem({
               )}
               {step.outputText && (
                 <div className="space-y-1">
-                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+                  <div className="text-xs font-medium text-muted-foreground/70">
                     {t.agentWorkflow.result}
                   </div>
                   <pre className="whitespace-pre-wrap break-all font-mono text-xs text-success/85 dark:text-success/85">

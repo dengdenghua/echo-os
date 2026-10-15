@@ -806,7 +806,7 @@ export function MentionAutocompletePopup({
     >
       {/* Header */}
       <div className="border-b px-3 py-1.5">
-        <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider">
+        <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
           <span>@</span>
           <span>{t.mentions.mentions}</span>
           {mentionQuery && (

@@ -522,7 +522,7 @@ function AgentIdentityCard({
       {/* 角色说明 */}
       {brief && (
         <div className="border-t border-border-subtle px-3 py-2">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/60">
+          <div className="mb-1 text-xs font-medium text-muted-foreground/60">
             {t.agentWorkbenchPages.roleDescription}
           </div>
           <div className="max-h-32 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-5 text-foreground/80">

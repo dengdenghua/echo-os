@@ -133,7 +133,7 @@ export default function ArchitecturePage() {
             <nav className="p-2 space-y-3">
               {DOC_GROUPS.map((grp) => (
                 <div key={grp.titleKey}>
-                  <div className="px-2 py-1 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                  <div className="px-2 py-1 text-xs text-muted-foreground font-semibold">
                     {t.architecture.groups[grp.titleKey]}
                   </div>
                   <ul className="mt-0.5 space-y-0.5">

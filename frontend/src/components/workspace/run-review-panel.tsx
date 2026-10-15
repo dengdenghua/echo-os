@@ -290,7 +290,7 @@ function SummaryTile({
 }) {
   return (
     <div className="rounded-lg border border-border-default bg-muted/20 p-3">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
       </div>
@@ -349,7 +349,7 @@ export function RunReviewPanel() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span
                   className={cn(
                     "size-2 rounded-full",
@@ -474,7 +474,7 @@ export function RunReviewPanel() {
               <CardContent className="space-y-3 px-4">
                 {run.tools.length > 0 && (
                   <div>
-                    <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 text-xs font-medium text-muted-foreground">
                       {t.observabilityPage.runReviewToolSummary}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -493,7 +493,7 @@ export function RunReviewPanel() {
 
                 {run.files.length > 0 && (
                   <div>
-                    <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 text-xs font-medium text-muted-foreground">
                       {t.observabilityPage.runReviewFiles}
                     </div>
                     <div className="grid gap-1 md:grid-cols-2">
@@ -512,7 +512,7 @@ export function RunReviewPanel() {
 
                 {run.risks.length > 0 && (
                   <div className="rounded-lg border border-warning/25 bg-warning/5 px-3 py-2">
-                    <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-warning">
+                    <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-warning">
                       <AlertTriangleIcon className="size-3" />
                       {t.observabilityPage.runReviewLearningSignals}
                     </div>

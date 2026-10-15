@@ -270,7 +270,7 @@ export function ModelRouterIndicator({
           {/* Score breakdown */}
           {sortedScores.length > 0 && (
             <div className="mb-2">
-              <h5 className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+              <h5 className="text-muted-foreground mb-1 text-xs font-medium">
                 {t.modelRouter.modelScores}
               </h5>
               <div className="space-y-0.5">
@@ -309,7 +309,7 @@ export function ModelRouterIndicator({
           {/* Recent history */}
           {history.length > 0 && (
             <div>
-              <h5 className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wider">
+              <h5 className="text-muted-foreground mb-1 text-xs font-medium">
                 {t.modelRouter.recentRouting}
               </h5>
               <div className="max-h-24 space-y-0.5 overflow-y-auto">
