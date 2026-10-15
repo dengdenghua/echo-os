@@ -197,14 +197,15 @@ test.describe("Desktop system apps", () => {
         .getByRole("button", { name: "模型与用量", exact: true })
         .click();
       await expect(settings.getByText("还没有配置自定义模型。")).toBeVisible();
-      // No Codex runtime on this device: the panel says so instead of
-      // failing to read an account it cannot have.
+      // No Codex runtime on this device: Codex is optional, so the panel
+      // says so neutrally instead of failing to read an account it cannot
+      // have or offering a sign-in that cannot work.
       await expect(
-        settings.getByText("未找到可用的 Codex App Server"),
+        settings.getByText(/这台设备没有安装 Codex App Server/),
       ).toBeVisible();
       await expect(
         settings.getByRole("button", { name: "登录 ChatGPT" }),
-      ).toBeDisabled();
+      ).toHaveCount(0);
 
       await settings.getByRole("button", { name: "接入 API 模型" }).click();
       await settings

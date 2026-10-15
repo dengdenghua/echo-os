@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   ClipboardIcon,
   ExternalLinkIcon,
+  InfoIcon,
   KeyRoundIcon,
   Loader2Icon,
   LogOutIcon,
@@ -162,6 +163,11 @@ const COPY = {
     openSettings: "管理登录与模型",
     activeSummary: (model: string) => `当前通过 Codex 引擎运行 ${model}`,
     technicalDetails: "运行详情",
+    optional: "可选",
+    optionalSubtitle:
+      "可选的执行引擎。ECHO 默认用内置引擎执行任务，不需要 Codex。",
+    notInstalled:
+      "这台设备没有安装 Codex App Server。装有 Codex 的设备可以在这里改用它执行，或登录 ChatGPT 订阅。",
   },
   en: {
     triggerFallback: "Codex execution engine",
@@ -261,6 +267,11 @@ const COPY = {
     activeSummary: (model: string) =>
       `Currently running ${model} with the Codex engine`,
     technicalDetails: "Runtime details",
+    optional: "Optional",
+    optionalSubtitle:
+      "An optional execution engine. ECHO runs tasks on its built-in engine by default and does not need Codex.",
+    notInstalled:
+      "This device has no Codex App Server. On a device with Codex you can switch execution to it here or sign in with a ChatGPT subscription.",
   },
 };
 
@@ -1416,6 +1427,11 @@ export function CoderEngineSettings() {
     profile?.source === "follow_system" &&
     profile.compatible &&
     profile.execution_available !== false;
+  // ECHO runs on its built-in engine by default; Codex is optional. A device
+  // without the App Server is a normal state, not a fault: say so neutrally
+  // instead of an amber "未找到可用的 Codex App Server" under a model that
+  // Codex is not running.
+  const optionalWithoutCodex = Boolean(profile) && !codexInstalled;
 
   return (
     <section
@@ -1441,13 +1457,15 @@ export function CoderEngineSettings() {
                 ? copy.connected
                 : loginPending
                   ? copy.pending
-                  : readyWithSystemModel
-                    ? copy.readyWithSystemModel
-                    : copy.notConnected}
+                  : optionalWithoutCodex
+                    ? copy.optional
+                    : readyWithSystemModel
+                      ? copy.readyWithSystemModel
+                      : copy.notConnected}
             </span>
           </div>
           <p className="mt-0.5 max-w-3xl text-xs leading-5 text-muted-foreground">
-            {copy.subtitle}
+            {optionalWithoutCodex ? copy.optionalSubtitle : copy.subtitle}
           </p>
         </div>
         <Button
@@ -1491,6 +1509,14 @@ export function CoderEngineSettings() {
           className="mt-4 rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3 text-sm text-destructive"
         >
           {copy.loadFailed}
+        </div>
+      ) : optionalWithoutCodex ? (
+        <div
+          data-testid="coder-engine-optional"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-background/45 px-3 py-2 text-xs leading-5 text-muted-foreground"
+        >
+          <InfoIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <p>{copy.notInstalled}</p>
         </div>
       ) : (
         <div className="mt-3 space-y-3">

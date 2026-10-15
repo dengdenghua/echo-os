@@ -626,12 +626,19 @@ describe("CoderEngineSettings", () => {
 
     renderWithProviders(<CoderEngineSettings />, { locale: "zh-CN" });
 
+    // Codex is optional (ECHO runs on its built-in engine): a neutral
+    // optional state, not an amber 未找到可用的 Codex App Server under a model
+    // Codex is not running, and no sign-in buttons that can never work.
     expect(
-      await screen.findByText("未找到可用的 Codex App Server"),
+      await screen.findByText(/这台设备没有安装 Codex App Server/),
     ).toBeVisible();
+    expect(screen.getByTestId("coder-engine-status")).toHaveTextContent("可选");
+    expect(screen.getByText(/ECHO 默认用内置引擎执行任务/)).toBeVisible();
+    expect(screen.queryByText("未找到可用的 Codex App Server")).toBeNull();
+    expect(screen.queryByText("当前暂不可执行")).toBeNull();
+    expect(screen.queryByText(/当前通过 Codex 引擎运行/)).toBeNull();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /登录 ChatGPT/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /使用设备码/ })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /登录 ChatGPT/ })).toBeNull();
     const requested = fetchMock.mock.calls.map(([input]) => urlOf(input));
     expect(requested.some((url) => url.includes("/codex/account"))).toBe(false);
   });
