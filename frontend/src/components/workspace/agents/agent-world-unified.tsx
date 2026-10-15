@@ -2118,10 +2118,9 @@ export function AgentWorldUnified() {
                     </div>
                   </div>
                   {pluginDirectoryView === "featured" ? (
-                    <div className="relative mb-4 overflow-hidden rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.09] via-background to-violet-500/[0.08] p-4">
-                      <div className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-primary/10 blur-3xl" />
+                    <div className="relative mb-4 overflow-hidden rounded-xl border border-border-default bg-muted/20 p-4">
                       <div className="relative flex items-start gap-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/80">
                           <SparklesIcon className="size-4" />
                         </div>
                         <div>

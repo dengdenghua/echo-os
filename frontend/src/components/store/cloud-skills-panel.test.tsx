@@ -156,6 +156,16 @@ describe("CloudSkillsPanel", () => {
     );
   });
 
+  it("shows no installed count until the catalog has loaded", async () => {
+    mocks.fetchCloudSkills.mockReturnValue(new Promise(() => {}));
+    mocks.fetchUnifiedAssets.mockReturnValue(new Promise(() => {}));
+
+    renderWithProviders(<CloudSkillsPanel />, { locale: "zh-CN" });
+
+    expect(await screen.findByText(/云端技能/)).toBeVisible();
+    expect(screen.queryByText(/^\d+\/\d+ 已安装$/)).not.toBeInTheDocument();
+  });
+
   it("still falls back when an older backend answers the index read with 404", async () => {
     mocks.fetchCloudSkills.mockResolvedValue({ total: 0, items: [] });
     mocks.fetchUnifiedAssets.mockRejectedValue(

@@ -71,9 +71,12 @@ export function StandaloneAppDirectory({
             >
               {APP_PRESENTATION_LABELS.standalone}应用
             </h3>
-            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-micro font-medium text-sky-700">
-              {apps.length}
-            </span>
+            {/* No 0 count while the directory is still loading. */}
+            {loading ? null : (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-micro font-medium text-muted-foreground">
+                {apps.length}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {APP_PRESENTATION_DESCRIPTIONS.standalone} 安装状态与 ECHO Hub
@@ -81,7 +84,7 @@ export function StandaloneAppDirectory({
           </p>
         </div>
         {!loading && !available ? (
-          <span className="shrink-0 text-micro text-amber-600">
+          <span className="shrink-0 text-micro text-muted-foreground">
             当前预览未连接设备服务
           </span>
         ) : null}
@@ -100,7 +103,7 @@ export function StandaloneAppDirectory({
               key={app.id}
               className="group flex min-h-16 items-center gap-3 border-b border-border-subtle px-2 py-2 transition-colors hover:bg-muted/25"
             >
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-100">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted/50 text-foreground/80 ring-1 ring-inset ring-border-default">
                 <MonitorUpIcon className="size-[18px] stroke-[1.8]" />
               </span>
               <span className="min-w-0 flex-1">

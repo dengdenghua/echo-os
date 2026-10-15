@@ -194,7 +194,7 @@ export default function WorkspaceLayout({
                       <ListChecksIcon className="size-3.5" />
                       <span className="hidden sm:inline">任务空间</span>
                       {(taskProjection?.counts.waitingApproval ?? 0) > 0 && (
-                        <span className="grid min-w-4 place-items-center rounded-full bg-amber-500 px-1 text-[9px] font-semibold leading-4 text-white">
+                        <span className="grid min-w-4 place-items-center rounded-full bg-warning px-1 text-micro font-semibold leading-4 text-background">
                           {Math.min(taskProjection!.counts.waitingApproval, 99)}
                         </span>
                       )}

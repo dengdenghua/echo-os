@@ -212,9 +212,12 @@ export function CloudSkillsPanel({
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <CloudIcon className="size-4 text-primary" />
         云端技能 · 本地同名技能自动标记为已安装
-        <Badge variant="outline" className="font-normal">
-          {entries.filter(isInstalled).length}/{entries.length} 已安装
-        </Badge>
+        {/* No 0/0 count while the catalog is still loading. */}
+        {loading && entries.length === 0 ? null : (
+          <Badge variant="outline" className="font-normal">
+            {entries.filter(isInstalled).length}/{entries.length} 已安装
+          </Badge>
+        )}
       </div>
 
       {cloudError ? (

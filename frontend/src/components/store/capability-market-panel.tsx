@@ -12,6 +12,7 @@ import {
   ChevronDown,
   CloudDownload,
   KeyRound,
+  Link2,
   Loader2,
   Plug,
   PlugZap,
@@ -82,19 +83,12 @@ import { cn } from "@/lib/utils";
 // 数据来自后端 /api/capabilities(见 runtime/sensing/gateway/capability_router.py)。
 
 const TYPE_META: Record<string, { badge: string; label: string }> = {
-  mcp: { badge: "bg-primary/10 text-primary", label: "MCP" },
-  cli: {
-    badge: "bg-chart-3/10 text-chart-3 dark:text-chart-3",
-    label: "CLI",
-  },
-  "skill-only": {
-    badge: "bg-chart-2/10 text-chart-2 dark:text-chart-2",
-    label: "技能",
-  },
-  plugin: {
-    badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-    label: "插件",
-  },
+  // Types are told apart by label and icon, not colour (BRAND.md: state has
+  // colour, decoration does not).
+  mcp: { badge: "bg-muted text-muted-foreground", label: "MCP" },
+  cli: { badge: "bg-muted text-muted-foreground", label: "CLI" },
+  "skill-only": { badge: "bg-muted text-muted-foreground", label: "技能" },
+  plugin: { badge: "bg-muted text-muted-foreground", label: "插件" },
   other: { badge: "bg-muted text-muted-foreground", label: "其他" },
 };
 
@@ -166,20 +160,15 @@ function CapabilityIcon({ capability }: { capability: CapabilityInfo }) {
       />
     );
   }
-  const raw = capability.icon?.trim();
-  if (raw && !raw.includes("/") && !/^https?:/i.test(raw)) {
-    return <span className="text-lg leading-none">{raw}</span>;
-  }
-  if (capability.source === "codex_plugin") {
-    return <Boxes className="size-4 text-indigo-500" />;
-  }
+  // A catalog "icon" that is not an image is an emoji: never render it as
+  // chrome; fall back to the line icon for the capability type.
   if (capability.type === "mcp") {
-    return <Plug className="size-4 text-primary" />;
+    return <Plug className="size-4 text-foreground/75" />;
   }
   if (capability.type === "cli") {
-    return <SquareTerminal className="size-4 text-chart-3" />;
+    return <SquareTerminal className="size-4 text-foreground/75" />;
   }
-  return <Boxes className="size-4 text-chart-2" />;
+  return <Boxes className="size-4 text-foreground/75" />;
 }
 
 type CapabilityCategoryId =
@@ -1345,7 +1334,9 @@ function PermissionReviewDialog({
                       <span>{dependency.id}</span>
                       <span
                         className={
-                          dependency.ready ? "text-core" : "text-amber-600"
+                          dependency.ready
+                            ? "text-core"
+                            : "text-muted-foreground"
                         }
                       >
                         {dependency.ready ? "已验证" : "待安装"}
@@ -2125,7 +2116,7 @@ export function CapabilityMarketPanel({
       ) : null}
 
       {notice ? (
-        <div className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+        <div className="rounded-md border border-border-default bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           {notice}
         </div>
       ) : null}
@@ -2224,7 +2215,10 @@ export function CapabilityMarketPanel({
                     {typeMeta.label}
                   </Badge>
                   {isPlugin ? (
-                    <Badge className="border-transparent bg-sky-500/10 text-xs text-sky-600 dark:text-sky-300">
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-normal text-muted-foreground"
+                    >
                       Codex
                     </Badge>
                   ) : null}
@@ -2239,10 +2233,12 @@ export function CapabilityMarketPanel({
                   {!isFeaturedView &&
                     (cap.oauth_supported || cap.has_cli_auth) && (
                       <Badge
-                        className="border-transparent bg-sky-500/15 text-xs text-sky-600 dark:text-sky-400"
-                        title="支持跳转网页登录授权,无需手动填 token"
+                        variant="outline"
+                        className="gap-1 text-xs font-normal text-muted-foreground"
+                        title="支持跳转网页登录授权，无需手动填写令牌"
                       >
-                        🔗 网页登录
+                        <Link2 className="size-3" aria-hidden="true" />
+                        网页登录
                       </Badge>
                     )}
                   {!isFeaturedView ? (
@@ -2267,14 +2263,14 @@ export function CapabilityMarketPanel({
                         "border-transparent text-xs",
                         connected
                           ? "bg-core/15 text-core"
-                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                          : "bg-muted text-muted-foreground",
                       )}
                     >
                       {connected ? "已连接" : "未连接"}
                     </Badge>
                   )}
                   {cap.permission_review_required ? (
-                    <Badge className="border-transparent bg-amber-500/15 text-xs text-amber-700 dark:text-amber-300">
+                    <Badge className="border-transparent bg-warning/15 text-xs text-warning">
                       待确认权限
                     </Badge>
                   ) : null}
