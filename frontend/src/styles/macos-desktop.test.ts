@@ -32,3 +32,12 @@ describe("Control Center sliders", () => {
     expect(css).not.toMatch(/accent-color: white;/);
   });
 });
+
+describe("desktop dialogs on short screens", () => {
+  it("keep About above the Dock and scroll instead of running under it", () => {
+    expect(css).toMatch(/\.mac-dialog-overlay \{[^}]*padding: 12px 12px 96px;/);
+    expect(css).toMatch(
+      /\.mac-about-dialog \{[^}]*max-height: 100%;\s*overflow-y: auto;/,
+    );
+  });
+});
