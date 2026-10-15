@@ -742,7 +742,7 @@ export function MessageOutputSummary({
                     ? (failure?.message ?? t.message.taskFailed)
                     : t.message.taskOutputs}
             </div>
-            {noModel && (
+            {noModel && !isResolvedFailure && (
               <div className="text-xs text-muted-foreground">
                 {noModelCopy.noModel}
               </div>

@@ -336,6 +336,24 @@ describe("MessageOutputSummary", () => {
     });
   });
 
+  it("drops the setup guidance once a later turn recovered", () => {
+    renderWithProviders(
+      <MessageOutputSummary
+        messages={[{ id: "u", type: "human", content: "写一句问候语" }]}
+        failure={{
+          message: "还没有可用的模型。添加一个模型后，重新发送即可。",
+          detail: "no LLM model configured",
+          kind: "error",
+          resolved: true,
+        }}
+      />,
+      { locale: "zh-CN" },
+    );
+
+    expect(screen.queryByText(/还没有可用的模型/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "添加模型" })).toBeNull();
+  });
+
   it("keeps model setup out of unrelated failures", () => {
     renderWithProviders(
       <MessageOutputSummary
