@@ -491,3 +491,27 @@ def test_relay_ws(client) -> None:
         ws.receive_json()
 
 
+def test_suggest_returns_engine_suggestions(client, monkeypatch) -> None:
+    seen: list[str] = []
+
+    class _Response:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return ["echo", ["echo ai", "echo browser", 3, ""]]
+
+    def fake_request(method, url, **kwargs):
+        seen.append(url)
+        return _Response()
+
+    monkeypatch.setattr("runtime.safety.auth.url_guard.safe_httpx_request", fake_request)
+    c = _c(client)
+    assert c.get("/api/browser/suggest", params={"q": " "}).json() == {"suggestions": []}
+    body = c.get("/api/browser/suggest", params={"q": "echo", "engine": "baidu"}).json()
+    assert body == {"suggestions": ["echo ai", "echo browser"]}
+    assert seen and seen[0].startswith("https://suggestion.baidu.com/")
+    c.get("/api/browser/suggest", params={"q": "echo", "lang": "en-US"})
+    assert "mkt=en-US" in seen[-1]
+    c.get("/api/browser/suggest", params={"q": "echo", "lang": "x&evil=1"})
+    assert "mkt=zh-CN" in seen[-1]

@@ -58,6 +58,43 @@ _RELAY_OFFLINE_SECONDS = 8
 _RELAY_PUSH_PING_SECONDS = 3
 
 
+# Search-box suggestions for the AI browser shared with ECHO AI. Only these
+# fixed OpenSearch endpoints are contacted, and only with the typed text.
+_SUGGEST_URLS = {
+    "baidu": "https://suggestion.baidu.com/su?action=opensearch&ie=utf-8&oe=utf-8&wd={q}",
+    "google": "https://suggestqueries.google.com/complete/search?client=firefox&ie=utf-8&oe=utf-8&hl={lang}&q={q}",
+    "bing": "https://api.bing.com/osjson.aspx?mkt={lang}&query={q}",
+}
+_SUGGEST_LANG = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})?$")
+
+
+def _search_suggestions(engine: str, query: str, lang: str = "zh-CN") -> list[str]:
+    """OpenSearch suggestions (``[query, [s1, s2, ...]]``) from a fixed engine."""
+    from urllib.parse import quote
+
+    from runtime.safety.auth.url_guard import safe_httpx_request
+
+    template = _SUGGEST_URLS.get(engine.lower(), _SUGGEST_URLS["bing"])
+    # Without a market Bing guesses one from the server's IP.
+    market = lang if _SUGGEST_LANG.match(lang) else "zh-CN"
+    try:
+        response = safe_httpx_request(
+            "GET",
+            template.format(q=quote(query), lang=market),
+            timeout=2.5,
+            read_cap_bytes=64_000,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        if response.status_code != 200:
+            return []
+        data = response.json()
+    except Exception:  # noqa: BLE001 - suggestions are best effort
+        return []
+    if not isinstance(data, list) or len(data) < 2 or not isinstance(data[1], list):
+        return []
+    return [str(item) for item in data[1] if isinstance(item, str) and item.strip()][:8]
+
+
 def create_browser_router(
     *,
     identity_store: Any = None,
@@ -726,6 +763,16 @@ def create_browser_router(
         if session is not None:
             backend._close_real_browser_session(session)
         return {"ok": True}
+
+    @router.get("/api/browser/suggest")
+    def api_browser_suggest(
+        q: str = "", engine: str = "bing", lang: str = "zh-CN"
+    ) -> dict[str, Any]:
+        """Search-box suggestions; the typed text goes only to that engine."""
+        query = q.strip()[:200]
+        if not query:
+            return {"suggestions": []}
+        return {"suggestions": _search_suggestions(engine, query, lang)}
 
     @router.get("/api/browser/config")
     def api_browser_config() -> dict[str, Any]:
