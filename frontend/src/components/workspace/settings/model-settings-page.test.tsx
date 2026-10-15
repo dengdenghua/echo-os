@@ -1091,6 +1091,19 @@ describe("ModelSettingsPage · add-model form · open-ended list", () => {
       name: "删除该模型 ID",
     });
     expect(removeButtons.length).toBeGreaterThanOrEqual(2);
+
+    // Each slot's role is a labelled line icon, never a ★ / ▴ glyph.
+    expect(
+      within(addForm as HTMLFormElement).getByRole("img", {
+        name: "选择器默认",
+      }),
+    ).toHaveAttribute("data-model-tier", "default");
+    expect(
+      within(addForm as HTMLFormElement).getByRole("img", {
+        name: "高性能档",
+      }),
+    ).toHaveAttribute("data-model-tier", "performance");
+    expect(addForm).not.toHaveTextContent(/[★▴]/);
   });
 });
 

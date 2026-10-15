@@ -2,6 +2,8 @@ import {
   AlertTriangleIcon,
   CheckCircle2Icon,
   ChevronRightIcon,
+  DotIcon,
+  GaugeIcon,
   InfoIcon,
   EyeIcon,
   EyeOffIcon,
@@ -9,6 +11,7 @@ import {
   PlusIcon,
   RefreshCwIcon,
   SearchIcon,
+  StarIcon,
   Trash2Icon,
   WifiIcon,
   XCircleIcon,
@@ -3012,18 +3015,7 @@ function EditModelForm({
                   key={`edit-model-${idx}`}
                   className="flex items-center gap-1.5"
                 >
-                  <span
-                    className="w-4 shrink-0 text-right text-xs text-muted-foreground/60 tabular-nums"
-                    title={
-                      idx === 0
-                        ? t.settings.model.modelList.label
-                        : idx === models.length - 1
-                          ? t.settings.model.modelList.label
-                          : ""
-                    }
-                  >
-                    {idx === 0 ? "★" : idx === models.length - 1 ? "▴" : "·"}
-                  </span>
+                  <ModelTierMarker index={idx} count={models.length} />
                   <Input
                     className="flex-1 font-mono text-xs"
                     placeholder={t.settings.model.modelList.label}
@@ -3478,9 +3470,7 @@ function AddModelForm({
         <ul className="mt-2 space-y-1.5">
           {models.map((id, idx) => (
             <li key={`add-model-${idx}`} className="flex items-center gap-1.5">
-              <span className="w-4 shrink-0 text-right text-xs text-muted-foreground/60 tabular-nums">
-                {idx === 0 ? "★" : idx === models.length - 1 ? "▴" : "·"}
-              </span>
+              <ModelTierMarker index={idx} count={models.length} />
               <Input
                 name={`echo-model-id-${idx}`}
                 autoComplete="off"
@@ -4048,5 +4038,39 @@ function LocalModelsSection({ onImported }: { onImported?: () => void }) {
         )}
       </div>
     </SettingsSection>
+  );
+}
+
+/**
+ * Role of one entry in an ordered model list: the first is the picker default,
+ * the last the performance tier, the rest fallbacks. Line icons with a label,
+ * not ★ / ▴ glyphs.
+ */
+function ModelTierMarker({ index, count }: { index: number; count: number }) {
+  const { t } = useI18n();
+  const copy = t.settings.model.modelList;
+  const isDefault = index === 0;
+  const isPerformance = index === count - 1;
+  const label =
+    isDefault && isPerformance
+      ? copy.pickerDefaultAndPerformance
+      : isDefault
+        ? copy.pickerDefault
+        : isPerformance
+          ? copy.performanceTier
+          : copy.fallback;
+  const Icon = isDefault ? StarIcon : isPerformance ? GaugeIcon : DotIcon;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      data-model-tier={
+        isDefault ? "default" : isPerformance ? "performance" : "fallback"
+      }
+      className="flex w-4 shrink-0 justify-end text-muted-foreground/70"
+    >
+      <Icon className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+    </span>
   );
 }
