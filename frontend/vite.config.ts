@@ -179,6 +179,8 @@ export default defineConfig({
   base: "./",
   define: {
     __VITE_VERSION__: JSON.stringify(vitePackage.version),
+    // About this device shows the release it was built from.
+    __ECHO_OS_VERSION__: JSON.stringify(require("./package.json").version),
   },
   plugins: [
     devInstancePlugin("os"),

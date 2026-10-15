@@ -250,6 +250,9 @@ export function MacAppIcon({
   );
 }
 
+/** The frontend package version, injected by Vite (vite.config.ts). */
+declare const __ECHO_OS_VERSION__: string;
+
 type MenuAction = {
   label?: string;
   shortcut?: string;
@@ -302,7 +305,9 @@ function MacMenuDropdown({
           <button
             key={`${item.label}-${index}`}
             type="button"
-            disabled={item.disabled}
+            // An item with nothing to run is shown disabled, not as a dead
+            // click target (e.g. 隐藏 until the shell can hide an app).
+            disabled={item.disabled || !item.onSelect}
             onClick={item.onSelect}
             className="mac-menu-item"
           >
@@ -685,7 +690,7 @@ export function MacMenuBar({
       key: "view",
       items: [
         {
-          label: "调度中心 (Mission Control)",
+          label: "调度中心",
           shortcut: "F3",
           onSelect: () => select(() => onToggleMissionControl?.()),
         },
@@ -2134,7 +2139,7 @@ export function MacAboutDialog({
         <dl data-liquid-surface="thick">
           <div>
             <dt>版本</dt>
-            <dd>0.2.0 Beta</dd>
+            <dd>{__ECHO_OS_VERSION__}</dd>
           </div>
           <div>
             <dt>Agent</dt>
@@ -2146,7 +2151,12 @@ export function MacAboutDialog({
           </div>
           <div>
             <dt>Agent 来源</dt>
-            <dd className="mac-about-agent-source">
+            {/* The id is mono telemetry; the Chinese fallback keeps the 12px floor. */}
+            <dd
+              className={
+                agentHealth.sourceId ? "mac-about-agent-source" : undefined
+              }
+            >
               {agentHealth.sourceId || "未提供"}
             </dd>
           </div>

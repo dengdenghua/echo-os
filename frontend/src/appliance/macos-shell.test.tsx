@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { BotIcon, FolderIcon, GlobeIcon } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 
+import packageJson from "../../package.json";
 import {
   MacControlCenter,
   MacDesktopIcon,
@@ -388,6 +389,30 @@ describe("Echo desktop shell", () => {
     expect(screen.getByText("已验证镜像 bundle")).toBeInTheDocument();
   });
 
+  it("shows the release the desktop was built from and a readable missing source", () => {
+    render(
+      <MacAboutDialog
+        open
+        onClose={vi.fn()}
+        onOpenSettings={vi.fn()}
+        agentHealth={{
+          state: "ready",
+          version: "9.9.9",
+          sourceId: "",
+          verifiedBundle: false,
+        }}
+      />,
+    );
+
+    const version = screen.getByText("版本").nextElementSibling;
+    expect(version).toHaveTextContent(packageJson.version);
+    expect(version).not.toHaveTextContent("Beta");
+    // The Chinese fallback is not set in the 10px mono telemetry style.
+    expect(screen.getByText("未提供")).not.toHaveClass(
+      "mac-about-agent-source",
+    );
+  });
+
   it("opens the best Spotlight match and closes the overlay", async () => {
     const user = userEvent.setup();
     const onOpen = vi.fn();
@@ -699,6 +724,48 @@ describe("Echo desktop shell", () => {
     expect(
       screen.getByRole("button", { name: "文件", exact: true }),
     ).toBeInTheDocument();
+  });
+
+  it("shows menu items with nothing to run as disabled and labels in Chinese", async () => {
+    const user = userEvent.setup();
+    render(
+      <MacMenuBar
+        activeApp="照片"
+        controlCenterOpen={false}
+        notificationsOpen={false}
+        liquidGlassOpen={false}
+        onOpenSpotlight={vi.fn()}
+        onToggleControlCenter={vi.fn()}
+        onToggleNotifications={vi.fn()}
+        onOpenAbout={vi.fn()}
+        onOpenFiles={vi.fn()}
+        onOpenSettings={vi.fn()}
+        appStoreAvailable={false}
+        onOpenAppStore={vi.fn()}
+        onOpenLaunchpad={vi.fn()}
+        onToggleMissionControl={vi.fn()}
+        systemCapabilities={{
+          lock: false,
+          logout: false,
+          suspend: false,
+          restart: false,
+          shutdown: false,
+        }}
+        onLockScreen={vi.fn()}
+        onSystemAction={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "照片", exact: true }));
+    expect(screen.getByRole("button", { name: /隐藏 照片/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /隐藏其他/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /设置…/ })).toBeEnabled();
+
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "显示", exact: true }));
+    expect(screen.getByRole("button", { name: /^调度中心/ })).toHaveTextContent(
+      /^调度中心F3$/,
+    );
   });
 
   it("lets the keyboard reach and walk the menu-bar menus", async () => {
