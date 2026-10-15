@@ -83,17 +83,26 @@ function tokensSpent(run: AgentTraceTaskRun): number {
   return (totals.input_tokens ?? 0) + (totals.output_tokens ?? 0);
 }
 
+/** A "running" run with no trace activity for this long is not running: the
+ * process that owned it went away (a restart, a closed turn). */
+const STALLED_MS = 30 * 60 * 1000;
+
 /** A run's state in owner words. A failure that never reached a model while no
  * model is connected did not start; that is setup, not a task failure. */
 export function ownerRunStatus(
   run: AgentTraceTaskRun,
   hasModel: boolean,
+  now = Date.now(),
 ): OwnerRunStatus {
   switch (run.status) {
     case "completed":
       return "completed";
-    case "running":
-      return "running";
+    case "running": {
+      const at = runTime(run);
+      return at && now - new Date(at).getTime() > STALLED_MS
+        ? "stalled"
+        : "running";
+    }
     case "paused":
       return "paused";
     case "interrupted":

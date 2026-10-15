@@ -93,6 +93,19 @@ describe("owner health derivation", () => {
     expect(ownerRunStatus(neverStarted, true)).toBe("failed");
     expect(ownerRunStatus(run({ status: "failed" }), false)).toBe("failed");
     expect(ownerRunStatus(run({ status: "weird" }), true)).toBe("unknown");
+    // A run with no trace activity for over half an hour is not running.
+    expect(
+      ownerRunStatus(
+        run({ status: "running", updated_at: minutesAgo(5) }),
+        true,
+      ),
+    ).toBe("running");
+    expect(
+      ownerRunStatus(
+        run({ status: "running", updated_at: minutesAgo(4 * 60) }),
+        true,
+      ),
+    ).toBe("stalled");
   });
 
   it("leaves out bookkeeping rows that are not tasks", () => {

@@ -44,6 +44,7 @@ export interface ObservabilityOwnerCopy {
     failed: string;
     notStarted: string;
     paused: string;
+    stalled: string;
     interrupted: string;
     cancelled: string;
     unknown: string;
@@ -92,6 +93,7 @@ const zhCN: ObservabilityOwnerCopy = {
     failed: "未完成",
     notStarted: "未开始",
     paused: "已暂停",
+    stalled: "已停滞",
     interrupted: "已中断",
     cancelled: "已取消",
     unknown: "状态未知",
@@ -150,6 +152,7 @@ const enUS: ObservabilityOwnerCopy = {
     failed: "Not finished",
     notStarted: "Not started",
     paused: "Paused",
+    stalled: "Stalled",
     interrupted: "Interrupted",
     cancelled: "Cancelled",
     unknown: "Unknown",
@@ -205,6 +208,7 @@ const jaJP: ObservabilityOwnerCopy = {
     failed: "未完了",
     notStarted: "未開始",
     paused: "一時停止",
+    stalled: "停滞",
     interrupted: "中断",
     cancelled: "キャンセル",
     unknown: "不明",
@@ -259,6 +263,7 @@ const koKR: ObservabilityOwnerCopy = {
     failed: "미완료",
     notStarted: "시작 안 됨",
     paused: "일시 중지",
+    stalled: "멈춤",
     interrupted: "중단됨",
     cancelled: "취소됨",
     unknown: "알 수 없음",
