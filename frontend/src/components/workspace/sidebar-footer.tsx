@@ -42,6 +42,7 @@ import { useOctLink } from "@/core/oct/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 import { canAccessOperatorControlPlane } from "@/core/auth/control-plane-access";
 import { CreditsCenterDialog } from "@/components/workspace/credits-center";
+import { getCommunityCredits } from "@/core/credits/ledger";
 import { cn } from "@/lib/utils";
 import { useEvolutionOverview } from "@/core/evolution/hooks";
 import {
@@ -133,7 +134,10 @@ export function AgentFooter() {
   const { pathname, search } = useLocation();
   const octLink = useOctLink();
   const { t } = useI18n();
-  const credits = octLink.data?.credits?.surplusCredits;
+  // Same total as 积分中心: the linked account's balance plus the local
+  // community ledger (ECHO OS has no account link, so only the ledger).
+  const credits =
+    (octLink.data?.credits?.surplusCredits ?? 0) + getCommunityCredits();
   const [creditsOpen, setCreditsOpen] = useState(false);
   const activeName = useActiveAgentId();
 
@@ -416,7 +420,7 @@ export function AgentFooter() {
           >
             <UserCircleIcon className="size-4 shrink-0 opacity-70" />
             <span className="min-w-0 flex-1 truncate text-muted-foreground">
-              {accountName}
+              {accountName || t.creditsCenter.title}
             </span>
             <CoinsIcon className="size-3.5 shrink-0 opacity-70" />
             <span className="shrink-0 text-xs font-mono text-foreground/80">

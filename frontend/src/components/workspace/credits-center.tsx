@@ -176,20 +176,27 @@ export function CreditsCenterDialog({
 
           {/* 账本统计 */}
           <div className="flex gap-2 text-center">
-            <div className="flex-1 rounded-lg bg-core/10 px-3 py-2">
+            {/* Monochrome tiles; core marks credits actually earned, and an
+                empty ledger reads 0, not "+0" / "-0". */}
+            <div className="flex-1 rounded-lg border border-border-default px-3 py-2">
               <p className="text-mini text-muted-foreground">
                 {t.creditsCenter.earned}
               </p>
-              <p className="text-base font-bold tabular-nums text-core">
-                +{formatN(earned)}
+              <p
+                className={cn(
+                  "text-base font-bold tabular-nums",
+                  earned > 0 ? "text-core" : "text-foreground",
+                )}
+              >
+                {earned > 0 ? `+${formatN(earned)}` : formatN(0)}
               </p>
             </div>
-            <div className="flex-1 rounded-lg bg-muted px-3 py-2">
+            <div className="flex-1 rounded-lg border border-border-default px-3 py-2">
               <p className="text-mini text-muted-foreground">
                 {t.creditsCenter.spent}
               </p>
               <p className="text-base font-bold tabular-nums text-foreground">
-                -{formatN(spent)}
+                {spent > 0 ? `-${formatN(spent)}` : formatN(0)}
               </p>
             </div>
           </div>
