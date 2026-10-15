@@ -81,7 +81,7 @@ describe("ChatsDrawer", () => {
       "href",
       "/workspace/realtime/echo-assistant?agent=echo",
     );
-    expect(screen.getByRole("link", { name: "发现社区" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "广场" })).toHaveAttribute(
       "href",
       "/workspace/community",
     );
