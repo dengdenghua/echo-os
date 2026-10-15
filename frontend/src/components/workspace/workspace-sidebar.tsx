@@ -1910,7 +1910,7 @@ function ProjectGroup({
                         <ThreadRunStatusLight idle="queue" status={runStatus} />
                       )}
                     </span>
-                    <span className="line-clamp-2 min-w-0 flex-1 break-words leading-tight">
+                    <span className="min-w-0 flex-1 truncate leading-tight">
                       {thread.title}
                     </span>
                     <SidebarTimestamp
@@ -1918,7 +1918,7 @@ function ProjectGroup({
                       className={
                         active
                           ? "w-0 opacity-0"
-                          : "w-10 opacity-100 group-hover/thread:w-0 group-hover/thread:opacity-0 group-focus-within/thread:w-0 group-focus-within/thread:opacity-0"
+                          : "w-8 opacity-100 group-hover/thread:w-0 group-hover/thread:opacity-0 group-focus-within/thread:w-0 group-focus-within/thread:opacity-0"
                       }
                     />
                   </Link>

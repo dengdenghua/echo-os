@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, test } from "vitest";
 
 import { __testing } from "./workspace-sidebar";
@@ -694,5 +697,20 @@ describe("workspace sidebar thread status lights", () => {
     // Any real activity outranks the setup hint.
     expect(__testing.mergeThreadRunStatus("setup", "running")).toBe("running");
     expect(__testing.mergeThreadRunStatus("setup", "pending")).toBe("pending");
+  });
+});
+
+describe("workspace sidebar thread rows", () => {
+  test("project thread titles stay on one line and keep the full title as a tooltip", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/workspace/workspace-sidebar.tsx"),
+      "utf8",
+    );
+    // A two-line clamp wrapped a six-character title in the indented project
+    // lane; rows truncate instead and the link's title shows the full name.
+    expect(source).not.toContain("line-clamp-2");
+    expect(source).toMatch(
+      /title=\{thread\.title\}[\s\S]{0,1600}?<span className="min-w-0 flex-1 truncate leading-tight">\s*\{thread\.title\}/,
+    );
   });
 });
