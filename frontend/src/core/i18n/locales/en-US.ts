@@ -5194,6 +5194,13 @@ Strategy:
     cancelAnnotation: "Cancel annotation",
     sessionNeedsAttention: (issues) =>
       `Browser session needs attention: ${issues}`,
+    sessionIssueLabel: (issue) =>
+      ({
+        session_missing: "the session no longer exists",
+        session_unhealthy: "the browser is not ready",
+        recovered_from_crash: "it closed unexpectedly and needs checking",
+        last_action_failed: "the last action failed",
+      })[issue] ?? issue,
     reconnectButton: "Reconnect",
     semanticSnapshotFallback: "Page semantic snapshot",
     truncatedBadge: "Truncated",

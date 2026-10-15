@@ -175,6 +175,14 @@ async function renderAnnotatedScreenshot(
   return canvas.toDataURL("image/png");
 }
 
+// Issues that only describe an idle session (nothing run yet, or nothing run
+// for a while). Idle is not broken, so they never turn the preview red; the
+// next navigation uses the session as it is.
+const INFORMATIONAL_SESSION_ISSUES = new Set([
+  "no_actions_recorded",
+  "stale_session",
+]);
+
 interface BrowserSessionHealth {
   schema: "echo.browser_session_health.v1";
   exists: boolean;
@@ -1573,8 +1581,12 @@ export function BrowserPreviewPanel({
   }, [devicePreview, pageInfo.title, pageInfo.url, sessionId, urlInput]);
 
   const runtimeLabel = session?.runtime || session?.mode || "mock";
-  const sessionHealthy = (sessionHealth?.healthy ?? session?.healthy) !== false;
-  const sessionIssues = sessionHealth?.issues ?? [];
+  const sessionIssues = (sessionHealth?.issues ?? []).filter(
+    (issue) => !INFORMATIONAL_SESSION_ISSUES.has(issue),
+  );
+  const sessionHealthy = sessionHealth
+    ? sessionHealth.healthy || sessionIssues.length === 0
+    : session?.healthy !== false;
   const visibleActions = actionLog.slice(-20);
   const visibleActionStartIndex = actionLog.length - visibleActions.length;
   const actionFailureCount = actionLog.filter(
@@ -1738,7 +1750,9 @@ export function BrowserPreviewPanel({
             <span className="size-1.5 rounded-full bg-destructive" />
           </span>
           <span className="min-w-0 flex-1 truncate">
-            {bp.sessionNeedsAttention(sessionIssues.join(" · "))}
+            {bp.sessionNeedsAttention(
+              sessionIssues.map(bp.sessionIssueLabel).join(" · "),
+            )}
           </span>
           <button
             type="button"

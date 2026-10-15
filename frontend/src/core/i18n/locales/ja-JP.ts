@@ -5181,6 +5181,13 @@ export const jaJP: Translations = {
     sendAnnotation: "送信",
     cancelAnnotation: "注釈をキャンセル",
     sessionNeedsAttention: (issues) => `ブラウザセッションが要注意：${issues}`,
+    sessionIssueLabel: (issue) =>
+      ({
+        session_missing: "セッションがありません",
+        session_unhealthy: "ブラウザの準備ができていません",
+        recovered_from_crash: "前回異常終了したため確認が必要です",
+        last_action_failed: "直前の操作に失敗しました",
+      })[issue] ?? issue,
     reconnectButton: "Reconnect",
     semanticSnapshotFallback: "ページセマンティックスナップショット",
     truncatedBadge: "Truncated",

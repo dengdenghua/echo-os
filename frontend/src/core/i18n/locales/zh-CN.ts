@@ -4876,6 +4876,13 @@ export const zhCN: Translations = {
     sendAnnotation: "发送",
     cancelAnnotation: "取消标注",
     sessionNeedsAttention: (issues) => `浏览器会话需要关注：${issues}`,
+    sessionIssueLabel: (issue) =>
+      ({
+        session_missing: "会话已不存在",
+        session_unhealthy: "浏览器未就绪",
+        recovered_from_crash: "上次异常退出，需要重新验证",
+        last_action_failed: "上一步操作失败",
+      })[issue] ?? issue,
     reconnectButton: "重连",
     semanticSnapshotFallback: "页面语义快照",
     truncatedBadge: "已截断",

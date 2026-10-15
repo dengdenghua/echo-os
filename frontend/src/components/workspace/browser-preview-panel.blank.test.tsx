@@ -44,6 +44,7 @@ function json(body: unknown) {
 }
 
 describe("BrowserPreviewPanel with no page loaded", () => {
+  let health: unknown = { healthy: true };
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
     if (url.includes("/api/browser/session/status")) {
@@ -56,7 +57,7 @@ describe("BrowserPreviewPanel with no page loaded", () => {
       return json({ actions: [] });
     }
     if (url.includes("/api/browser/session/health")) {
-      return json({ healthy: true });
+      return json(health);
     }
     return json({});
   });
@@ -66,6 +67,7 @@ describe("BrowserPreviewPanel with no page loaded", () => {
   });
 
   afterEach(() => {
+    health = { healthy: true };
     fetchMock.mockClear();
     vi.unstubAllGlobals();
   });
@@ -103,5 +105,48 @@ describe("BrowserPreviewPanel with no page loaded", () => {
     await waitFor(() =>
       expect(container.querySelector('[class~="bg-background/60"]')).toBeNull(),
     );
+  });
+
+  it("treats an idle session as healthy", async () => {
+    // The runtime lists no_actions_recorded (and stale_session once idle for
+    // five minutes) and reports healthy: false; the preview showed a red
+    // "浏览器会话需要关注：no_actions_recorded" banner before anything ran.
+    health = {
+      schema: "echo.browser_session_health.v1",
+      exists: true,
+      healthy: false,
+      issues: ["no_actions_recorded", "stale_session"],
+    };
+    renderWithProviders(<BrowserPreviewPanel threadId="thread-1" />, {
+      locale: "zh-CN",
+    });
+
+    expect(
+      await screen.findByText("导航到一个 URL 以查看页面"),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([url]) =>
+          String(url).includes("/api/browser/session/health"),
+        ),
+      ).toBe(true),
+    );
+    expect(screen.queryByText(/浏览器会话需要关注/)).toBeNull();
+  });
+
+  it("names real session issues in words", async () => {
+    health = {
+      schema: "echo.browser_session_health.v1",
+      exists: true,
+      healthy: false,
+      issues: ["session_unhealthy", "no_actions_recorded"],
+    };
+    renderWithProviders(<BrowserPreviewPanel threadId="thread-1" />, {
+      locale: "zh-CN",
+    });
+
+    expect(
+      await screen.findByText("浏览器会话需要关注：浏览器未就绪"),
+    ).toBeInTheDocument();
   });
 });

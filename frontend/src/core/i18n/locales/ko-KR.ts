@@ -5094,6 +5094,13 @@ export const koKR: Translations = {
     sendAnnotation: "보내기",
     cancelAnnotation: "표시 취소",
     sessionNeedsAttention: (issues) => `브라우저 세션 확인 필요: ${issues}`,
+    sessionIssueLabel: (issue) =>
+      ({
+        session_missing: "세션이 없습니다",
+        session_unhealthy: "브라우저가 준비되지 않았습니다",
+        recovered_from_crash: "비정상 종료되어 확인이 필요합니다",
+        last_action_failed: "마지막 작업이 실패했습니다",
+      })[issue] ?? issue,
     reconnectButton: "다시 연결",
     semanticSnapshotFallback: "페이지 시맨틱 스냅샷",
     truncatedBadge: "잘림",

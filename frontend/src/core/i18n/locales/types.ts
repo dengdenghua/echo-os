@@ -4414,6 +4414,8 @@ export interface Translations {
     sendAnnotation: string;
     cancelAnnotation: string;
     sessionNeedsAttention: (issues: string) => string;
+    /** Readable words for a runtime session issue code. */
+    sessionIssueLabel: (issue: string) => string;
     reconnectButton: string;
     semanticSnapshotFallback: string;
     truncatedBadge: string;
