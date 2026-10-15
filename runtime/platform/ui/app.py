@@ -114,6 +114,7 @@ def create_app(
         wire_persistent_subagent_runner,
         wire_stack,
     )
+    from runtime.sensing.gateway.square_router import mount_square_router
 
     ctx = setup_app(
         journal_path=journal_path,
@@ -179,4 +180,5 @@ def create_app(
     mount_meta(ctx, oct_config=oct_config)
     mount_routers_a(ctx, journal_path=journal_path)
     mount_routers_b(ctx, journal_path=journal_path)
+    mount_square_router(ctx)
     return ctx.app

@@ -245,6 +245,7 @@
 | `retrieve_router.py` | Retrieval router · ``/api/retrieve/rank``. |
 | `skill_market_router.py` | — |
 | `slash_command_expansion.py` | Slash-command expansion for realtime chat input. |
+| `square_router.py` | 广场(Square)只读代理 · ``/api/square/*``。 |
 | `storage_proxy_router.py` | Same-origin gateway for the private echo-storage service. |
 | `storage_supervisor.py` | Optional co-launch of the echo-storage sibling service. |
 | `streaming_journal.py` | — |
@@ -280,7 +281,7 @@
 
 ## Who imports this
 
-**17** file(s) reference this package:
+**18** file(s) reference this package:
 
 - **`runtime/_cli_commands.py/`** · 1 file(s)
   - `runtime/_cli_commands.py`
@@ -288,13 +289,13 @@
   - `runtime/cli_serve.py`
 - **`runtime/kernel/`** · 1 file(s)
   - `runtime/kernel/kernel.py`
-- **`runtime/platform/`** · 13 file(s)
+- **`runtime/platform/`** · 14 file(s)
   - `runtime/platform/plugins/bundled/comfyui_bridge/__init__.py`
   - `runtime/platform/plugins/cloud_expert_store.py`
   - `runtime/platform/ui/_app_agents.py`
   - `runtime/platform/ui/_app_collab.py`
   - `runtime/platform/ui/_app_health.py`
-  - _… and 8 more_
+  - _… and 9 more_
 - **`runtime/projectos/`** · 1 file(s)
   - `runtime/projectos/group_service.py`
 
