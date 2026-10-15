@@ -843,7 +843,8 @@ function RealtimePageContent({
   ]);
 
   const { models } = useModels();
-  const { agents: builtinAgents } = useAgents();
+  const { agents: builtinAgents, isLoading: builtinAgentsLoading } =
+    useAgents();
   const hasPersistedCollaboration = Boolean(
     collabSessionQuery.data?.room_id ||
     (collabSessionQuery.data &&
@@ -1085,7 +1086,16 @@ function RealtimePageContent({
   // 助理（echo）是私人助手本体：不走编码/工作空间工作台，固定进入
   // 纯对话长对话，隐藏工作空间选择器。
   const isEchoAssistant = effectiveAgentId === "echo";
-  const { agent: displayAgent } = useAgent(effectiveAgentId);
+  // The 助手 thread speaks as "echo". ECHO OS has no separate echo agent
+  // record (Echo is the general preset), so only look it up when the agent
+  // list has one; otherwise every visit logged a 404 for /api/agents/echo.
+  const displayAgentId =
+    effectiveAgentId === "echo" &&
+    (builtinAgentsLoading ||
+      !builtinAgents.some((agent) => agent.name === "echo"))
+      ? null
+      : effectiveAgentId;
+  const { agent: displayAgent } = useAgent(displayAgentId);
 
   const channelsStatusQuery = useQuery({
     queryKey: ["channels-status"],
