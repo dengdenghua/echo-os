@@ -4086,13 +4086,6 @@ export const jaJP: Translations = {
       deleteFailed: "モデルの削除に失敗しました",
       systemDefault: "システムデフォルト",
       setAsDefault: "デフォルトに設定",
-      noOfficialModels: "公式モデルが見つかりません",
-      gatewayHosted: "公式モデルゲートウェイでホストされています",
-      accountNotLinked: "アカウント未連携",
-      gatewayNotEnabled: "公式モデルゲートウェイが有効になっていません",
-      officialModels: "公式モデル",
-      officialModelsHint:
-        "公式モデルはシステム側でホスティングされており、APIキーの設定は不要です",
       modelCount: (count: number) => `${count} 個のモデル`,
       modelList: {
         label: "モデル一覧",
@@ -6858,22 +6851,9 @@ export const jaJP: Translations = {
   // Model Picker
   modelPicker: {
     selectModel: "モデルを選択",
-    tabOfficial: "Official",
     tabCustom: "Custom",
     addModel: "モデルを追加",
     noCustomModels: "カスタムモデルなし",
-    officialDisabled:
-      "公式モデルが無効です。設定で公式モデルサービスを有効にしてください。",
-    loginRequired: "ログインが必要です",
-    enabling: "Enabling...",
-    clickToEnable: "無効 · クリックして有効化",
-    recommended: "Recommended",
-    bindAccountFirst: "先にログインしてください",
-    bindAccountDesc:
-      "ログインページで電話番号ログイン後、公式モデルを一键有効化できます。",
-    modelEnabled: (name: string) => `${name} が有効になりました`,
-    enableFailed: "有効化に失敗しました",
-    enableFailedWithMessage: (msg: string) => `有効化失敗：${msg}`,
     autoModelLabel: "Auto",
     autoModelDescription:
       "タスクタイプに応じてシステムが最適なモデルを自動選択",
@@ -6895,8 +6875,7 @@ export const jaJP: Translations = {
     granted: "付与済み",
     expiredOrFrozen: "期限切れ / 凍結",
     expired: "期限切れ",
-    creditsDescription:
-      "クレジットはシステムによって管理されます。チャットで公式モデルを使用すると、倍率に基づいてクレジットが差し引かれます。",
+    creditsDescription: "クレジットはシステムによって管理されます。",
     creditsRefreshed: "クレジットを更新しました",
     refreshFailed: "更新に失敗しました",
     primaryAccount: "プライマリ",
@@ -8218,7 +8197,7 @@ export const jaJP: Translations = {
 
   // Login page
   loginPage: {
-    appSubtitle: "ログインしてエージェント + 公式モデルを利用",
+    appSubtitle: "ログインしてエージェントを利用",
     checkingProviders: "ログイン方法を確認中…",
     noProvidersTitle: "⚠️ サーバーで有効なログイン方法がありません",
     noProvidersHint: "アカウントログインまたはローカル認証を有効にしてください",
@@ -8307,7 +8286,7 @@ export const jaJP: Translations = {
         "登録・ログインは不要です",
         "カスタムモデル設定を利用できます",
         "データはローカルブラウザにのみ保存されます",
-        "クレジット体系や公式モデルは表示されません",
+        "クレジット体系は表示されません",
       ],
     },
     errors: {
@@ -9214,7 +9193,6 @@ export const jaJP: Translations = {
     header: {
       workspaceTooltip: "ワークスペースを開く",
       brand: "ワークベンチ",
-      accountModels: "公式モデル",
       desktopAssistant: "デスクトップアシスタント",
       desktopCount: (count) => `デスクトップ ${count || "--"}`,
       market: "マーケット",

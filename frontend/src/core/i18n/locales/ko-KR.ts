@@ -4020,13 +4020,6 @@ export const koKR: Translations = {
       deleteFailed: "모델 삭제에 실패했습니다",
       systemDefault: "시스템 기본값",
       setAsDefault: "기본값으로 설정",
-      noOfficialModels: "공식 모델을 찾을 수 없습니다",
-      gatewayHosted: "공식 모델 게이트웨이에서 호스팅",
-      accountNotLinked: "계정이 연결되지 않음",
-      gatewayNotEnabled: "공식 모델 게이트웨이가 활성화되지 않음",
-      officialModels: "공식 모델",
-      officialModelsHint:
-        "공식 모델은 시스템에서 호스팅되며 API 키가 필요하지 않습니다",
       modelCount: (count: number) => `${count} 개의 모델`,
       modelList: {
         label: "모델 목록",
@@ -6761,22 +6754,9 @@ export const koKR: Translations = {
   // Model Picker
   modelPicker: {
     selectModel: "모델 선택",
-    tabOfficial: "Official",
     tabCustom: "Custom",
     addModel: "모델 추가",
     noCustomModels: "커스텀 모델 없음",
-    officialDisabled:
-      "공식 모델이 비활성화되었습니다. 설정에서 공식 모델 서비스를 활성화하세요.",
-    loginRequired: "로그인 필요",
-    enabling: "활성화 중…",
-    clickToEnable: "비활성화됨 · 클릭하여 활성화",
-    recommended: "Recommended",
-    bindAccountFirst: "먼저 로그인하세요",
-    bindAccountDesc:
-      "로그인 페이지에서 전화번호로 로그인 후 공식 모델을 활성화할 수 있습니다.",
-    modelEnabled: (name: string) => `${name} 활성화됨`,
-    enableFailed: "활성화 실패",
-    enableFailedWithMessage: (msg: string) => `활성화 실패: ${msg}`,
     autoModelLabel: "Auto",
     autoModelDescription: "시스템이 작업별로 최적의 모델을 선택하게 합니다",
     autoModelBadge: "Smart",
@@ -6797,8 +6777,7 @@ export const koKR: Translations = {
     granted: "지급됨",
     expiredOrFrozen: "만료됨 / 동결됨",
     expired: "만료됨",
-    creditsDescription:
-      "크레딧은 시스템에서 관리합니다. 채팅에서 공식 모델을 사용하면 배율에 따라 크레딧이 차감됩니다.",
+    creditsDescription: "크레딧은 시스템에서 관리합니다.",
     creditsRefreshed: "크레딧이 새로고침되었습니다",
     refreshFailed: "새로고침에 실패했습니다",
     primaryAccount: "기본",
@@ -8108,7 +8087,7 @@ export const koKR: Translations = {
 
   // Login page
   loginPage: {
-    appSubtitle: "로그인하여 에이전트 + 공식 모델 사용",
+    appSubtitle: "로그인하여 에이전트 사용",
     checkingProviders: "로그인 방법 확인 중…",
     noProvidersTitle: "⚠️ 서버에 활성화된 로그인 방법이 없습니다",
     noProvidersHint: "계정 로그인 또는 로컬 인증을 활성화하세요",
@@ -8196,7 +8175,7 @@ export const koKR: Translations = {
         "회원가입 또는 로그인 불필요",
         "사용자 지정 모델 구성 사용 가능",
         "데이터는 로컬 브라우저에만 저장됩니다",
-        "크레딧 시스템 또는 공식 모델 없음",
+        "크레딧 시스템 없음",
       ],
     },
     errors: {
@@ -9091,7 +9070,6 @@ export const koKR: Translations = {
     header: {
       workspaceTooltip: "작업 공간 열기",
       brand: "워크벤치",
-      accountModels: "공식 모델",
       desktopAssistant: "데스크톱 도우미",
       desktopCount: (count) => `데스크톱 ${count || "--"}`,
       market: "마켓",

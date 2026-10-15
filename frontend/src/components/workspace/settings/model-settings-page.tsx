@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
@@ -45,7 +45,6 @@ import {
   type NASModel,
 } from "@/core/storage/api";
 import { useI18n } from "@/core/i18n/hooks";
-import { octAvailabilityQuery } from "@/core/oct/hooks";
 import {
   clearThreadModelReferences,
   getLocalSettings,
@@ -1871,9 +1870,6 @@ export default function ModelSettingsPage() {
 
       <LocalVisionSection />
 
-      {/* Official models */}
-      <OfficialModelsSection />
-
       <details className="group rounded-lg border border-border bg-card/40 p-4">
         <summary
           aria-label={pageCopy.advancedTitle}
@@ -2601,146 +2597,6 @@ function CompatDiagnosticSummary({
         </details>
       )}
     </div>
-  );
-}
-
-// Official models from the account-backed gateway.
-//
-// Reads from the oct gateway model list when the official gateway is enabled.
-// When the bridge is disabled (503) or the user hasn't linked their account
-// yet (404), hides the section entirely.
-//
-interface UpstreamModel {
-  id: string;
-  display_name?: string | null;
-  owned_by?: string | null;
-  multiplier?: string | null;
-  recommended?: boolean;
-}
-
-function OfficialModelsSection() {
-  const { t } = useI18n();
-  // The oct gateway (and its /api/oct/openai/v1/models catalog) is mounted
-  // only when the backend advertises the "oct" login provider. ECHO OS ships
-  // without it, so probing anyway logged a 404 on every visit to this page.
-  const { data: octAvailable, isPending: octPending } =
-    useQuery(octAvailabilityQuery);
-  const [models, setModels] = useState<UpstreamModel[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [unavailableReason, setUnavailableReason] = useState<string | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (!octAvailable) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch(
-          `${getBackendBaseURL()}/api/oct/openai/v1/models`,
-          { headers: authHeaders() },
-        );
-        if (cancelled) return;
-        if (r.status === 404) {
-          setUnavailableReason(t.settings.model.accountNotLinked);
-          setModels([]);
-          return;
-        }
-        if (r.status === 503) {
-          setUnavailableReason(t.settings.model.gatewayNotEnabled);
-          setModels([]);
-          return;
-        }
-        if (!r.ok) {
-          setUnavailableReason(`upstream ${r.status}`);
-          setModels([]);
-          return;
-        }
-        const j = await r.json();
-        setModels(Array.isArray(j?.data) ? j.data : []);
-      } catch (err) {
-        swallow(err);
-        if (!cancelled) {
-          setUnavailableReason(
-            err instanceof Error ? err.message : String(err),
-          );
-          setModels([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    octAvailable,
-    t.settings.model.gatewayNotEnabled,
-    t.settings.model.accountNotLinked,
-  ]);
-
-  if (!octPending && !octAvailable) return null;
-  if (octPending || loading) {
-    return (
-      <SettingsSection title={t.settings.model.officialModels}>
-        <PanelLoading label={t.common.loading} caption={t.common.loading} />
-      </SettingsSection>
-    );
-  }
-
-  // Hide the whole section when the bridge isn't usable — the rest of
-  // the settings page (custom models + gateway) is fully self-contained.
-  if (unavailableReason) {
-    return null;
-  }
-
-  // Build rows from the backend catalog. Skip the synthetic "auto"
-  // / provider-specific pseudo-models the gateway may advertise.
-  const rows = (models ?? [])
-    .filter((m) => !/^auto$/i.test(m.id))
-    .map((m) => ({ upstream: m }));
-
-  return (
-    <SettingsSection title={t.settings.model.officialModels}>
-      <div className="rounded-lg border border-border divide-y divide-border">
-        {rows.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-            {t.settings.model.noOfficialModels}
-          </div>
-        )}
-        {rows.map(({ upstream }) => (
-          <div
-            key={upstream.id}
-            className="flex items-center justify-between px-5 py-4"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {upstream.display_name || upstream.id}
-                </span>
-                {upstream.recommended && (
-                  <span className="rounded border border-success/40 px-1.5 py-0.5 text-xs font-medium text-success">
-                    {t.modelPicker.recommended}
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground">{upstream.id}</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="rounded-lg bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
-                {upstream.multiplier ?? "1.0x"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {t.settings.model.gatewayHosted}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        {t.settings.model.officialModelsHint}
-      </p>
-    </SettingsSection>
   );
 }
 

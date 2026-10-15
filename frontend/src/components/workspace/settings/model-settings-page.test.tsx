@@ -198,6 +198,37 @@ describe("ModelSettingsPage · custom-model list rendering", () => {
     expect(screen.getByRole("button", { name: "下载并启用" })).toBeDisabled();
   });
 
+  it("has no hosted 官方模型 section even when the account gateway exists", async () => {
+    // Hosted "official" models were removed from the ECHO family (echo-ai
+    // cb29c6c3); signing in no longer brings a model.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/auth/providers")) {
+        return jsonOk({ providers: [{ id: "local" }, { id: "oct" }] });
+      }
+      if (url.includes("/api/local-brain/storage/start")) {
+        return jsonOk({
+          ok: false,
+          status: "not_found",
+          base_url: "/api/storage",
+          auth_token: null,
+        });
+      }
+      return jsonOk({ default: "", models: [] });
+    });
+
+    renderWithProviders(<ModelSettingsPage />, { locale: "zh-CN" });
+
+    expect(
+      await screen.findByText(/本地图片理解需要 Echo Storage 服务/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("官方模型")).toBeNull();
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls.some((url) => url.includes("/api/oct/openai/v1/models"))).toBe(
+      false,
+    );
+  });
+
   it("refreshes the composer's cached model catalog once connections load", async () => {
     // Golden path 2026-10: a model added in 系统设置 stayed missing from the
     // workbench picker for up to five minutes (stale ["models"] query).

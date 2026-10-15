@@ -4099,13 +4099,6 @@ export const enUS: Translations = {
       deleteFailed: "Failed to delete model",
       systemDefault: "System Default",
       setAsDefault: "Set as Default",
-      noOfficialModels: "No official models found",
-      gatewayHosted: "Hosted by the official model gateway",
-      accountNotLinked: "Account not linked",
-      gatewayNotEnabled: "Official model gateway not enabled",
-      officialModels: "Official Models",
-      officialModelsHint:
-        "Official models are hosted by the system, no API key required",
       modelCount: (count: number) =>
         `${count} ${count === 1 ? "model" : "models"}`,
       modelList: {
@@ -6884,21 +6877,9 @@ Strategy:
   // Model Picker
   modelPicker: {
     selectModel: "Select Model",
-    tabOfficial: "Official",
     tabCustom: "Custom",
     addModel: "Add Model",
     noCustomModels: "No custom models",
-    officialDisabled:
-      "Official models disabled. Enable the official model service in config.",
-    loginRequired: "Login required",
-    enabling: "Enabling...",
-    clickToEnable: "Disabled · Click to enable",
-    recommended: "Recommended",
-    bindAccountFirst: "Please log in first",
-    bindAccountDesc: "Log in with your phone number to enable official models.",
-    modelEnabled: (name: string) => `${name} enabled`,
-    enableFailed: "Enable failed",
-    enableFailedWithMessage: (msg: string) => `Enable failed: ${msg}`,
     autoModelLabel: "Auto",
     autoModelDescription: "Let the system pick the best model per task",
     autoModelBadge: "Smart",
@@ -6919,8 +6900,7 @@ Strategy:
     granted: "Granted",
     expiredOrFrozen: "Expired / Frozen",
     expired: "Expired",
-    creditsDescription:
-      "Credits are managed by the system. Using official models in the chat will deduct credits based on the multiplier.",
+    creditsDescription: "Credits are managed by the system.",
     creditsRefreshed: "Credits refreshed",
     refreshFailed: "Refresh failed",
     primaryAccount: "Primary",
@@ -8241,7 +8221,7 @@ Strategy:
 
   // Login page
   loginPage: {
-    appSubtitle: "Log in to use agents + official models",
+    appSubtitle: "Log in to use agents",
     checkingProviders: "Checking login methods…",
     noProvidersTitle: "⚠️ No login methods enabled on the server",
     noProvidersHint: "Enable account login or local auth",
@@ -8328,7 +8308,7 @@ Strategy:
         "No registration or login required",
         "Use custom model configurations",
         "Data stored only in local browser",
-        "No credits system or official models",
+        "No credits system",
       ],
     },
     errors: {
@@ -9246,7 +9226,6 @@ Strategy:
     header: {
       workspaceTooltip: "Open Workspace",
       brand: "Workbench",
-      accountModels: "Official Models",
       desktopAssistant: "Desktop Assistant",
       desktopCount: (count) => `Desktop ${count || "--"}`,
       market: "Market",
