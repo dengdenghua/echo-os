@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { ProgressLine } from "@/components/ui/progress-line";
 import { useActiveAgentId } from "@/core/agents/active";
 import { emitAgentChanged, emitOpenSettings, eventBus } from "@/core/events";
 import { useI18n } from "@/core/i18n/hooks";
@@ -228,7 +229,7 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
 
   // White Ghost members keep their own lanes. Historical expert/CLI/device
   // tasks are shared because those actors now join conversations on demand.
-  const { data: threads = [] } = useThreads(
+  const { data: threads = [], isPending: threadsPending } = useThreads(
     {
       limit: 50,
       sortBy: "updated_at",
@@ -387,7 +388,11 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
           </div>
 
           <div className="mt-1 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-            {filteredThreads.length === 0 ? (
+            {threadsPending ? (
+              // The list loads when the drawer opens; until then 暂无对话
+              // claimed there was no history.
+              <ProgressLine label={t.common.loading} className="mt-4" />
+            ) : filteredThreads.length === 0 ? (
               <div className="mt-4 rounded-md border border-dashed border-border-default px-3 py-4 text-center text-xs text-muted-foreground/75">
                 {query.trim()
                   ? t.sidebar.noMatchingChats

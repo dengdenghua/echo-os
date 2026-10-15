@@ -110,4 +110,19 @@ describe("ChatsDrawer", () => {
     await user.click(screen.getByRole("link", { name: "本地数据库" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("shows loading, not 暂无对话, while the history is still loading", () => {
+    // Golden path 2026-10: at phone width the drawer said 暂无对话 for
+    // several seconds before listing the two existing conversations.
+    useThreadsMock.mockImplementation(
+      () => ({ data: [], isPending: true }) as never,
+    );
+    renderWithProviders(<ChatsDrawer open onOpenChange={vi.fn()} />, {
+      locale: "zh-CN",
+    });
+
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    expect(screen.queryByText("暂无对话")).toBeNull();
+    useThreadsMock.mockImplementation(() => ({ data: [] }));
+  });
 });
