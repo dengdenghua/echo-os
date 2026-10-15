@@ -78,6 +78,9 @@ export interface AiNetworkPulseProps {
   className?: string;
 }
 
+/** Room the Dock takes at the bottom of the screen, plus a small gap. */
+const AI_NETWORK_PANEL_DOCK_CLEARANCE = 96;
+
 export function AiNetworkPulse({
   onOpenWorkbench,
   onOpenSettings,
@@ -198,6 +201,9 @@ export function AiNetworkPulse({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
+        // Keep the panel above the Dock; it scrolls when the screen is short
+        // (1280x720 ran its footer under the Dock).
+        collisionPadding={{ bottom: AI_NETWORK_PANEL_DOCK_CLEARANCE }}
         portalContainer={portalContainer}
         className="z-[200] w-[420px] max-w-[calc(100vw-24px)] rounded-2xl border border-border bg-popover/95 p-4 text-popover-foreground shadow-2xl shadow-black/20 backdrop-blur-2xl"
       >
