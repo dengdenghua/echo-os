@@ -5812,10 +5812,34 @@
       },
       "PlanBody": {
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "goal": {
             "minLength": 1,
             "title": "Goal",
             "type": "string"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9_-]{1,32}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
           },
           "name": {
             "minLength": 1,
@@ -5957,6 +5981,18 @@
       },
       "ProjectGroupBody": {
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "goal": {
             "anyOf": [
               {
@@ -5967,6 +6003,18 @@
               }
             ],
             "title": "Goal"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9_-]{1,32}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
           },
           "initial_agents": {
             "items": {

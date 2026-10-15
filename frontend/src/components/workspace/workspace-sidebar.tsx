@@ -111,6 +111,7 @@ import { getAPIClient } from "@/core/api";
 import { pickLocalDirectory } from "@/core/workspace/pick-local-directory";
 import { useI18n } from "@/core/i18n/hooks";
 import { type Project, useProjects, useThreadMap } from "@/core/projects/hooks";
+import { ProjectIcon } from "@/core/projects/project-icons";
 import {
   useDeleteThread,
   useRenameThread,
@@ -366,6 +367,7 @@ function projectThreadsForPreview<T>(
 type ProjectOsSidebarIndex = {
   projectNames: string[];
   projectNameByThreadId: Map<string, string>;
+  projectIconByName: Map<string, string>;
   threads: ThreadSummary[];
 };
 
@@ -388,6 +390,7 @@ function buildProjectOsSidebarIndex(
   const durableThreads: ThreadSummary[] = [];
   const durableThreadIds = new Set<string>();
   const projectNameByThreadId = new Map<string, string>();
+  const projectIconByName = new Map<string, string>();
   const projectNames: string[] = [];
   const seenProjectNames = new Set<string>();
 
@@ -397,6 +400,7 @@ function buildProjectOsSidebarIndex(
     if (!seenProjectNames.has(projectName)) {
       seenProjectNames.add(projectName);
       projectNames.push(projectName);
+      if (project.icon) projectIconByName.set(projectName, project.icon);
     }
 
     const mappedThreadIds = Object.entries(threadProjectMap)
@@ -438,6 +442,7 @@ function buildProjectOsSidebarIndex(
   return {
     projectNames,
     projectNameByThreadId,
+    projectIconByName,
     // Put durable entries first so the project home cannot fall behind the
     // compact six-thread preview after a reload.
     threads: [
@@ -1155,6 +1160,7 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 actor={actor}
                 groups={projectOrder}
                 byProject={byProject}
+                projectIcons={projectOsSidebar.projectIconByName}
                 pathname={sidebarPathname}
                 search={search}
                 deletableProjects={deletableProjects}
@@ -1597,7 +1603,19 @@ function projectHasBoundFolder(threads: ThreadSummary[]): boolean {
   return threads.some((thread) => Boolean(thread.workspacePath?.trim()));
 }
 
-function ProjectGroupIcon({ hasBoundFolder }: { hasBoundFolder: boolean }) {
+/** The icon picked at creation; otherwise the folder-vs-milestone kind. */
+function ProjectGroupIcon({
+  hasBoundFolder,
+  icon,
+}: {
+  hasBoundFolder: boolean;
+  icon?: string | null;
+}) {
+  if (icon?.trim()) {
+    return (
+      <ProjectIcon icon={icon} className="size-[18px] shrink-0 opacity-70" />
+    );
+  }
   return hasBoundFolder ? (
     <FolderIcon
       data-project-kind="folder"
@@ -1617,12 +1635,15 @@ function ProjectGroupTrigger({
   deletable,
   hasBoundFolder,
   boundWorkspacePath,
+  icon,
 }: {
   project: string;
   threadCount: number;
   deletable: boolean;
   hasBoundFolder: boolean;
   boundWorkspacePath?: string;
+  /** Project OS icon id picked when the project was created. */
+  icon?: string | null;
 }) {
   return (
     <Tooltip>
@@ -1635,7 +1656,7 @@ function ProjectGroupTrigger({
             "outline-none focus-visible:ring-1 focus-visible:ring-ring/45 focus-visible:ring-inset",
           )}
         >
-          <ProjectGroupIcon hasBoundFolder={hasBoundFolder} />
+          <ProjectGroupIcon hasBoundFolder={hasBoundFolder} icon={icon} />
           <span className="min-w-0 truncate">{project}</span>
           <span
             className={cn(
@@ -1684,6 +1705,7 @@ function SidebarTimestamp({
 
 function ProjectGroup({
   project,
+  icon,
   threads,
   pathname,
   search,
@@ -1694,6 +1716,7 @@ function ProjectGroup({
   onOpenFiles,
 }: {
   project: string;
+  icon?: string;
   threads: ThreadSummary[];
   pathname: string;
   search?: string;
@@ -1777,6 +1800,7 @@ function ProjectGroup({
             deletable={deletable}
             hasBoundFolder={hasBoundFolder}
             boundWorkspacePath={boundWorkspacePath}
+            icon={icon}
           />
           {deletable && (
             <DropdownMenu>
@@ -2170,6 +2194,7 @@ function ProjectsSection({
   actor,
   groups,
   byProject,
+  projectIcons,
   pathname,
   search,
   deletableProjects,
@@ -2184,6 +2209,7 @@ function ProjectsSection({
   actor: string;
   groups: string[];
   byProject: Record<string, ThreadSummary[]>;
+  projectIcons: Map<string, string>;
   pathname: string;
   search?: string;
   deletableProjects: Set<string>;
@@ -2259,6 +2285,7 @@ function ProjectsSection({
               <ProjectGroup
                 key={project}
                 project={project}
+                icon={projectIcons.get(project)}
                 threads={byProject[project]!}
                 pathname={pathname}
                 search={search}

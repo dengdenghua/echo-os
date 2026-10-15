@@ -7,6 +7,7 @@ import json
 import re
 from typing import Any
 
+from runtime.projectos.appearance import normalize_project_category, normalize_project_icon
 from runtime.projectos.model import Milestone, Project, Task
 
 _TASK_TYPES = frozenset({"design", "code", "research", "analysis", "review"})
@@ -123,6 +124,8 @@ def _normalize_project(project: Project) -> Project:
         created_at=_text(project.created_at, label="created_at", max_length=64),
         started_at=_text(project.started_at, label="started_at", max_length=64),
         finished_at=_text(project.finished_at, label="finished_at", max_length=64),
+        icon=normalize_project_icon(project.icon),
+        category=normalize_project_category(project.category),
     )
 
 

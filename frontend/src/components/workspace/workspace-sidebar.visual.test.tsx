@@ -29,6 +29,57 @@ describe("workspace sidebar visual accessibility", () => {
     expect(trigger).toHaveAttribute("aria-describedby", tooltip.id);
   });
 
+  it("draws the icon the project was created with", () => {
+    const { container } = render(
+      <Collapsible>
+        <ProjectGroupTrigger
+          project="秋季旅行"
+          threadCount={1}
+          deletable={false}
+          hasBoundFolder={false}
+          icon="plane"
+        />
+      </Collapsible>,
+    );
+
+    expect(
+      container.querySelector('[data-project-icon="plane"]'),
+    ).not.toBeNull();
+    expect(container.querySelector("[data-project-kind]")).toBeNull();
+  });
+
+  it("keeps the folder or milestone kind for projects without one", () => {
+    const milestone = render(
+      <Collapsible>
+        <ProjectGroupTrigger
+          project="秋季旅行"
+          threadCount={1}
+          deletable={false}
+          hasBoundFolder={false}
+          icon={null}
+        />
+      </Collapsible>,
+    );
+    expect(
+      milestone.container.querySelector('[data-project-kind="milestone"]'),
+    ).not.toBeNull();
+    milestone.unmount();
+
+    const folder = render(
+      <Collapsible>
+        <ProjectGroupTrigger
+          project="秋季旅行"
+          threadCount={1}
+          deletable={false}
+          hasBoundFolder
+        />
+      </Collapsible>,
+    );
+    expect(
+      folder.container.querySelector('[data-project-kind="folder"]'),
+    ).not.toBeNull();
+  });
+
   it("renders compact timestamps with the stronger sidebar text token", () => {
     render(<SidebarTimestamp updatedAt="2026-08-21T00:00:00Z" />);
 

@@ -61,6 +61,7 @@ import {
   useProjects,
   useThreadMap,
 } from "@/core/projects/hooks";
+import { ProjectIcon } from "@/core/projects/project-icons";
 import {
   exportThreadAsJSON,
   exportThreadAsMarkdown,
@@ -81,7 +82,7 @@ import { CreateProjectDialog } from "./create-project-dialog";
 type ThreadGroup = {
   key: string;
   label: string;
-  icon?: string;
+  icon?: string | null;
   project?: Project;
   threads: AgentThread[];
 };
@@ -402,7 +403,10 @@ export function RecentChatList() {
                         })
                       }
                     >
-                      <span className="mr-1">{project.icon}</span>
+                      <ProjectIcon
+                        icon={project.icon}
+                        className="text-muted-foreground"
+                      />
                       <span>{project.name}</span>
                     </DropdownMenuItem>
                   ))}
@@ -470,7 +474,7 @@ export function RecentChatList() {
                     }
                     title={`打开项目工作群：${group.label}`}
                   >
-                    {group.icon && <span>{group.icon}</span>}
+                    <ProjectIcon icon={group.icon} className="size-3" />
                     <span className="truncate">{group.label}</span>
                   </button>
                 ) : (

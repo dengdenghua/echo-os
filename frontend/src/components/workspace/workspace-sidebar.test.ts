@@ -331,6 +331,8 @@ describe("workspace sidebar project grouping", () => {
 
     expect(index.projectNames).toEqual(["PM 演示", "刚创建的项目"]);
     expect(index.projectNameByThreadId.get("thread-home")).toBe("PM 演示");
+    // Neither project picked an icon, so the groups keep their kind marks.
+    expect(index.projectIconByName.size).toBe(0);
     expect(index.threads).toEqual([
       {
         id: "thread-home",
@@ -359,12 +361,14 @@ describe("workspace sidebar project grouping", () => {
           id: "P1",
           name: "增长实验",
           execution_thread_id: "thread-home",
+          icon: "trending-up",
         },
       ],
       { "thread-home": "P1" },
       existingThreads,
     );
 
+    expect(index.projectIconByName.get("增长实验")).toBe("trending-up");
     expect(index.threads).toHaveLength(existingThreads.length);
     expect(index.threads[0]).toMatchObject({
       id: "thread-home",

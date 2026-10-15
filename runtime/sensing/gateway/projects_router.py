@@ -9,13 +9,18 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, AliasChoices, BaseModel, ConfigDict, Field
 
 from runtime.execution.host_boundary import host_execution_scope
 from runtime.platform.process.session import current_session
+from runtime.projectos.appearance import (
+    PROJECT_CATEGORY_MAX_LENGTH,
+    PROJECT_ICON_PATTERN,
+    normalize_project_category,
+)
 from runtime.projectos.cowork_bridge import (
     full_project_state,
     run_project_from_group,
@@ -41,9 +46,28 @@ from runtime.sensing.gateway._projects_group_projections import (
 from runtime.sensing.gateway.thread_access import ThreadAccessResolver
 
 
+def _category_label(raw: str | None) -> str | None:
+    value = normalize_project_category(raw)
+    if value is None and raw is not None and raw.strip():
+        raise ValueError("category must be a single-line label")
+    return value
+
+
+# Display metadata picked in the 新建项目 dialog; omitted means none. The icon
+# is a line-icon id (``trending-up``), never an emoji or URL.
+ProjectIconId = Annotated[str | None, Field(pattern=PROJECT_ICON_PATTERN)]
+ProjectCategory = Annotated[
+    str | None,
+    Field(max_length=PROJECT_CATEGORY_MAX_LENGTH),
+    AfterValidator(_category_label),
+]
+
+
 class PlanBody(BaseModel):
     name: str = Field(min_length=1)
     goal: str = Field(min_length=1)
+    icon: ProjectIconId = None
+    category: ProjectCategory = None
 
 
 class ProjectGroupAgentBody(BaseModel):
@@ -71,6 +95,8 @@ class ProjectGroupBody(BaseModel):
         default_factory=list,
         validation_alias=AliasChoices("initial_agents", "initialAgents"),
     )
+    icon: ProjectIconId = None
+    category: ProjectCategory = None
 
 
 class MoveThreadBody(BaseModel):
@@ -688,7 +714,9 @@ def create_projects_router(
         """Turn a one-line goal into a project with generated milestones."""
         principal = _principal(request)
         try:
-            project = _engine(principal).plan(body.name, body.goal)
+            project = _engine(principal).plan(
+                body.name, body.goal, icon=body.icon, category=body.category
+            )
         except ValueError as exc:
             raise _bad_request(exc) from exc
         _project_to_collaboration(request, project.id)
@@ -752,6 +780,8 @@ def create_projects_router(
                     body.name.strip(),
                     (body.goal or "").strip() or body.name.strip(),
                     project_id=project_id,
+                    icon=body.icon,
+                    category=body.category,
                 ),
             )
         except (ProjectGroupBindingChanged, ProjectGroupCreationRecoveryPending) as exc:

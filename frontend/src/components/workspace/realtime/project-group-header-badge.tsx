@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/core/i18n/hooks";
+import { ProjectIcon } from "@/core/projects/project-icons";
 import { cn } from "@/lib/utils";
 
 const PROJECT_STATUS_DOT: Record<string, string> = {
@@ -32,6 +33,7 @@ const PROJECT_STATUS_DOT: Record<string, string> = {
 export function ProjectGroupHeaderBadge({
   name,
   status,
+  icon,
   onOpenWorkbench,
   canDetach = false,
   onDetach,
@@ -39,6 +41,8 @@ export function ProjectGroupHeaderBadge({
 }: {
   name: string;
   status?: string;
+  /** Icon id picked when the project was created; omitted keeps the kanban mark. */
+  icon?: string | null;
   onOpenWorkbench: () => void;
   canDetach?: boolean;
   onDetach?: () => void;
@@ -72,10 +76,11 @@ export function ProjectGroupHeaderBadge({
         title={`${copy.openWorkbench}：${safeName}`}
         className="inline-flex h-7 min-w-0 max-w-52 items-center gap-1.5 rounded-l-md px-2 text-xs font-medium transition-colors hover:bg-primary/10"
       >
-        <FolderKanbanIcon
+        <ProjectIcon
+          icon={icon}
+          fallback={FolderKanbanIcon}
           data-slot="project-capability-icon"
           className="size-3.5 shrink-0"
-          aria-hidden="true"
         />
         <span data-slot="project-capability-label" className="truncate">
           {copy.enabled}

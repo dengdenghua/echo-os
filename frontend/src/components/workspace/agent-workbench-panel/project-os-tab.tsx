@@ -57,6 +57,7 @@ import { getBackendBaseURL } from "@/core/config";
 import { cn } from "@/lib/utils";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 import { projectByThreadQueryKey } from "@/core/projects/hooks";
+import { ProjectIcon } from "@/core/projects/project-icons";
 
 import type { WorkbenchRosterSeat } from "./helpers";
 
@@ -216,6 +217,8 @@ export interface ProjectFullState {
     created_at: string;
     started_at: string;
     finished_at: string;
+    icon?: string | null;
+    category?: string | null;
   };
   milestones: Array<{
     id: string;
@@ -1021,7 +1024,9 @@ export function ProjectOsTab({
                 : "size-9 rounded-xl",
             )}
           >
-            <FolderKanbanIcon
+            <ProjectIcon
+              icon={project.icon}
+              fallback={FolderKanbanIcon}
               className={titleRepeatsConversation ? "size-3.5" : "size-4.5"}
             />
           </div>

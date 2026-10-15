@@ -182,8 +182,19 @@ class ProjectEngine:
         self._required_execution_thread_id = required_execution_thread_id
 
     # ── planning ─────────────────────────────────────────────────────────────
-    def plan(self, name: str, goal: str, *, project_id: str | None = None) -> Project:
-        """Turn a one-line goal into a project with generated milestones."""
+    def plan(
+        self,
+        name: str,
+        goal: str,
+        *,
+        project_id: str | None = None,
+        icon: str | None = None,
+        category: str | None = None,
+    ) -> Project:
+        """Turn a one-line goal into a project with generated milestones.
+
+        ``icon`` / ``category`` are display metadata (see ``appearance``).
+        """
         pid = project_id or f"P-{uuid4().hex[:8]}"
         try:
             milestones = self._generate(goal)
@@ -203,6 +214,8 @@ class ProjectEngine:
             tenant_id=self.tenant_id,
             owner=self.owner_id or "",
             created_at=datetime.now(UTC).isoformat(timespec="seconds"),
+            icon=icon,
+            category=category,
         )
         project, _resolved_milestones = self.store.create_project_plan(project, milestones)
         return project

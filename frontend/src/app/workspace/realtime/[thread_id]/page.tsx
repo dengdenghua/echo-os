@@ -4349,6 +4349,7 @@ function RealtimePageContent({
                           <ProjectGroupHeaderBadge
                             name={boundProjectState.project.name}
                             status={boundProjectState.project.status}
+                            icon={boundProjectState.project.icon}
                             onOpenWorkbench={() =>
                               openProjectWorkbenchForEntity()
                             }

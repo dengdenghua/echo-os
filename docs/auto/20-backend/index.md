@@ -46,8 +46,8 @@ graph LR
   safety -- 22 --> memory
   platform -- 21 --> sensing
   execution -- 19 --> core
+  sensing -- 17 --> projectos
   platform -- 16 --> memory
-  sensing -- 16 --> projectos
   core -- 15 --> memory
   platform -- 14 --> core
   safety -- 14 --> adapters

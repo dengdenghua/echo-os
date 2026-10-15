@@ -262,4 +262,47 @@ describe("ProjectsPage production error states", () => {
       expect.stringContaining(SECRET_RUNTIME_ERROR),
     );
   });
+
+  it("draws the icon and category a project was created with", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url === "/api/projects") {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: "project-1",
+              name: "Release hardening",
+              goal: "Ship safely",
+              status: "running",
+              icon: "plane",
+              category: "travel",
+            },
+          ]),
+        );
+      }
+      const detail = projectDetail();
+      return Promise.resolve(
+        jsonResponse({
+          ...detail,
+          project: { ...detail.project, icon: "plane", category: "travel" },
+        }),
+      );
+    });
+
+    const { container } = renderWithProviders(<ProjectsPage />, {
+      locale: "zh-CN",
+    });
+
+    const heading = await screen.findByRole("heading", {
+      level: 2,
+      name: "Release hardening",
+    });
+    const header = heading.parentElement!;
+    expect(header.querySelector('[data-project-icon="plane"]')).not.toBeNull();
+    expect(header).toHaveTextContent("旅行");
+    const row = screen.getByRole("button", { name: /Release hardening/ });
+    expect(row.querySelector('[data-project-icon="plane"]')).not.toBeNull();
+    expect(row).toHaveTextContent("旅行 · Ship safely");
+    expect(container).not.toHaveTextContent("✈");
+  });
 });

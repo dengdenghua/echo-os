@@ -57,6 +57,8 @@ import {
   type Project,
   useEnsureProjectHome,
 } from "@/core/projects/hooks";
+import { projectCategoryLabel } from "@/core/projects/project-categories";
+import { ProjectIcon } from "@/core/projects/project-icons";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
 // ─── types（与 runtime/projectos/pm.py 的返回结构对应）───────────────
@@ -176,6 +178,8 @@ interface ProjectFull {
     started_at: string;
     finished_at: string;
     execution_thread_id?: string;
+    icon?: string | null;
+    category?: string | null;
   };
   milestones: Array<Record<string, unknown> & { id: string; name: string }>;
   tasks: Record<string, TaskReadModel[]>;
@@ -192,6 +196,8 @@ interface ProjectSummary {
   status?: string;
   created_at?: string;
   execution_thread_id?: string;
+  icon?: string | null;
+  category?: string | null;
 }
 
 const BASE = () => `${getBackendBaseURL()}/api/projects`;
@@ -442,6 +448,10 @@ export default function ProjectsPage() {
   });
 
   const detail = detailQuery.data;
+  const detailCategory = projectCategoryLabel(
+    detail?.project.category,
+    t.createProjectDialog,
+  );
   const pm = detail?.pm ?? null;
   const retro = detail?.retro ?? null;
 
@@ -579,7 +589,13 @@ export default function ProjectsPage() {
                       }`}
                     >
                       <span className="flex items-center justify-between gap-2 text-sm font-medium">
-                        <span className="truncate">{p.name || p.id}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <ProjectIcon
+                            icon={p.icon}
+                            className="text-muted-foreground"
+                          />
+                          <span className="truncate">{p.name || p.id}</span>
+                        </span>
                         {p.status && (
                           <Badge
                             variant="outline"
@@ -590,7 +606,15 @@ export default function ProjectsPage() {
                         )}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
-                        {p.goal || p.id}
+                        {[
+                          projectCategoryLabel(
+                            p.category,
+                            t.createProjectDialog,
+                          ),
+                          p.goal || p.id,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     </button>
                   ))}
@@ -615,9 +639,18 @@ export default function ProjectsPage() {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
+                              <ProjectIcon
+                                icon={detail.project.icon}
+                                className="size-4 text-muted-foreground"
+                              />
                               <h2 className="text-base font-semibold">
                                 {detail.project.name || detail.project.id}
                               </h2>
+                              {detailCategory && (
+                                <Badge variant="outline">
+                                  {detailCategory}
+                                </Badge>
+                              )}
                               <Badge
                                 variant="outline"
                                 className={

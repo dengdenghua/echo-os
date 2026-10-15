@@ -1,6 +1,5 @@
 import {
   ChevronDownIcon,
-  FolderIcon,
   MoreHorizontal,
   PlusIcon,
   SparklesIcon,
@@ -36,6 +35,7 @@ import {
   useEnsureProjectHome,
   useProjects,
 } from "@/core/projects/hooks";
+import { ProjectIcon } from "@/core/projects/project-icons";
 import { useFeatureSeen } from "@/hooks/use-feature-seen";
 import { preserveWorkbenchPresentation } from "@/core/router/desktop-workspace-route";
 
@@ -85,10 +85,8 @@ function ProjectCollapsible({
                   onClick={() => onOpenProject(project)}
                   title={`打开项目工作群：${project.name}`}
                 >
-                  <FolderIcon className="size-4" />
-                  <span className="truncate">
-                    {project.icon} {project.name}
-                  </span>
+                  <ProjectIcon icon={project.icon} className="size-4" />
+                  <span className="truncate">{project.name}</span>
                 </SidebarMenuButton>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
