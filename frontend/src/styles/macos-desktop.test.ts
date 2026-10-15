@@ -117,3 +117,17 @@ describe("snow menus and sliders", () => {
     );
   });
 });
+
+describe("Spotlight selection", () => {
+  it("marks only the selected result with core; hover just lightens", () => {
+    expect(css).toMatch(
+      /\.mac-spotlight-result\.is-selected \{\s*color: var\(--echo-ink\) !important;\s*background: color-mix\(in srgb, var\(--echo-core\) 22%/,
+    );
+    expect(css).toMatch(
+      /\.mac-spotlight-result:hover:not\(\.is-selected\) \{[^}]*var\(--echo-ink\) 6%/,
+    );
+    expect(css).not.toMatch(
+      /\.mac-spotlight-result:is\(:hover, \.is-selected\)/,
+    );
+  });
+});

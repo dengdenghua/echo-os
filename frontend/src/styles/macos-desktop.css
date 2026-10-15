@@ -8675,9 +8675,18 @@ body:has(.macos-desktop-root .mac-menu-bar)
 
 .macos-desktop-root
   :is(.mac-menu-item, .mac-desktop-context-menu button):hover:not(:disabled),
-.macos-desktop-root .mac-spotlight-result:is(:hover, .is-selected) {
+.macos-desktop-root .mac-spotlight-result.is-selected {
   color: var(--echo-ink) !important;
   background: color-mix(in srgb, var(--echo-core) 22%, transparent) !important;
+  box-shadow: none !important;
+}
+
+/* Spotlight opens Return on the selected row; a hovered row only lightens,
+   so the pointer resting on a result no longer shows two selected rows. */
+.macos-desktop-root .mac-spotlight-result:hover:not(.is-selected) {
+  color: var(--echo-ink) !important;
+  background: color-mix(in srgb, var(--echo-ink) 6%, transparent) !important;
+  border-color: transparent !important;
   box-shadow: none !important;
 }
 
