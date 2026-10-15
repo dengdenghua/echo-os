@@ -1,4 +1,7 @@
 // Echo Agent profile · edit this to tune the agent.
+//
+// No execution_backend override: Echo answers on the native engine, so a
+// fresh install can chat without Codex being set up (same as ECHO AI).
 
 {
   "id": "general",
@@ -17,8 +20,5 @@
   "creator": "echo",
   "defaultProject": {
     "dir": "project"
-  },
-  "capabilities": {
-    "execution_backend": "codex_app_server"
   }
 }
