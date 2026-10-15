@@ -110,6 +110,22 @@ describe("SystemDeviceSettings", () => {
     expect(onWallpaperChange).toHaveBeenCalledWith("aurora");
   });
 
+  it("previews each wallpaper with its own image", () => {
+    const { container } = render(
+      <SystemDeviceSettings section="wallpaper" wallpaper="orbit" />,
+    );
+    expect(
+      Array.from(container.querySelectorAll("button img")).map((image) =>
+        image.getAttribute("src"),
+      ),
+    ).toEqual([
+      "/echo/wallpaper-echo-2560.webp",
+      "/echo/wallpaper-aurora-2560.webp",
+      "/echo/wallpaper-sunset-2560.webp",
+      "/echo/wallpaper-midnight-2560.webp",
+    ]);
+  });
+
   it("shows a truthful unavailable state outside the native shell", () => {
     render(<SystemDeviceSettings section="connectivity" controls={null} />);
 

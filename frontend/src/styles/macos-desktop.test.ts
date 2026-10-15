@@ -41,3 +41,14 @@ describe("desktop dialogs on short screens", () => {
     );
   });
 });
+
+describe("desktop wallpapers", () => {
+  it("draw every choice from an ECHO raster, not a violet or navy gradient", () => {
+    // 极光 / 日落 / 午夜 used to hide the raster and paint mesh gradients.
+    expect(css).not.toMatch(/\.mac-wallpaper-(aurora|sunset|midnight)\b/);
+    expect(css).not.toMatch(/#101745|#172260|#030611|#ee6c70/i);
+    expect(css).toMatch(
+      /\.macos-desktop-root \.desktop-wallpaper \{[^}]*background-color: var\(--echo-ground\);/,
+    );
+  });
+});

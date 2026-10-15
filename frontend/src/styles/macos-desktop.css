@@ -16,38 +16,12 @@
   user-select: auto;
 }
 
+/* Every wallpaper is an ECHO raster (scripts/generate-echo-wallpaper.mjs)
+   drawn by .desktop-wallpaper-art; the ground shows only while it loads. */
 .macos-desktop-root .desktop-wallpaper {
   overflow: hidden;
-  background-color: #101745;
-  background-image:
-    radial-gradient(
-      70% 60% at 56% 42%,
-      rgba(110, 113, 255, 0.25) 0%,
-      rgba(255, 142, 212, 0.18) 45%,
-      transparent 72%
-    ),
-    radial-gradient(
-      90% 120% at 93% 10%,
-      rgba(213, 98, 255, 0.88),
-      transparent 55%
-    ),
-    radial-gradient(
-      95% 120% at 12% 18%,
-      rgba(74, 107, 255, 0.92),
-      transparent 58%
-    ),
-    radial-gradient(
-      85% 80% at 84% 92%,
-      rgba(255, 107, 151, 0.8),
-      transparent 58%
-    ),
-    radial-gradient(
-      90% 80% at 18% 92%,
-      rgba(43, 210, 220, 0.68),
-      transparent 62%
-    ),
-    linear-gradient(135deg, #172260 0%, #322476 44%, #321a59 100%);
-  background-size: 110% 110%;
+  background-color: var(--echo-ground);
+  background-image: none;
 }
 
 .macos-desktop-root .desktop-wallpaper::before,
@@ -74,123 +48,6 @@
 /* Fold layers are disabled to keep the wallpaper crisp and unfiltered. */
 .desktop-wallpaper-fold {
   display: none !important;
-}
-
-.desktop-wallpaper-fold-a {
-  top: -8%;
-  left: -28%;
-  width: 138%;
-  height: 42%;
-  opacity: 0.8;
-  background:
-    linear-gradient(
-      118deg,
-      transparent 17%,
-      rgba(96, 215, 255, 0.38) 28%,
-      rgba(228, 245, 255, 0.25) 37%,
-      rgba(125, 116, 255, 0.34) 44%,
-      transparent 58%
-    ),
-    linear-gradient(
-      118deg,
-      transparent 32%,
-      rgba(247, 253, 255, 0.2) 34.5%,
-      rgba(199, 235, 255, 0.08) 37%,
-      transparent 39.5%
-    );
-  background: linear-gradient(
-    118deg,
-    transparent 17%,
-    rgba(96, 215, 255, 0.34) 28%,
-    rgba(228, 245, 255, 0.22) 37%,
-    rgba(125, 116, 255, 0.28) 44%,
-    transparent 58%
-  );
-  transform: rotate(-17deg);
-}
-
-.desktop-wallpaper-fold-b {
-  right: -28%;
-  bottom: -13%;
-  width: 142%;
-  height: 42%;
-  opacity: 0.7;
-  background:
-    linear-gradient(
-      122deg,
-      transparent 18%,
-      rgba(255, 145, 209, 0.32) 31%,
-      rgba(255, 234, 249, 0.22) 42%,
-      rgba(170, 107, 255, 0.34) 51%,
-      transparent 65%
-    ),
-    linear-gradient(
-      122deg,
-      transparent 42%,
-      rgba(255, 248, 253, 0.16) 44.5%,
-      rgba(255, 188, 233, 0.08) 47%,
-      transparent 49.5%
-    );
-  transform: rotate(-15deg);
-}
-
-.desktop-wallpaper-fold-c {
-  top: 22%;
-  left: 10%;
-  width: 104%;
-  height: 30%;
-  opacity: 0.5;
-  background: linear-gradient(
-    136deg,
-    transparent 28%,
-    rgba(207, 181, 255, 0.24) 42%,
-    rgba(255, 255, 255, 0.16) 51%,
-    rgba(104, 202, 255, 0.18) 58%,
-    transparent 70%
-  );
-  transform: rotate(7deg);
-}
-
-.mac-wallpaper-midnight .desktop-wallpaper-fold {
-  opacity: 0.12;
-  filter: blur(28px) saturate(110%);
-}
-
-.mac-wallpaper-sunset .desktop-wallpaper-art {
-  opacity: 0 !important;
-  display: none !important;
-}
-
-/* The graphite theme keeps the Echo wallpaper; only the midnight choice swaps it. */
-.mac-wallpaper-midnight .desktop-wallpaper-art {
-  opacity: 0 !important;
-  display: none !important;
-}
-
-.mac-wallpaper-sunset .desktop-wallpaper {
-  background-color: #ee6c70;
-  background-image:
-    radial-gradient(
-      90% 120% at 9% 8%,
-      rgba(255, 201, 111, 0.96),
-      transparent 54%
-    ),
-    radial-gradient(
-      95% 100% at 92% 16%,
-      rgba(235, 72, 142, 0.84),
-      transparent 58%
-    ),
-    radial-gradient(
-      100% 90% at 16% 94%,
-      rgba(94, 71, 230, 0.84),
-      transparent 60%
-    ),
-    radial-gradient(
-      95% 100% at 88% 92%,
-      rgba(52, 126, 228, 0.84),
-      transparent 58%
-    ),
-    linear-gradient(145deg, #ef9676, #ac4eb5 52%, #3e63ba);
 }
 
 /* Echo 原创默认壁纸（scripts/generate-echo-wallpaper.mjs 生成）。
@@ -243,98 +100,6 @@
 /* The Orbit scene already supplies a detailed source for the compositor. */
 .mac-wallpaper-orbit .mac-surface-lens {
   display: none;
-}
-
-.mac-wallpaper-midnight .desktop-wallpaper {
-  overflow: hidden;
-  background-color: #030611 !important;
-  background-image:
-    /* Starry dust micro-particles */
-    radial-gradient(
-      1.2px 1.2px at 45px 65px,
-      rgba(255, 255, 255, 0.8),
-      transparent
-    ),
-    radial-gradient(
-      1.5px 1.5px at 160px 220px,
-      rgba(165, 243, 252, 0.85),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 320px 110px,
-      rgba(216, 180, 254, 0.75),
-      transparent
-    ),
-    radial-gradient(
-      1.5px 1.5px at 520px 380px,
-      rgba(255, 255, 255, 0.7),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 710px 180px,
-      rgba(125, 211, 252, 0.85),
-      transparent
-    ),
-    radial-gradient(
-      1.5px 1.5px at 890px 310px,
-      rgba(192, 132, 252, 0.8),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 1080px 100px,
-      rgba(255, 255, 255, 0.75),
-      transparent
-    ),
-    radial-gradient(
-      1.5px 1.5px at 1280px 260px,
-      rgba(165, 243, 252, 0.85),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 1480px 180px,
-      rgba(216, 180, 254, 0.8),
-      transparent
-    ),
-    radial-gradient(
-      1.5px 1.5px at 1690px 340px,
-      rgba(255, 255, 255, 0.7),
-      transparent
-    ),
-    radial-gradient(
-      1px 1px at 1920px 130px,
-      rgba(125, 211, 252, 0.85),
-      transparent
-    ),
-    /* Deep space midnight nebulas */
-    radial-gradient(
-        80% 110% at 18% 10%,
-        rgba(30, 75, 145, 0.52),
-        transparent 60%
-      ),
-    radial-gradient(
-      85% 100% at 86% 16%,
-      rgba(70, 35, 125, 0.45),
-      transparent 62%
-    ),
-    radial-gradient(
-      110% 90% at 50% 98%,
-      rgba(15, 80, 95, 0.38),
-      transparent 64%
-    ),
-    linear-gradient(
-      155deg,
-      #020409 0%,
-      #060b17 44%,
-      #0d0a1e 86%,
-      #030409 100%
-    ) !important;
-  background-size: 100% 100% !important;
-  animation: none !important;
-}
-
-.mac-wallpaper-midnight .desktop-wallpaper::before {
-  opacity: 0.24 !important;
-  filter: blur(72px) saturate(85%) !important;
 }
 
 .macos-desktop-root.theme-dark .mac-app-icon-liquid-backdrop > img {
@@ -8621,48 +8386,6 @@ body:has(.macos-desktop-root .mac-menu-bar)
 }
 
 /* ==========================================================================
- * WALLPAPER: AURORA (Northern Lights Fluid Gradient)
- * ========================================================================== */
-.mac-wallpaper-aurora .desktop-wallpaper-art {
-  opacity: 0 !important;
-  display: none !important;
-}
-
-.mac-wallpaper-aurora .desktop-wallpaper {
-  overflow: hidden;
-  background-color: #0c1236;
-  background-image:
-    radial-gradient(
-      75% 65% at 56% 42%,
-      rgba(110, 113, 255, 0.3) 0%,
-      rgba(255, 142, 212, 0.22) 48%,
-      transparent 75%
-    ),
-    radial-gradient(
-      90% 120% at 93% 10%,
-      rgba(213, 98, 255, 0.9),
-      transparent 55%
-    ),
-    radial-gradient(
-      95% 120% at 12% 18%,
-      rgba(74, 107, 255, 0.94),
-      transparent 58%
-    ),
-    radial-gradient(
-      85% 80% at 84% 92%,
-      rgba(255, 107, 151, 0.82),
-      transparent 58%
-    ),
-    radial-gradient(
-      90% 80% at 18% 92%,
-      rgba(43, 210, 220, 0.72),
-      transparent 62%
-    ),
-    linear-gradient(135deg, #172260 0%, #322476 44%, #321a59 100%);
-  background-size: 110% 110%;
-}
-
-/* ==========================================================================
  * SURFACE LENS GHOSTING REMOVAL
  * 彻底消除小组件错位重影、双重图片采样与反光撕裂
  * ========================================================================== */
@@ -8723,31 +8446,6 @@ body:has(.macos-desktop-root .mac-menu-bar)
 .macos-desktop-root.is-mode-pure .mac-dock:hover {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* 5. 流光壁纸深空呼吸微动效 (Nebula Ambient Breathing) */
-@keyframes mac-wallpaper-aurora-breathe {
-  0%,
-  100% {
-    background-size: 110% 110%;
-    background-position: 50% 50%;
-  }
-  50% {
-    background-size: 114% 114%;
-    background-position: 52% 48%;
-  }
-}
-
-.mac-wallpaper-aurora .desktop-wallpaper,
-.macos-desktop-root .desktop-wallpaper {
-  animation: mac-wallpaper-aurora-breathe 90s ease-in-out infinite alternate;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mac-wallpaper-aurora .desktop-wallpaper,
-  .macos-desktop-root .desktop-wallpaper {
-    animation: none !important;
-  }
 }
 
 /* Keep the menu's colour close to the wallpaper instead of amplifying it twice.

@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
-import { DESKTOP_WALLPAPER_URL } from "./desktop-wallpaper";
+import { useContext, useEffect, useState } from "react";
+import {
+  DesktopWallpaperToneContext,
+  desktopWallpaperSources,
+} from "./desktop-wallpaper";
 import {
   BatteryChargingIcon,
   BellIcon,
@@ -214,6 +217,7 @@ function updateStateLabel(status?: SystemUpdateStatus | null) {
 }
 
 export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
+  const wallpaperTone = useContext(DesktopWallpaperToneContext);
   const [diagnosticsBusy, setDiagnosticsBusy] = useState(false);
   const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(
     null,
@@ -408,20 +412,16 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
                   }`}
                 >
                   <span
-                    className={`mac-wallpaper-${item.id} relative block aspect-[16/10] overflow-hidden rounded-lg`}
+                    className="relative block aspect-[16/10] overflow-hidden rounded-lg bg-muted"
                     aria-hidden="true"
                   >
-                    <span className="desktop-wallpaper absolute inset-0">
-                      <img
-                        className="desktop-wallpaper-art"
-                        src={DESKTOP_WALLPAPER_URL}
-                        alt=""
-                        loading="lazy"
-                      />
-                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-a" />
-                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-b" />
-                      <span className="desktop-wallpaper-fold desktop-wallpaper-fold-c" />
-                    </span>
+                    {/* The swatch is the wallpaper itself, in the desktop's tone. */}
+                    <img
+                      className="absolute inset-0 size-full object-cover"
+                      src={desktopWallpaperSources(wallpaperTone, item.id).url}
+                      alt=""
+                      loading="lazy"
+                    />
                   </span>
                   <span className="mt-2 flex items-center justify-between px-1 text-xs font-medium">
                     {item.label}

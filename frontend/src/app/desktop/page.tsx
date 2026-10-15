@@ -94,6 +94,7 @@ import { MacLiquidGlassOptics } from "@/appliance/liquid-glass-optics";
 import { MacLiquidGlassWebGL } from "@/appliance/liquid-glass-webgl";
 import {
   DesktopWallpaperToneContext,
+  DesktopWallpaperVariantContext,
   desktopWallpaperSources,
 } from "@/appliance/desktop-wallpaper";
 import { useDesktopAppearance } from "@/appliance/use-desktop-appearance";
@@ -2078,7 +2079,7 @@ export default function DesktopShellPage() {
         wallpaper={wallpaper}
       />
       <MacLiquidGlassWebGL
-        wallpaperUrl={desktopWallpaperSources(wallpaperTone).url}
+        wallpaperUrl={desktopWallpaperSources(wallpaperTone, wallpaper).url}
       />
       {/* 不在这里建立层叠上下文：菜单栏（z-100）、Dock（z-90）和系统浮层
           必须与窗口层（z-40）同场比较，才能始终位于应用窗口之上。 */}
@@ -3113,7 +3114,9 @@ export default function DesktopShellPage() {
 
   return (
     <DesktopWallpaperToneContext.Provider value={wallpaperTone}>
-      {desktop}
+      <DesktopWallpaperVariantContext.Provider value={wallpaper}>
+        {desktop}
+      </DesktopWallpaperVariantContext.Provider>
     </DesktopWallpaperToneContext.Provider>
   );
 }
