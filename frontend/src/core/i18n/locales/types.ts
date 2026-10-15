@@ -4165,6 +4165,7 @@ export interface Translations {
       copyPath: string;
       openPluginDirectory: string;
       connectingPlugin: string;
+      pageInteractiveHint: string;
       connectingPluginDesc: string;
       searchPlaceholder: string;
       resetLayout: string;
@@ -4291,6 +4292,28 @@ export interface Translations {
       close: string;
       newTab: string;
       homeTabShort: string;
+    };
+    pageTranslate: {
+      button: string;
+      title: string;
+      detected: (language: string) => string;
+      languages: Record<string, string>;
+      translated: string;
+      bilingual: string;
+      original: string;
+      translating: string;
+      skipped: (count: number) => string;
+      model: string;
+      modelAuto: string;
+      modelAutoUsing: (model: string) => string;
+      selectionTitle: string;
+      copy: string;
+      copied: string;
+      close: string;
+      selectionFailed: string;
+      alwaysSite: string;
+      retry: string;
+      privacy: string;
     };
     urlBar: {
       back: string;

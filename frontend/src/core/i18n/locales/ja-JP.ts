@@ -4888,6 +4888,8 @@ export const jaJP: Translations = {
       copyPath: "パスをコピー",
       openPluginDirectory: "プラグインディレクトリを開く",
       connectingPlugin: "ブラウザープラグイン/MCP 制御セッションに接続中",
+      pageInteractiveHint:
+        "ウェブページ（クリックと入力はページに送信されます）",
       connectingPluginDesc:
         "非 Electron モードはバックエンドブラウザー API 経由でローカル Chromium ブラウザーを起動・制御し、スクリーンショットをここに送信。",
       searchPlaceholder: "検索クエリを入力",
@@ -5045,6 +5047,41 @@ export const jaJP: Translations = {
       newTab: "新規タブ · Ctrl+T",
       homeTabShort: "Home",
     },
+    pageTranslate: {
+      button: "このページを翻訳",
+      title: "ページ翻訳",
+      detected: (language) => `このページは${language}です`,
+      languages: {
+        zh: "中国語",
+        ja: "日本語",
+        ko: "韓国語",
+        ru: "ロシア語",
+        en: "英語",
+        fr: "フランス語",
+        de: "ドイツ語",
+        es: "スペイン語",
+        latin: "外国語",
+        unknown: "外国語",
+      },
+      translated: "訳文",
+      bilingual: "対訳",
+      original: "原文",
+      translating: "翻訳中…",
+      skipped: (count) => `${count} 段落を翻訳できませんでした`,
+      model: "翻訳モデル",
+      modelAuto: "自動（エコノミーモデル）",
+      modelAutoUsing: (model) => `自動（現在: ${model}）`,
+      selectionTitle: "訳文",
+      copy: "コピー",
+      copied: "コピーしました",
+      close: "閉じる",
+      selectionFailed:
+        "このテキストを翻訳できませんでした。もう一度お試しください。",
+      alwaysSite: "このサイトを常に翻訳",
+      retry: "再試行",
+      privacy:
+        "画面上の段落を設定済みのモデルに送って翻訳します。スクロールに合わせて翻訳が進みます。",
+    },
     urlBar: {
       back: "Back",
       forward: "Forward",
@@ -5053,7 +5090,7 @@ export const jaJP: Translations = {
       searchOrUrl: "検索または URL を入力",
       siteInfo: "サイト情報",
       siteInfoDesc:
-        "ログイン状態、Cookie、ローカルデータは ECHO OS ブラウザーに保持され、タブ間で共有されます。",
+        "ログイン状態、Cookie、ローカルデータは AI ブラウザに保持され、タブ間で共有されます。",
       clearData: "データをクリア",
       openExternally: "外部で開く",
       confirmClearSiteData:

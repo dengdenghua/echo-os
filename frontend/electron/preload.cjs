@@ -20,6 +20,16 @@ const EVENT_CHANNELS = [
   "browser:tab-crashed",
   "browser:keyboard-shortcut",
   "browser:download-event",
+  // The AI browser shared with ECHO AI listens for these. This shell does not
+  // send them yet, so subscribing is harmless and their features stay idle.
+  "browser:ask-selection",
+  "browser:webview-pointer",
+  "browser:password-offer",
+  "browser:extension-actions-changed",
+  "browser:extension-side-panel-changed",
+  "browser:open-extensions",
+  "browser:focus-webcontents",
+  "browser:close-webcontents",
   "desktop:organize-now",
   "desktop:items-changed",
   "window:fullscreen-changed",

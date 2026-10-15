@@ -4899,6 +4899,7 @@ Strategy:
       copyPath: "Copy Path",
       openPluginDirectory: "Open Plugin Directory",
       connectingPlugin: "Connecting to browser plugin/MCP control session",
+      pageInteractiveHint: "Web page (clicks and typing are sent to the page)",
       connectingPluginDesc:
         "Non-Electron mode launches and controls the local Chromium browser via the backend browser API, then sends screenshots back here.",
       searchPlaceholder: "Enter search query",
@@ -5057,6 +5058,41 @@ Strategy:
       newTab: "New Tab · Ctrl+T",
       homeTabShort: "Home",
     },
+    pageTranslate: {
+      button: "Translate page",
+      title: "Page translation",
+      detected: (language) => `This page is in ${language}`,
+      languages: {
+        zh: "Chinese",
+        ja: "Japanese",
+        ko: "Korean",
+        ru: "Russian",
+        en: "English",
+        fr: "French",
+        de: "German",
+        es: "Spanish",
+        latin: "another language",
+        unknown: "another language",
+      },
+      translated: "Translated",
+      bilingual: "Side by side",
+      original: "Original",
+      translating: "Translating…",
+      skipped: (count) =>
+        `${count} paragraph${count === 1 ? "" : "s"} could not be translated`,
+      model: "Model",
+      modelAuto: "Automatic (value tier)",
+      modelAutoUsing: (model) => `Automatic (now: ${model})`,
+      selectionTitle: "Translation",
+      copy: "Copy",
+      copied: "Copied",
+      close: "Close",
+      selectionFailed: "Could not translate this text. Try again.",
+      alwaysSite: "Always translate this site",
+      retry: "Retry",
+      privacy:
+        "Paragraphs on screen are sent to your configured model; translation follows your scrolling.",
+    },
     urlBar: {
       back: "Back",
       forward: "Forward",
@@ -5065,7 +5101,7 @@ Strategy:
       searchOrUrl: "Search or enter URL",
       siteInfo: "Site Info",
       siteInfoDesc:
-        "Login state, cookies, and local data are retained in the ECHO OS browser and shared across tabs.",
+        "Login state, cookies, and local data are retained in the AI Browser and shared across tabs.",
       clearData: "Clear Data",
       openExternally: "Open Externally",
       confirmClearSiteData:

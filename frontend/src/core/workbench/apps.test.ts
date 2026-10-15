@@ -82,7 +82,13 @@ describe("built-in workbench apps", () => {
       "utf8",
     );
 
-    expect(browserHome).toContain("narrative: BookOpenIcon");
+    // The AI browser (shared with ECHO AI) reads the workbench icon map.
+    const moduleIcons = readFileSync(
+      resolve("src/components/workspace/module-icons.ts"),
+      "utf8",
+    );
+    expect(moduleIcons).toContain("narrative: BookOpenIcon");
+    expect(browserHome).toContain("WORKBENCH_APP_ICONS[app.icon]");
     expect(sidebar).toContain("narrative: BookOpenIcon");
     expect(hub).toContain("narrative: BookOpenIcon");
     expect(browserTab).toContain("<RemoteWorkbenchSurface");

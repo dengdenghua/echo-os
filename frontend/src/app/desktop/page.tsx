@@ -806,6 +806,16 @@ export default function DesktopShellPage() {
         typeof event.detail?.section === "string"
           ? event.detail.section
           : "models";
+      // The AI browser's start page asks for the signed-in account.
+      if (requested === "account") {
+        if (!isDeviceOperator) {
+          toast.info("家庭成员不能修改设备级设置");
+          return;
+        }
+        setAccountSecuritySection("account");
+        setAccountSecurityOpen(true);
+        return;
+      }
       const allowed = new Set<OsAgentSettingsSection>([
         "models",
         "tools",
@@ -826,7 +836,7 @@ export default function DesktopShellPage() {
     };
     window.addEventListener("echo:open-system-settings", open);
     return () => window.removeEventListener("echo:open-system-settings", open);
-  }, [openSystemAgentSettings]);
+  }, [isDeviceOperator, openSystemAgentSettings, setAccountSecurityOpen]);
 
   const [missionControlOpen, setMissionControlOpen] = useState(false);
 

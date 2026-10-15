@@ -13,17 +13,24 @@ import {
   type CSSProperties,
   type ComponentType,
 } from "react";
-import { CopyIcon, PlugIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  CopyIcon,
+  Loader2Icon,
+  PlugIcon,
+  RefreshCwIcon,
+} from "lucide-react";
 
 import { swallow } from "@/core/utils/log";
+import { EchoMark } from "@/components/brand/echo-mark";
 import { authHeaders, jsonAuthHeaders } from "@/core/auth/api";
 import { copyTextToClipboard } from "@/core/clipboard";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
 import { cn } from "@/lib/utils";
-import { loadProjectsPage } from "@/core/navigation/workspace-route-preload";
 import { WORKBENCH_BUILTIN_APPS } from "@/core/workbench/apps";
 import { RemoteWorkbenchSurface } from "@/core/workbench/remote-surface";
+import { loadProjectsPage } from "@/core/navigation/workspace-route-preload";
 import { WorkbenchSurfaceProvider } from "@/core/workbench/workbench-surface";
 import { useActiveAgentId } from "@/core/agents/active";
 import { useEnabledModuleIds } from "@/core/modules/enabled-modules";
@@ -46,14 +53,30 @@ const BrowserHome = lazy(() =>
   })),
 );
 
+// <webview> flag attributes. React treats `webview` (no hyphen) as a plain
+// element and drops boolean `true` props, so they are passed as strings;
+// Electron only checks that the attribute is present.
+const WEBVIEW_FLAG_ATTRIBUTES = {
+  // Chromium's built-in PDF viewer inside the tab.
+  plugins: "true",
+  // Without it target=_blank links and window.open are dropped in the page;
+  // the main process denies every popup window and opens the URL as a
+  // browser tab instead.
+  allowpopups: "true",
+} as unknown as { plugins: boolean; allowpopups: boolean };
+
 interface Props {
   tab: BrowserTab;
+  /** The focused tab: address bar, automation bridge and shortcuts. */
   active: boolean;
+  /** Shown on screen; defaults to `active` (split view shows two). */
+  visible?: boolean;
   onPatch: (patch: Partial<BrowserTab>) => void;
   onClose?: () => void;
   renderDevice?: BrowserTab["device"];
 }
 
+// Workbench apps that ship with ECHO OS and render inside a browser tab.
 const BROWSER_CORE_COMPONENTS: Record<string, ComponentType> = {
   projects: lazy(loadProjectsPage),
 };
@@ -70,9 +93,22 @@ type WebviewElement = HTMLElement & {
   canGoBack: () => boolean;
   canGoForward: () => boolean;
   getTitle: () => string;
+  getURL: () => string;
   isLoading: () => boolean;
   loadURL: (url: string) => Promise<void>;
+  stop: () => void;
+  findInPage: (
+    text: string,
+    options?: { forward?: boolean; findNext?: boolean },
+  ) => number;
+  stopFindInPage: (action: "clearSelection" | "keepSelection") => void;
 };
+
+/** Result of a find-in-page step: how many matches, which one is active. */
+export interface FindInPageResult {
+  matches: number;
+  active: number;
+}
 
 export interface WebviewTabHandle {
   reload: () => void;
@@ -83,6 +119,16 @@ export interface WebviewTabHandle {
   canGoForward: () => boolean;
   executeJS: (code: string) => Promise<unknown>;
   getWebContentsId: () => number | null;
+  /** Stop loading (desktop app). */
+  stop?: () => void;
+  /** Find text; forward=false goes back. Resolves with the match count. */
+  findInPage?: (
+    text: string,
+    options: { forward: boolean; findNext: boolean },
+  ) => Promise<FindInPageResult | null>;
+  stopFindInPage?: () => void;
+  /** System print dialog (desktop app). */
+  print?: () => Promise<void>;
   extractText: () => Promise<{
     url: string;
     title: string;
@@ -171,16 +217,19 @@ function BackendBrowserTab({
     `${getBackendBaseURL()}/api/browser/relay/bookmarklet.js?app=`,
   )}+encodeURIComponent(location.origin)+"&t="+Date.now();document.documentElement.appendChild(s);})()`;
 
-  const refreshRelayStatus = async () => {
-    const status = await browserJson<BrowserRelayStatus>(
+  const relayRequest = useRef<Promise<BrowserRelayStatus> | null>(null);
+  const readRelayStatus = () =>
+    (relayRequest.current ??= browserJson<BrowserRelayStatus>(
       "/api/browser/relay/status",
-      {
-        headers: authHeaders(),
-      },
-    );
-    setRelayStatus(status);
-    return status;
-  };
+      { headers: authHeaders() },
+    ).finally(() => {
+      relayRequest.current = null;
+    }));
+  const refreshRelayStatus = () =>
+    readRelayStatus().then((status) => {
+      setRelayStatus(status);
+      return status;
+    });
 
   const openExtensionFolder = async () => {
     try {
@@ -341,6 +390,84 @@ function BackendBrowserTab({
     return data;
   };
 
+  // The screenshot is the page here, so the user drives it through the
+  // backend browser: clicks land at the same spot, keys go to the focused
+  // field. (With the relay, the page is the user's own Chrome tab instead.)
+  // Keys go through a hidden text field so IME composition (Chinese input),
+  // paste and plain typing all arrive as text; Enter, arrows and the like
+  // are sent as key presses.
+  const sinkRef = useRef<HTMLTextAreaElement | null>(null);
+  const typedRef = useRef("");
+  const typeTimerRef = useRef<number | null>(null);
+  const interactive = Boolean(screenshot) && !relayStatus?.connected;
+  const forwardAction = async (
+    action: string,
+    params: Record<string, unknown>,
+  ) => {
+    try {
+      await runAction(action, params);
+      // Slow navigations finish after the action returns: look again.
+      window.setTimeout(() => {
+        void runAction("page_info").catch(swallow);
+      }, 1500);
+    } catch (e) {
+      swallow(e);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const pagePoint = (event: React.MouseEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !image.naturalWidth) return null;
+    // Full-page PNG at device scale 1: image pixels are page CSS pixels.
+    const scale = image.naturalWidth / rect.width;
+    return {
+      x: Math.round((event.clientX - rect.left) * scale),
+      y: Math.round((event.clientY - rect.top) * scale),
+    };
+  };
+  const flushTyped = () => {
+    if (typeTimerRef.current) window.clearTimeout(typeTimerRef.current);
+    typeTimerRef.current = null;
+    const text = typedRef.current;
+    typedRef.current = "";
+    if (text) void forwardAction("keyboard_type", { text });
+  };
+  const queueTyped = (text: string) => {
+    if (!text) return;
+    typedRef.current += text;
+    if (typeTimerRef.current) window.clearTimeout(typeTimerRef.current);
+    typeTimerRef.current = window.setTimeout(flushTyped, 300);
+  };
+  const takeSinkText = (field: HTMLTextAreaElement) => {
+    const text = field.value;
+    field.value = "";
+    queueTyped(text);
+  };
+  const PASSTHROUGH_KEYS = new Set([
+    "Enter",
+    "Backspace",
+    "Delete",
+    "Tab",
+    "Escape",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+  ]);
+  const onSinkKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.nativeEvent.isComposing || event.key === "Process") return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!PASSTHROUGH_KEYS.has(event.key)) return;
+    event.preventDefault();
+    flushTyped();
+    void forwardAction("press", { key: event.key });
+  };
+
   useImperativeHandle(
     imperativeRef,
     () => ({
@@ -376,6 +503,16 @@ function BackendBrowserTab({
           `/api/browser/extract-text?session_id=${encodeURIComponent(sessionId)}`,
           { headers: authHeaders() },
         );
+      },
+      findInPage: async (text, { forward }) => {
+        if (relayStatus?.connected) return null;
+        const data = await runAction("find_in_page", {
+          text,
+          backwards: !forward,
+        });
+        const matches = typeof data.matches === "number" ? data.matches : 0;
+        // The page reports a count only; the bar tracks the position.
+        return { matches, active: matches > 0 ? -1 : 0 };
       },
       capturePage: async () => {
         if (await preferRelay()) {
@@ -426,12 +563,7 @@ function BackendBrowserTab({
 
     const tick = async () => {
       try {
-        const status = await browserJson<BrowserRelayStatus>(
-          "/api/browser/relay/status",
-          {
-            headers: authHeaders(),
-          },
-        );
+        const status = await readRelayStatus();
         if (!cancelled) {
           consecutiveFailures = 0;
           setRelayStatus(status);
@@ -472,8 +604,24 @@ function BackendBrowserTab({
               pointerEvents: "none",
             }
       }
-      className="relative flex-col overflow-auto bg-muted/20"
+      className="relative flex-col overflow-auto bg-muted/20 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary/30"
     >
+      {interactive ? (
+        <textarea
+          ref={sinkRef}
+          aria-label={wt.pageInteractiveHint}
+          className="pointer-events-none absolute left-0 top-0 size-px resize-none opacity-0"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onKeyDown={onSinkKeyDown}
+          onInput={(event) => {
+            if ((event.nativeEvent as InputEvent).isComposing) return;
+            takeSinkText(event.currentTarget);
+          }}
+          onCompositionEnd={(event) => takeSinkText(event.currentTarget)}
+        />
+      ) : null}
       <div
         className={cn(
           AUTOMATION_CAPSULE_OVERLAY_CLASS_NAME,
@@ -596,21 +744,47 @@ function BackendBrowserTab({
         <img
           src={screenshot}
           alt={tab.title || tab.url}
-          className="w-full object-contain"
-          onClick={() => void refreshScreenshot()}
+          className={cn(
+            "w-full object-contain",
+            interactive && "cursor-pointer",
+          )}
+          draggable={false}
+          // Typing after a click belongs to the page, not the address bar.
+          onMouseDown={() => {
+            if (interactive) sinkRef.current?.focus({ preventScroll: true });
+          }}
+          onClick={(event) => {
+            if (!interactive) return void refreshScreenshot();
+            const point = pagePoint(event);
+            if (point) void forwardAction("click_page_at", point);
+          }}
+          onDoubleClick={(event) => {
+            if (!interactive) return;
+            const point = pagePoint(event);
+            if (point) void forwardAction("double_click_page_at", point);
+          }}
         />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+          {loading ? (
+            <Loader2Icon
+              className="mb-1 size-5 animate-spin text-muted-foreground"
+              aria-hidden="true"
+            />
+          ) : null}
           <div className="text-sm font-medium">{wt.connectingPlugin}</div>
           <div className="max-w-sm text-xs leading-relaxed text-muted-foreground">
             {wt.connectingPluginDesc}
           </div>
         </div>
       )}
-      {loading && (
-        <div className="absolute inset-0 grid place-items-center bg-background/60 text-xs text-muted-foreground">
-          Loading...
-        </div>
+      {/* Over a page: a thin bar, so the last screenshot stays readable. */}
+      {loading && screenshot && (
+        <div
+          role="progressbar"
+          aria-label={wt.connectingPlugin}
+          className="absolute inset-x-0 top-0 h-0.5 animate-pulse bg-primary/70"
+        />
       )}
       {error && (
         <div className="absolute left-3 right-3 top-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -628,9 +802,10 @@ function BackendBrowserTab({
 
 export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
   function WebviewTab(
-    { tab, active, onPatch, onClose, renderDevice },
+    { tab, active, visible, onPatch, onClose, renderDevice },
     imperativeRef,
   ) {
+    const shown = visible ?? active;
     useWorkbenchAvailabilitySync();
     const activeAgentId = useActiveAgentId() ?? "general";
     const enabledModuleIds = useEnabledModuleIds(activeAgentId);
@@ -662,6 +837,18 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
     // "The WebView must be attached to the DOM and the dom-ready event
     // emitted before this method can be called."
     const readyRef = useRef(false);
+    // Saved back / forward history is handed to the desktop shell before the
+    // page loads (it can only be restored into a fresh webContents); the
+    // webview gets its src once that is queued.
+    const [restoreHistory] = useState(() =>
+      window.echo?.browser?.queueNavigationRestore &&
+      !tab.private &&
+      (tab.navHistory?.entries.length ?? 0) > 1
+        ? tab.navHistory!
+        : null,
+    );
+    const [restoreQueued, setRestoreQueued] = useState(!restoreHistory);
+    const isPrivateTab = Boolean(tab.private);
 
     // Implementation note.
     const safe = <T,>(fn: () => T, fallback: T): T => {
@@ -704,8 +891,11 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
       [],
     );
 
+    // Outside the desktop app this tab renders <BackendBrowserTab>, which
+    // owns the handle; binding the webview handle too would overwrite it
+    // (parents' layout effects run after children's).
     useImperativeHandle(
-      imperativeRef,
+      window.echo?.isElectron ? imperativeRef : null,
       () => ({
         reload: () =>
           safe(() => {
@@ -723,19 +913,17 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
             return undefined;
           }, undefined),
         loadURL: (url) => {
-          if (!ref.current || !readyRef.current) {
-            // Implementation note.
-            if (ref.current) ref.current.src = url;
+          const wv = ref.current;
+          if (!wv) return;
+          // Navigate through the src attribute, the same path as the tab's
+          // src={tab.url}: callers also patch tab.url, and Electron ignores
+          // setting src to the value it already has. Calling wv.loadURL here
+          // as well would start the navigation twice (two back entries).
+          if (readyRef.current && safe(() => wv.getURL(), "") === url) {
+            safe(() => wv.reload(), undefined);
             return;
           }
-          try {
-            void ref.current.loadURL(url).catch((e) => {
-              swallow(e);
-            });
-          } catch (e) {
-            swallow(e);
-            ref.current.src = url;
-          }
+          wv.src = url;
         },
         canGoBack: () => safe(() => ref.current!.canGoBack(), false),
         canGoForward: () => safe(() => ref.current!.canGoForward(), false),
@@ -767,6 +955,63 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
             throw new Error("webview not ready");
           }
           return api.browser.capturePage(wv.getWebContentsId());
+        },
+        stop: () =>
+          safe(() => {
+            ref.current?.stop();
+            return undefined;
+          }, undefined),
+        findInPage: (text, { forward, findNext }) =>
+          new Promise<FindInPageResult | null>((resolve) => {
+            const wv = ref.current;
+            if (!wv || !readyRef.current || !text) return resolve(null);
+            let requestId = -1;
+            const timer = window.setTimeout(() => {
+              wv.removeEventListener("found-in-page", onFound);
+              resolve(null);
+            }, 1500);
+            function onFound(event: Event) {
+              const result = (
+                event as Event & {
+                  result?: {
+                    requestId: number;
+                    matches: number;
+                    activeMatchOrdinal: number;
+                    finalUpdate: boolean;
+                  };
+                }
+              ).result;
+              if (
+                !result ||
+                result.requestId !== requestId ||
+                !result.finalUpdate
+              ) {
+                return;
+              }
+              window.clearTimeout(timer);
+              wv?.removeEventListener("found-in-page", onFound);
+              resolve({
+                matches: result.matches,
+                active: result.activeMatchOrdinal,
+              });
+            }
+            wv.addEventListener("found-in-page", onFound);
+            requestId = wv.findInPage(text, { forward, findNext });
+          }),
+        stopFindInPage: () =>
+          safe(() => {
+            ref.current?.stopFindInPage("clearSelection");
+            return undefined;
+          }, undefined),
+        print: async () => {
+          const wv = ref.current;
+          const api = window.echo;
+          // The ECHO OS shell has no print call yet: Ctrl+P does nothing.
+          if (!wv || !api?.browser.print || !readyRef.current) return;
+          const result = await api.browser.print(wv.getWebContentsId());
+          if (!result.ok && result.error && result.error !== "cancelled") {
+            throw new Error(result.error);
+          }
         },
         runAction: async (action, params = {}) => {
           const wv = ref.current;
@@ -855,7 +1100,20 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
       const onStart = () => onPatch({ isLoading: true });
       const onStop = () => onPatch({ isLoading: false });
       const onNavigated = (e: Event & { url?: string }) => {
-        if (e.url) onPatch({ url: e.url });
+        if (!e.url) return;
+        onPatch({ url: e.url });
+        if (isPrivateTab) return;
+        const api = window.echo?.browser;
+        if (!api?.getNavigationHistory) return;
+        void api
+          .getNavigationHistory(wv.getWebContentsId())
+          .then((result) => {
+            if (result.ok && result.entries.length > 0)
+              onPatch({
+                navHistory: { entries: result.entries, index: result.index },
+              });
+          })
+          .catch(swallow);
       };
 
       // Implementation note.
@@ -920,7 +1178,28 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
           onCrashed as EventListener,
         );
       };
-    }, [adoptionLease, onPatch, reloadSeed]);
+    }, [adoptionLease, isPrivateTab, onPatch, reloadSeed]);
+
+    useEffect(() => {
+      const api = window.echo?.browser;
+      if (!restoreHistory || !api?.queueNavigationRestore) return;
+      let cancelled = false;
+      api
+        .queueNavigationRestore(
+          tab.url,
+          restoreHistory.entries,
+          restoreHistory.index,
+        )
+        .catch(swallow)
+        // Without the shell's help the tab just loads its address.
+        .finally(() => {
+          if (!cancelled) setRestoreQueued(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- once, for the history captured at mount
+    }, []);
 
     useEffect(
       () => () => {
@@ -956,11 +1235,28 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
         cancelled = true;
         wv.removeEventListener("dom-ready", handler);
       };
-    }, [tab.device]);
+    }, [tab.device, tab.url]);
 
-    // Implementation note.
-    // Implementation note.
-    const style: CSSProperties = active
+    // Report the active page; the <webview> only exists once off the start page.
+    useEffect(() => {
+      const wv = ref.current;
+      if (!active || !wv) return;
+      const select = () => {
+        try {
+          window.echo?.bridge.setActiveTab(wv.getWebContentsId());
+        } catch {
+          /* webview is not attached yet */
+        }
+      };
+      if (readyRef.current) select();
+      wv.addEventListener("dom-ready", select);
+      return () => {
+        wv.removeEventListener("dom-ready", select);
+        window.echo?.bridge.setActiveTab(null);
+      };
+    }, [active, reloadSeed, tab.url]);
+
+    const style: CSSProperties = shown
       ? { display: "inline-flex", width: "100%", height: "100%" }
       : {
           display: "inline-flex",
@@ -984,11 +1280,19 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
       return (
         <Suspense
           fallback={
+            // The graphite start page stays dark in either color scheme, so its
+            // first paint matches home instead of an empty grey pane.
             <div
-              className="size-full animate-pulse bg-muted/25"
+              data-echo-theme="graphite"
+              className="grid size-full place-items-center bg-[radial-gradient(ellipse_at_50%_38%,var(--echo-surface-raised)_0%,var(--echo-surface)_48%,var(--echo-ground)_100%)]"
               role="status"
               aria-label="加载浏览器桌面"
-            />
+            >
+              <div className="flex flex-col items-center gap-3 text-sm text-[var(--echo-ink-muted)]">
+                <EchoMark className="size-11" />
+                正在打开主页…
+              </div>
+            </div>
           }
         >
           <BrowserHome
@@ -1078,13 +1382,17 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
       );
     }
 
-    if (crash && active) {
+    if (crash && shown) {
       return (
         <div
           style={{ width: "100%", height: "100%" }}
           className="flex flex-col items-center justify-center gap-3 bg-muted/30 px-6 text-center"
         >
-          <div className="text-4xl">{crash.autoRecovering ? "🔄" : "😵"}</div>
+          {crash.autoRecovering ? (
+            <RefreshCwIcon className="size-8 text-muted-foreground" />
+          ) : (
+            <CircleAlertIcon className="size-8 text-destructive" />
+          )}
           <div className="text-base font-semibold">
             {crash.autoRecovering ? "正在恢复标签页" : wt.crashTitle}
           </div>
@@ -1129,26 +1437,30 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
 
     const controlEdgeVisible = controlIndicator.mode !== "idle";
     const controlEdgePaused = controlIndicator.mode === "paused";
+    // Agent control lights the edge in core (running); a pause is a
+    // warning. ECHO has no green or teal.
+    const edgeTint = (token: "--echo-core" | "--echo-warning", pct: number) =>
+      `color-mix(in srgb, var(${token}) ${pct}%, transparent)`;
     const controlEdgeColor = controlEdgePaused
-      ? "rgba(245, 158, 11, 0.78)"
-      : "rgba(20, 184, 166, 0.62)";
+      ? edgeTint("--echo-warning", 78)
+      : edgeTint("--echo-core", 62);
     const controlEdgeGlow = controlEdgePaused
       ? [
-          "inset 0 0 0 1px rgba(245, 158, 11, 0.34)",
-          "inset 0 0 18px rgba(245, 158, 11, 0.18)",
+          `inset 0 0 0 1px ${edgeTint("--echo-warning", 34)}`,
+          `inset 0 0 18px ${edgeTint("--echo-warning", 18)}`,
         ].join(", ")
       : [
-          "inset 0 0 0 1px rgba(20, 184, 166, 0.26)",
-          "inset 0 0 18px rgba(20, 184, 166, 0.16)",
+          `inset 0 0 0 1px ${edgeTint("--echo-core", 26)}`,
+          `inset 0 0 18px ${edgeTint("--echo-core", 16)}`,
         ].join(", ");
 
     return (
       <div style={style} className="relative overflow-hidden bg-background">
         <style>
           {`@keyframes echo-browser-webview-edge-pulse {
-  0% { box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.24), inset 0 0 10px rgba(20, 184, 166, 0.10); }
-  45% { box-shadow: inset 0 0 0 2px rgba(20, 184, 166, 0.72), inset 0 0 24px rgba(20, 184, 166, 0.24); }
-  100% { box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.26), inset 0 0 18px rgba(20, 184, 166, 0.16); }
+  0% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--echo-core) 24%, transparent), inset 0 0 10px color-mix(in srgb, var(--echo-core) 10%, transparent); }
+  45% { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--echo-core) 72%, transparent), inset 0 0 24px color-mix(in srgb, var(--echo-core) 24%, transparent); }
+  100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--echo-core) 26%, transparent), inset 0 0 18px color-mix(in srgb, var(--echo-core) 16%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) {
   .echo-browser-webview-edge-light { animation: none !important; transition: none !important; }
@@ -1157,8 +1469,10 @@ export const WebviewTab = forwardRef<WebviewTabHandle, Props>(
         <webview
           key={`wv-${tab.id}-${reloadSeed}`}
           ref={ref as unknown as React.RefObject<HTMLElement>}
-          src={tab.url}
-          partition="persist:echo-browser"
+          src={restoreQueued ? tab.url : undefined}
+          // Private tabs get an in-memory session that is dropped on quit.
+          partition={tab.private ? "echo-private" : "persist:echo-browser"}
+          {...WEBVIEW_FLAG_ATTRIBUTES}
           data-echo-webcontents-adoption-lease={adoptionLease}
           data-echo-adopted-web-contents-id="pending"
           style={{ width: "100%", height: "100%" }}

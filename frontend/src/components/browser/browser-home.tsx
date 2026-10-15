@@ -1,3 +1,12 @@
+import { resolveBrowserInput } from "./task-browser-start";
+import {
+  readPreferredEngineName,
+  SEARCH_ENGINES,
+  writePreferredEngineName,
+  type SearchEngine,
+} from "./search-engines";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { EchoAppTile } from "@/components/ui/echo-app-tile";
 import {
   useEffect,
   useLayoutEffect,
@@ -6,12 +15,13 @@ import {
   useRef,
   useMemo,
   type CSSProperties,
+  type ReactNode,
   type DragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
   SearchIcon,
-  CloudSunIcon,
+  MailIcon,
   BotIcon,
   HomeIcon,
   PaletteIcon,
@@ -31,6 +41,9 @@ import {
   LayoutGridIcon,
   SparklesIcon,
   BookOpenIcon,
+  MessageCircleIcon,
+  BrainCircuitIcon,
+  GraduationCapIcon,
   Edit3,
   EllipsisIcon,
   Folder,
@@ -41,10 +54,6 @@ import {
   Minimize2,
   Maximize2,
   CompassIcon,
-  SquareKanbanIcon,
-  CandlestickChartIcon,
-  DnaIcon,
-  RssIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,6 +63,9 @@ import {
   actorScopedStorageKey,
   readActorScopedStorageValue,
 } from "@/core/auth/scoped-storage";
+import { BrowserStartPage, topSitesFromHistory } from "./browser-start-page";
+import { requestBrowserAssistantAsk } from "./assistant-ask";
+import { SystemWidgetBody, WeatherWidgetBody } from "./desktop-widgets";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/core/i18n/hooks";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -66,9 +78,8 @@ import {
   WORKBENCH_BUILTIN_APPS,
   setWorkspaceWebShortcut,
   useWorkspaceWebShortcuts,
-  type WorkbenchBuiltinIcon,
 } from "@/core/workbench/apps";
-import { AI_DESKTOP_APPS as EXTERNAL_DESKTOP_APPS } from "./desktop-apps";
+import { WORKBENCH_APP_ICONS } from "@/components/workspace/module-icons";
 import { useActiveAgentId } from "@/core/agents/active";
 import { useEnabledModuleIds } from "@/core/modules/enabled-modules";
 import { useWorkbenchAvailabilitySync } from "@/core/workbench/availability";
@@ -102,14 +113,20 @@ type DesktopPanelId =
   | "games"
   | "add"
   | "settings";
-type DesktopAppCategory = "workspace" | "ai" | "video" | "dev" | "knowledge";
+type DesktopAppCategory =
+  | "workspace"
+  | "ai"
+  | "video"
+  | "dev"
+  | "knowledge"
+  | "tool";
+type DesktopAppGroupId = Exclude<DesktopAppCategory, "tool">;
 
 interface BrowserDesktopApp {
   name: string;
   url: string;
   icon: LucideIcon;
   logoUrl?: string;
-  color: string;
   description: string;
   category: DesktopAppCategory;
   moduleId?: string;
@@ -172,37 +189,11 @@ interface EditWidgetState {
   size: Widget["size"];
 }
 
-const BUILTIN_ICON_MAP: Record<WorkbenchBuiltinIcon, LucideIcon> = {
-  database: SquareKanbanIcon,
-  projects: SquareKanbanIcon,
-  trading: CandlestickChartIcon,
-  design: PaletteIcon,
-  narrative: BookOpenIcon,
-  evolution: DnaIcon,
-  intelligence: RssIcon,
-  community: CompassIcon,
-};
-
-/** ECHO app tiles are one graphite tile with a snow glyph; the glyph, not
- * a colour, tells native apps apart. */
-const ECHO_APP_TILE = "from-zinc-700/85 to-zinc-900/85";
-const BUILTIN_ICON_TONE: Record<WorkbenchBuiltinIcon, string> = {
-  database: ECHO_APP_TILE,
-  projects: ECHO_APP_TILE,
-  trading: ECHO_APP_TILE,
-  design: ECHO_APP_TILE,
-  narrative: ECHO_APP_TILE,
-  evolution: ECHO_APP_TILE,
-  intelligence: ECHO_APP_TILE,
-  community: ECHO_APP_TILE,
-};
-
 const WORKSPACE_DESKTOP_APPS: BrowserDesktopApp[] = WORKBENCH_BUILTIN_APPS.map(
   (app) => ({
     name: app.name,
     url: app.launchUrl,
-    icon: BUILTIN_ICON_MAP[app.icon],
-    color: BUILTIN_ICON_TONE[app.icon],
+    icon: WORKBENCH_APP_ICONS[app.icon],
     description: app.description,
     category: "workspace",
     workspaceRoute: app.workspaceRoute,
@@ -212,18 +203,230 @@ const WORKSPACE_DESKTOP_APPS: BrowserDesktopApp[] = WORKBENCH_BUILTIN_APPS.map(
 
 const AI_DESKTOP_APPS: BrowserDesktopApp[] = [
   ...WORKSPACE_DESKTOP_APPS,
-  ...EXTERNAL_DESKTOP_APPS,
+  {
+    name: "QQ 邮箱",
+    url: "https://mail.qq.com/",
+    icon: MailIcon,
+    description: "QQ 邮箱网页版，收发邮件",
+    category: "tool",
+  },
+  {
+    name: "163 邮箱",
+    url: "https://mail.163.com/",
+    icon: MailIcon,
+    description: "网易 163 邮箱网页版，收发邮件",
+    category: "tool",
+  },
+  {
+    name: "Gmail",
+    url: "https://mail.google.com/",
+    icon: MailIcon,
+    description: "Google 邮箱网页版，收发邮件",
+    category: "tool",
+  },
+  {
+    name: "Outlook",
+    url: "https://outlook.live.com/mail/",
+    icon: MailIcon,
+    description: "Microsoft 邮箱网页版，收发邮件",
+    category: "tool",
+  },
+  {
+    name: "Gemini",
+    url: "https://gemini.google.com/app",
+    icon: SparklesIcon,
+    logoUrl: "https://cdn.simpleicons.org/googlegemini",
+    description: "Comprehensive search, multi-turn analysis",
+    category: "ai",
+  },
+  {
+    name: "NotebookLM",
+    url: "https://notebooklm.google.com/",
+    icon: BookOpenIcon,
+    logoUrl: "https://cdn.simpleicons.org/notebooklm",
+    description: "Library, citations, document research",
+    category: "ai",
+  },
+  {
+    name: "Doubao",
+    url: "https://www.doubao.com/chat/",
+    icon: MessageCircleIcon,
+    logoUrl: "https://www.google.com/s2/favicons?domain=www.doubao.com&sz=128",
+    description: "Chinese research, Chinese rewriting",
+    category: "ai",
+  },
+  {
+    name: "DeepSeek",
+    url: "https://chat.deepseek.com/",
+    icon: BrainCircuitIcon,
+    logoUrl: "https://cdn.simpleicons.org/deepseek",
+    description: "Reasoning, coding, Chinese Q&A",
+    category: "ai",
+  },
+  {
+    name: "Tongyi Qianwen",
+    url: "https://chat.qwen.ai/",
+    icon: SparklesIcon,
+    logoUrl: "https://cdn.simpleicons.org/qwen",
+    description: "Tongyi models, multimodal chat",
+    category: "ai",
+  },
+  {
+    name: "Wenxin Yiyan",
+    url: "https://yiyan.baidu.com/",
+    icon: MessageCircleIcon,
+    logoUrl: "https://cdn.simpleicons.org/baidu",
+    description: "Baidu agents, Chinese creation",
+    category: "ai",
+  },
+  {
+    name: "Tencent Yuanbao",
+    url: "https://yuanbao.tencent.com/",
+    icon: BotIcon,
+    logoUrl:
+      "https://www.google.com/s2/favicons?domain=yuanbao.tencent.com&sz=128",
+    description: "Chinese search, material summary",
+    category: "ai",
+  },
+  {
+    name: "Perplexity",
+    url: "https://www.perplexity.ai/",
+    icon: SearchIcon,
+    logoUrl: "https://cdn.simpleicons.org/perplexity",
+    description: "Web search, source leads",
+    category: "ai",
+  },
+  {
+    name: "ChatGPT",
+    url: "https://chatgpt.com/",
+    icon: BotIcon,
+    // No logoUrl: chatgpt.com serves its favicon with
+    // Cross-Origin-Resource-Policy: same-origin, so it can never load here and
+    // only logged ERR_BLOCKED_BY_RESPONSE before falling back to the glyph.
+    description: "General chat, coding assistance",
+    category: "ai",
+  },
+  {
+    name: "Claude",
+    url: "https://claude.ai/",
+    icon: BrainCircuitIcon,
+    logoUrl: "https://cdn.simpleicons.org/claude",
+    description: "Long-text analysis, writing organization",
+    category: "ai",
+  },
+  {
+    name: "Kimi",
+    url: "https://www.kimi.com/",
+    icon: GraduationCapIcon,
+    logoUrl: "https://www.google.com/s2/favicons?domain=www.kimi.com&sz=128",
+    description: "Long context, Chinese materials",
+    category: "ai",
+  },
+  {
+    name: "Agnes AI",
+    url: "https://app.agnes-ai.com/",
+    icon: ImageIcon,
+    logoUrl:
+      "https://www.google.com/s2/favicons?domain=app.agnes-ai.com&sz=128",
+    description: "AI gateway, image/video generation",
+    category: "ai",
+  },
+  {
+    name: "YouTube",
+    url: "https://www.youtube.com/",
+    icon: ImageIcon,
+    logoUrl: "https://cdn.simpleicons.org/youtube",
+    description: "Videos, channels, live streams",
+    category: "video",
+  },
+  {
+    name: "Bilibili",
+    url: "https://www.bilibili.com/",
+    icon: ImageIcon,
+    logoUrl: "https://cdn.simpleicons.org/bilibili",
+    description: "Videos, anime, knowledge zone",
+    category: "video",
+  },
+  {
+    name: "GitHub",
+    url: "https://github.com/",
+    icon: BotIcon,
+    logoUrl: "https://github.githubassets.com/favicons/favicon.svg",
+    description: "Code repos, project collaboration",
+    category: "dev",
+  },
+  {
+    name: "Stack Overflow",
+    url: "https://stackoverflow.com/",
+    icon: BrainCircuitIcon,
+    logoUrl: "https://cdn.simpleicons.org/stackoverflow",
+    description: "Programming Q&A, troubleshooting",
+    category: "dev",
+  },
+  {
+    name: "MDN",
+    url: "https://developer.mozilla.org/",
+    icon: BookOpenIcon,
+    logoUrl: "https://cdn.simpleicons.org/mdnwebdocs",
+    description: "Web docs, API reference",
+    category: "dev",
+  },
+  {
+    name: "Zhihu",
+    url: "https://www.zhihu.com/",
+    icon: SearchIcon,
+    logoUrl: "https://cdn.simpleicons.org/zhihu",
+    description: "Q&A, columns, Chinese materials",
+    category: "knowledge",
+  },
+  {
+    name: "Wikipedia",
+    url: "https://www.wikipedia.org/",
+    icon: GraduationCapIcon,
+    logoUrl: "https://cdn.simpleicons.org/wikipedia",
+    description: "Encyclopedia, background materials",
+    category: "knowledge",
+  },
 ];
 
 const DESKTOP_APP_GROUPS: Array<{
-  id: DesktopAppCategory;
+  id: DesktopAppGroupId;
   appUrls: string[];
-}> = (["workspace", "ai", "video", "dev", "knowledge"] as const).map((id) => ({
-  id,
-  appUrls: AI_DESKTOP_APPS.filter((app) => app.category === id).map(
-    (app) => app.url,
-  ),
-}));
+}> = [
+  {
+    id: "workspace",
+    appUrls: WORKBENCH_BUILTIN_APPS.map((app) => app.launchUrl),
+  },
+  {
+    id: "ai",
+    appUrls: [
+      "https://gemini.google.com/app",
+      "https://notebooklm.google.com/",
+      "https://chatgpt.com/",
+      "https://www.doubao.com/chat/",
+      "https://chat.deepseek.com/",
+      "https://chat.qwen.ai/",
+      "https://yiyan.baidu.com/",
+      "https://yuanbao.tencent.com/",
+    ],
+  },
+  {
+    id: "video",
+    appUrls: ["https://www.youtube.com/", "https://www.bilibili.com/"],
+  },
+  {
+    id: "dev",
+    appUrls: [
+      "https://github.com/",
+      "https://stackoverflow.com/",
+      "https://developer.mozilla.org/",
+    ],
+  },
+  {
+    id: "knowledge",
+    appUrls: ["https://www.zhihu.com/", "https://www.wikipedia.org/"],
+  },
+];
 
 const DESKTOP_SIDE_NAV: Array<{
   id: DesktopPanelId;
@@ -235,39 +438,6 @@ const DESKTOP_SIDE_NAV: Array<{
   { id: "games", icon: Gamepad2Icon },
 ];
 
-const SEARCH_ENGINES = [
-  {
-    name: "Baidu",
-    url: "https://www.baidu.com/s?wd=",
-    icon: "Bai",
-    logoUrl: "https://www.baidu.com/favicon.ico",
-    accent: "bg-[#2f6bff] text-white",
-  },
-  {
-    name: "Google",
-    url: "https://www.google.com/search?q=",
-    icon: "G",
-    logoUrl: "https://www.google.com/favicon.ico",
-    accent: "bg-white text-[#4285f4]",
-  },
-  {
-    name: "Bing",
-    url: "https://www.bing.com/search?q=",
-    icon: "B",
-    logoUrl: "https://www.bing.com/favicon.ico",
-    accent: "bg-[#008373] text-white",
-  },
-  {
-    name: "GitHub",
-    url: "https://github.com/search?q=",
-    icon: "GH",
-    logoUrl: "https://github.githubassets.com/favicons/favicon.svg",
-    accent: "bg-[#24292f] text-white",
-  },
-];
-
-type SearchEngine = (typeof SEARCH_ENGINES)[number];
-
 function DesktopAppLogo({
   app,
   className,
@@ -278,27 +448,30 @@ function DesktopAppLogo({
   iconClassName?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const FallbackIcon = app.icon;
+
+  if (failed || !app.logoUrl) {
+    return (
+      <EchoAppTile
+        icon={app.icon}
+        className={cn("rounded-md", className)}
+        iconClassName={iconClassName}
+      />
+    );
+  }
 
   return (
     <span
       className={cn(
         "grid place-items-center overflow-hidden rounded-md text-foreground transition",
         className,
-        (failed || !app.logoUrl) && "bg-gradient-to-br text-white",
-        (failed || !app.logoUrl) && app.color,
       )}
     >
-      {failed || !app.logoUrl ? (
-        <FallbackIcon className={cn("size-1/2", iconClassName)} />
-      ) : (
-        <img
-          src={app.logoUrl}
-          alt=""
-          className={cn("size-[68%] object-contain", iconClassName)}
-          onError={() => setFailed(true)}
-        />
-      )}
+      <img
+        src={app.logoUrl}
+        alt=""
+        className={cn("size-[68%] object-contain", iconClassName)}
+        onError={() => setFailed(true)}
+      />
     </span>
   );
 }
@@ -346,20 +519,11 @@ const QUICK_LINKS_KEY = "echo:browser:quick-links";
 const FOLDERS_KEY = "echo:browser:folders";
 const WIDGETS_KEY = "echo:browser:widgets";
 const DESKTOP_BACKDROP_KEY = "echo:browser:desktop-backdrop";
-const INTERNAL_DOCK_APP_URLS = WORKBENCH_BUILTIN_APPS.map(
-  (app) => app.launchUrl,
-);
-const DEFAULT_INTERNAL_DOCK_APP_IDS = new Set([
-  "projects",
-  "paper-trading",
-  "intelligence",
-  "community",
-]);
-const DEFAULT_INTERNAL_DOCK_APP_URLS = WORKBENCH_BUILTIN_APPS.filter((app) =>
-  DEFAULT_INTERNAL_DOCK_APP_IDS.has(app.id),
-).map((app) => app.launchUrl);
 const DEFAULT_DOCK_APP_URLS = [
-  ...DEFAULT_INTERNAL_DOCK_APP_URLS,
+  "echo://workspace/projects",
+  "echo://workspace/paper-trading",
+  "echo://workspace/intelligence",
+  "echo://workspace/community",
   "https://gemini.google.com/app",
   "https://chat.deepseek.com/",
   "https://chat.qwen.ai/",
@@ -367,6 +531,9 @@ const DEFAULT_DOCK_APP_URLS = [
   "https://chatgpt.com/",
   "https://github.com/",
 ];
+const INTERNAL_DOCK_APP_URLS = WORKBENCH_BUILTIN_APPS.map(
+  (app) => app.launchUrl,
+);
 const LEGACY_DOCK_REPLACEMENTS = new Set([
   "https://notebooklm.google.com/",
   "https://www.youtube.com/",
@@ -388,60 +555,52 @@ const DESKTOP_BACKDROPS: Record<DesktopBackdropId, DesktopBackdropConfig> = {
   "theme-mist": {
     imageUrl:
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_16%_10%,rgba(236,253,245,0.72),transparent_27%),radial-gradient(circle_at_78%_6%,rgba(125,211,252,0.42),transparent_25%),radial-gradient(circle_at_88%_70%,rgba(251,207,232,0.38),transparent_31%),radial-gradient(circle_at_34%_88%,rgba(253,230,138,0.24),transparent_30%),linear-gradient(145deg,#5f8c91_0%,#8ea7bd_34%,#bba8b8_68%,#d1ad8f_100%)]",
+    className: "bg-linear-to-br from-muted-foreground via-muted to-background",
     swatchClassName:
-      "bg-gradient-to-br from-muted-foreground via-zinc-300 to-destructive",
+      "bg-linear-to-br from-muted-foreground via-muted to-background",
   },
   "theme-focus": {
     imageUrl:
       "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_18%_10%,rgba(59,130,246,0.34),transparent_28%),radial-gradient(circle_at_82%_14%,rgba(168,85,247,0.24),transparent_30%),radial-gradient(circle_at_76%_82%,rgba(14,165,233,0.18),transparent_32%),linear-gradient(145deg,#0f172a_0%,#1e293b_42%,#111827_100%)]",
+    className: "bg-linear-to-br from-foreground to-muted-foreground",
     swatchClassName:
       "bg-gradient-to-br from-background via-muted-foreground/30 to-primary",
   },
   "theme-clear": {
     imageUrl:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_18%_12%,rgba(191,219,254,0.86),transparent_28%),radial-gradient(circle_at_78%_18%,rgba(125,211,252,0.48),transparent_28%),radial-gradient(circle_at_82%_82%,rgba(224,242,254,0.82),transparent_34%),linear-gradient(145deg,#eff6ff_0%,#dbeafe_36%,#f8fafc_72%,#e0f2fe_100%)]",
-    swatchClassName: "bg-gradient-to-br from-sky-200 via-white to-blue-300",
+    className: "bg-linear-to-br from-muted via-background to-muted",
+    swatchClassName: "bg-linear-to-br from-muted via-background to-muted",
   },
   "wallpaper-sky": {
     imageUrl:
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_22%_14%,rgba(219,234,254,0.92),transparent_26%),radial-gradient(circle_at_72%_16%,rgba(103,232,249,0.44),transparent_28%),linear-gradient(145deg,#60a5fa_0%,#93c5fd_45%,#f8fafc_100%)]",
-    swatchClassName: "bg-gradient-to-br from-sky-300 via-blue-300 to-white",
+    className: "bg-linear-to-b from-muted-foreground/70 to-background",
+    swatchClassName: "bg-linear-to-b from-muted-foreground/70 to-background",
   },
   "wallpaper-clear-sky": {
     imageUrl:
       "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_24%_16%,rgba(219,234,254,0.72),transparent_30%),radial-gradient(circle_at_76%_28%,rgba(226,232,240,0.52),transparent_32%),linear-gradient(145deg,#dbeafe_0%,#f8fafc_52%,#e0f2fe_100%)]",
-    swatchClassName: "bg-gradient-to-br from-blue-100 via-white to-sky-200",
+    className: "bg-linear-to-b from-muted to-background",
+    swatchClassName: "bg-linear-to-b from-muted to-background",
   },
   "wallpaper-forest": {
     imageUrl:
       "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_18%_12%,rgba(187,247,208,0.56),transparent_30%),radial-gradient(circle_at_78%_70%,rgba(45,212,191,0.28),transparent_34%),linear-gradient(145deg,#134e4a_0%,#3f6212_46%,#a7f3d0_100%)]",
-    swatchClassName: "bg-gradient-to-br from-success via-teal-500 to-lime-700",
+    className: "bg-linear-to-br from-foreground/80 to-muted",
+    swatchClassName: "bg-linear-to-br from-foreground/80 to-muted",
   },
   "wallpaper-ember": {
     imageUrl:
       "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&q=80",
-    className:
-      "bg-[radial-gradient(circle_at_20%_16%,rgba(254,215,170,0.66),transparent_30%),radial-gradient(circle_at_84%_76%,rgba(251,113,133,0.36),transparent_32%),linear-gradient(145deg,#44403c_0%,#a16207_50%,#fed7aa_100%)]",
-    swatchClassName:
-      "bg-gradient-to-br from-stone-600 via-warning to-orange-200",
+    className: "bg-linear-to-br from-foreground/70 to-background",
+    swatchClassName: "bg-linear-to-br from-foreground/70 to-background",
   },
 };
 
 function getBackdropImageStyle(
   backdrop: DesktopBackdropConfig,
-  overlay = "linear-gradient(180deg,rgba(15,23,42,0.18),rgba(15,23,42,0.12))",
+  overlay = "linear-gradient(180deg,rgba(9,10,12,0.18),rgba(9,10,12,0.12))",
 ): CSSProperties | undefined {
   if (!backdrop.imageUrl) return undefined;
   return {
@@ -469,7 +628,15 @@ const WIDGET_PANEL_TYPES: Widget["type"][] = [
   "weather",
   "system",
 ];
+const GAME_PANEL_URLS = [
+  "https://www.bilibili.com/",
+  "https://poki.com/",
+  "https://music.youtube.com/",
+  "https://www.youtube.com/",
+];
 
+// ECHO OS is shared by a household: the start page and its desktop layout
+// are kept per signed-in actor.
 function browserHomeProfileKey(key: string, actor = currentActorId()): string {
   return actorScopedStorageKey(key, actor);
 }
@@ -488,12 +655,6 @@ function readBrowserHomeJson<T>(key: string, fallback: T): T {
     return fallback;
   }
 }
-const GAME_PANEL_URLS = [
-  "https://www.bilibili.com/",
-  "https://poki.com/",
-  "https://music.youtube.com/",
-  "https://www.youtube.com/",
-];
 
 function loadDesktopAppOrder(): string[] {
   if (typeof window === "undefined")
@@ -602,7 +763,7 @@ function MenuItem({
       <Icon className="w-4 h-4 flex-shrink-0" />
       <span className="flex-1 text-left">{label}</span>
       {shortcut && (
-        <span className="text-xs text-muted-foreground/70">{shortcut}</span>
+        <span className="text-xs text-muted-foreground">{shortcut}</span>
       )}
     </button>
   );
@@ -788,7 +949,9 @@ export function BrowserHome({
   active,
   device,
   onOpen,
+  startContent,
 }: {
+  startContent?: ReactNode;
   active: boolean;
   device: BrowserTab["device"];
   onOpen: (url: string) => void;
@@ -806,13 +969,25 @@ export function BrowserHome({
   const wt = t.browser.webviewTab;
   const bt = t.browserHome;
   const bp = t.browserPreviewPanel;
-  const { history } = useBrowserStore();
+  const { history, setCopilotOpen } = useBrowserStore();
+  const topSites = useMemo(() => topSitesFromHistory(history), [history]);
+  // The start page's main action: hand the question to the browser AI.
+  const askAssistant = useCallback(
+    (text: string) => {
+      setCopilotOpen(true);
+      requestBrowserAssistantAsk(text);
+    },
+    [setCopilotOpen],
+  );
   const workspaceWebShortcuts = useWorkspaceWebShortcuts();
+  const [desktopVisible, setDesktopVisible] = useState(false);
   const [localServices, setLocalServices] = useState<DetectedLocalService[]>(
     [],
   );
   const [scanningLocalServices, setScanningLocalServices] = useState(false);
 
+  // Automatic scans reuse a recent result; the refresh button forces one.
+  // The device answers for its own loopback (GET /api/appliance/local-services).
   const scanLocalServices = useCallback((force = false) => {
     const ownPort = Number(window.location.port);
     const excludePorts =
@@ -825,9 +1000,9 @@ export function BrowserHome({
   }, []);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || !desktopVisible) return;
     scanLocalServices();
-  }, [active, scanLocalServices]);
+  }, [active, desktopVisible, scanLocalServices]);
 
   const appNameMap = useMemo<Record<string, string>>(
     () => ({
@@ -877,10 +1052,21 @@ export function BrowserHome({
   );
 
   const [query, setQuery] = useState("");
-  const [selectedEngine, setSelectedEngine] = useState(0);
+  const [selectedEngine, setSelectedEngine] = useState(() =>
+    Math.max(
+      0,
+      SEARCH_ENGINES.findIndex(
+        (engine) => engine.name === readPreferredEngineName(),
+      ),
+    ),
+  );
+  useEffect(() => {
+    if (profileActorRef.current !== actor) return;
+    writePreferredEngineName(SEARCH_ENGINES[selectedEngine]!.name, actor);
+  }, [actor, selectedEngine]);
   const [enginePickerOpen, setEnginePickerOpen] = useState(false);
   const [openAppGroupId, setOpenAppGroupId] =
-    useState<DesktopAppCategory | null>(null);
+    useState<DesktopAppGroupId | null>(null);
   const homeRootRef = useRef<HTMLDivElement>(null);
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const appGroupAnchorRef = useRef<HTMLDivElement>(null);
@@ -921,28 +1107,24 @@ export function BrowserHome({
       window.removeEventListener("resize", place);
     };
   }, [openAppGroupId]);
-  // Once it may cover the category tiles, a click elsewhere or Escape closes
-  // the popover instead of only its close button.
+  // Once it may cover the category tiles, a click elsewhere closes the
+  // popover instead of only its close button (Escape is handled below).
   useEffect(() => {
     if (!openAppGroupId) return;
     const onPointerDown = (event: PointerEvent) => {
       if (appGroupAnchorRef.current?.contains(event.target as Node)) return;
       setOpenAppGroupId(null);
     };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpenAppGroupId(null);
-    };
     document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [openAppGroupId]);
   const [activePanel, setActivePanel] = useState<DesktopPanelId>("home");
   const [editMode, setEditMode] = useState(false);
   useEffect(() => {
-    const enterEditMode = () => setEditMode(true);
+    const enterEditMode = () => {
+      setDesktopVisible(true);
+      setEditMode(true);
+    };
     window.addEventListener(BROWSER_EDIT_HOME_EVENT, enterEditMode);
     return () =>
       window.removeEventListener(BROWSER_EDIT_HOME_EVENT, enterEditMode);
@@ -1109,7 +1291,7 @@ export function BrowserHome({
   );
   const desktopAppGroups = useMemo(() => {
     const titles: Record<
-      DesktopAppCategory,
+      DesktopAppGroupId,
       { title: string; subtitle: string }
     > = {
       workspace: { title: "ECHO 工作台", subtitle: "原生能力，一键直达" },
@@ -1227,6 +1409,14 @@ export function BrowserHome({
     setQuickLinks(readBrowserHomeJson<QuickLink[]>(QUICK_LINKS_KEY, []));
     setFolders(readBrowserHomeJson<UserFolder[]>(FOLDERS_KEY, []));
     setWidgets(readBrowserHomeJson<Widget[]>(WIDGETS_KEY, []));
+    setSelectedEngine(
+      Math.max(
+        0,
+        SEARCH_ENGINES.findIndex(
+          (engine) => engine.name === readPreferredEngineName(actor),
+        ),
+      ),
+    );
     setFolderOpenStates({});
     setContextMenu((current) => ({ ...current, visible: false }));
     setEditWidgetState({
@@ -1240,6 +1430,18 @@ export function BrowserHome({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.defaultPrevented ||
+        document.querySelector(
+          '[data-slot="dialog-content"][data-state="open"]',
+        )
+      )
+        return;
+      const typing =
+        e.target instanceof HTMLElement &&
+        (e.target.isContentEditable ||
+          /INPUT|TEXTAREA|SELECT/.test(e.target.tagName));
+      if (typing && e.key !== "Escape") return;
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -1249,14 +1451,18 @@ export function BrowserHome({
         searchInputRef.current?.focus();
       }
       if (e.key === "Escape") {
-        setContextMenu((prev) => ({ ...prev, visible: false }));
-        setEnginePickerOpen(false);
-        setEditMode(false);
+        e.preventDefault();
+        if (contextMenu.visible)
+          setContextMenu((prev) => ({ ...prev, visible: false }));
+        else if (enginePickerOpen) setEnginePickerOpen(false);
+        else if (activePanel !== "home") setActivePanel("home");
+        else if (openAppGroupId) setOpenAppGroupId(null);
+        else setEditMode(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [contextMenu.visible, enginePickerOpen, activePanel, openAppGroupId]);
 
   useEffect(() => {
     if (!enginePickerOpen) return;
@@ -1277,11 +1483,7 @@ export function BrowserHome({
     if (!trimmed) return;
     const engine = selectedSearchEngine;
     if (!engine) return;
-    const target = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)
-      ? trimmed
-      : /\s/.test(trimmed) || !trimmed.includes(".")
-        ? engine.url + encodeURIComponent(trimmed)
-        : `https://${trimmed}`;
+    const target = resolveBrowserInput(trimmed, engine.url);
     setEnginePickerOpen(false);
     onOpen(target);
   };
@@ -1448,7 +1650,7 @@ export function BrowserHome({
       if (
         !(await confirm({
           title: wt.deleteConfirmTitle,
-          description: wt.deleteConfirmDescription,
+          description: `${widgets.find((item) => item.id === id)?.title ?? quickLinks.find((item) => item.id === id)?.name ?? folders.find((item) => item.id === id)?.name ?? ""} — ${wt.deleteConfirmDescription}`,
           confirmLabel: wt.ctxDelete,
           destructive: true,
         }))
@@ -1463,7 +1665,15 @@ export function BrowserHome({
         })),
       );
     },
-    [confirm, wt.ctxDelete, wt.deleteConfirmDescription, wt.deleteConfirmTitle],
+    [
+      confirm,
+      widgets,
+      quickLinks,
+      folders,
+      wt.ctxDelete,
+      wt.deleteConfirmDescription,
+      wt.deleteConfirmTitle,
+    ],
   );
 
   const handleResize = useCallback((id: string, size: string) => {
@@ -1671,6 +1881,31 @@ export function BrowserHome({
   const activeBackdrop = DESKTOP_BACKDROPS[desktopBackdrop];
   const activeBackdropStyle = getBackdropImageStyle(activeBackdrop);
 
+  if (!desktopVisible) {
+    return (
+      <BrowserStartPage
+        active={active}
+        children={startContent}
+        query={query}
+        onQueryChange={setQuery}
+        onSearch={submitSearch}
+        searchInputRef={searchInputRef}
+        engines={engines}
+        selectedEngine={selectedEngine}
+        onEngineChange={setSelectedEngine}
+        apps={visibleDesktopApps.map((app) => ({
+          ...app,
+          name: getAppName(app.name),
+          description: getAppDesc(app.description),
+        }))}
+        onOpen={openDesktopApp}
+        onManageDesktop={() => setDesktopVisible(true)}
+        onAsk={askAssistant}
+        topSites={topSites}
+      />
+    );
+  }
+
   return (
     <div
       ref={homeRootRef}
@@ -1697,6 +1932,17 @@ export function BrowserHome({
       )}
       onContextMenu={handleBackgroundContext}
     >
+      <button
+        type="button"
+        className="absolute left-16 top-2 z-40 rounded-lg border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm hover:bg-muted"
+        onClick={() => {
+          setDesktopVisible(false);
+          setEditMode(false);
+          setActivePanel("home");
+        }}
+      >
+        返回主页
+      </button>
       <div
         data-testid="desktop-side-rail"
         className={cn(
@@ -1725,7 +1971,7 @@ export function BrowserHome({
           type="button"
           onClick={() => openDesktopApp("echo://workspace/community")}
           className="mt-1 grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
-          title="发现社区"
+          title={t.sidebar.navCommunity}
         >
           <CompassIcon className="size-[18px]" />
         </button>
@@ -1779,10 +2025,10 @@ export function BrowserHome({
 
       <div
         className={cn(
-          "flex h-full min-h-0 flex-col pl-16 pr-10 pt-7",
-          compactDesktop && "pl-14 pr-5 pt-5 pb-28",
+          "flex h-full min-h-0 flex-col pl-16 pr-10 pt-16",
+          compactDesktop && "pl-14 pr-5 pt-16 pb-28",
           tabletDesktop && "pl-16 pr-8",
-          mobileDesktop && "pl-12 pr-4 pt-4 pb-24",
+          mobileDesktop && "pl-12 pr-4 pt-16 pb-24",
         )}
       >
         <div
@@ -1817,7 +2063,7 @@ export function BrowserHome({
               />
               <ChevronDownIcon
                 className={cn(
-                  "size-3 text-muted-foreground/60 transition-transform group-hover:text-muted-foreground",
+                  "size-3 text-muted-foreground transition-transform group-hover:text-muted-foreground",
                   enginePickerOpen && "rotate-180 text-foreground",
                 )}
               />
@@ -1832,7 +2078,7 @@ export function BrowserHome({
               placeholder={wt.searchPlaceholderFormat(
                 selectedSearchEngine?.name ?? wt.searchEngineFallback,
               )}
-              className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground/60"
+              className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
 
@@ -1918,7 +2164,7 @@ export function BrowserHome({
               </button>
               <button
                 type="button"
-                onClick={() => handleAddWidget()}
+                onClick={() => setActivePanel("widgets")}
                 className={cn(
                   "rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
                   HOME_CONTROL_SURFACE,
@@ -2061,7 +2307,7 @@ export function BrowserHome({
                   </button>
                 ))}
               </div>
-              <div className="mt-1.5 text-center text-mini font-medium text-muted-foreground/70">
+              <div className="mt-1.5 text-center text-mini font-medium text-muted-foreground">
                 {bt.commonCategories}
               </div>
 
@@ -2089,7 +2335,7 @@ export function BrowserHome({
                       <button
                         type="button"
                         onClick={() => setOpenAppGroupId(null)}
-                        className="grid size-7 place-items-center rounded-lg text-muted-foreground/70 transition hover:bg-foreground/5 hover:text-foreground"
+                        className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground"
                       >
                         <X className="size-4" />
                       </button>
@@ -2197,7 +2443,7 @@ export function BrowserHome({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-border-subtle/60 px-3 py-4 text-center text-mini text-muted-foreground/70">
+                <div className="rounded-lg border border-border-subtle/60 px-3 py-4 text-center text-mini text-muted-foreground">
                   {scanningLocalServices
                     ? bp.scanLocalServices
                     : bp.noLocalServices}
@@ -2226,7 +2472,7 @@ export function BrowserHome({
                 </div>
                 <div
                   className={cn(
-                    "grid size-7 place-items-center rounded-lg text-muted-foreground/70",
+                    "grid size-7 place-items-center rounded-lg text-muted-foreground",
                   )}
                   title={bt.historyOnly}
                 >
@@ -2239,7 +2485,7 @@ export function BrowserHome({
                 </div>
               )}
               {recentPanelItems.length === 0 && (
-                <div className="rounded-lg border border-border-subtle/60 px-3 py-4 text-center text-mini text-muted-foreground/70">
+                <div className="rounded-lg border border-border-subtle/60 px-3 py-4 text-center text-mini text-muted-foreground">
                   {bt.noRecentVisits}
                 </div>
               )}
@@ -2279,7 +2525,7 @@ export function BrowserHome({
                             <button
                               type="button"
                               onClick={() => handleEdit(widget.id)}
-                              className="grid size-7 place-items-center rounded-lg text-muted-foreground/60 transition hover:bg-foreground/5 hover:text-muted-foreground"
+                              className="grid size-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/5 hover:text-muted-foreground"
                               title={wt.ctxEditWidget}
                               aria-label={wt.ctxEditWidget}
                             >
@@ -2291,7 +2537,7 @@ export function BrowserHome({
                             onClick={(event) =>
                               handleContext(event, widget.id, "widget")
                             }
-                            className="grid size-7 place-items-center rounded-lg text-muted-foreground/55 opacity-60 transition hover:bg-foreground/5 hover:text-foreground focus-visible:opacity-100 group-hover/widget:opacity-100"
+                            className="grid size-7 place-items-center rounded-lg text-muted-foreground opacity-60 transition hover:bg-foreground/5 hover:text-foreground focus-visible:opacity-100 group-hover/widget:opacity-100"
                             title={`${wt.ctxEditWidget} / ${wt.ctxDelete}`}
                             aria-label={`${wt.ctxEditWidget} / ${wt.ctxDelete}`}
                           >
@@ -2309,27 +2555,8 @@ export function BrowserHome({
                             </div>
                           </div>
                         )}
-                        {widget.type === "weather" && (
-                          <div className="flex items-center gap-2">
-                            <CloudSunIcon
-                              aria-hidden
-                              className="size-5 text-foreground"
-                            />
-                            <span className="text-lg text-muted-foreground">
-                              26°C
-                            </span>
-                          </div>
-                        )}
-                        {widget.type === "system" && (
-                          <div className="space-y-1.5">
-                            <div className="h-1.5 rounded-full bg-muted-foreground/12">
-                              <div className="h-full bg-primary rounded-full w-[23%]" />
-                            </div>
-                            <div className="h-1.5 rounded-full bg-muted-foreground/12">
-                              <div className="h-full bg-accent-foreground/60 rounded-full w-[45%]" />
-                            </div>
-                          </div>
-                        )}
+                        {widget.type === "weather" && <WeatherWidgetBody />}
+                        {widget.type === "system" && <SystemWidgetBody />}
                         {widget.type === "ai-tools" && (
                           <div className="grid grid-cols-3 gap-1.5">
                             {["ChatGPT", "Claude", "Gemini"].map((name) => (
@@ -2484,7 +2711,7 @@ export function BrowserHome({
                           ) : (
                             <Folder className="w-5 h-5 text-muted-foreground" />
                           )}
-                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold">
+                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-micro text-primary-foreground font-bold">
                             {links.length}
                           </span>
                         </div>
@@ -2510,7 +2737,7 @@ export function BrowserHome({
                               )}
                               onClick={() => toggleFolder(folder.id)}
                             >
-                              <X className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-muted-foreground" />
+                              <X className="w-3.5 h-3.5 text-muted-foreground hover:text-muted-foreground" />
                             </button>
                           </div>
                           <div className="grid grid-cols-3 gap-1.5">
@@ -2615,7 +2842,7 @@ export function BrowserHome({
               type="button"
               onClick={() => setActivePanel("add")}
               className={cn(
-                "grid size-12 shrink-0 place-items-center rounded-lg border-dashed border border-border-subtle/70 text-muted-foreground/70 transition",
+                "grid size-12 shrink-0 place-items-center rounded-lg border-dashed border border-border-subtle/70 text-muted-foreground transition",
                 "bg-card/50 hover:bg-card/70 hover:text-muted-foreground",
                 compactDesktop && "size-11 rounded-lg",
                 tabletDesktop && "size-11",
@@ -2636,7 +2863,7 @@ export function BrowserHome({
         onDelete={handleDelete}
         onResize={handleResize}
         onEditHome={() => setEditMode(true)}
-        onAddWidget={() => handleAddWidget()}
+        onAddWidget={() => setActivePanel("widgets")}
         onAddIcon={handleAddIcon}
         onOpenSettings={() => setActivePanel("settings")}
         currentSize={
@@ -2649,97 +2876,108 @@ export function BrowserHome({
       {confirmDialog}
       {promptDialog}
 
-      {editWidgetState.visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="rounded-2xl border border-border bg-popover p-6 w-full max-w-sm text-popover-foreground shadow-[var(--echo-shadow-window)]">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-medium text-foreground">
-                {wt.editWidgetDialogTitle}
-              </h3>
-              <button
-                onClick={() =>
-                  setEditWidgetState({
-                    visible: false,
-                    widgetId: null,
-                    title: "",
-                    type: "notes",
-                    size: "medium",
-                  })
-                }
-              >
-                <X className="w-5 h-5 text-muted-foreground/70 hover:text-muted-foreground" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">
-                  {wt.editWidgetTitleLabel}
-                </label>
-                <input
-                  type="text"
-                  value={editWidgetState.title}
-                  onChange={(e) =>
-                    setEditWidgetState((prev) => ({
-                      ...prev,
-                      title: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-input border border-border-subtle rounded-md px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder={wt.editWidgetTitlePlaceholder}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-muted-foreground mb-2">
-                  {wt.editWidgetTypeLabel}
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    {
-                      type: "weather" as const,
-                      label: wt.editWidgetTypeWeather,
-                    },
-                    {
-                      type: "calendar" as const,
-                      label: wt.editWidgetTypeCalendar,
-                    },
-                    { type: "notes" as const, label: wt.editWidgetTypeNotes },
-                    { type: "system" as const, label: wt.editWidgetTypeSystem },
-                    {
-                      type: "ai-tools" as const,
-                      label: wt.editWidgetTypeAiTools,
-                    },
-                    {
-                      type: "bookmarks" as const,
-                      label: wt.editWidgetTypeBookmarks,
-                    },
-                  ].map(({ type, label }) => (
-                    <button
-                      key={type}
-                      onClick={() =>
-                        setEditWidgetState((prev) => ({ ...prev, type }))
-                      }
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-md border transition-all",
-                        editWidgetState.type === type
-                          ? "bg-accent border-primary text-foreground"
-                          : "bg-card/60 border-border-subtle text-muted-foreground hover:bg-card",
-                      )}
-                    >
-                      <span className="text-xs">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={handleSaveWidget}
-                className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
-              >
-                {wt.editWidgetSave}
-              </button>
-            </div>
+      <Dialog
+        open={editWidgetState.visible}
+        onOpenChange={(open) =>
+          setEditWidgetState((previous) => ({ ...previous, visible: open }))
+        }
+      >
+        <DialogContent
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="max-w-sm"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <DialogTitle className="text-lg font-medium text-foreground">
+              {wt.editWidgetDialogTitle}
+            </DialogTitle>
+            <button
+              aria-label={t.common.close}
+              onClick={() =>
+                setEditWidgetState({
+                  visible: false,
+                  widgetId: null,
+                  title: "",
+                  type: "notes",
+                  size: "medium",
+                })
+              }
+            >
+              <X className="w-5 h-5 text-muted-foreground hover:text-muted-foreground" />
+            </button>
           </div>
-        </div>
-      )}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">
+                {wt.editWidgetTitleLabel}
+              </label>
+              <input
+                aria-label={wt.editWidgetTitleLabel}
+                type="text"
+                value={editWidgetState.title}
+                onChange={(e) =>
+                  setEditWidgetState((prev) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
+                }
+                className="w-full bg-input border border-border-subtle rounded-md px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder={wt.editWidgetTitlePlaceholder}
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">
+                {wt.editWidgetTypeLabel}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  {
+                    type: "weather" as const,
+                    label: wt.editWidgetTypeWeather,
+                  },
+                  {
+                    type: "calendar" as const,
+                    label: wt.editWidgetTypeCalendar,
+                  },
+                  { type: "notes" as const, label: wt.editWidgetTypeNotes },
+                  { type: "system" as const, label: wt.editWidgetTypeSystem },
+                  {
+                    type: "ai-tools" as const,
+                    label: wt.editWidgetTypeAiTools,
+                  },
+                  {
+                    type: "bookmarks" as const,
+                    label: wt.editWidgetTypeBookmarks,
+                  },
+                ].map(({ type, label }) => (
+                  <button
+                    aria-pressed={editWidgetState.type === type}
+                    key={type}
+                    onClick={() =>
+                      setEditWidgetState((prev) => ({ ...prev, type }))
+                    }
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-md border transition-all",
+                      editWidgetState.type === type
+                        ? "bg-accent border-primary text-foreground"
+                        : "bg-card/60 border-border-subtle text-muted-foreground hover:bg-card",
+                    )}
+                  >
+                    <span className="text-xs">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              disabled={!editWidgetState.title.trim()}
+              onClick={handleSaveWidget}
+              className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              {wt.editWidgetSave}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {activePanel !== "home" && (
         <DesktopControlPanel
@@ -2860,8 +3098,7 @@ function DesktopControlPanel({
   return (
     <div
       className={cn(
-        "absolute bottom-7 left-16 top-8 z-20 w-[360px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl",
-        HOME_MENU_SURFACE,
+        "absolute bottom-3 left-3 right-3 top-3 z-20 w-auto overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl sm:bottom-7 sm:left-16 sm:right-auto sm:top-8 sm:w-[360px] sm:max-w-[calc(100%-5rem)]",
       )}
     >
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -2902,7 +3139,7 @@ function DesktopControlPanel({
                   <span
                     style={getBackdropImageStyle(
                       backdrop,
-                      "linear-gradient(180deg,rgba(15,23,42,0.04),rgba(15,23,42,0.1))",
+                      "linear-gradient(180deg,rgba(9,10,12,0.04),rgba(9,10,12,0.1))",
                     )}
                     className={cn(
                       "size-10 rounded-lg shadow-inner",
@@ -2970,7 +3207,7 @@ function DesktopControlPanel({
                   aria-pressed={selectedBackdrop === backdropId}
                   style={getBackdropImageStyle(
                     backdrop,
-                    "linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0.12))",
+                    "linear-gradient(180deg,rgba(9,10,12,0.02),rgba(9,10,12,0.12))",
                   )}
                   className={cn(
                     "relative h-24 rounded-xl border border-border transition overflow-hidden",

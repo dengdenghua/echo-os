@@ -35,6 +35,12 @@ export interface DesktopMoveResult {
   error?: string;
 }
 
+/** One back / forward history entry of a browser tab. */
+export interface BrowserNavigationEntry {
+  url: string;
+  title: string;
+}
+
 export interface BrowserExtensionInfo {
   id: string;
   name: string;
@@ -44,6 +50,42 @@ export interface BrowserExtensionInfo {
   path: string;
   enabled: boolean;
   installedAt: string;
+  /** "folder", or the store it was installed from ("chrome" / "edge"). */
+  source?: string;
+  /** Shown on the toolbar rather than only in the extensions menu. */
+  pinned?: boolean;
+}
+
+/** An extension's toolbar button as it stands for one tab. */
+export interface BrowserExtensionAction {
+  id: string;
+  name: string;
+  title: string;
+  /** data: URL, or null when the extension ships no icon. */
+  icon: string | null;
+  badgeText: string;
+  badgeColor?: string;
+  badgeTextColor?: string;
+  /** The manifest declares a toolbar action. */
+  hasAction: boolean;
+  hasPopup: boolean;
+  hasOptions: boolean;
+  enabled: boolean;
+  pinned: boolean;
+}
+
+/** Toolbar button position, in the app window's CSS pixels. */
+export interface ExtensionActionAnchor {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export interface ExtensionSidePanelState {
+  id: string;
+  name: string;
+  path: string;
 }
 
 export interface NativeDesktopItem {
@@ -319,6 +361,38 @@ export interface EchoElectronAPI {
     resumeDownload: (id: string) => Promise<{ ok: boolean; error?: string }>;
     cancelDownload: (id: string) => Promise<{ ok: boolean; error?: string }>;
     retryDownload: (id: string) => Promise<{ ok: boolean; error?: string }>;
+
+    // The AI browser shared with ECHO AI also uses the calls below. The
+    // ECHO OS shell does not provide them yet, so they are optional and every
+    // caller checks for them: without one, its feature stays hidden.
+    /** Runs `code` in Echo's isolated world: the page's DOM, not its JS. */
+    executeIsolated?: (webContentsId: number, code: string) => Promise<unknown>;
+    print?: (webContentsId: number) => Promise<{ ok: boolean; error?: string }>;
+    /** Answer a "save password?" offer; the password never leaves main. */
+    resolvePasswordOffer?: (
+      token: string,
+      /** "never": don't save and never ask again for this site. */
+      save: boolean | "never",
+    ) => Promise<{ ok: boolean; saved?: boolean; error?: string }>;
+    listPasswordNeverSites?: () => Promise<{ ok: boolean; origins: string[] }>;
+    removePasswordNeverSite?: (origin: string) => Promise<{ ok: boolean }>;
+    getNavigationHistory?: (webContentsId: number) => Promise<{
+      ok: boolean;
+      entries: BrowserNavigationEntry[];
+      index: number;
+      error?: string;
+    }>;
+    /** History for the next webview that attaches with this src. */
+    queueNavigationRestore?: (
+      src: string,
+      entries: BrowserNavigationEntry[],
+      index: number,
+    ) => Promise<{ ok: boolean; error?: string }>;
+    importBookmarks?: (browser: "chrome" | "edge") => Promise<{
+      ok: boolean;
+      entries: { title: string; url: string }[];
+      error?: string;
+    }>;
   };
 
   dialog: {
@@ -351,6 +425,41 @@ export interface EchoElectronAPI {
       error?: string;
     }>;
     remove: (id: string) => Promise<{ ok: boolean; error?: string }>;
+
+    // Store installs, toolbar actions and side panels come from ECHO AI's
+    // extension host, which the ECHO OS shell does not ship: optional.
+    /** Chrome Web Store / Edge Add-ons link or extension ID. */
+    installFromStore?: (input: string) => Promise<{
+      ok: boolean;
+      extension?: BrowserExtensionInfo;
+      error?: string;
+    }>;
+    /** Toolbar buttons of the enabled extensions, for one tab. */
+    actions?: (
+      tabWebContentsId: number | null,
+    ) => Promise<{ ok: boolean; actions: BrowserExtensionAction[] }>;
+    /** Open the popup / side panel, or tell the extension it was clicked. */
+    clickAction?: (
+      id: string,
+      tabWebContentsId: number | null,
+      anchor: ExtensionActionAnchor,
+    ) => Promise<{ ok: boolean; error?: string }>;
+    showActionMenu?: (
+      id: string,
+      tabWebContentsId: number | null,
+    ) => Promise<{ ok: boolean }>;
+    setPinned?: (id: string, pinned: boolean) => Promise<{ ok: boolean }>;
+    openOptions?: (id: string) => Promise<{ ok: boolean; error?: string }>;
+    sidePanelState?: () => Promise<ExtensionSidePanelState | null>;
+    setSidePanelBounds?: (
+      bounds: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      } | null,
+    ) => Promise<void>;
+    closeSidePanel?: (id: string) => Promise<void>;
   };
 
   app: {
@@ -527,6 +636,16 @@ export interface EchoElectronAPI {
       | "browser:tab-crashed"
       | "browser:keyboard-shortcut"
       | "browser:download-event"
+      // Sent by ECHO AI's shell; the ECHO OS shell does not emit them yet,
+      // so listening is harmless and the features they drive stay idle.
+      | "browser:ask-selection"
+      | "browser:webview-pointer"
+      | "browser:password-offer"
+      | "browser:extension-actions-changed"
+      | "browser:extension-side-panel-changed"
+      | "browser:open-extensions"
+      | "browser:focus-webcontents"
+      | "browser:close-webcontents"
       | "desktop:organize-now"
       | "desktop:items-changed"
       | "window:fullscreen-changed",
