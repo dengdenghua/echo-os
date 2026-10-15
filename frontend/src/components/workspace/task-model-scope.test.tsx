@@ -48,3 +48,12 @@ it("does not promise overrides for engines that only consume system profiles", (
     screen.getByText("模型使用系统配置；修改会影响后续任务。"),
   ).toBeInTheDocument();
 });
+
+it("sits on the composer's surface so scrolled messages never read through", () => {
+  // Golden path 2026-10: table rows of a long answer read through
+  // 模型作用范围 while the conversation scrolled under the composer.
+  render(<TaskModelScope scope="system" supportsOverride onChange={vi.fn()} />);
+  expect(
+    screen.getByText("下方修改会同步系统默认，影响后续任务。").parentElement,
+  ).toHaveClass("bg-background/90", "backdrop-blur-sm");
+});

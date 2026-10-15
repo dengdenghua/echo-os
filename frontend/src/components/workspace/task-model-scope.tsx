@@ -1,3 +1,10 @@
+// The row floats above the composer while the conversation scrolls under it,
+// so it sits on the composer card's own surface (the workbench window's
+// background is translucent): without it, message text read through
+// 模型作用范围 and the hint.
+const ROW =
+  "mb-2 w-fit max-w-full rounded-md bg-background/90 px-2 py-1 backdrop-blur-sm";
+
 export function TaskModelScope({
   scope,
   supportsOverride,
@@ -11,13 +18,15 @@ export function TaskModelScope({
 }) {
   if (!supportsOverride) {
     return (
-      <p className="mb-2 text-xs text-muted-foreground">
+      <p className={`${ROW} text-xs text-muted-foreground`}>
         模型使用系统配置；修改会影响后续任务。
       </p>
     );
   }
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+    <div
+      className={`${ROW} flex flex-wrap items-center gap-2 text-xs text-muted-foreground`}
+    >
       <label className="flex items-center gap-2">
         模型作用范围
         <select
