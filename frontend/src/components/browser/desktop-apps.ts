@@ -16,7 +16,7 @@ export interface BrowserDesktopApp {
   name: string;
   url: string;
   icon: LucideIcon;
-  logoUrl: string;
+  logoUrl?: string;
   color: string;
   description: string;
   descriptionKey?: string;
@@ -105,7 +105,9 @@ export const AI_DESKTOP_APPS: BrowserDesktopApp[] = [
     name: "ChatGPT",
     url: "https://chatgpt.com/",
     icon: BotIcon,
-    logoUrl: "https://chatgpt.com/favicon.ico",
+    // No logoUrl: chatgpt.com serves its favicon with
+    // Cross-Origin-Resource-Policy: same-origin, so it can never load here and
+    // only logged ERR_BLOCKED_BY_RESPONSE before falling back to the glyph.
     color: "from-zinc-700 to-zinc-500",
     description: "General chat, coding assistance",
     descriptionKey: "generalChat",
