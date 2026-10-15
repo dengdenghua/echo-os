@@ -65,14 +65,18 @@ const WALLPAPERS: readonly WallpaperOption[] = [
   {
     id: "ocean",
     name: "星海",
-    url: "/images/browser-wallpapers/milky-way-ocean.png",
+    url: "/images/browser-wallpapers/milky-way-ocean.webp",
   },
   {
     id: "forest",
     name: "森林",
-    url: "/images/browser-wallpapers/forest-calm.png",
+    url: "/images/browser-wallpapers/forest-calm.webp",
   },
-  { id: "sky", name: "晴空", url: "/images/browser-wallpapers/sky-studio.png" },
+  {
+    id: "sky",
+    name: "晴空",
+    url: "/images/browser-wallpapers/sky-studio.webp",
+  },
 ] as const;
 
 export interface StartSite {
