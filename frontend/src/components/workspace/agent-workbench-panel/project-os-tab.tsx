@@ -389,6 +389,14 @@ function formatEstimate(value: number | undefined): string {
   return `${value} 天`;
 }
 
+/** Chinese label for a project action spec; the runtime sends English
+ *  ("Run", "Tick"). Shared with the 项目管理 page. */
+export function projectActionLabel(
+  spec: Pick<ProjectActionSpec, "action" | "label">,
+): string {
+  return PROJECT_ACTION_LABEL[spec.action] ?? spec.label ?? spec.action;
+}
+
 function displayActionLabel(spec: ProjectActionSpec, task = false): string {
   return (
     (task

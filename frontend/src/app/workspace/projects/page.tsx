@@ -50,6 +50,7 @@ import {
   WorkspaceContainer,
 } from "@/components/workspace/workspace-container";
 import { useI18n } from "@/core/i18n/hooks";
+import { projectActionLabel } from "@/components/workspace/agent-workbench-panel/project-os-tab";
 import { CreateProjectDialog } from "@/components/workspace/create-project-dialog";
 import {
   projectQueryKey,
@@ -313,23 +314,23 @@ const HEALTH_LABEL: Record<string, string> = {
 
 const HEALTH_TONE: Record<Health, string> = {
   on_track: "bg-core/15 text-core border-core/30",
-  at_risk: "bg-amber-500/15 text-amber-600 border-amber-500/30",
-  overdue: "bg-orange-500/15 text-orange-600 border-orange-500/30",
-  blocked: "bg-rose-500/15 text-rose-600 border-rose-500/30",
-  completed: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  at_risk: "bg-warning/15 text-warning border-warning/30",
+  overdue: "bg-warning/15 text-warning border-warning/30",
+  blocked: "bg-warning/15 text-warning border-warning/30",
+  completed: "bg-success/15 text-success border-success/30",
 };
 
 const STATUS_TONE: Record<string, string> = {
   planning: "bg-muted text-muted-foreground",
   running: "bg-core/15 text-core",
-  blocked: "bg-rose-500/15 text-rose-600",
-  done: "bg-sky-500/15 text-sky-600",
-  failed: "bg-rose-500/15 text-rose-600",
+  blocked: "bg-warning/15 text-warning",
+  done: "bg-success/15 text-success",
+  failed: "bg-destructive/15 text-destructive",
 };
 
 const PRIORITY_TONE: Record<string, string> = {
-  P0: "bg-rose-500/15 text-rose-600",
-  P1: "bg-amber-500/15 text-amber-600",
+  P0: "bg-warning/15 text-warning",
+  P1: "bg-muted text-foreground",
   P2: "bg-muted text-muted-foreground",
   P3: "bg-muted text-muted-foreground/70",
 };
@@ -475,7 +476,7 @@ export default function ProjectsPage() {
         );
         return;
       }
-      toast.success(`${spec.label} 已执行`);
+      toast.success(`${projectActionLabel(spec)} 已执行`);
       detailQuery.refetch();
       projectsQuery.refetch();
     } catch {
@@ -701,7 +702,7 @@ export default function ProjectsPage() {
                                 ) : (
                                   <ArrowRightIcon className="size-3.5" />
                                 )}
-                                {spec.label}
+                                {projectActionLabel(spec)}
                               </Button>
                             ))}
                           </div>
@@ -791,7 +792,7 @@ export default function ProjectsPage() {
                           <CardContent className="space-y-3">
                             {pm.milestones.length === 0 && (
                               <div className="text-sm text-muted-foreground">
-                                还没有里程碑 —— 先执行 Run 让引擎拆解计划。
+                                还没有里程碑 —— 先点「开始推进」让引擎拆解计划。
                               </div>
                             )}
                             {pm.milestones.map((m) => (
@@ -846,20 +847,20 @@ export default function ProjectsPage() {
                                   </span>
                                 </div>
                                 {m.overdue_tasks.length > 0 && (
-                                  <div className="mt-3 space-y-2 border-t border-orange-500/15 pt-2.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-orange-600/90">
+                                  <div className="mt-3 space-y-2 border-t border-warning/15 pt-2.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">
                                       <TimerIcon className="size-3" />
                                       逾期任务 · {m.overdue_tasks.length}
                                     </div>
                                     {m.overdue_tasks.map((o) => (
                                       <div
                                         key={o.id}
-                                        className="rounded-lg bg-orange-500/[0.07] px-3 py-2"
+                                        className="rounded-lg bg-warning/[0.07] px-3 py-2"
                                       >
-                                        <div className="text-xs leading-relaxed text-orange-800">
+                                        <div className="text-xs leading-relaxed text-foreground">
                                           {o.goal}
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1 text-xs text-orange-600/80">
+                                        <div className="mt-1 flex items-center gap-1 text-xs text-warning/80">
                                           <CalendarRangeIcon className="size-3" />
                                           截止 {fmtDate(o.due_at)} · 已逾期
                                         </div>
@@ -877,7 +878,7 @@ export default function ProjectsPage() {
                           <Card>
                             <CardHeader className="pb-2">
                               <CardTitle className="flex items-center gap-1.5 text-sm">
-                                <AlertTriangleIcon className="size-4 text-rose-500" />
+                                <AlertTriangleIcon className="size-4 text-warning" />
                                 风险与阻塞
                               </CardTitle>
                             </CardHeader>
@@ -894,7 +895,7 @@ export default function ProjectsPage() {
                                     key={`${r.type}-${i}`}
                                     className="flex items-start gap-2 rounded-md border bg-card/50 px-2.5 py-2 text-xs"
                                   >
-                                    <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+                                    <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0 text-warning" />
                                     <div className="min-w-0">
                                       <div className="font-medium">
                                         {r.type === "milestone"
@@ -961,7 +962,7 @@ export default function ProjectsPage() {
                           <Card>
                             <CardHeader className="pb-2">
                               <CardTitle className="flex items-center gap-1.5 text-sm">
-                                <UsersIcon className="size-4 text-sky-500" />
+                                <UsersIcon className="size-4 text-info" />
                                 人员指派
                               </CardTitle>
                             </CardHeader>
@@ -1030,10 +1031,10 @@ export default function ProjectsPage() {
 
                     {/* Retro */}
                     {retro && (
-                      <Card className="border-sky-500/30 bg-sky-500/[0.03]">
+                      <Card className="border-info/30 bg-info/[0.03]">
                         <CardHeader className="pb-2">
                           <CardTitle className="flex items-center gap-1.5 text-sm">
-                            <ClipboardListIcon className="size-4 text-sky-500" />
+                            <ClipboardListIcon className="size-4 text-info" />
                             项目复盘
                           </CardTitle>
                         </CardHeader>
@@ -1081,7 +1082,7 @@ export default function ProjectsPage() {
                                   key={i}
                                   className="flex items-start gap-1.5 text-xs"
                                 >
-                                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-sky-500" />
+                                  <ArrowRightIcon className="mt-0.5 size-3 shrink-0 text-info" />
                                   <span>{r}</span>
                                 </li>
                               ))}

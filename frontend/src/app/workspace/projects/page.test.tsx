@@ -249,9 +249,9 @@ describe("ProjectsPage production error states", () => {
     });
 
     renderWithProviders(<ProjectsPage />, { locale: "zh-CN" });
-    await user.click(
-      await screen.findByRole("button", { name: "Run project" }),
-    );
+    // The runtime's English action label is shown in Chinese.
+    await user.click(await screen.findByRole("button", { name: "开始推进" }));
+    expect(screen.queryByRole("button", { name: "Run project" })).toBeNull();
 
     await waitFor(() =>
       expect(toastMocks.error).toHaveBeenCalledWith(
