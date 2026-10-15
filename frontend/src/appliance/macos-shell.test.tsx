@@ -650,7 +650,7 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Echo 菜单"));
+    await user.click(screen.getByLabelText("ECHO 菜单"));
     await user.click(screen.getByRole("button", { name: "关于本机" }));
 
     expect(onOpenAbout).toHaveBeenCalledOnce();
@@ -837,7 +837,7 @@ describe("Echo desktop shell", () => {
 
     // The first Tab lands on the Echo menu; arrows move between titles.
     await user.tab();
-    expect(screen.getByLabelText("Echo 菜单")).toHaveFocus();
+    expect(screen.getByLabelText("ECHO 菜单")).toHaveFocus();
     await user.keyboard("{ArrowRight}");
     const appTitle = screen.getByRole("button", { name: "照片", exact: true });
     expect(appTitle).toHaveFocus();
@@ -900,16 +900,16 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Echo 菜单"));
+    await user.click(screen.getByLabelText("ECHO 菜单"));
     expect(screen.getByRole("button", { name: "睡眠…" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "重新启动…" }));
     expect(onSystemAction).toHaveBeenCalledWith("restart");
 
-    await user.click(screen.getByLabelText("Echo 菜单"));
+    await user.click(screen.getByLabelText("ECHO 菜单"));
     await user.click(screen.getByRole("button", { name: /锁定屏幕/ }));
     expect(onLockScreen).toHaveBeenCalledOnce();
 
-    await user.click(screen.getByLabelText("Echo 菜单"));
+    await user.click(screen.getByLabelText("ECHO 菜单"));
     await user.click(screen.getByRole("button", { name: "退出登录…" }));
     expect(onSystemAction).toHaveBeenCalledWith("logout");
   });
@@ -1000,7 +1000,7 @@ describe("Echo desktop shell", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Echo 菜单"));
+    await user.click(screen.getByLabelText("ECHO 菜单"));
     await user.click(screen.getByRole("button", { name: "应用中心…" }));
     expect(onOpenAppStore).toHaveBeenCalledOnce();
   });

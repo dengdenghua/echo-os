@@ -4546,10 +4546,13 @@ body:has(.macos-desktop-root .mac-menu-bar)
 .macos-desktop-root.mac-liquid-crystal .mac-control-slider input {
   height: 5px;
   appearance: none;
+  /* The filled part is the theme ink and the rest a faint ink: a white fill
+     vanished on the snow panel while the navy remainder read as the level. */
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.94) 0 var(--mac-control-progress),
-    rgba(15, 30, 62, 0.26) var(--mac-control-progress) 100%
+    var(--echo-ink) 0 var(--mac-control-progress),
+    color-mix(in srgb, var(--echo-ink) 18%, transparent)
+      var(--mac-control-progress) 100%
   );
   border-radius: 99px;
   box-shadow:
@@ -8704,15 +8707,14 @@ body:has(.macos-desktop-root .mac-menu-bar)
   background: var(--echo-core) !important;
 }
 
-/* Text menus and Spotlight read like paper, not like a lens: a near-opaque
- * film and no specular glare, so nothing behind them competes with the copy. */
+/* Text menus and Spotlight read like paper, not like a lens: an opaque film
+ * and no specular glare, so nothing behind them competes with the copy.
+ * Menus open inside the menu bar, whose backdrop filter is their backdrop
+ * root, so their own blur never reaches the desktop: with any translucency
+ * the 新手引导 chip read through the snow ECHO menu as crisp ink. */
 .macos-desktop-root[data-liquid-custom="true"]:not([data-liquid-native="ready"])
   :is(.mac-menu-dropdown, .mac-desktop-context-menu, .mac-spotlight) {
-  background-color: color-mix(
-    in srgb,
-    var(--liquid-custom-colour) max(var(--liquid-fill-thick), 94%),
-    transparent
-  ) !important;
+  background-color: var(--liquid-custom-colour) !important;
 }
 
 .macos-desktop-root

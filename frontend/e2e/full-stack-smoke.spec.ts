@@ -191,7 +191,7 @@ test.describe("Full-stack golden smoke", () => {
   test("signing out from the Echo menu returns to the lock screen", async ({
     desktopPage: page,
   }) => {
-    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "ECHO 菜单" }).click();
     await page.getByRole("button", { name: "退出登录…" }).click();
     const confirm = page.getByRole("alertdialog", {
       name: "退出这个浏览器里的 ECHO OS？",
@@ -201,7 +201,7 @@ test.describe("Full-stack golden smoke", () => {
     await expect(confirm).toHaveCount(0);
     await expect(dock(page)).toBeVisible();
 
-    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "ECHO 菜单" }).click();
     await page.getByRole("button", { name: "退出登录…" }).click();
     await confirm.getByRole("button", { name: "退出登录" }).click();
     await expect(lockScreenPassword(page)).toBeVisible({ timeout: 15_000 });

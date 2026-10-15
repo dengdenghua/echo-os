@@ -62,7 +62,7 @@ test.describe("Mobile desktop smoke", () => {
     );
 
     await signIn(page);
-    await expect(page.getByRole("button", { name: "Echo 菜单" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "ECHO 菜单" })).toBeVisible();
     await expectNoHorizontalOverflow(
       page,
       desktop(page).getByRole("textbox", { name: "输入意图" }),
@@ -93,7 +93,7 @@ test.describe("Mobile desktop smoke", () => {
   test("系统设置 switches every section from its phone picker", async ({
     desktopPage: page,
   }) => {
-    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "ECHO 菜单" }).click();
     await page.getByRole("button", { name: "系统设置…" }).click();
     const settings = page.getByRole("dialog", { name: "系统设置" });
     await expect(settings).toBeVisible();

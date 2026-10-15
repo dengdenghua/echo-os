@@ -94,7 +94,7 @@ for (const size of [
       await expectNoPageScroll(page, "lock screen");
 
       await signIn(page);
-      const menu = await box(page.getByRole("button", { name: "Echo 菜单" }));
+      const menu = await box(page.getByRole("button", { name: "ECHO 菜单" }));
       expect(menu.top).toBeGreaterThanOrEqual(0);
       expect(menu.bottom).toBeLessThanOrEqual(32);
       const dockBox = await box(dock(page));

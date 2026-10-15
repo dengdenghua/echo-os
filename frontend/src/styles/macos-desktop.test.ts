@@ -100,3 +100,20 @@ describe("window scroll containment", () => {
     );
   });
 });
+
+describe("snow menus and sliders", () => {
+  it("draw text menus on an opaque film so nothing reads through them", () => {
+    expect(css).toMatch(
+      /:is\(\.mac-menu-dropdown, \.mac-desktop-context-menu, \.mac-spotlight\) \{\s*background-color: var\(--liquid-custom-colour\) !important;/,
+    );
+  });
+
+  it("fill the Control Center level with the theme ink, not white", () => {
+    expect(css).toMatch(
+      /\.mac-liquid-crystal \.mac-control-slider input \{[^}]*var\(--echo-ink\) 0 var\(--mac-control-progress\)/,
+    );
+    expect(css).not.toMatch(
+      /rgba\(255, 255, 255, 0\.94\) 0 var\(--mac-control-progress\)/,
+    );
+  });
+});

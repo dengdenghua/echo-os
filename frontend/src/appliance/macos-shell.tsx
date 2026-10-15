@@ -758,7 +758,7 @@ export function MacMenuBar({
             onClick={() =>
               setActiveMenu((value) => (value === "system" ? null : "system"))
             }
-            aria-label="Echo 菜单"
+            aria-label="ECHO 菜单"
           >
             <EchoMark className="size-[17px]" />
           </button>

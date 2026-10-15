@@ -131,7 +131,7 @@ test.describe("Desktop system apps", () => {
     // The Echo menu reaches the same window.
     await inbox.getByRole("button", { name: "关闭审批收件箱" }).click();
     await expect(inbox).toHaveCount(0);
-    await page.getByRole("button", { name: "Echo 菜单" }).click();
+    await page.getByRole("button", { name: "ECHO 菜单" }).click();
     await page
       .getByRole("button", { name: "审批收件箱", exact: true })
       .first()
