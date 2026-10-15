@@ -232,12 +232,14 @@ export function BrowserAutomationSettingsPage() {
     ? "reconnecting"
     : (relay.data?.connection_state ??
       (relay.data?.connected ? "online" : "offline"));
+  // An extension that is simply not connected is not an error: offline is
+  // neutral, and only a live connection lights core.
   const relayTone =
     relayState === "online"
       ? "success"
       : relayState === "reconnecting"
         ? "warning"
-        : "danger";
+        : "neutral";
   const relayVersion = relay.data?.extension_version
     ? `${zh ? "扩展版本" : "Extension version"} ${relay.data.extension_version}`
     : "";
