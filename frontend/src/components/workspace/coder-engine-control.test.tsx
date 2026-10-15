@@ -181,6 +181,25 @@ describe("CoderEngineControl", () => {
     expect(autoRow.querySelector("svg")).not.toBeNull();
   });
 
+  it("does not name Codex while a native Echo turn's model menu loads", async () => {
+    fetchMock.mockImplementation(() => new Promise<Response>(() => {}));
+
+    renderWithProviders(
+      <CoderEngineControl
+        executionEngine="echo"
+        value="auto"
+        systemModels={[]}
+      />,
+      { locale: "zh-CN" },
+    );
+    const trigger = await screen.findByTestId("coder-engine-trigger");
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+    fireEvent.click(trigger);
+    const menu = await screen.findByRole("menu");
+    expect(menu).toHaveTextContent("正在读取模型配置…");
+    expect(menu).not.toHaveTextContent(/Codex/);
+  });
+
   it("lets the Echo kernel switch between system and ChatGPT subscription models without mutating the Codex profile", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

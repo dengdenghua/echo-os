@@ -84,6 +84,7 @@ const COPY = {
     accountModeDescription:
       "使用你的 ChatGPT 订阅或单独提交的 OpenAI API Key。",
     loading: "正在读取 Codex 执行配置…",
+    nativeLoading: "正在读取模型配置…",
     loadFailed: "暂时无法读取 Codex 执行配置。",
     retry: "重试",
     compatible: "可由 Codex 引擎运行",
@@ -181,6 +182,7 @@ const COPY = {
     accountModeDescription:
       "Use your ChatGPT subscription or a separately submitted OpenAI API key.",
     loading: "Loading Codex execution configuration…",
+    nativeLoading: "Loading model configuration…",
     loadFailed: "The Codex execution configuration is unavailable.",
     retry: "Retry",
     compatible: "Compatible with the Codex engine",
@@ -1151,7 +1153,9 @@ export function CoderEngineControl({
           </>
         ) : (
           <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground">
-            <Loader2Icon className="size-3.5 animate-spin" /> {copy.loading}
+            <Loader2Icon className="size-3.5 animate-spin" />{" "}
+            {/* A native Echo turn does not run on Codex; don't name it. */}
+            {nativeKernel ? copy.nativeLoading : copy.loading}
           </div>
         )}
         <button
