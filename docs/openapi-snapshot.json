@@ -16203,6 +16203,16 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "allow_missing",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Allow Missing",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

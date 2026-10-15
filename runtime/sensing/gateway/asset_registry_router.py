@@ -2,7 +2,8 @@
 
 数据源:``runtime.platform.assets.asset_registry``(~/.echo/assets/,统一 index.json)。
 
-- GET  /api/assets                统一资产列表(kind/source/search 过滤)+ 汇总
+- GET  /api/assets                统一资产列表(kind/source/search 过滤)+ 汇总;
+  allow_missing=true 时仓库未初始化返回空列表(summary=null),不报 404
 - GET  /api/assets/{kind}/{asset_id}  单个资产详情
 - POST /api/assets/sync            重建统一仓库(幂等:聚合所有来源 → 写 index + 快照)
 
@@ -74,11 +75,22 @@ def create_asset_registry_router(
         search: str | None = None,
         limit: int = Query(default=500, ge=1, le=2000),
         offset: int = Query(default=0, ge=0),
+        allow_missing: bool = Query(default=False),
     ) -> dict[str, Any]:
         from runtime.platform.assets.asset_registry import list_assets, summary
 
         s = summary()
         if s is None:
+            if allow_missing:
+                # Feature detection for optional readers (the HUB skills tab):
+                # an unbuilt index is an expected state, not a failed request.
+                return {
+                    "summary": None,
+                    "total": 0,
+                    "items": [],
+                    "kind_filter": kind,
+                    "source_filter": source,
+                }
             raise HTTPException(404, "统一资产仓库未初始化,请先 POST /api/assets/sync")
         items = list_assets(kind=kind, source=source, search=search)
         return {

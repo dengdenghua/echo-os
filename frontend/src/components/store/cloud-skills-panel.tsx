@@ -49,11 +49,12 @@ function runtimeSkillAsAsset(skill: SkillInfo): UnifiedAsset {
 }
 
 /**
- * Installed skills for the HUB. The unified asset index is optional: it
- * answers 404 until someone runs POST /api/assets/sync, which a fresh ECHO OS
- * never does. Fall back to the runtime skill registry, the same source the
- * composer's skills menu reads, so the tab never shows zero installed skills
- * while the composer lists them.
+ * Installed skills for the HUB. The unified asset index is optional: it stays
+ * unbuilt until someone runs POST /api/assets/sync, which a fresh ECHO OS
+ * never does. The read asks for an empty page in that case (no failed request
+ * in the console), then falls back to the runtime skill registry, the same
+ * source the composer's skills menu reads, so the tab never shows zero
+ * installed skills while the composer lists them.
  */
 async function loadLocalSkills(): Promise<UnifiedAsset[]> {
   try {
@@ -61,10 +62,11 @@ async function loadLocalSkills(): Promise<UnifiedAsset[]> {
       kind: "skill",
       limit: 500,
       offset: 0,
+      allowMissing: true,
     });
     if (unified.items.length > 0) return unified.items;
   } catch {
-    // Index not built yet; use the runtime registry below.
+    // An older backend without allow_missing still answers 404; fall back.
   }
   try {
     return (await listSkills()).map(runtimeSkillAsAsset);
@@ -209,15 +211,15 @@ export function CloudSkillsPanel({
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <CloudIcon className="size-4 text-primary" />
-        云端 Skills · 本地同名技能自动标记为已安装
+        云端技能 · 本地同名技能自动标记为已安装
         <Badge variant="outline" className="font-normal">
           {entries.filter(isInstalled).length}/{entries.length} 已安装
         </Badge>
       </div>
 
       {cloudError ? (
-        <div className="rounded-lg border border-warning/25 bg-warning/5 px-3 py-2 text-xs text-muted-foreground">
-          云端目录同步失败，当前显示本地 Skills：{cloudError}
+        <div className="rounded-lg border border-border-default bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          云端目录同步失败，当前显示本地技能：{cloudError}
         </div>
       ) : null}
 
@@ -229,7 +231,7 @@ export function CloudSkillsPanel({
         </div>
       ) : entries.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
-          没有匹配的 Skill。
+          没有匹配的技能。
         </div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">

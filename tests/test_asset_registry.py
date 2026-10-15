@@ -307,3 +307,28 @@ def test_flat_plugins_layout_and_collision_suffix(
     assert dirs[("github", "workbuddy")] == "github-workbuddy"
 
 
+
+
+def test_router_reports_unbuilt_index_quietly_when_asked(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from runtime.sensing.gateway.asset_registry_router import create_asset_registry_router
+
+    monkeypatch.setattr(ar, "summary", lambda *args, **kwargs: None)
+    app = FastAPI()
+    app.include_router(create_asset_registry_router())
+    client = TestClient(app)
+
+    # Default readers keep the explicit "run sync first" signal.
+    assert client.get("/api/assets?kind=skill").status_code == 404
+    # Optional readers feature-detect the index without a failed request.
+    quiet = client.get("/api/assets?kind=skill&allow_missing=true")
+    assert quiet.status_code == 200
+    assert quiet.json() == {
+        "summary": None,
+        "total": 0,
+        "items": [],
+        "kind_filter": "skill",
+        "source_filter": None,
+    }

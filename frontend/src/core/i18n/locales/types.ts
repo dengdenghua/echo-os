@@ -3940,6 +3940,10 @@ export interface Translations {
     searchPlaceholderAgents: string;
     searchPlaceholderPlugins: string;
     searchPlaceholderSkills: string;
+    hubTabAgents: string;
+    hubTabApplications: string;
+    hubTabSkills: string;
+    hubSearchPlaceholder: string;
   };
 
   // Local Agent Connect Dialog

@@ -4343,6 +4343,10 @@ export const zhCN: Translations = {
     searchPlaceholderAgents: "搜索角色名称、描述或标签",
     searchPlaceholderPlugins: "搜索插件名称、描述或作者",
     searchPlaceholderSkills: "搜索技能名称、描述或标签",
+    hubTabAgents: "角色",
+    hubTabApplications: "应用",
+    hubTabSkills: "技能",
+    hubSearchPlaceholder: "搜索角色、应用或技能…",
   },
 
   // Local Agent Connect Dialog

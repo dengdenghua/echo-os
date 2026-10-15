@@ -237,7 +237,7 @@ describe("HUB market shell", () => {
       "true",
     );
     expect(screen.getByRole("tab", { name: "应用" })).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Skills" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "技能" })).toBeVisible();
     expect(
       screen.getByRole("button", { name: "添加", exact: true }),
     ).toBeVisible();
@@ -246,7 +246,7 @@ describe("HUB market shell", () => {
     expect(screen.queryByRole("heading", { name: "常用应用" })).toBeNull();
     expect(
       screen.getByRole("textbox", {
-        name: "搜索角色、应用或 Skills…",
+        name: "搜索角色、应用或技能…",
       }),
     ).toBeVisible();
     expect(screen.queryByText(/统一资产/)).toBeNull();
@@ -254,7 +254,7 @@ describe("HUB market shell", () => {
       within(screen.getByTestId("hub-market-navigation"))
         .getAllByRole("tab")
         .map((tab) => tab.textContent?.trim()),
-    ).toEqual(["角色", "应用", "Skills"]);
+    ).toEqual(["角色", "应用", "技能"]);
   });
 
   it("keeps primary personas in scenes and aggregates every remote source", async () => {
@@ -406,7 +406,7 @@ describe("HUB market shell", () => {
     ).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "应用范围" })).toBeNull();
     expect(screen.queryByRole("combobox", { name: "应用来源" })).toBeNull();
-    expect(screen.getByRole("tab", { name: "Skills" })).toBeVisible();
+    expect(screen.getByRole("tab", { name: "技能" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "管理已添加应用" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "添加", exact: true }),

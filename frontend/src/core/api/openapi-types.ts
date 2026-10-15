@@ -23560,6 +23560,7 @@ export interface operations {
                 search?: string | null;
                 limit?: number;
                 offset?: number;
+                allow_missing?: boolean;
             };
             header?: never;
             path?: never;

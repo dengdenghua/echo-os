@@ -119,9 +119,12 @@ describe("CloudSkillsPanel", () => {
 
   it("falls back to the runtime skill registry when the asset index is not built", async () => {
     mocks.fetchCloudSkills.mockResolvedValue({ total: 0, items: [] });
-    mocks.fetchUnifiedAssets.mockRejectedValue(
-      new Error("Unified assets failed: HTTP 404"),
-    );
+    // The read asks for an empty page instead of a 404 (no console error).
+    mocks.fetchUnifiedAssets.mockResolvedValue({
+      summary: null,
+      total: 0,
+      items: [],
+    });
     mocks.listSkills.mockResolvedValue([
       {
         name: "deep-research",
@@ -147,7 +150,24 @@ describe("CloudSkillsPanel", () => {
     ).toBeDisabled();
     expect(screen.getByText("pdf")).toBeVisible();
     expect(screen.getByText("2/2 已安装")).toBeVisible();
-    expect(screen.queryByText("没有匹配的 Skill。")).not.toBeInTheDocument();
+    expect(screen.queryByText("没有匹配的技能。")).not.toBeInTheDocument();
+    expect(mocks.fetchUnifiedAssets).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "skill", allowMissing: true }),
+    );
+  });
+
+  it("still falls back when an older backend answers the index read with 404", async () => {
+    mocks.fetchCloudSkills.mockResolvedValue({ total: 0, items: [] });
+    mocks.fetchUnifiedAssets.mockRejectedValue(
+      new Error("Unified assets failed: HTTP 404"),
+    );
+    mocks.listSkills.mockResolvedValue([
+      { name: "pdf", description: "PDF 处理", enabled: true },
+    ]);
+
+    renderWithProviders(<CloudSkillsPanel />, { locale: "zh-CN" });
+
+    expect(await screen.findByText("pdf")).toBeVisible();
   });
 
   it("does not consult the runtime registry when the asset index has skills", async () => {

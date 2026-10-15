@@ -1259,7 +1259,8 @@ export interface UnifiedAssetsSummary {
 }
 
 export interface UnifiedAssetsResponse {
-  summary: UnifiedAssetsSummary;
+  /** null only for an `allowMissing` read of an index that was never built. */
+  summary: UnifiedAssetsSummary | null;
   total: number;
   items: UnifiedAsset[];
   kind_filter?: string | null;
@@ -1275,6 +1276,8 @@ export async function fetchUnifiedAssets(
     search?: string;
     limit?: number;
     offset?: number;
+    /** Answer an unbuilt index with an empty page instead of a 404. */
+    allowMissing?: boolean;
   } = {},
 ): Promise<UnifiedAssetsResponse> {
   const qs = new URLSearchParams();
@@ -1283,6 +1286,7 @@ export async function fetchUnifiedAssets(
   if (params.search) qs.set("search", params.search);
   qs.set("limit", String(params.limit ?? 500));
   if (params.offset) qs.set("offset", String(params.offset));
+  if (params.allowMissing) qs.set("allow_missing", "true");
   const res = await fetch(
     `${getBackendBaseURL()}${ASSETS_API}?${qs.toString()}`,
     {

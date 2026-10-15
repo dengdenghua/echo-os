@@ -423,10 +423,10 @@ export const jaJP: Translations = {
     noAvailablePlugins: "利用可能なプラグインはありません",
     managePlugins: "プラグインを管理",
     explorePlugins: "プラグインを探す",
-    skills: "Skills",
-    searchSkills: "Skills を検索",
-    noAvailableSkills: "利用可能な Skill はありません",
-    manageSkills: "Skills を管理",
+    skills: "スキル",
+    searchSkills: "スキルを検索",
+    noAvailableSkills: "利用可能なスキルはありません",
+    manageSkills: "スキルを管理",
     addResearchMaterial: "資料を追加",
     codexPlan: "プラン",
     codexSpec: "仕様",
@@ -4430,7 +4430,7 @@ export const jaJP: Translations = {
       agents: "Agent",
       apps: "Apps",
       plugins: "Plugins",
-      skills: "Skills",
+      skills: "スキル",
       registry: "ストア",
     },
     browserPlugins: {
@@ -4621,6 +4621,10 @@ export const jaJP: Translations = {
     searchPlaceholderAgents: "ロール名、説明、タグを検索",
     searchPlaceholderPlugins: "プラグイン名、説明、作成者を検索",
     searchPlaceholderSkills: "スキル名、説明、タグを検索",
+    hubTabAgents: "ロール",
+    hubTabApplications: "アプリ",
+    hubTabSkills: "スキル",
+    hubSearchPlaceholder: "ロール、アプリ、スキルを検索…",
   },
 
   // Local Agent Connect Dialog
@@ -6244,7 +6248,7 @@ export const jaJP: Translations = {
     hideRuntimeMonitor: "実行モニターを隠す",
     runtimeMonitorDescription:
       "予算、サーキットブレーカー、候補スキル、モデル提案、プロトコルドリフト、実行状態を確認します。",
-    skills: "Skills",
+    skills: "スキル",
     memories: "Memories",
     knowledgeGraph: "ナレッジベース",
     improvementScore: "改善スコア",

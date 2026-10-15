@@ -420,10 +420,10 @@ export const koKR: Translations = {
     noAvailablePlugins: "사용 가능한 플러그인이 없습니다",
     managePlugins: "플러그인 관리",
     explorePlugins: "플러그인 탐색",
-    skills: "Skills",
-    searchSkills: "Skills 검색",
-    noAvailableSkills: "사용 가능한 Skill이 없습니다",
-    manageSkills: "Skills 관리",
+    skills: "스킬",
+    searchSkills: "스킬 검색",
+    noAvailableSkills: "사용 가능한 스킬이 없습니다",
+    manageSkills: "스킬 관리",
     addResearchMaterial: "자료 추가",
     codexPlan: "Plan",
     codexSpec: "Spec",
@@ -4359,7 +4359,7 @@ export const koKR: Translations = {
       agents: "Agent",
       apps: "Apps",
       plugins: "Plugins",
-      skills: "Skills",
+      skills: "스킬",
       registry: "스토어",
     },
     browserPlugins: {
@@ -4547,6 +4547,10 @@ export const koKR: Translations = {
     searchPlaceholderAgents: "역할 이름, 설명 또는 태그 검색",
     searchPlaceholderPlugins: "플러그인 이름, 설명 또는 작성자 검색",
     searchPlaceholderSkills: "스킬 이름, 설명 또는 태그 검색",
+    hubTabAgents: "역할",
+    hubTabApplications: "앱",
+    hubTabSkills: "스킬",
+    hubSearchPlaceholder: "역할, 앱 또는 스킬 검색…",
   },
 
   // Local Agent Connect Dialog
@@ -6152,7 +6156,7 @@ export const koKR: Translations = {
     hideRuntimeMonitor: "실행 모니터 접기",
     runtimeMonitorDescription:
       "예산, 회로 차단기, 후보 스킬, 모델 제안, 프로토콜 드리프트와 실행 상태를 확인합니다.",
-    skills: "Skills",
+    skills: "스킬",
     memories: "Memories",
     knowledgeGraph: "지식 베이스",
     improvementScore: "개선 점수",

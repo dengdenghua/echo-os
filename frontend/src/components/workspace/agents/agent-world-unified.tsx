@@ -1652,7 +1652,7 @@ export function AgentWorldUnified() {
     [location.search, navigate],
   );
 
-  const searchPlaceholder = "搜索角色、应用或 Skills…";
+  const searchPlaceholder = t.agentWorldUnified.hubSearchPlaceholder;
 
   return (
     <div className="relative flex size-full flex-col px-2 pb-2 pt-2 md:px-3">
@@ -1693,16 +1693,16 @@ export function AgentWorldUnified() {
                   className="mb-0 w-fit justify-start gap-1 overflow-x-auto pr-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:pr-0"
                 >
                   <TabsTrigger value="agents" className="h-9 px-3 text-xs">
-                    角色
+                    {t.agentWorldUnified.hubTabAgents}
                   </TabsTrigger>
                   <TabsTrigger
                     value="applications"
                     className="h-9 px-3 text-xs"
                   >
-                    应用
+                    {t.agentWorldUnified.hubTabApplications}
                   </TabsTrigger>
                   <TabsTrigger value="skills" className="h-9 px-3 text-xs">
-                    Skills
+                    {t.agentWorldUnified.hubTabSkills}
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -2152,7 +2152,7 @@ export function AgentWorldUnified() {
             <TabsContent value="skills" className="mt-0">
               <section aria-labelledby="skills-library-title">
                 <h2 id="skills-library-title" className="sr-only">
-                  Skills
+                  {t.agentWorldUnified.hubTabSkills}
                 </h2>
                 <CloudSkillsPanel searchQuery={searchQuery} />
               </section>

@@ -4630,6 +4630,10 @@ export const enUS: Translations = {
     searchPlaceholderAgents: "Search role name, description, or tags",
     searchPlaceholderPlugins: "Search plugin name, description, or author",
     searchPlaceholderSkills: "Search skill name, description, or tags",
+    hubTabAgents: "Roles",
+    hubTabApplications: "Apps",
+    hubTabSkills: "Skills",
+    hubSearchPlaceholder: "Search roles, apps or skills…",
   },
 
   // Local Agent Connect Dialog
