@@ -186,7 +186,7 @@ def _hub_capabilities() -> tuple[CapabilityDefinition, ...]:
                 ),
                 _definition(
                     f"hub.{operation}.queue",
-                    f"{label} Echo Hub 应用",
+                    f"{label} ECHO Hub 应用",
                     f"{description}；任务由 Echo 持久化执行，计划漂移时自动停止。",
                     provider=_provider(
                         "echo-os.hub",
@@ -210,8 +210,8 @@ def _hub_capabilities() -> tuple[CapabilityDefinition, ...]:
     return (
         _definition(
             "hub.catalog.list",
-            "浏览 Echo Hub",
-            "读取 Echo Hub 的精选应用、安装状态与当前设备兼容性。",
+            "浏览 ECHO Hub",
+            "读取 ECHO Hub 的精选应用、安装状态与当前设备兼容性。",
             provider=_provider("echo-os.hub", "GET", "/api/appliance/hub/catalog"),
             request_schema={
                 "type": "object",
@@ -260,7 +260,7 @@ def _hub_capabilities() -> tuple[CapabilityDefinition, ...]:
         ),
         _definition(
             "hub.install.apply",
-            "安装 Echo Hub 应用",
+            "安装 ECHO Hub 应用",
             "执行一份刚刚复核且未发生漂移的受信应用安装计划。",
             provider=_provider("echo-os.hub", "POST", "/api/appliance/hub/plans/install/apply"),
             request_schema={
@@ -309,7 +309,7 @@ def _hub_capabilities() -> tuple[CapabilityDefinition, ...]:
         ),
         _definition(
             "hub.update.apply",
-            "更新 Echo Hub 应用",
+            "更新 ECHO Hub 应用",
             "以候选容器替换旧容器；失败时恢复旧容器，保留应用数据卷与 NAS 文件。",
             provider=_provider("echo-os.hub", "POST", "/api/appliance/hub/plans/update/apply"),
             request_schema={
@@ -358,7 +358,7 @@ def _hub_capabilities() -> tuple[CapabilityDefinition, ...]:
         ),
         _definition(
             "hub.uninstall.apply",
-            "卸载 Echo Hub 应用",
+            "卸载 ECHO Hub 应用",
             "移除一份已复核计划中的受管容器，保留应用数据卷与 NAS 文件。",
             provider=_provider("echo-os.hub", "POST", "/api/appliance/hub/plans/uninstall/apply"),
             request_schema={

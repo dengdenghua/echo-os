@@ -90,7 +90,7 @@ export const AppLibraryArtwork = memo(function AppLibraryArtwork() {
   );
 });
 
-/** Echo Hub：三面不同明度的模块方块，表示"可安装的能力"。 */
+/** ECHO Hub：三面不同明度的模块方块，表示"可安装的能力"。 */
 export const HubArtwork = memo(function HubArtwork() {
   return (
     <Glyph>

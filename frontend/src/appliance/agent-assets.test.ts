@@ -18,7 +18,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Agent assets projected into Echo Hub", () => {
+describe("Agent assets projected into ECHO Hub", () => {
   it("reuses Agent catalog and installed state without reading its database", async () => {
     const fetchMock = vi.fn(
       async () =>

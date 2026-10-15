@@ -64,7 +64,7 @@ export async function fetchEchoAccounts(): Promise<EchoAccountDirectory> {
     headers: authHeader(),
   });
   if (!response.ok)
-    throw await responseError(response, "无法读取 Echo 家庭账号");
+    throw await responseError(response, "无法读取 ECHO 家庭账号");
   return (await response.json()) as EchoAccountDirectory;
 }
 
@@ -77,7 +77,7 @@ export async function planEchoAccountLink(
     body: JSON.stringify(desired),
   });
   if (!response.ok)
-    throw await responseError(response, "无法预览 Echo 登录开通");
+    throw await responseError(response, "无法预览 ECHO 登录开通");
   return (await response.json()) as EchoAccountLinkPlan;
 }
 
@@ -95,7 +95,7 @@ export async function applyEchoAccountLink(
     },
     body: JSON.stringify({ planId, desired }),
   });
-  if (!response.ok) throw await responseError(response, "Echo 登录开通失败");
+  if (!response.ok) throw await responseError(response, "ECHO 登录开通失败");
   return (await response.json()) as {
     linked: true;
     account: EchoAccountLinkPlan["account"];
@@ -173,7 +173,7 @@ export function planEchoAccountPassword(desired: EchoAccountPasswordDesired) {
   return planLifecycle(
     "/api/appliance/accounts/password/plan",
     desired,
-    "无法预览 Echo 密码重置",
+    "无法预览 ECHO 密码重置",
   );
 }
 
@@ -187,7 +187,7 @@ export function applyEchoAccountPassword(
     desired,
     planId,
     approvalToken,
-    "Echo 密码重置失败",
+    "ECHO 密码重置失败",
   );
 }
 
@@ -195,7 +195,7 @@ export function planEchoAccountUnlink(desired: EchoAccountUnlinkDesired) {
   return planLifecycle(
     "/api/appliance/accounts/unlink/plan",
     desired,
-    "无法预览 Echo 登录移除",
+    "无法预览 ECHO 登录移除",
   );
 }
 
@@ -209,6 +209,6 @@ export function applyEchoAccountUnlink(
     desired,
     planId,
     approvalToken,
-    "Echo 登录移除失败",
+    "ECHO 登录移除失败",
   );
 }

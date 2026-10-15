@@ -76,7 +76,7 @@ export function StandaloneAppDirectory({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {APP_PRESENTATION_DESCRIPTIONS.standalone} 安装状态与 Echo Hub
+            {APP_PRESENTATION_DESCRIPTIONS.standalone} 安装状态与 ECHO Hub
             完全一致。
           </p>
         </div>
@@ -119,7 +119,7 @@ export function StandaloneAppDirectory({
               <button
                 type="button"
                 onClick={() => requestOpenEchoHub(app.id)}
-                aria-label={`在 Echo Hub 中管理${app.nameZh}`}
+                aria-label={`在 ECHO Hub 中管理${app.nameZh}`}
                 className="flex h-7 shrink-0 items-center gap-1 px-2 text-micro font-medium text-primary transition-colors hover:text-primary/75"
               >
                 {app.installation.installed ? (

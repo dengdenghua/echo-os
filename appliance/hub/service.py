@@ -1,4 +1,4 @@
-"""Read-only Echo Hub catalog projection and deterministic install plans."""
+"""Read-only ECHO Hub catalog projection and deterministic install plans."""
 
 from __future__ import annotations
 
@@ -1149,7 +1149,7 @@ class HubService:
             "ALREADY_INSTALLED": "应用已经安装",
             "NOT_INSTALLED": "应用尚未安装",
             "INSTALLATION_AMBIGUOUS": "检测到多个同名受管容器，需要先在 Docker 管理页处理",
-            "INSTALLATION_NOT_MANAGED": "当前容器不是由 Echo Hub 完整管理，不能自动变更",
+            "INSTALLATION_NOT_MANAGED": "当前容器不是由 ECHO Hub 完整管理，不能自动变更",
             "ALREADY_CURRENT": "应用已经是目录中的当前版本",
             "UPGRADE_PATH_UNSUPPORTED": "当前版本不能直接升级到目录版本，需要逐个大版本迁移",
             "REQUIRED_PROVIDER_UNAVAILABLE": "当前设备的局域网发现服务尚未就绪",

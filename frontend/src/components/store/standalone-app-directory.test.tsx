@@ -9,7 +9,7 @@ import { StandaloneAppDirectory } from "./standalone-app-directory";
 describe("StandaloneAppDirectory", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("projects the Echo Hub catalog as standalone apps and opens the shared manager", async () => {
+  it("projects the ECHO Hub catalog as standalone apps and opens the shared manager", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -66,7 +66,7 @@ describe("StandaloneAppDirectory", () => {
     expect(screen.getByText("可安装")).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "在 Echo Hub 中管理智能相册" }),
+      screen.getByRole("button", { name: "在 ECHO Hub 中管理智能相册" }),
     );
     await waitFor(() => expect(listener).toHaveBeenCalledOnce());
     expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({

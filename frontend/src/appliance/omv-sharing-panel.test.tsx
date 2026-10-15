@@ -394,10 +394,10 @@ describe("OMV sharing and users settings", () => {
     });
     render(<OmvSharingPanel />);
 
-    await user.click(await screen.findByRole("button", { name: "开通 Echo" }));
-    expect(screen.getByText("开通 Echo 登录 · alice")).toBeInTheDocument();
-    await user.type(screen.getByLabelText("独立 Echo 密码"), desired.password);
-    await user.type(screen.getByLabelText("确认 Echo 密码"), desired.password);
+    await user.click(await screen.findByRole("button", { name: "开通 ECHO" }));
+    expect(screen.getByText("开通 ECHO 登录 · alice")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("独立 ECHO 密码"), desired.password);
+    await user.type(screen.getByLabelText("确认 ECHO 密码"), desired.password);
     await user.click(screen.getByRole("button", { name: "预览登录开通" }));
 
     await waitFor(() =>
@@ -406,7 +406,7 @@ describe("OMV sharing and users settings", () => {
     await user.click(screen.getByRole("button", { name: "管理员确认并开通" }));
     await user.type(screen.getByLabelText("设备管理员密码"), "device-password");
     await user.click(
-      screen.getByRole("button", { name: "确认开通 Echo 登录" }),
+      screen.getByRole("button", { name: "确认开通 ECHO 登录" }),
     );
 
     await waitFor(() =>
@@ -499,12 +499,12 @@ describe("OMV sharing and users settings", () => {
       ),
     );
 
-    await user.click(screen.getByRole("button", { name: "重置 Echo 密码" }));
+    await user.click(screen.getByRole("button", { name: "重置 ECHO 密码" }));
     const replacement = "Alice-replacement-Echo-84!";
-    await user.type(screen.getByLabelText("新 Echo 密码"), replacement);
-    await user.type(screen.getByLabelText("确认新 Echo 密码"), replacement);
+    await user.type(screen.getByLabelText("新 ECHO 密码"), replacement);
+    await user.type(screen.getByLabelText("确认新 ECHO 密码"), replacement);
     await user.click(
-      screen.getByRole("button", { name: "预览 Echo 密码重置" }),
+      screen.getByRole("button", { name: "预览 ECHO 密码重置" }),
     );
     await waitFor(() =>
       expect(planEchoAccountPassword).toHaveBeenCalledWith({
@@ -515,7 +515,7 @@ describe("OMV sharing and users settings", () => {
     await user.click(screen.getByRole("button", { name: "管理员确认并重置" }));
     await user.type(screen.getByLabelText("设备管理员密码"), "device-password");
     await user.click(
-      screen.getByRole("button", { name: "确认重置 Echo 密码" }),
+      screen.getByRole("button", { name: "确认重置 ECHO 密码" }),
     );
     await waitFor(() =>
       expect(applyEchoAccountPassword).toHaveBeenCalledWith(
@@ -567,7 +567,7 @@ describe("OMV sharing and users settings", () => {
     render(<OmvSharingPanel />);
 
     await user.click(
-      await screen.findByRole("button", { name: "移除 Echo 登录" }),
+      await screen.findByRole("button", { name: "移除 ECHO 登录" }),
     );
     await waitFor(() =>
       expect(planEchoAccountUnlink).toHaveBeenCalledWith({ username: "alice" }),
@@ -577,7 +577,7 @@ describe("OMV sharing and users settings", () => {
     ).toBeInTheDocument();
     await user.type(screen.getByLabelText("设备管理员密码"), "device-password");
     await user.click(
-      screen.getByRole("button", { name: "确认移除 Echo 登录" }),
+      screen.getByRole("button", { name: "确认移除 ECHO 登录" }),
     );
     await waitFor(() =>
       expect(applyEchoAccountUnlink).toHaveBeenCalledWith(

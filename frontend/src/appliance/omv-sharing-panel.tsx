@@ -1486,13 +1486,13 @@ export function OmvSharingPanel() {
       (echoPassword.length < 20 && categoryCount < 3)
     ) {
       setError(
-        "Echo 密码需为 12–72 位并包含至少三类字符，或使用不少于 20 位的长口令，且不能与账号相同",
+        "ECHO 密码需为 12–72 位并包含至少三类字符，或使用不少于 20 位的长口令，且不能与账号相同",
       );
       setEchoLinkPlan(null);
       return;
     }
     if (echoPassword !== echoPasswordConfirm) {
-      setError("两次输入的 Echo 登录密码不一致");
+      setError("两次输入的 ECHO 登录密码不一致");
       setEchoLinkPlan(null);
       return;
     }
@@ -1508,7 +1508,7 @@ export function OmvSharingPanel() {
     } catch (reason) {
       setEchoLinkPlan(null);
       setError(
-        reason instanceof Error ? reason.message : "无法预览 Echo 登录开通",
+        reason instanceof Error ? reason.message : "无法预览 ECHO 登录开通",
       );
     } finally {
       setEchoLinkPlanning(false);
@@ -1536,7 +1536,7 @@ export function OmvSharingPanel() {
     } catch (reason) {
       setEchoLinkApprovalOpen(false);
       clearEchoLinkSecret();
-      setError(reason instanceof Error ? reason.message : "Echo 登录开通失败");
+      setError(reason instanceof Error ? reason.message : "ECHO 登录开通失败");
       throw reason;
     }
     closeEchoLink();
@@ -1558,7 +1558,7 @@ export function OmvSharingPanel() {
 
   const previewEchoPasswordReset = async () => {
     if (echoReplacementPassword !== echoReplacementConfirm) {
-      setError("两次输入的 Echo 登录密码不一致");
+      setError("两次输入的 ECHO 登录密码不一致");
       return;
     }
     const desired: EchoAccountPasswordDesired = {
@@ -1574,7 +1574,7 @@ export function OmvSharingPanel() {
       setEchoPasswordDesired(null);
       setEchoLifecyclePlan(null);
       setError(
-        reason instanceof Error ? reason.message : "无法预览 Echo 密码重置",
+        reason instanceof Error ? reason.message : "无法预览 ECHO 密码重置",
       );
     } finally {
       setEchoLifecyclePlanning(false);
@@ -1632,7 +1632,7 @@ export function OmvSharingPanel() {
       setEchoUnlinkDesired(null);
       setEchoLifecyclePlan(null);
       setError(
-        reason instanceof Error ? reason.message : "无法预览 Echo 登录移除",
+        reason instanceof Error ? reason.message : "无法预览 ECHO 登录移除",
       );
     } finally {
       setEchoLifecyclePlanning(false);
@@ -1674,7 +1674,7 @@ export function OmvSharingPanel() {
       setEchoPasswordApprovalOpen(false);
       setEchoReplacementPassword("");
       setEchoReplacementConfirm("");
-      setError(reason instanceof Error ? reason.message : "Echo 密码重置失败");
+      setError(reason instanceof Error ? reason.message : "ECHO 密码重置失败");
       throw reason;
     }
     setEchoPasswordApprovalOpen(false);
@@ -3902,10 +3902,10 @@ export function OmvSharingPanel() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <strong className="text-xs text-foreground">
-                      开通 Echo 登录 · {echoMemberName}
+                      开通 ECHO 登录 · {echoMemberName}
                     </strong>
                     <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
-                      仅把这个已存在的 存储成员映射为 Echo 家庭账号。Echo
+                      仅把这个已存在的 存储成员映射为 ECHO 家庭账号。ECHO
                       使用独立密码，不读取或复用 NAS 密码，也不会访问 Agent /
                       系统私有数据库。
                     </p>
@@ -3941,7 +3941,7 @@ export function OmvSharingPanel() {
                     />
                   </label>
                   <label className="text-[12px] font-medium text-muted-foreground">
-                    独立 Echo 密码
+                    独立 ECHO 密码
                     <input
                       type="password"
                       value={echoPassword}
@@ -3957,7 +3957,7 @@ export function OmvSharingPanel() {
                     />
                   </label>
                   <label className="text-[12px] font-medium text-muted-foreground">
-                    确认 Echo 密码
+                    确认 ECHO 密码
                     <input
                       type="password"
                       value={echoPasswordConfirm}
@@ -3997,7 +3997,7 @@ export function OmvSharingPanel() {
                   <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-core/30 bg-card p-3">
                     <div>
                       <strong className="block text-xs text-foreground">
-                        将为 {echoLinkPlan.account.displayName} 开通 Echo 登录
+                        将为 {echoLinkPlan.account.displayName} 开通 ECHO 登录
                       </strong>
                       <span className="mt-1 block text-[12px] text-muted-foreground">
                         独立登录 · 独立 Agent 身份 · 关联系统用户{" "}
@@ -4020,10 +4020,10 @@ export function OmvSharingPanel() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <strong className="text-xs text-foreground">
-                      重置 Echo 登录密码 · {echoLifecycleMember}
+                      重置 ECHO 登录密码 · {echoLifecycleMember}
                     </strong>
                     <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
-                      只修改 Echo 登录密码，不修改 NAS / SMB
+                      只修改 ECHO 登录密码，不修改 NAS / SMB
                       密码。成功后该成员现有网页和 WebSocket 会话会立即失效。
                     </p>
                   </div>
@@ -4042,9 +4042,9 @@ export function OmvSharingPanel() {
                 </div>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="text-[12px] font-medium text-muted-foreground">
-                    新 Echo 密码
+                    新 ECHO 密码
                     <input
-                      aria-label="新 Echo 密码"
+                      aria-label="新 ECHO 密码"
                       type="password"
                       value={echoReplacementPassword}
                       minLength={12}
@@ -4058,9 +4058,9 @@ export function OmvSharingPanel() {
                     />
                   </label>
                   <label className="text-[12px] font-medium text-muted-foreground">
-                    确认新 Echo 密码
+                    确认新 ECHO 密码
                     <input
-                      aria-label="确认新 Echo 密码"
+                      aria-label="确认新 ECHO 密码"
                       type="password"
                       value={echoReplacementConfirm}
                       minLength={12}
@@ -4085,7 +4085,7 @@ export function OmvSharingPanel() {
                     }
                     className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground transition hover:bg-primary disabled:opacity-50"
                   >
-                    {echoLifecyclePlanning ? "正在预览…" : "预览 Echo 密码重置"}
+                    {echoLifecyclePlanning ? "正在预览…" : "预览 ECHO 密码重置"}
                   </button>
                   {echoLifecyclePlan?.operation === "resetMemberPassword" && (
                     <button
@@ -4228,7 +4228,7 @@ export function OmvSharingPanel() {
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {echoAccount.active ? "Echo 已启用" : "Echo 已停用"}
+                          {echoAccount.active ? "ECHO 已启用" : "ECHO 已停用"}
                         </span>
                         {echoAccounts?.canManage && (
                           <>
@@ -4253,7 +4253,7 @@ export function OmvSharingPanel() {
                               className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[12px] font-medium text-core hover:bg-core/10"
                             >
                               <KeyRoundIcon className="size-3" />
-                              重置 Echo 密码
+                              重置 ECHO 密码
                             </button>
                             {!echoAccount.active && (
                               <button
@@ -4264,7 +4264,7 @@ export function OmvSharingPanel() {
                                 }
                                 className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-breach/30 bg-card px-2 py-1 text-[12px] font-medium text-breach hover:bg-breach/10 disabled:opacity-50"
                               >
-                                移除 Echo 登录
+                                移除 ECHO 登录
                               </button>
                             )}
                           </>
@@ -4280,7 +4280,7 @@ export function OmvSharingPanel() {
                           className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-core/30 bg-card px-2 py-1 text-[12px] font-medium text-core hover:bg-core/10"
                         >
                           <ShieldCheckIcon className="size-3" />
-                          开通 Echo
+                          开通 ECHO
                         </button>
                       )
                     )}
@@ -4305,14 +4305,14 @@ export function OmvSharingPanel() {
       )}
       <HighRiskApprovalDialog
         open={echoLinkApprovalOpen && Boolean(echoLinkPlan)}
-        title="开通 Echo 家庭登录"
+        title="开通 ECHO 家庭登录"
         description="Echo 只会为这个现有存储成员创建独立的本地登录和 Agent 身份映射；不会读取或复用 NAS / SMB 密码，也不会修改系统账号。"
         targetLabel={
           echoLinkPlan
             ? `${echoLinkPlan.account.displayName} · ${echoLinkPlan.account.username} · ${echoLinkPlan.planId.slice(0, 12)}`
             : undefined
         }
-        confirmLabel="确认开通 Echo 登录"
+        confirmLabel="确认开通 ECHO 登录"
         onCancel={() => {
           setEchoLinkApprovalOpen(false);
           clearEchoLinkSecret();
@@ -4323,12 +4323,12 @@ export function OmvSharingPanel() {
         open={echoStatusApprovalOpen && Boolean(echoStatusDesired)}
         title={
           echoStatusDesired?.active
-            ? "启用 Echo 家庭登录"
-            : "停用 Echo 家庭登录"
+            ? "启用 ECHO 家庭登录"
+            : "停用 ECHO 家庭登录"
         }
         description={
           echoStatusDesired?.active
-            ? "重新开放该成员的 Echo 登录；之前签发的会话仍保持失效，需要使用现有 Echo 密码重新登录。"
+            ? "重新开放该成员的 ECHO 登录；之前签发的会话仍保持失效，需要使用现有 ECHO 密码重新登录。"
             : "立即阻止该成员继续登录 Echo，并撤销其现有网页、Bearer 和 WebSocket 会话；不会删除系统账号或 NAS 数据。"
         }
         targetLabel={
@@ -4348,14 +4348,14 @@ export function OmvSharingPanel() {
       />
       <HighRiskApprovalDialog
         open={echoPasswordApprovalOpen && Boolean(echoPasswordDesired)}
-        title="重置 Echo 家庭登录密码"
-        description="只替换该成员的 Echo 登录密码并立即撤销其现有会话；不会修改或读取 存储面、SMB 密码，密码不会出现在计划、响应或审计中。"
+        title="重置 ECHO 家庭登录密码"
+        description="只替换该成员的 ECHO 登录密码并立即撤销其现有会话；不会修改或读取 存储面、SMB 密码，密码不会出现在计划、响应或审计中。"
         targetLabel={
           echoLifecyclePlan
             ? `${echoLifecycleMember} · ${echoLifecyclePlan.planId.slice(0, 12)}`
             : undefined
         }
-        confirmLabel="确认重置 Echo 密码"
+        confirmLabel="确认重置 ECHO 密码"
         onCancel={() => {
           setEchoPasswordApprovalOpen(false);
           setEchoReplacementPassword("");
@@ -4367,14 +4367,14 @@ export function OmvSharingPanel() {
       />
       <HighRiskApprovalDialog
         open={echoUnlinkApprovalOpen && Boolean(echoUnlinkDesired)}
-        title="移除 Echo 家庭登录"
-        description="移除已停用成员的 Echo 本地登录和 Agent 身份映射。系统账号、SMB 密码、共享权限及 NAS 文件不会删除；以后可重新开通并设置新的 Echo 密码。"
+        title="移除 ECHO 家庭登录"
+        description="移除已停用成员的 Echo 本地登录和 Agent 身份映射。系统账号、SMB 密码、共享权限及 NAS 文件不会删除；以后可重新开通并设置新的 ECHO 密码。"
         targetLabel={
           echoLifecyclePlan
             ? `${echoLifecycleMember} · ${echoLifecyclePlan.planId.slice(0, 12)}`
             : undefined
         }
-        confirmLabel="确认移除 Echo 登录"
+        confirmLabel="确认移除 ECHO 登录"
         onCancel={() => {
           setEchoUnlinkApprovalOpen(false);
           setEchoUnlinkDesired(null);

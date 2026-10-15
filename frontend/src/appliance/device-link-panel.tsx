@@ -947,7 +947,7 @@ export function DeviceLinkPanel({
                 </strong>
                 <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                   {remoteConnected
-                    ? "桌面、文件管理和照片页面可通过个人 Tailnet 加密访问；入口仍受 Echo 登录、Origin 防护和管理员审批保护。"
+                    ? "桌面、文件管理和照片页面可通过个人 Tailnet 加密访问；入口仍受 ECHO 登录、Origin 防护和管理员审批保护。"
                     : "管理员复核、短时邀请、一机一凭据、单设备撤销，以及每台设备的在线状态和能力上报。"}
                 </p>
               </article>

@@ -637,7 +637,7 @@ export async function fetchHubCatalog(): Promise<HubCatalogResponse> {
   const response = await fetch("/api/appliance/hub/catalog", {
     headers: authHeader(),
   });
-  if (!response.ok) throw await hubError(response, "Echo Hub 暂时无法连接");
+  if (!response.ok) throw await hubError(response, "ECHO Hub 暂时无法连接");
   return (await response.json()) as HubCatalogResponse;
 }
 

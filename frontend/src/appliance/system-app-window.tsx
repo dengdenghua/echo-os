@@ -169,7 +169,7 @@ export const SYSTEM_APP_WINDOWS: Record<
 > = {
   files: { title: "文件", size: { w: 1080, h: 660 }, chromeHeight: 52 },
   photos: { title: "照片", size: { w: 1160, h: 780 }, chromeHeight: 56 },
-  hub: { title: "Echo Hub", size: { w: 1060, h: 740 }, chromeHeight: 56 },
+  hub: { title: "ECHO Hub", size: { w: 1060, h: 740 }, chromeHeight: 56 },
   "storage-center": {
     title: "存储中心",
     size: { w: 1120, h: 760 },

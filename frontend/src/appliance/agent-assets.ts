@@ -729,7 +729,7 @@ export function agentAssetWindowId(asset: AgentHubAsset): string {
 }
 
 /**
- * Project the existing Agent cloud catalog into Echo Hub without copying its
+ * Project the existing Agent cloud catalog into ECHO Hub without copying its
  * install implementation or reading Agent's private SQLite files directly.
  * The Agent API remains the owner of plugin/skill state and security policy.
  */

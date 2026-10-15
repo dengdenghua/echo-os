@@ -4,6 +4,8 @@ import { BotIcon, FolderIcon, GlobeIcon } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 
 import packageJson from "../../package.json";
+import { I18nContext } from "@/core/i18n/context";
+import type { Translations } from "@/core/i18n/locales";
 import {
   MacControlCenter,
   MacDesktopIcon,
@@ -387,6 +389,40 @@ describe("Echo desktop shell", () => {
     expect(screen.getByText("0.2.0")).toBeInTheDocument();
     expect(screen.getByText(sourceId)).toBeInTheDocument();
     expect(screen.getByText("已验证镜像 bundle")).toBeInTheDocument();
+  });
+
+  it("speaks Chinese in a Chinese UI and keeps the English lines in English", () => {
+    const about = (
+      <MacAboutDialog
+        open
+        onClose={vi.fn()}
+        onOpenSettings={vi.fn()}
+        agentHealth={unverifiedAgentHealth}
+      />
+    );
+    const { unmount } = render(about);
+    expect(screen.getByText("个人智能体操作系统")).toBeInTheDocument();
+    expect(screen.getByText("系统").nextElementSibling).toHaveTextContent(
+      "Debian 设备层",
+    );
+    expect(screen.queryByText("Personal Agent Operating System")).toBeNull();
+    unmount();
+
+    render(
+      <I18nContext.Provider
+        value={{
+          locale: "en-US",
+          t: {} as Translations,
+          setLocale: async () => undefined,
+        }}
+      >
+        {about}
+      </I18nContext.Provider>,
+    );
+    expect(
+      screen.getByText("Personal Agent Operating System"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Debian Appliance Layer")).toBeInTheDocument();
   });
 
   it("shows the release the desktop was built from and a readable missing source", () => {

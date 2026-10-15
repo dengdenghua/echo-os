@@ -251,7 +251,7 @@ export function ApplianceLogin({
               {ownerNotice}
             </p>
           ) : null}
-          <small>使用 Echo 家庭账号登录</small>
+          <small>使用 ECHO 家庭账号登录</small>
         </form>
       )}
 

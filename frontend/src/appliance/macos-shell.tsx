@@ -1,4 +1,5 @@
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -10,6 +11,7 @@ import {
 } from "react";
 
 import { useDesktopWallpaperSources } from "@/appliance/desktop-wallpaper";
+import { I18nContext } from "@/core/i18n/context";
 import {
   BatteryFullIcon,
   BellIcon,
@@ -2061,6 +2063,9 @@ export function MacAboutDialog({
   onRestart?: () => void;
 }) {
   useEscapeToClose(open, onClose);
+  // The desktop is Chinese-first; the English lines stay English only in an
+  // English UI. Read the context directly so About also renders without one.
+  const english = (useContext(I18nContext)?.locale ?? "zh-CN").startsWith("en");
   if (!open) return null;
   const state = updateStatus?.state || "unavailable";
   const updateCopy: Record<
@@ -2135,7 +2140,9 @@ export function MacAboutDialog({
           <EchoMark tone="light" />
         </div>
         <h1>ECHO OS</h1>
-        <p>Personal Agent Operating System</p>
+        <p>
+          {english ? "Personal Agent Operating System" : "个人智能体操作系统"}
+        </p>
         <dl data-liquid-surface="thick">
           <div>
             <dt>版本</dt>
@@ -2168,7 +2175,7 @@ export function MacAboutDialog({
           </div>
           <div>
             <dt>系统</dt>
-            <dd>Debian Appliance Layer</dd>
+            <dd>{english ? "Debian Appliance Layer" : "Debian 设备层"}</dd>
           </div>
         </dl>
         <section

@@ -20,7 +20,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Echo Hub API", () => {
+describe("ECHO Hub API", () => {
   it("uses the authenticated bounded catalog and plan endpoints", async () => {
     const fetchMock = vi
       .fn()

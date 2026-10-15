@@ -199,7 +199,7 @@ const BLOCKER_LABELS: Record<HubInstallBlocker, string> = {
   ALREADY_INSTALLED: "已经安装到设备",
   NOT_INSTALLED: "应用尚未安装",
   INSTALLATION_AMBIGUOUS: "存在多个同名容器，请先检查 Docker",
-  INSTALLATION_NOT_MANAGED: "当前容器不属于 Echo Hub",
+  INSTALLATION_NOT_MANAGED: "当前容器不属于 ECHO Hub",
   ALREADY_CURRENT: "已经是当前版本",
   ALREADY_RUNNING: "全部服务已经在运行",
   ALREADY_STOPPED: "全部服务已经停止",
@@ -2176,7 +2176,7 @@ export function HubPanel({
       .catch((reason) => {
         setCatalog(null);
         setError(
-          reason instanceof Error ? reason.message : "Echo Hub 暂时不可用",
+          reason instanceof Error ? reason.message : "ECHO Hub 暂时不可用",
         );
       })
       .finally(() => setLoading(false));
@@ -2783,7 +2783,7 @@ export function HubPanel({
   return (
     <>
       <SystemAppFrame
-        label="Echo Hub"
+        label="ECHO Hub"
         onClose={onClose}
         overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
         className="relative flex h-[min(760px,calc(100vh-64px))] w-[min(1060px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/92 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
@@ -2795,14 +2795,14 @@ export function HubPanel({
               <SystemAppLightsSpacer />
             ) : (
               <SystemAppTrafficLights
-                closeLabel="关闭 Echo Hub"
+                closeLabel="关闭 ECHO Hub"
                 onClose={onClose}
               />
             )}
           </div>
           <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-foreground">
             <ShoppingBagIcon className="size-4 text-core" />
-            Echo Hub
+            ECHO Hub
           </div>
           <button
             type="button"
@@ -3158,7 +3158,7 @@ export function HubPanel({
               <ShieldCheckIcon className="size-3 text-muted-foreground" />
             )}
             {view === "agent"
-              ? "能力目录归 Agent 所有，Echo Hub 只做统一入口"
+              ? "能力目录归 Agent 所有，ECHO Hub 只做统一入口"
               : "同一生命周期 · 两种应用呈现方式"}
           </span>
         </footer>

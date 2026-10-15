@@ -248,7 +248,7 @@ const DESKTOP_APPS: DesktopApp[] = [
     color: "linear-gradient(145deg, #ffd65d, #e58a18)",
   },
   {
-    name: "Echo Hub",
+    name: "ECHO Hub",
     subtitle: "应用、服务与扩展",
     route: "/hub",
     icon: ShoppingBagIcon,
@@ -2687,7 +2687,7 @@ export default function DesktopShellPage() {
               appId="system:launchpad"
             />
           </DockItem>
-          <DockItem onClick={openAppStore} title="Echo Hub" running={hubOpen}>
+          <DockItem onClick={openAppStore} title="ECHO Hub" running={hubOpen}>
             <MacAppIcon
               icon={ShoppingBagIcon}
               iconUrl={appStoreApp?.iconDataUrl || undefined}

@@ -511,7 +511,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("Echo Hub panel", () => {
+describe("ECHO Hub panel", () => {
   it("keeps member browsing available but blocks device lifecycle planning", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(catalog([installableApp])), {
@@ -553,7 +553,7 @@ describe("Echo Hub panel", () => {
     render(<HubPanel open onClose={vi.fn()} />);
 
     expect(
-      await screen.findByRole("dialog", { name: "Echo Hub" }),
+      await screen.findByRole("dialog", { name: "ECHO Hub" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("智能相册")).toBeInTheDocument();
     expect(screen.getAllByText("接入中")).toHaveLength(2);
@@ -703,7 +703,7 @@ describe("Echo Hub panel", () => {
       screen.queryByRole("dialog", { name: "演示应用 应用详情" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Echo Hub" }),
+      screen.getByRole("dialog", { name: "ECHO Hub" }),
     ).toBeInTheDocument();
   });
 
@@ -775,7 +775,7 @@ describe("Echo Hub panel", () => {
       ).toHaveLength(2),
     );
     expect(
-      within(screen.getByRole("dialog", { name: "Echo Hub" })).getByText(
+      within(screen.getByRole("dialog", { name: "ECHO Hub" })).getByText(
         "演示应用",
       ),
     ).toBeInTheDocument();
