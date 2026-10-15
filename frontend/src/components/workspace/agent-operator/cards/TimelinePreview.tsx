@@ -5,6 +5,15 @@ import { EmptyPanel } from "../operator-primitives";
 import { formatScore } from "../operator-utils";
 import { useOperatorCopy } from "../use-operator-copy";
 
+/** Runtime timeline titles are English sentences ("Task started", "Task event:
+ * failed"); translate the known ones and the "Task event:" prefix. */
+function timelineTitle(title: string, to: (source: string) => string) {
+  const event = /^Task event:s*(.+)$/.exec(title);
+  if (event?.[1])
+    return to("Task event: {event}").replace("{event}", to(event[1]));
+  return to(title);
+}
+
 export function TimelinePreview({
   timeline,
 }: {
@@ -36,15 +45,15 @@ export function TimelinePreview({
           >
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Clock3Icon className="size-3" />
-              <span className="truncate">{node.lane}</span>
+              <span className="truncate">{to(node.lane)}</span>
             </div>
             <div className="min-w-0">
               <div className="truncate font-medium">
-                {node.title || node.kind}
+                {timelineTitle(node.title || node.kind, to)}
               </div>
               {(node.text || node.tool || node.status) && (
                 <div className="truncate text-muted-foreground">
-                  {node.text || node.tool || node.status}
+                  {node.text || node.tool || to(node.status ?? "")}
                 </div>
               )}
             </div>

@@ -59,7 +59,7 @@ export function PluginHealthCard({
                       : "border-success/25 bg-success/10 text-success",
                 )}
               >
-                {to("compat")} {compatibility.verdict}
+                {to("compat")} {to(compatibility.verdict)}
               </Badge>
             )}
           </div>
@@ -77,11 +77,11 @@ export function PluginHealthCard({
           <GateStat label={to("fail")} value={summary.failed_count} />
           <GateStat label={to("warn")} value={summary.warning_count} />
           <GateStat
-            label="signed"
+            label={to("signed")}
             value={summary.publisher_verified_count ?? 0}
           />
           {compatibility && (
-            <GateStat label="compat" value={compatibility.passed} />
+            <GateStat label={to("compat")} value={compatibility.passed} />
           )}
         </div>
       </div>

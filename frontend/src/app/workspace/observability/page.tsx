@@ -3,6 +3,7 @@
 import {
   ActivityIcon,
   BrainCircuitIcon,
+  ChevronDownIcon,
   CoinsIcon,
   DatabaseIcon,
   GaugeIcon,
@@ -48,6 +49,8 @@ import {
   WorkspaceContainer,
 } from "@/components/workspace/workspace-container";
 import { AgentOperatorPanel } from "@/components/workspace/agent-operator-panel";
+import { observabilityOwnerCopy } from "@/core/i18n/locales/observability-owner";
+import { OwnerHealthSummary } from "./owner-summary";
 import { RunReviewPanel } from "@/components/workspace/run-review-panel";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/core/i18n/hooks";
@@ -142,13 +145,15 @@ function useHeartbeat<T>(
 // ═══════════════════════════════════════════════════════════
 
 export default function ObservabilityPage({
-  initialTab = "runs",
+  initialTab = "overview",
 }: {
   initialTab?: string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const ownerCopy = observabilityOwnerCopy(locale);
   const { search } = useLocation();
   const tab = normalizeObservabilityTab(initialTab);
+  const [developerDetailsOpen, setDeveloperDetailsOpen] = useState(false);
   return (
     <WorkspaceContainer>
       <WorkspaceBody className="px-4 pb-4">
@@ -164,7 +169,7 @@ export default function ObservabilityPage({
                     {t.observabilityPage.pageTitle}
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    {t.observabilityPage.subtitle}
+                    {ownerCopy.pageSubtitle}
                   </p>
                 </div>
               </div>
@@ -180,29 +185,6 @@ export default function ObservabilityPage({
                   </Link>
                 </Button>
               </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <ObservabilitySignalCard
-                icon={<ActivityIcon className="size-4" />}
-                title={t.observabilityPage.shell.runReviewTitle}
-                description={t.observabilityPage.shell.runReviewDescription}
-              />
-              <ObservabilitySignalCard
-                icon={<NetworkIcon className="size-4" />}
-                title={t.observabilityPage.shell.liveEventsTitle}
-                description={t.observabilityPage.shell.liveEventsDescription}
-              />
-              <ObservabilitySignalCard
-                icon={<GaugeIcon className="size-4" />}
-                title={t.observabilityPage.shell.resourcesTitle}
-                description={t.observabilityPage.shell.resourcesDescription}
-              />
-              <ObservabilitySignalCard
-                icon={<BrainCircuitIcon className="size-4" />}
-                title={t.observabilityPage.shell.systemTitle}
-                description={t.observabilityPage.shell.systemDescription}
-              />
             </div>
           </section>
 
@@ -228,33 +210,39 @@ export default function ObservabilityPage({
 
             <TabsContent value="overview" className="mt-4">
               <div className="space-y-4">
-                <section className="workspace-panel px-5 py-4">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h2 className="text-base font-semibold">
-                        {t.observabilityPage.shell.overviewTitle}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {t.observabilityPage.shell.overviewDescription}
+                <OwnerHealthSummary />
+                {/* The operator dashboard (evolution queue, scorecards,
+                    replay gate, policy drafts) is for development and
+                    troubleshooting. It stays collapsed and only mounts, and
+                    polls, once opened. */}
+                <details
+                  data-testid="observability-developer-details"
+                  className="group"
+                  open={developerDetailsOpen}
+                  onToggle={(event) =>
+                    setDeveloperDetailsOpen(event.currentTarget.open)
+                  }
+                >
+                  <summary className="workspace-panel flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold">
+                        {ownerCopy.developerDetails}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {ownerCopy.developerDetailsHint}
                       </p>
                     </div>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-9 rounded-full px-4"
-                    >
-                      <Link
-                        to={preserveWorkbenchPresentation(
-                          "/workspace/realtime/new",
-                          search,
-                        )}
-                      >
-                        {t.observabilityPage.shell.openNewTask}
-                      </Link>
-                    </Button>
-                  </div>
-                </section>
-                <AgentOperatorPanel />
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+                    />
+                  </summary>
+                  {developerDetailsOpen ? (
+                    <div className="mt-4">
+                      <AgentOperatorPanel />
+                    </div>
+                  ) : null}
+                </details>
               </div>
             </TabsContent>
 
@@ -1837,27 +1825,5 @@ function PanelGroup({
       </div>
       <div className="space-y-4">{children}</div>
     </section>
-  );
-}
-
-function ObservabilitySignalCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border-default bg-background/70 px-4 py-3">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <span className="text-primary">{icon}</span>
-        {title}
-      </div>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        {description}
-      </p>
-    </div>
   );
 }

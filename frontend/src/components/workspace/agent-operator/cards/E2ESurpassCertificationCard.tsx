@@ -59,7 +59,7 @@ export function E2ESurpassCertificationCard({
             >
               {error
                 ? to("degraded")
-                : certification.verdict.replaceAll("_", " ")}
+                : to(certification.verdict.replaceAll("_", " "))}
             </Badge>
             <Badge variant="outline" className="text-xs">
               {to("quality")} {summary.quality_ready}/{summary.quality_total}

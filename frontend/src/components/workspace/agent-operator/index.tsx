@@ -829,7 +829,11 @@ export function AgentOperatorPanel() {
 
       {error && (
         <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          {error}
+          {/* A dropped request surfaces the browser's English "Failed to
+              fetch"; say what happened instead. */}
+          {/^(Failed to fetch|NetworkError|Load failed)/i.test(error)
+            ? to("Some data could not be loaded; it retries automatically.")
+            : error}
         </div>
       )}
       {errorReplayEvidence && (
@@ -849,19 +853,17 @@ export function AgentOperatorPanel() {
         <Metric
           label={to("Pending")}
           value={queueSummary.pending_count}
-          tone="amber"
+          tone="warning"
         />
         <Metric
           label={to("Promoted")}
           value={queueSummary.by_status.promoted ?? 0}
-          tone="emerald"
         />
         <Metric
           label={to("Rejected")}
           value={queueSummary.by_status.rejected ?? 0}
-          tone="rose"
         />
-        <Metric label={to("Total")} value={queueSummary.total} tone="blue" />
+        <Metric label={to("Total")} value={queueSummary.total} />
       </div>
 
       <ReplayGateCard gate={replayGate} />
@@ -992,7 +994,7 @@ export function AgentOperatorPanel() {
                     </div>
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {run.status ?? to("unknown")}
+                    {to(run.status ?? "unknown")}
                   </Badge>
                 </button>
               ))

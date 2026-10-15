@@ -332,6 +332,27 @@ export const agentOperatorZhCN: AgentOperatorCopy = {
   "review rate": "审核率",
   "No browser or desktop replay cases are waiting.":
     "没有等待审核的浏览器或桌面回放案例。",
+  // Raw runtime values shown in the developer details.
+  "Some data could not be loaded; it retries automatically.":
+    "部分数据读取失败，稍后会自动重试。",
+  "needs work": "待完善",
+  "needs behavioral evidence": "缺少行为证据",
+  review: "复核",
+  candidate: "候选",
+  completed: "已完成",
+  running: "进行中",
+  paused: "已暂停",
+  interrupted: "已中断",
+  cancelled: "已取消",
+  execution: "执行",
+  learning: "学习",
+  approval: "审批",
+  "Task started": "任务开始",
+  "Task ended as failed": "任务以失败结束",
+  "Task ended as completed": "任务已完成",
+  "Task event: {event}": "任务事件：{event}",
+  event: "事件",
+  "Create deterministic replay case": "创建可复现的回放案例",
 };
 
 // Japanese and Korean currently inherit the English source strings (en-US is

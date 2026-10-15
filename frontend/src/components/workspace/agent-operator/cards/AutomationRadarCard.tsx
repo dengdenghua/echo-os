@@ -41,7 +41,7 @@ export function AutomationRadarCard({
                   "border-success/25 bg-success/10 text-success",
               )}
             >
-              {radar.verdict.replaceAll("_", " ")}
+              {to(radar.verdict.replaceAll("_", " "))}
             </Badge>
             <Badge
               variant="outline"

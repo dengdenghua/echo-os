@@ -49,6 +49,8 @@ export function PanelTitle({
   );
 }
 
+/** A monochrome count tile. Colour marks real state only: a "warning" tile
+ * (work waiting on the operator) tints its number while it is above zero. */
 export function Metric({
   label,
   value,
@@ -56,20 +58,19 @@ export function Metric({
 }: {
   label: string;
   value: number;
-  tone: "amber" | "emerald" | "rose" | "blue";
+  tone?: "warning";
 }) {
-  const tones = {
-    amber: "border-warning/25 bg-warning/10",
-    emerald: "border-success/25 bg-success/10",
-    rose: "border-destructive/25 bg-destructive/10",
-    blue: "border-info/25 bg-info/10",
-  };
   return (
-    <div className={cn("rounded-lg border px-3 py-2", tones[tone])}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
+    <div className="rounded-lg border border-border-default bg-background/40 px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "mt-1 font-mono text-xl font-semibold",
+          tone === "warning" && value > 0 && "text-warning",
+        )}
+      >
+        {value}
       </div>
-      <div className="mt-1 font-mono text-xl font-semibold">{value}</div>
     </div>
   );
 }
