@@ -582,7 +582,7 @@ export function DeviceLinkPanel({
               </p>
             )}
             {status?.mode === "agent-shared" && (
-              <p className="mt-3 rounded-xl bg-core/10 px-3 py-2.5 text-[12px] leading-4 text-core ring-1 ring-core/30">
+              <p className="mt-3 rounded-xl bg-signal/10 px-3 py-2.5 text-[12px] leading-4 text-signal ring-1 ring-signal/30">
                 当前是开发模式连接：所有设备共用一份配对凭据，暂不能单独撤销某一台。
                 正式安装的 ECHO OS 会为每台设备单独签发凭据。
               </p>

@@ -2944,7 +2944,7 @@ export function HubPanel({
           !loading &&
           catalog &&
           !catalog.runtime.available && (
-            <div className="mx-6 mb-4 flex shrink-0 items-center gap-3 rounded-2xl bg-warning/10 px-4 py-3 text-warning">
+            <div className="mx-6 mb-4 flex shrink-0 items-center gap-3 rounded-2xl bg-signal/10 px-4 py-3 text-signal">
               <UnplugIcon className="size-4 shrink-0" />
               <p className="text-xs">
                 {runtimeUnavailableMessage(catalog.runtime.error)}

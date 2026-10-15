@@ -865,7 +865,7 @@ export function PhotosPanel({
             )}
           </div>
           <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-sm font-semibold text-foreground">
-            <ImagesIcon className="size-4 text-breach" />
+            <ImagesIcon className="size-4 text-core" />
             照片
           </div>
           <button
@@ -884,7 +884,7 @@ export function PhotosPanel({
         <div className="shrink-0 px-6 pb-5 pt-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-[12px] font-semibold text-resonance">
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-core">
                 <SparklesIcon className="size-3.5" />
                 本地智能相册
               </div>
@@ -901,7 +901,7 @@ export function PhotosPanel({
               className="flex h-11 w-full items-center gap-2 rounded-full bg-card/82 px-4 shadow-[inset_0_0_0_1px_rgba(148,163,184,.24),0_5px_18px_rgba(51,65,85,.06)] xl:w-[360px]"
             >
               {searching ? (
-                <Loader2Icon className="size-4 animate-spin text-resonance" />
+                <Loader2Icon className="size-4 animate-spin text-core" />
               ) : (
                 <SearchIcon className="size-4 text-muted-foreground" />
               )}
@@ -1217,7 +1217,7 @@ export function PhotosPanel({
           {searchMode && (
             <div className="mt-3 flex items-center gap-1.5 text-[12px] text-muted-foreground">
               {searchMode === "semantic" ? (
-                <SparklesIcon className="size-3.5 text-resonance" />
+                <SparklesIcon className="size-3.5 text-core" />
               ) : (
                 <SearchIcon className="size-3.5" />
               )}
