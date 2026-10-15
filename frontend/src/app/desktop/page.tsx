@@ -1795,7 +1795,7 @@ export default function DesktopShellPage() {
         return (
           <Suspense
             fallback={
-              <p role="status" className="p-6 text-sm text-slate-500">
+              <p role="status" className="p-6 text-sm text-muted-foreground">
                 正在打开 AI 浏览器…
               </p>
             }
@@ -2641,13 +2641,13 @@ export default function DesktopShellPage() {
         {contextMenu && (
           <div
             data-desktop-interactive
-            className="fixed z-50 w-40 rounded-lg border border-slate-200 bg-white py-1 shadow-xl"
+            className="fixed z-50 w-40 rounded-lg border border-border bg-popover py-1 text-popover-foreground shadow-[var(--echo-shadow-raised)]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
               type="button"
               onClick={() => handleContextMenuAction("open", contextMenu.item)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 transition hover:bg-slate-100"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-popover-foreground transition hover:bg-foreground/5"
             >
               <ExternalLinkIcon className="size-3.5" />
               打开
@@ -2658,7 +2658,7 @@ export default function DesktopShellPage() {
                 onClick={() =>
                   handleContextMenuAction("archive", contextMenu.item)
                 }
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 transition hover:bg-slate-100"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-popover-foreground transition hover:bg-foreground/5"
               >
                 <FolderInputIcon className="size-3.5" />
                 归档到分类

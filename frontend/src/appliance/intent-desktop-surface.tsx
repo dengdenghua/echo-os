@@ -193,7 +193,7 @@ const TONE_CHIP: Record<TaskTone, string> = {
   attention: "bg-warning/15 text-warning",
   done: "bg-core/10 text-core",
   failed: "bg-breach/10 text-breach",
-  muted: "bg-slate-500/10 text-muted-foreground",
+  muted: "bg-foreground/5 text-muted-foreground",
 };
 
 interface IntentExample {
@@ -729,7 +729,7 @@ export function IntentDesktopSurface({
                 "group inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur-md transition-all",
                 theme === "theme-white"
                   ? "border-black/10 bg-card/70 text-foreground hover:bg-card"
-                  : "border-border bg-card/10 text-slate-200 hover:bg-card/20",
+                  : "border-border bg-card/10 text-foreground hover:bg-card/20",
               )}
               title="点击或按空格键在【意图纯净态】与【多窗口工作台】间无缝切换"
             >
@@ -909,7 +909,7 @@ export function IntentDesktopSurface({
                   "flex size-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
                   intentInput.trim()
                     ? "bg-primary text-primary-foreground shadow-md shadow-black/20 hover:scale-105 active:scale-95"
-                    : "cursor-not-allowed bg-slate-800/20 text-muted-foreground opacity-40",
+                    : "cursor-not-allowed bg-foreground/10 text-muted-foreground opacity-40",
                 )}
                 aria-label="提交意图"
                 title={
@@ -1072,8 +1072,8 @@ export function IntentDesktopSurface({
                       isDragging &&
                         "shadow-[0_30px_70px_rgba(0,0,0,0.5)] ring-2 ring-core/30",
                       theme === "theme-white"
-                        ? "border-border bg-card/85 text-foreground shadow-[0_22px_45px_-12px_rgba(180,155,120,0.22),0_1px_3px_rgba(0,0,0,0.05)]"
-                        : "border-border bg-slate-900/90 text-slate-100 shadow-black/60",
+                        ? "border-border bg-card/85 text-foreground shadow-[var(--echo-shadow-window)]"
+                        : "border-border bg-card/90 text-foreground shadow-black/60",
                     )}
                     style={{
                       transform: `translate3d(${cardPos.x}px, ${cardPos.y}px, 0)`,
@@ -1252,7 +1252,7 @@ export function IntentDesktopSurface({
                 "pointer-events-auto mt-2 w-full max-w-md rounded-2xl border p-5 text-center backdrop-blur-xl",
                 theme === "theme-white"
                   ? "border-border bg-card/70 text-foreground"
-                  : "border-border bg-slate-900/60 text-slate-200",
+                  : "border-border bg-card/60 text-foreground",
               )}
               onClick={(e) => e.stopPropagation()}
             >

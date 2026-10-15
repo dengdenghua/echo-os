@@ -224,6 +224,10 @@ describe("IntentDesktopSurface", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "查看全部任务" }));
     expect(onOpenTaskSpace).toHaveBeenCalledWith();
+    // Graphite surfaces come from tokens, not the navy slate palette.
+    expect(screen.getByTestId("desktop-task-empty").className).not.toMatch(
+      /slate-/,
+    );
   });
 
   it("says when the task service is unavailable", () => {

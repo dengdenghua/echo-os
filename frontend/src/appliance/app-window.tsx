@@ -171,7 +171,7 @@ function ZoomTrafficLight({
       {showTileMenu && (
         <div
           data-testid="window-quick-tile-menu"
-          className="mac-quick-tile-menu absolute left-0 top-5 z-50 flex min-w-[130px] flex-col gap-1 rounded-xl border border-border bg-slate-900/95 p-1.5 shadow-2xl backdrop-blur-xl"
+          className="mac-quick-tile-menu absolute left-0 top-5 z-50 flex min-w-[130px] flex-col gap-1 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-[var(--echo-shadow-raised)] backdrop-blur-xl"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
@@ -185,7 +185,7 @@ function ZoomTrafficLight({
               onTileLeft();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-core/30 hover:text-primary-foreground transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-popover-foreground hover:bg-foreground/10 transition-colors"
           >
             <PanelLeftIcon className="size-3.5 text-core" />
             <span>靠左半屏</span>
@@ -197,7 +197,7 @@ function ZoomTrafficLight({
               onTileRight();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-core/30 hover:text-primary-foreground transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-popover-foreground hover:bg-foreground/10 transition-colors"
           >
             <PanelRightIcon className="size-3.5 text-core" />
             <span>靠右半屏</span>
@@ -209,7 +209,7 @@ function ZoomTrafficLight({
               onToggleMaximize();
               setShowTileMenu(false);
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-slate-200 hover:bg-card/10 hover:text-white transition-colors"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs text-popover-foreground hover:bg-foreground/10 transition-colors"
           >
             {maximized ? (
               <>
@@ -1042,12 +1042,12 @@ export function AppWindow({
                 <div
                   data-testid="window-sleep-shield"
                   onClick={handleWakeAndFocus}
-                  className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-900/85 backdrop-blur-xl text-center p-6 select-none cursor-pointer"
+                  className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/85 backdrop-blur-xl text-center p-6 select-none cursor-pointer"
                 >
                   <div className="flex size-12 items-center justify-center rounded-2xl bg-core/15 border border-core/30 text-core shadow-inner">
                     <MoonIcon className="size-6 animate-pulse" />
                   </div>
-                  <h4 className="mt-3 font-semibold text-xs text-slate-100">
+                  <h4 className="mt-3 font-semibold text-xs text-foreground">
                     {win.title} · 已进入节能休眠
                   </h4>
                   <p className="mt-1 max-w-xs text-[12px] text-muted-foreground">
