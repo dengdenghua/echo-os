@@ -84,3 +84,19 @@ describe("system app scrims and shadows", () => {
     );
   });
 });
+
+describe("window scroll containment", () => {
+  it("clips window content and the desktop instead of letting script scroll them", () => {
+    // overflow: hidden is still a scroll container: a scrollIntoView() on a
+    // tab sliding in past the window edge shifted the content 35 px sideways.
+    expect(css).toMatch(/\n\.mac-window-content \{[^}]*overflow: clip;[^}]*\}/);
+    expect(css).not.toMatch(/\.mac-window-content \{[^}]*overflow: hidden;/);
+    const page = readFileSync(
+      join(process.cwd(), "src/app/desktop/page.tsx"),
+      "utf8",
+    );
+    expect(page).toContain(
+      '"macos-desktop-root relative h-screen overflow-clip bg-transparent"',
+    );
+  });
+});

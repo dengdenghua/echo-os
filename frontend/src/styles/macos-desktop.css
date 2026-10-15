@@ -2108,6 +2108,11 @@ body:has(.macos-desktop-root .mac-menu-bar)
   position: relative;
   min-height: 0;
   flex: 1;
+  /* Clip, never scroll: overflow: hidden is still a scroll container, so a
+     scrollIntoView() on a control sliding in past the edge (a side panel's
+     active tab mid-animation) scrolled the whole window content sideways
+     by the overshoot (35 px seen once) and left it there. */
+  overflow: clip;
   background: white;
 }
 .mac-window-resize {
@@ -5855,7 +5860,7 @@ body:has(.macos-desktop-root .mac-menu-bar)
   .mac-window-content {
   background: transparent;
   border-radius: inherit;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .macos-desktop-root.mac-liquid-crystal

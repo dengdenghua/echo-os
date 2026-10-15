@@ -2029,7 +2029,9 @@ export default function DesktopShellPage() {
     <main
       aria-label="ECHO OS 桌面"
       className={cn(
-        "macos-desktop-root relative h-screen overflow-hidden bg-transparent",
+        // Clip, never scroll: a scrollIntoView() inside a window must not
+        // shift the whole desktop (overflow: hidden can be scrolled by script).
+        "macos-desktop-root relative h-screen overflow-clip bg-transparent",
         desktopTheme,
         desktopTheme === "theme-white" ? "text-foreground" : "text-white dark",
         desktopMode === "pure" && "is-mode-pure",
