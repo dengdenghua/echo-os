@@ -40,6 +40,7 @@ def test_extension_passes_one_authenticator_to_routes_instead_of_raw_jwt() -> No
         "create_file_share_router",
         "create_file_organization_router",
         "create_hub_router",
+        "create_local_services_router",
         "create_native_storage_router",
         "create_omv_alias_router",
         "create_photos_router",
@@ -134,6 +135,7 @@ def test_register_app_mounts_appliance_when_enabled(tmp_path, monkeypatch):
     assert any("/api/appliance/approvals" in p for p in paths), "高风险审批路由应挂载"
     assert any("/api/appliance/audit" in p for p in paths), "防篡改审计路由应挂载"
     assert any("/api/appliance/diagnostics" in p for p in paths), "脱敏诊断路由应挂载"
+    assert "/api/appliance/local-services" in paths, "本机开发服务探测路由应挂载"
     assert "/api/appliance/notifications/webhook" in paths
     assert "/api/appliance/notifications/email" in paths
     assert any("/api/appliance/omv" in p for p in paths), "OMV 只读路由应挂载"

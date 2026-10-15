@@ -1,3 +1,5 @@
+import { authHeaders } from "@/core/auth/api";
+
 export interface DetectedLocalService {
   port: number;
   name: string;
@@ -30,58 +32,91 @@ export function localPreviewPort(value: string): string {
   }
 }
 
-const COMMON_DEV_PORTS = [
-  { port: 5173, name: "Vite", type: "frontend" as const },
-  { port: 5174, name: "Vite", type: "frontend" as const },
-  { port: 3000, name: "React / Next.js", type: "frontend" as const },
-  { port: 3001, name: "React", type: "frontend" as const },
-  { port: 4000, name: "Remix / Svelte", type: "frontend" as const },
-  { port: 4200, name: "Angular", type: "frontend" as const },
-  { port: 4321, name: "Astro", type: "frontend" as const },
-  { port: 8080, name: "HTTP Server", type: "other" as const },
-  { port: 8000, name: "FastAPI / Django", type: "backend" as const },
-  { port: 8001, name: "FastAPI", type: "backend" as const },
-  { port: 8888, name: "Jupyter", type: "backend" as const },
-  { port: 5000, name: "Flask", type: "backend" as const },
-] as const;
+/** The device probes a fixed list of development ports on its own loopback
+ * interface (`appliance/local_services.py`). A page cannot fetch a closed port
+ * without the browser logging a refused connection, so it asks the device. */
+export const LOCAL_SERVICES_ENDPOINT = "/api/appliance/local-services";
+
+const SERVICE_TYPES = new Set<DetectedLocalService["type"]>([
+  "frontend",
+  "backend",
+  "other",
+]);
+
+/** A desktop opened from another machine: the device's loopback services are
+ * not reachable at that viewer's `localhost`, so there is nothing to list. */
+export function isRemoteWebSession(
+  location: Pick<Location, "protocol" | "hostname"> = window.location,
+): boolean {
+  return (
+    (location.protocol === "http:" || location.protocol === "https:") &&
+    !LOOPBACK_HOSTS.has(location.hostname)
+  );
+}
+
+function parseLocalServices(
+  body: unknown,
+  excluded: ReadonlySet<number>,
+): DetectedLocalService[] {
+  const services =
+    body && typeof body === "object"
+      ? (body as { services?: unknown }).services
+      : undefined;
+  if (!Array.isArray(services)) return [];
+  const results: DetectedLocalService[] = [];
+  for (const entry of services as unknown[]) {
+    if (!entry || typeof entry !== "object") continue;
+    const { port, name, type } = entry as Record<string, unknown>;
+    if (
+      typeof port !== "number" ||
+      !Number.isInteger(port) ||
+      port < 1 ||
+      port > 65535 ||
+      excluded.has(port) ||
+      typeof name !== "string" ||
+      !SERVICE_TYPES.has(type as DetectedLocalService["type"])
+    ) {
+      continue;
+    }
+    results.push({
+      port,
+      name,
+      type: type as DetectedLocalService["type"],
+      url: `http://localhost:${port}`,
+    });
+  }
+  return results;
+}
 
 export async function detectLocalServices({
   excludePorts = [],
-  timeoutMs = 3000,
+  timeoutMs = 5000,
 }: {
   excludePorts?: readonly number[];
   timeoutMs?: number;
 } = {}): Promise<DetectedLocalService[]> {
-  const excluded = new Set(excludePorts);
-  const results: DetectedLocalService[] = [];
+  if (isRemoteWebSession()) return [];
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-
-  await Promise.allSettled(
-    COMMON_DEV_PORTS.filter(({ port }) => !excluded.has(port)).map(
-      async ({ port, name, type }) => {
-        try {
-          const response = await fetch(`http://localhost:${port}/`, {
-            method: "HEAD",
-            signal: controller.signal,
-            mode: "no-cors",
-          });
-          if (response.type === "opaque" || response.ok) {
-            results.push({
-              port,
-              name,
-              type,
-              url: `http://localhost:${port}`,
-            });
-          }
-        } catch {
-          // A failed probe means the port is not serving HTTP.
-        }
-      },
-    ),
-  );
-
-  window.clearTimeout(timeout);
+  let results: DetectedLocalService[] = [];
+  try {
+    const response = await fetch(LOCAL_SERVICES_ENDPOINT, {
+      headers: { Accept: "application/json", ...authHeaders() },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    // Signed out, not the device operator, or no device API: nothing to list.
+    if (response.ok) {
+      results = parseLocalServices(
+        await response.json(),
+        new Set(excludePorts),
+      );
+    }
+  } catch {
+    // The device did not answer in time; show no local services.
+  } finally {
+    window.clearTimeout(timeout);
+  }
   return results.sort((left, right) => {
     if (left.type === right.type) return left.port - right.port;
     if (left.type === "frontend") return -1;
@@ -100,10 +135,9 @@ let recentScan: {
 } | null = null;
 
 /**
- * Every probe of a closed port logs a refused connection in the console, and
- * the AI browser start page scanned on each open and each return to its tab.
- * Automatic scans now share one in-flight or recent (one minute) result;
- * `force` (the refresh button) always probes again.
+ * The AI browser start page scans on each open and each return to its tab.
+ * Automatic scans share one in-flight or recent (one minute) result; `force`
+ * (the refresh button) always asks the device again.
  */
 export function detectLocalServicesShared({
   excludePorts = [],

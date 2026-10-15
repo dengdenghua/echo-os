@@ -341,6 +341,11 @@ def register_app(app: Any, context: Any) -> None:
             authenticator=authenticator,
         )
     )
+    # The AI browser start page lists loopback development servers; the device
+    # probes its fixed port catalogue so the page never fetches closed ports.
+    from appliance.local_services import create_local_services_router
+
+    app.include_router(create_local_services_router(authenticator=authenticator))
     # 兼容别名:存量面板仍请求 /api/appliance/omv/*,由原生面同构应答;
     # 已接管的窄写切片均保留完整审批+审计语义。
     app.include_router(
