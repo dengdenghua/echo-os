@@ -133,6 +133,16 @@ def parse_tasks(text: str, milestone_id: str) -> list[Task]:
 
 
 # ── LLM-backed generators ────────────────────────────────────────────────────
+def _single_milestone(goal: str) -> Milestone:
+    """The one-milestone plan used when the planner's reply is unusable, named in
+    the goal's language (a Chinese goal never gets an English ``deliver``)."""
+    from runtime.projectos.engine import goal_prefers_chinese
+
+    if goal_prefers_chinese(goal):
+        return Milestone(id="MS1", name="交付", goal=goal, success_criteria=["达成目标"])
+    return Milestone(id="MS1", name="deliver", goal=goal, success_criteria=["goal met"])
+
+
 def _llm_text(router: Any, prompt: str, *, model: str, max_tokens: int = 1500) -> str:
     from runtime.sensing.model_router import Message, ModelRequest
 
@@ -152,7 +162,8 @@ def llm_generate_milestones(router: Any, *, model: str = DEFAULT_MODEL):
         prompt = (
             "You are a project planner. Break the goal into 3–5 sequential "
             "milestones. Reply ONLY a JSON array; each item: "
-            '{"name","goal","spec":{},"success_criteria":[...],"dependencies":[names]}.'
+            '{"name","goal","spec":{},"success_criteria":[...],"dependencies":[names]}. '
+            "Write every name, goal and criterion in the same language as the goal."
             f"\n\nGoal: {goal}"
         )
         try:
@@ -160,7 +171,7 @@ def llm_generate_milestones(router: Any, *, model: str = DEFAULT_MODEL):
         except Exception as exc:  # noqa: BLE001
             _LOG.warning("milestone generation failed: %s", exc)
             ms = []
-        return ms or [Milestone(id="MS1", name="deliver", goal=goal, success_criteria=["goal met"])]
+        return ms or [_single_milestone(goal)]
 
     return _generate
 
@@ -176,7 +187,8 @@ def llm_decompose_tasks(router: Any, *, model: str = DEFAULT_MODEL):
             "team_mode=swarm for research that benefits from diverse angles; "
             "team_mode=cluster for big build tasks that need orchestration; "
             "single otherwise. Keep estimates in person-days and due dates within "
-            "the milestone window."
+            "the milestone window. Write every goal and criterion in the same "
+            "language as the milestone."
             f"\n\nMilestone: {ms.goal}\nSpec: {json.dumps(ms.spec, ensure_ascii=False)}"
             f"\nSuccess criteria: {ms.success_criteria}"
         )

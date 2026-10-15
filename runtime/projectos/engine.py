@@ -16,6 +16,7 @@ deterministic stubs. The engine itself is pure orchestration.
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable
 from contextlib import suppress
@@ -58,10 +59,42 @@ def _error_text(exc: BaseException) -> str:
     return f"{type(exc).__name__}: {exc}"
 
 
+_CJK = re.compile(r"[぀-ヿ㐀-鿿가-힯]")
+
+
+def goal_prefers_chinese(goal: str) -> bool:
+    """Fallback plans speak the goal's language: a goal written in Chinese (or
+    any CJK script) gets Chinese milestone names instead of English ones."""
+    return bool(_CJK.search(goal or ""))
+
+
 def stub_generate_milestones(goal: str) -> list[Milestone]:
     """No-LLM fallback: a generic Plan → Build → Verify phasing that fits almost
     any project, so the engine/CLI runs deterministically without a model router
     (production injects LLM hooks for goal-specific milestones)."""
+    if goal_prefers_chinese(goal):
+        return [
+            Milestone(
+                id="MS1",
+                name="规划",
+                goal=f"明确范围并制定计划：{goal}",
+                success_criteria=["计划已确认"],
+            ),
+            Milestone(
+                id="MS2",
+                name="实施",
+                goal=f"实施：{goal}",
+                success_criteria=["实施完成"],
+                dependencies=["MS1"],
+            ),
+            Milestone(
+                id="MS3",
+                name="验收",
+                goal=f"验收并交付：{goal}",
+                success_criteria=["已对照目标验收"],
+                dependencies=["MS2"],
+            ),
+        ]
     return [
         Milestone(
             id="MS1",
@@ -93,12 +126,13 @@ def stub_decompose_tasks(ms: Milestone) -> list[Task]:
     engine (cowork_bridge injects ``run_task_team``) brainstorms it across the
     group; the execution node stays ``single`` unless a caller opts it into
     cluster."""
+    chinese = goal_prefers_chinese(ms.goal)
     return [
         Task(
             id=f"{ms.id}-T1",
             milestone_id=ms.id,
             type="research",
-            goal=f"{ms.goal} — assess",
+            goal=f"{ms.goal} — {'评估' if chinese else 'assess'}",
             team_mode="swarm",
             priority="P1",
             estimate=1.0,
@@ -109,7 +143,7 @@ def stub_decompose_tasks(ms: Milestone) -> list[Task]:
             id=f"{ms.id}-T2",
             milestone_id=ms.id,
             type="code",
-            goal=f"{ms.goal} — do",
+            goal=f"{ms.goal} — {'执行' if chinese else 'do'}",
             priority="P2",
             estimate=2.0,
             depends_on=[f"{ms.id}-T1"],

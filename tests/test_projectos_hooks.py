@@ -112,3 +112,41 @@ def test_subagent_execute_task_propagates_project_scope(monkeypatch) -> None:
         "_artifact_output_root": "/managed/thread-1/output/final",
     }
 
+
+
+class _UnusableRouter:
+    """A model that answers in prose instead of the requested JSON."""
+
+    def call(self, request):  # noqa: ANN001
+        class _Reply:
+            text = "好的，我来规划一下这个项目。"
+
+        return _Reply()
+
+
+def test_unusable_planner_reply_falls_back_in_the_goal_language() -> None:
+    from runtime.projectos.llm_hooks import llm_decompose_tasks, llm_generate_milestones
+
+    generate = llm_generate_milestones(_UnusableRouter())
+    [zh] = generate("做一个家庭记账小程序")
+    assert (zh.name, zh.success_criteria) == ("交付", ["达成目标"])
+    [en] = generate("Build a family budget app")
+    assert (en.name, en.success_criteria) == ("deliver", ["goal met"])
+
+    [task] = llm_decompose_tasks(_UnusableRouter())(zh)
+    assert task.goal == "做一个家庭记账小程序"
+
+
+def test_stub_plan_speaks_the_goal_language() -> None:
+    from runtime.projectos.engine import stub_decompose_tasks, stub_generate_milestones
+
+    zh = stub_generate_milestones("整理照片库")
+    assert [m.name for m in zh] == ["规划", "实施", "验收"]
+    assert zh[0].goal == "明确范围并制定计划：整理照片库"
+    assert [t.goal for t in stub_decompose_tasks(zh[1])] == [
+        "实施：整理照片库 — 评估",
+        "实施：整理照片库 — 执行",
+    ]
+    en = stub_generate_milestones("Tidy the photo library")
+    assert [m.name for m in en] == ["plan", "build", "verify"]
+    assert stub_decompose_tasks(en[0])[1].goal == "Scope and plan: Tidy the photo library — do"
