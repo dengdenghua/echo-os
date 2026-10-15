@@ -95,6 +95,23 @@ describe("owner health derivation", () => {
     expect(ownerRunStatus(run({ status: "weird" }), true)).toBe("unknown");
   });
 
+  it("leaves out bookkeeping rows that are not tasks", () => {
+    const runs = toOwnerRuns(
+      [
+        run({ task_id: "real" }),
+        run({
+          task_id: "budget-only",
+          thread_id: null,
+          title: "",
+          status: "running",
+        }),
+      ],
+      true,
+      "未命名任务",
+    );
+    expect(runs.map((item) => item.id)).toEqual(["real"]);
+  });
+
   it("lists only the latest, recent failure of each conversation", () => {
     const runs = toOwnerRuns(
       [

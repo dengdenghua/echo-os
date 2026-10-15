@@ -150,6 +150,7 @@ export interface AgentTraceTaskRun {
   turn_id?: string | null;
   agent_id?: string | null;
   title?: string | null;
+  goal?: string | null;
   mode?: string | null;
   status?: string | null;
   started_at?: string | null;

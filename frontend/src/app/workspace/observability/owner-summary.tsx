@@ -111,12 +111,20 @@ export function ownerRunStatus(
   }
 }
 
+/** A row the owner handed Echo: it belongs to a conversation or has a goal.
+ * The trace store also projects bookkeeping-only task ids (a lone
+ * budget_commit from an auxiliary model call) as untitled "running" rows
+ * that never finish; they are not tasks. */
+function isOwnerTask(run: AgentTraceTaskRun): boolean {
+  return Boolean(run.thread_id || run.title?.trim() || run.goal?.trim());
+}
+
 export function toOwnerRuns(
   runs: readonly AgentTraceTaskRun[],
   hasModel: boolean,
   untitled: string,
 ): OwnerRun[] {
-  return runs.map((run) => ({
+  return runs.filter(isOwnerTask).map((run) => ({
     id: run.task_id,
     threadId: run.thread_id ?? null,
     title: (run.title || run.summary || "").trim() || untitled,
