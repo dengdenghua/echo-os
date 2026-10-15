@@ -99,6 +99,12 @@ describe("storage center", () => {
     expect(screen.getByText("家庭相册")).toBeInTheDocument();
     expect(screen.getByText(/1 个上传任务保留空间/)).toBeInTheDocument();
     expect(screen.getByText(/已跳过 1 个符号链接/)).toBeInTheDocument();
+    // Used space outside the library and trash (400 - 300 - 20 of 1000)
+    // is drawn too, so a full disk with an empty library is not an empty bar.
+    const otherUsed = screen
+      .getByTestId("storage-capacity-bar")
+      .querySelector<HTMLElement>('[data-segment="other-used"]');
+    expect(otherUsed?.style.width).toBe("8%");
 
     await user.click(screen.getByRole("button", { name: "管理文件" }));
     expect(onOpenFiles).toHaveBeenCalledOnce();

@@ -259,6 +259,16 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
     () => (usage?.categories ?? []).filter((category) => category.bytes > 0),
     [usage],
   );
+  // Space the volume uses outside the NAS library and its trash (system,
+  // apps, other data); without it the bar looked empty on a full disk.
+  const otherUsedBytes = usage
+    ? Math.max(
+        0,
+        usage.disk.usedBytes -
+          categories.reduce((sum, category) => sum + category.bytes, 0) -
+          usage.trash.bytes,
+      )
+    : 0;
   const capacityKnown =
     usage != null &&
     Number.isFinite(usage.disk.totalBytes) &&
@@ -359,7 +369,10 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                   : "容量状态未知"}
               </div>
             </div>
-            <div className="mt-5 flex h-3 overflow-hidden rounded-full bg-card/10">
+            <div
+              data-testid="storage-capacity-bar"
+              className="mt-5 flex h-3 overflow-hidden rounded-full bg-foreground/10"
+            >
               {categories.map((category) => {
                 const meta = CATEGORY_META[category.id];
                 return (
@@ -382,6 +395,17 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
                     minWidth: 3,
                   }}
                   title={`回收站 ${formatSize(usage.trash.bytes)}`}
+                />
+              )}
+              {otherUsedBytes > 0 && (
+                <span
+                  data-segment="other-used"
+                  className="bg-foreground/25"
+                  style={{
+                    width: `${percent(otherUsedBytes, usage.disk.totalBytes)}%`,
+                    minWidth: 3,
+                  }}
+                  title={`文件库以外的占用 ${formatSize(otherUsedBytes)}`}
                 />
               )}
             </div>
