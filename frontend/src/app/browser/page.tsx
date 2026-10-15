@@ -829,7 +829,7 @@ function BrowserSidePanel({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        "absolute right-3 top-[6.75rem] z-[40] hidden h-[calc(100vh-7.5rem)] w-[280px] flex-col rounded-2xl bg-popover px-3 py-3 text-popover-foreground shadow-lg transition-[opacity,transform] duration-fast md:flex",
+        "absolute right-3 top-[6.75rem] z-[40] hidden h-[calc(100%-7.5rem)] w-[280px] flex-col rounded-2xl bg-popover px-3 py-3 text-popover-foreground shadow-lg transition-[opacity,transform] duration-fast md:flex",
         open ? "pointer-events-auto" : "pointer-events-none",
       )}
       style={{

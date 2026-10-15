@@ -86,3 +86,20 @@ describe("AI browser layout hierarchy", () => {
     expect(browserSource).toContain("activeHandle?.reload()");
   });
 });
+
+describe("AI browser start page surfaces", () => {
+  it("uses ECHO surface tokens, not undefined glass classes or white-only hovers", () => {
+    // liquid-glass, -subtle, -dock and -icon were never defined anywhere, so
+    // the menus, date card, side rail and app strip had no surface at all.
+    expect(homeSource).not.toMatch(/\bliquid-glass(?:-subtle|-dock|-icon)?\b/);
+    // White tints vanish on snow; hovers and selections use ink.
+    expect(homeSource).not.toMatch(/\bbg-white\/\d+/);
+    expect(homeSource).toContain("HOME_MENU_SURFACE");
+    expect(homeSource).toContain("bg-[var(--echo-glass)]");
+  });
+
+  it("sizes the tab panel to its window so a desktop window never scrolls", () => {
+    expect(browserSource).not.toContain("h-[calc(100vh-7.5rem)]");
+    expect(browserSource).toContain("h-[calc(100%-7.5rem)]");
+  });
+});

@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   SearchIcon,
+  CloudSunIcon,
   BotIcon,
   HomeIcon,
   PaletteIcon,
@@ -78,6 +79,20 @@ import {
   type BrowserTab,
 } from "./browser-store";
 import { placePopoverWithin } from "./popover-placement";
+
+// ECHO surfaces for the start page. Cards and menus are surface-raised with a
+// hairline and the raised shadow; the search field is sunken with the control
+// line; only the floating app strip is glass (Dock-like). Hovers use ink, not
+// white, so they read on snow as well as graphite.
+const HOME_CARD_SURFACE =
+  "border border-border bg-card text-card-foreground shadow-[var(--echo-shadow-raised)]";
+const HOME_MENU_SURFACE =
+  "border border-border bg-popover text-popover-foreground shadow-[var(--echo-shadow-raised)]";
+const HOME_FIELD_SURFACE = "border border-input bg-muted";
+const HOME_CONTROL_SURFACE = "border border-input bg-card";
+const HOME_TILE_SURFACE = "border border-border bg-foreground/5";
+const HOME_GLASS_SURFACE =
+  "border border-border bg-[var(--echo-glass)] shadow-[var(--echo-shadow-raised)] backdrop-blur-[var(--echo-blur-glass)]";
 
 type DesktopPanelId =
   | "home"
@@ -867,6 +882,7 @@ export function BrowserHome({
   const [openAppGroupId, setOpenAppGroupId] =
     useState<DesktopAppCategory | null>(null);
   const homeRootRef = useRef<HTMLDivElement>(null);
+  const homeScrollRef = useRef<HTMLDivElement>(null);
   const appGroupAnchorRef = useRef<HTMLDivElement>(null);
   const appGroupPopoverRef = useRef<HTMLDivElement>(null);
   // The group popover opens below the category grid, which sits near the
@@ -879,7 +895,8 @@ export function BrowserHome({
       const anchor = appGroupAnchorRef.current;
       const popover = appGroupPopoverRef.current;
       if (!root || !anchor || !popover) return;
-      const bounds = root.getBoundingClientRect();
+      // Only the visible part of the (possibly scrolled) start page counts.
+      const bounds = (homeScrollRef.current ?? root).getBoundingClientRect();
       if (bounds.height <= 0) return;
       const anchorRect = anchor.getBoundingClientRect();
       const { top, maxHeight } = placePopoverWithin({
@@ -1055,10 +1072,15 @@ export function BrowserHome({
           key={item.url}
           type="button"
           onClick={() => onOpen(item.url)}
-          className="group flex min-w-0 items-center gap-2 rounded-xl p-1.5 text-left transition hover:bg-white/10"
+          className="group flex min-w-0 items-center gap-2 rounded-xl p-1.5 text-left transition hover:bg-foreground/5"
           title={item.title}
         >
-          <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg liquid-glass-icon">
+          <span
+            className={cn(
+              "grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg",
+              HOME_TILE_SURFACE,
+            )}
+          >
             {item.favicon || fallbackIcon ? (
               <img
                 src={item.favicon || fallbackIcon}
@@ -1678,7 +1700,8 @@ export function BrowserHome({
       <div
         data-testid="desktop-side-rail"
         className={cn(
-          "absolute left-3 top-5 z-10 flex h-[calc(100%-2.5rem)] w-10 flex-col items-center rounded-2xl py-2.5 liquid-glass transition-[transform,opacity] duration-200 ease-out",
+          "absolute left-3 top-5 z-10 flex h-[calc(100%-2.5rem)] w-10 flex-col items-center rounded-2xl py-2.5 transition-[transform,opacity] duration-200 ease-out",
+          HOME_CARD_SURFACE,
           !compactDesktop &&
             activePanel === "home" &&
             !editMode &&
@@ -1691,8 +1714,8 @@ export function BrowserHome({
           type="button"
           onClick={focusSearchFromPanel}
           className={cn(
-            "grid size-8 place-items-center rounded-xl text-foreground/80 transition-colors hover:bg-white/12 hover:text-foreground",
-            activePanel === "home" && "bg-white/15 text-primary",
+            "grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
+            activePanel === "home" && "bg-foreground/10 text-foreground",
           )}
           title={wt.navHome}
         >
@@ -1701,7 +1724,7 @@ export function BrowserHome({
         <button
           type="button"
           onClick={() => openDesktopApp("echo://workspace/community")}
-          className="mt-1 grid size-8 place-items-center rounded-xl text-foreground/60 transition-colors hover:bg-white/12 hover:text-foreground"
+          className="mt-1 grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
           title="发现社区"
         >
           <CompassIcon className="size-[18px]" />
@@ -1718,8 +1741,8 @@ export function BrowserHome({
                   setActivePanel(item.id);
                 }}
                 className={cn(
-                  "grid size-8 place-items-center rounded-xl text-foreground/60 transition-colors hover:bg-white/12 hover:text-foreground",
-                  selected && "bg-white/15 text-primary",
+                  "grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
+                  selected && "bg-foreground/10 text-foreground",
                 )}
                 title={sideNavLabelMap[item.id]}
               >
@@ -1733,8 +1756,8 @@ export function BrowserHome({
             type="button"
             onClick={() => setActivePanel("add")}
             className={cn(
-              "grid size-8 place-items-center rounded-xl text-foreground/60 transition-colors hover:bg-white/12 hover:text-foreground",
-              activePanel === "add" && "bg-white/15 text-primary",
+              "grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
+              activePanel === "add" && "bg-foreground/10 text-foreground",
             )}
             title={wt.addTitle}
           >
@@ -1744,8 +1767,8 @@ export function BrowserHome({
             type="button"
             onClick={() => setActivePanel("settings")}
             className={cn(
-              "grid size-8 place-items-center rounded-xl text-foreground/60 transition-colors hover:bg-white/12 hover:text-foreground",
-              activePanel === "settings" && "bg-white/15 text-primary",
+              "grid size-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
+              activePanel === "settings" && "bg-foreground/10 text-foreground",
             )}
             title={wt.settingsTitle}
           >
@@ -1772,7 +1795,8 @@ export function BrowserHome({
         >
           <div
             className={cn(
-              "flex h-12 items-center gap-2 rounded-2xl px-3 text-muted-foreground liquid-glass-subtle",
+              "flex h-12 items-center gap-2 rounded-2xl px-3 text-muted-foreground",
+              HOME_FIELD_SURFACE,
               mobileDesktop && "h-11 rounded-xl px-2.5",
             )}
           >
@@ -1798,7 +1822,7 @@ export function BrowserHome({
                 )}
               />
             </button>
-            <div className="h-4 w-px bg-white/20" />
+            <div className="h-4 w-px bg-border" />
             <SearchIcon className="size-4 shrink-0 text-muted-foreground/80" />
             <input
               ref={searchInputRef}
@@ -1816,7 +1840,8 @@ export function BrowserHome({
             <div
               role="menu"
               className={cn(
-                "absolute left-1 top-[calc(100%+8px)] z-30 w-52 rounded-2xl p-1.5 text-foreground liquid-glass",
+                "absolute left-1 top-[calc(100%+8px)] z-30 w-52 rounded-2xl p-1.5",
+                HOME_MENU_SURFACE,
               )}
             >
               {engines.map((engine, index) => {
@@ -1834,7 +1859,7 @@ export function BrowserHome({
                     }}
                     className={cn(
                       "flex h-10 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-sm font-medium transition-colors",
-                      active ? "bg-white/15 text-primary" : "hover:bg-white/10",
+                      active ? "bg-foreground/10" : "hover:bg-foreground/5",
                     )}
                   >
                     <SearchEngineLogo engine={engine} className="size-5" />
@@ -1862,14 +1887,20 @@ export function BrowserHome({
               <button
                 type="button"
                 onClick={resetDesktopLayout}
-                className="rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground liquid-glass-subtle"
+                className={cn(
+                  "rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
+                  HOME_CONTROL_SURFACE,
+                )}
               >
                 {wt.resetLayout}
               </button>
               <button
                 type="button"
                 onClick={handleCreateFolder}
-                className="rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground liquid-glass-subtle"
+                className={cn(
+                  "rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
+                  HOME_CONTROL_SURFACE,
+                )}
               >
                 <Folder className="w-3 h-3 inline mr-0.5" />
                 {wt.newFolder}
@@ -1877,7 +1908,10 @@ export function BrowserHome({
               <button
                 type="button"
                 onClick={handleAddIcon}
-                className="rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground liquid-glass-subtle"
+                className={cn(
+                  "rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
+                  HOME_CONTROL_SURFACE,
+                )}
               >
                 <Plus className="w-3 h-3 inline mr-0.5" />
                 {wt.addIconBtn}
@@ -1885,7 +1919,10 @@ export function BrowserHome({
               <button
                 type="button"
                 onClick={() => handleAddWidget()}
-                className="rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground liquid-glass-subtle"
+                className={cn(
+                  "rounded-lg px-2 py-1 text-mini font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
+                  HOME_CONTROL_SURFACE,
+                )}
               >
                 <PanelLeftIcon className="w-3 h-3 inline mr-0.5" />
                 {wt.addWidgetBtn}
@@ -1896,7 +1933,7 @@ export function BrowserHome({
             <button
               type="button"
               onClick={() => setEditMode(false)}
-              className="rounded-lg bg-primary/90 px-2 py-1 text-mini font-medium text-primary-foreground transition hover:bg-primary liquid-glass-subtle"
+              className="rounded-lg bg-primary/90 px-2 py-1 text-mini font-medium text-primary-foreground transition hover:bg-primary"
             >
               {wt.finishEditing}
             </button>
@@ -1906,7 +1943,8 @@ export function BrowserHome({
         {editMode && (
           <div
             className={cn(
-              "absolute left-16 top-7 rounded-xl px-2 py-1 text-mini font-medium text-foreground/80 liquid-glass-subtle",
+              "absolute left-16 top-7 rounded-xl px-2 py-1 text-mini font-medium text-muted-foreground",
+              HOME_CARD_SURFACE,
               compactDesktop && "left-14 top-[88px]",
               tabletDesktop && "left-16",
               mobileDesktop && "left-12 right-4 text-center",
@@ -1917,8 +1955,11 @@ export function BrowserHome({
         )}
 
         <div
+          ref={homeScrollRef}
           className={cn(
-            "grid min-h-0 flex-1 grid-cols-[320px_minmax(380px,1fr)] gap-8 py-10",
+            // Scrolls when the window is too short for every row; the side
+            // padding keeps the cards' shadows inside the scroll box.
+            "-mx-3 grid min-h-0 flex-1 grid-cols-[320px_minmax(380px,1fr)] gap-8 overflow-y-auto px-3 py-10",
             compactDesktop &&
               "grid-cols-1 gap-5 overflow-y-auto pb-8 pt-5 pr-1",
             tabletDesktop &&
@@ -1936,12 +1977,13 @@ export function BrowserHome({
             <div className="text-center">
               <div
                 className={cn(
-                  "flex overflow-hidden rounded-2xl text-foreground liquid-glass-subtle",
+                  "flex overflow-hidden rounded-2xl",
+                  HOME_CARD_SURFACE,
                 )}
               >
                 <div
                   className={cn(
-                    "grid w-[72px] place-items-center border-r border-white/20 px-2.5 py-2 text-center",
+                    "grid w-[72px] place-items-center border-r border-border px-2.5 py-2 text-center",
                     mobileDesktop && "w-16 px-2 py-2",
                   )}
                 >
@@ -1994,12 +2036,13 @@ export function BrowserHome({
                         current === group.id ? null : group.id,
                       )
                     }
-                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-2xl p-2 text-center transition hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-2xl p-2 text-center transition hover:bg-foreground/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     title={`${group.title} · ${group.subtitle}`}
                   >
                     <span
                       className={cn(
-                        "grid size-[68px] grid-cols-2 gap-1 rounded-3xl p-1.5 transition liquid-glass-icon",
+                        "grid size-[68px] grid-cols-2 gap-1 rounded-3xl p-1.5 transition",
+                        HOME_TILE_SURFACE,
                         mobileDesktop && "size-16",
                       )}
                     >
@@ -2029,7 +2072,10 @@ export function BrowserHome({
                     ref={appGroupPopoverRef}
                     // A solid popover surface: when it moves up to fit the
                     // window it sits over the category tiles.
-                    className="absolute left-1/2 top-[calc(100%+8px)] z-20 w-72 -translate-x-1/2 rounded-2xl border border-border bg-popover p-2.5 text-popover-foreground shadow-xl shadow-black/30"
+                    className={cn(
+                      "absolute left-1/2 top-[calc(100%+8px)] z-20 w-72 -translate-x-1/2 rounded-2xl p-2.5",
+                      HOME_MENU_SURFACE,
+                    )}
                   >
                     <div className="mb-1.5 flex items-center justify-between px-1">
                       <div>
@@ -2084,7 +2130,8 @@ export function BrowserHome({
           <div className={cn("flex flex-col gap-7", compactDesktop && "gap-5")}>
             <section
               className={cn(
-                "w-[340px] max-w-[calc(100vw-1rem)] self-end rounded-2xl p-3.5 text-foreground liquid-glass",
+                "w-[340px] max-w-[calc(100vw-1rem)] self-end rounded-2xl p-3.5",
+                HOME_CARD_SURFACE,
                 compactDesktop && "w-full self-stretch",
                 mobileDesktop && "p-3",
               )}
@@ -2160,7 +2207,8 @@ export function BrowserHome({
 
             <section
               className={cn(
-                "w-[340px] max-w-[calc(100vw-1rem)] self-end rounded-2xl p-3.5 text-foreground liquid-glass",
+                "w-[340px] max-w-[calc(100vw-1rem)] self-end rounded-2xl p-3.5",
+                HOME_CARD_SURFACE,
                 compactDesktop && "w-full self-stretch",
                 mobileDesktop && "p-3",
               )}
@@ -2206,7 +2254,8 @@ export function BrowserHome({
                     <div
                       key={widget.id}
                       className={cn(
-                        "group/widget rounded-2xl p-4 transition-all liquid-glass-subtle",
+                        "group/widget rounded-2xl p-4 transition-all",
+                        HOME_CARD_SURFACE,
                         widget.size === "large" && "col-span-2",
                         widget.size === "small" && "p-3",
                         isDragging && "opacity-40 scale-95",
@@ -2262,7 +2311,10 @@ export function BrowserHome({
                         )}
                         {widget.type === "weather" && (
                           <div className="flex items-center gap-2">
-                            <span className="text-xl">☀️</span>
+                            <CloudSunIcon
+                              aria-hidden
+                              className="size-5 text-foreground"
+                            />
                             <span className="text-lg text-muted-foreground">
                               26°C
                             </span>
@@ -2354,7 +2406,12 @@ export function BrowserHome({
                         onDragEnd={handleDragEnd}
                         onContextMenu={(e) => handleContext(e, link.id, "icon")}
                       >
-                        <div className="relative w-12 h-12 rounded-xl liquid-glass-icon flex items-center justify-center text-muted-foreground overflow-hidden">
+                        <div
+                          className={cn(
+                            "relative w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground overflow-hidden",
+                            HOME_TILE_SURFACE,
+                          )}
+                        >
                           <span className="text-lg font-bold">
                             {link.name[0]}
                           </span>
@@ -2392,7 +2449,7 @@ export function BrowserHome({
                     <div key={folder.id} className="group relative">
                       <button
                         className={cn(
-                          "w-full flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all hover:bg-white/5",
+                          "w-full flex flex-col items-center gap-1.5 p-2 rounded-2xl transition-all hover:bg-foreground/5",
                           isDropTarget && "ring-2 ring-primary",
                         )}
                         onContextMenu={(e) =>
@@ -2416,13 +2473,18 @@ export function BrowserHome({
                         }}
                         onClick={() => toggleFolder(folder.id)}
                       >
-                        <div className="w-12 h-12 rounded-xl liquid-glass-icon flex items-center justify-center relative">
+                        <div
+                          className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center relative",
+                            HOME_TILE_SURFACE,
+                          )}
+                        >
                           {isOpen ? (
                             <FolderOpen className="w-5 h-5 text-foreground" />
                           ) : (
                             <Folder className="w-5 h-5 text-muted-foreground" />
                           )}
-                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-[9px] text-primary-foreground font-bold">
+                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold">
                             {links.length}
                           </span>
                         </div>
@@ -2431,7 +2493,12 @@ export function BrowserHome({
                         </span>
                       </button>
                       {isOpen && (
-                        <div className="absolute z-10 mt-1.5 p-2.5 text-foreground rounded-2xl liquid-glass min-w-[190px]">
+                        <div
+                          className={cn(
+                            "absolute z-10 mt-1.5 p-2.5 rounded-2xl min-w-[190px]",
+                            HOME_MENU_SURFACE,
+                          )}
+                        >
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-[13px] font-medium text-foreground">
                               {folder.name}
@@ -2451,7 +2518,7 @@ export function BrowserHome({
                               <button
                                 key={link.id}
                                 onClick={() => onOpen(link.url)}
-                                className="flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                                className="flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-foreground/5 transition-colors"
                               >
                                 <span className="relative grid size-6 place-items-center">
                                   <span className="text-base font-bold text-muted-foreground">
@@ -2487,7 +2554,8 @@ export function BrowserHome({
 
         <div
           className={cn(
-            "mx-auto mb-6 flex h-16 max-w-[760px] items-center gap-3 overflow-hidden rounded-2xl px-3 py-1.5 liquid-glass-dock",
+            "mx-auto mb-6 flex h-16 max-w-[760px] items-center gap-3 overflow-hidden rounded-2xl px-3 py-1.5",
+            HOME_GLASS_SURFACE,
             compactDesktop &&
               "absolute bottom-5 left-14 right-5 z-10 mx-0 mb-0 h-14 justify-start gap-2.5 overflow-x-auto rounded-2xl px-3 py-2",
             tabletDesktop &&
@@ -2511,7 +2579,7 @@ export function BrowserHome({
                 onDrop={(event) => dropDockApp(event, app.url)}
                 onDragEnd={() => setDraggingUrl(null)}
                 className={cn(
-                  "group grid size-12 place-items-center rounded-xl transition liquid-glass-icon hover:bg-white/10",
+                  "group grid size-12 place-items-center rounded-xl transition hover:bg-foreground/5",
                   compactDesktop && "size-11 shrink-0 rounded-xl",
                   tabletDesktop && "size-11",
                   mobileDesktop && "size-10 rounded-xl",
@@ -2583,7 +2651,7 @@ export function BrowserHome({
 
       {editWidgetState.visible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="rounded-2xl p-6 w-full max-w-sm liquid-glass">
+          <div className="rounded-2xl border border-border bg-popover p-6 w-full max-w-sm text-popover-foreground shadow-[var(--echo-shadow-window)]">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-foreground">
                 {wt.editWidgetDialogTitle}
@@ -2792,10 +2860,11 @@ function DesktopControlPanel({
   return (
     <div
       className={cn(
-        "absolute bottom-7 left-16 top-8 z-20 w-[360px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl text-foreground liquid-glass",
+        "absolute bottom-7 left-16 top-8 z-20 w-[360px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl",
+        HOME_MENU_SURFACE,
       )}
     >
-      <div className="flex items-center justify-between border-b border-white/15 px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
           <div className="text-base font-semibold">{title}</div>
           <div className="text-xs text-muted-foreground">
@@ -2805,7 +2874,10 @@ function DesktopControlPanel({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg px-3 py-1 text-xs font-medium text-muted-foreground transition hover:bg-white/10 hover:text-foreground liquid-glass-subtle"
+          className={cn(
+            "rounded-lg px-3 py-1 text-xs font-medium text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground",
+            HOME_CONTROL_SURFACE,
+          )}
         >
           {wt.panelClose}
         </button>
@@ -2823,8 +2895,8 @@ function DesktopControlPanel({
                   onClick={() => onSelectBackdrop(backdropId)}
                   aria-pressed={active}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-white/8",
-                    active ? "bg-white/12 ring-1 ring-primary/40" : "",
+                    "flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/5",
+                    active ? "bg-foreground/5 ring-1 ring-core/50" : "",
                   )}
                 >
                   <span
@@ -2845,7 +2917,7 @@ function DesktopControlPanel({
                       {wt.themeDescs[index]}
                     </span>
                   </span>
-                  {active && <CheckIcon className="size-4 text-primary" />}
+                  {active && <CheckIcon className="size-4 text-core" />}
                 </button>
               );
             })}
@@ -2864,7 +2936,7 @@ function DesktopControlPanel({
                     onClick={() =>
                       onAddWidget(widgetType, wt.widgetPanelNames[index])
                     }
-                    className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-white/8"
+                    className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-foreground/5"
                   >
                     <span className="grid size-10 place-items-center rounded-xl bg-primary/90 text-primary-foreground">
                       <Icon className="size-5" />
@@ -2901,7 +2973,7 @@ function DesktopControlPanel({
                     "linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0.12))",
                   )}
                   className={cn(
-                    "relative h-24 rounded-xl border border-white/20 transition overflow-hidden",
+                    "relative h-24 rounded-xl border border-border transition overflow-hidden",
                     backdrop.swatchClassName,
                     selectedBackdrop === backdropId &&
                       "ring-2 ring-primary ring-offset-2 ring-offset-transparent",
@@ -2909,7 +2981,7 @@ function DesktopControlPanel({
                   title={wt.wallpaperTitle(index + 1)}
                 >
                   {selectedBackdrop === backdropId && (
-                    <span className="absolute right-3 top-3 grid size-6 place-items-center rounded-full bg-white/90 text-primary shadow-lg">
+                    <span className="absolute right-3 top-3 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-[var(--echo-shadow-raised)]">
                       <CheckIcon className="size-3.5" />
                     </span>
                   )}
@@ -2927,7 +2999,7 @@ function DesktopControlPanel({
                 <button
                   key={name}
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-white/8"
+                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/5"
                   onClick={() => onOpen(url)}
                 >
                   <span className="grid size-10 place-items-center rounded-xl bg-primary/90 text-primary-foreground">
@@ -2949,7 +3021,7 @@ function DesktopControlPanel({
               return (
                 <div
                   key={app.url}
-                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-white/8"
+                  className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-foreground/5"
                 >
                   <button
                     type="button"
@@ -2972,7 +3044,8 @@ function DesktopControlPanel({
                         type="button"
                         onClick={() => onToggleWorkspaceShortcut(app.url)}
                         className={cn(
-                          "rounded-xl px-3 py-1.5 text-xs font-semibold transition liquid-glass-subtle",
+                          "rounded-xl px-3 py-1.5 text-xs font-semibold transition",
+                          HOME_CONTROL_SURFACE,
                           inWorkspaceSidebar &&
                             "bg-primary/12 text-primary ring-1 ring-primary/20",
                         )}
@@ -2985,7 +3058,8 @@ function DesktopControlPanel({
                       disabled={inDock}
                       onClick={() => onAddToDock(app.url)}
                       className={cn(
-                        "rounded-xl px-3 py-1.5 text-xs font-semibold transition liquid-glass-subtle",
+                        "rounded-xl px-3 py-1.5 text-xs font-semibold transition",
+                        HOME_CONTROL_SURFACE,
                         inDock
                           ? "opacity-50"
                           : "bg-primary/90 text-primary-foreground hover:bg-primary",
@@ -3006,7 +3080,7 @@ function DesktopControlPanel({
                 key={name}
                 type="button"
                 onClick={() => runSettingAction(index)}
-                className="w-full rounded-xl p-3 text-left transition hover:bg-white/8"
+                className="w-full rounded-xl p-3 text-left transition hover:bg-foreground/5"
               >
                 <div className="flex items-start gap-3 text-left">
                   <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/90 text-primary-foreground">

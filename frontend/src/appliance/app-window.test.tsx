@@ -72,6 +72,8 @@ describe("Echo OS desktop application window", () => {
     ).not.toBeNull();
     expect(container.querySelectorAll(".mac-traffic-light")).toHaveLength(3);
     expect(container.querySelector(".is-integrated-chrome")).not.toBeNull();
+    // A focused control near an edge must not scroll the frame itself.
+    expect(container.querySelector(".mac-window")).toHaveClass("overflow-clip");
     expect(screen.getByTitle("工作台")).toBeInTheDocument();
   });
 

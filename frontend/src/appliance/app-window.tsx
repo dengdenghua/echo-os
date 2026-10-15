@@ -861,7 +861,9 @@ export function AppWindow({
           }
         }}
         className={cn(
-          "mac-window absolute flex flex-col overflow-hidden",
+          // clip, not hidden: focusing a control near an edge must never scroll
+          // the window frame itself (hidden still allows programmatic scroll).
+          "mac-window absolute flex flex-col overflow-clip",
           !focused && "is-unfocused",
           win.integratedChrome && "is-integrated-chrome",
         )}
