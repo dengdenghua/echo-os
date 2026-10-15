@@ -23,3 +23,12 @@ describe("desktop chrome around portalled sheets", () => {
     );
   });
 });
+
+describe("Control Center sliders", () => {
+  it("fill and thumb follow the theme ink so they read on the snow panel", () => {
+    expect(css).toMatch(
+      /\.mac-control-slider input \{[^}]*accent-color: var\(--echo-ink\);/,
+    );
+    expect(css).not.toMatch(/accent-color: white;/);
+  });
+});
