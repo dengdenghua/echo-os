@@ -39,8 +39,8 @@ export interface WorkstationSeatProps {
   compactName?: boolean;
   /** Avatar-only presentation for dense horizontal docks. */
   iconOnly?: boolean;
-  /** Tiny caption below the avatar in avatar-only mode. */
-  iconCaption?: string;
+  /** Tiny caption below the avatar in avatar-only mode (text or a line icon). */
+  iconCaption?: ReactNode;
   className?: string;
   /** aria-label override for the button form. */
   ariaLabel?: string;
@@ -155,7 +155,7 @@ export function WorkstationSeat({
       {avatarElement}
       {iconStatusDot}
       {iconCaption ? (
-        <span className="max-w-full truncate text-xs font-medium leading-none text-muted-foreground">
+        <span className="inline-flex max-w-full items-center truncate text-xs font-medium leading-none text-muted-foreground">
           {iconCaption}
         </span>
       ) : null}

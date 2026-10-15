@@ -25,7 +25,11 @@ describe("ConversationRosterStrip", () => {
     expect(seats[0]).toHaveAccessibleName("Kane · 群主 · 在场");
     expect(seats[1]).toHaveAccessibleName("Zero · 协作 · 在场");
     expect(screen.queryByText("Local")).toBeNull();
-    expect(screen.getByText("★")).toBeInTheDocument();
+    // The group owner is marked with a line icon, not a ★ glyph.
+    expect(screen.queryByText("★")).toBeNull();
+    expect(
+      seats[0]!.querySelector('[data-testid="roster-leader-mark"]'),
+    ).not.toBeNull();
     expect(screen.queryByText("群主")).toBeNull();
 
     fireEvent.click(seats[1]!);

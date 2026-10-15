@@ -1,3 +1,4 @@
+import { CrownIcon } from "lucide-react";
 import { useMemo } from "react";
 
 import type { WorkbenchRosterSeat } from "./agent-workbench-panel";
@@ -59,7 +60,16 @@ export function ConversationRosterStrip({
             ariaLabel={label}
             onClick={onMemberClick ? () => onMemberClick(seat) : undefined}
             iconOnly
-            iconCaption={leader ? "★" : undefined}
+            iconCaption={
+              leader ? (
+                <CrownIcon
+                  aria-hidden
+                  data-testid="roster-leader-mark"
+                  strokeWidth={1.5}
+                  className="size-3"
+                />
+              ) : undefined
+            }
             className="shrink-0"
           />
         );
