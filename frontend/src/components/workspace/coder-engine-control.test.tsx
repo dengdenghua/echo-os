@@ -173,6 +173,12 @@ describe("CoderEngineControl", () => {
     expect(await screen.findByRole("menu")).toBeVisible();
     expect(screen.queryByText("当前暂不可执行")).toBeNull();
     expect(screen.queryByText("未找到可用的 Codex App Server")).toBeNull();
+    // Auto is the selection: it carries the same check mark as a model row.
+    const autoRow = screen.getByRole("button", {
+      name: /自动.*按任务智能选择/,
+    });
+    expect(autoRow).toHaveClass("bg-muted/70");
+    expect(autoRow.querySelector("svg")).not.toBeNull();
   });
 
   it("lets the Echo kernel switch between system and ChatGPT subscription models without mutating the Codex profile", async () => {

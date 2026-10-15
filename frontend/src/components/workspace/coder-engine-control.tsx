@@ -836,6 +836,17 @@ export function CoderEngineControl({
         ? profile.selected_model || profile.effective_model
         : profile?.system_model;
 
+  const autoModelSelected = Boolean(
+    nativeKernel
+      ? !nativeAccountSelected &&
+          (!value || value === "auto" || value === "default")
+      : taskProfile
+        ? !taskAccountSelected &&
+          (!value || value === "auto" || value === "default")
+        : profile?.source === "follow_system" &&
+          profile.model_source === "system",
+  );
+
   const openModelSettings = () => {
     setOpen(false);
     window.dispatchEvent(
@@ -943,28 +954,25 @@ export function CoderEngineControl({
                     disabled={controlPending}
                     onClick={() => selectSystemModel()}
                     className={cn(
-                      "flex h-8 w-full items-center justify-between rounded-md px-2 text-left text-xs hover:bg-muted/60",
-                      (nativeKernel
-                        ? !nativeAccountSelected &&
-                          (!value || value === "auto" || value === "default")
-                        : taskProfile
-                          ? !taskAccountSelected &&
-                            (!value || value === "auto" || value === "default")
-                          : profile.source === "follow_system" &&
-                            profile.model_source === "system") &&
-                        "bg-muted/70 text-foreground",
+                      "flex h-8 w-full items-center justify-between gap-2 rounded-md px-2 text-left text-xs hover:bg-muted/60",
+                      autoModelSelected && "bg-muted/70 text-foreground",
                     )}
                   >
                     <span className="truncate font-medium">
                       {locale.toLowerCase().startsWith("zh") ? "自动" : "Auto"}
                     </span>
-                    <span className="ml-2 truncate text-muted-foreground">
+                    <span className="ml-auto truncate text-muted-foreground">
                       {nativeKernel
                         ? copy.smartRoutingHint
                         : isSystemOrchestratorModel(profile.system_model)
                           ? copy.systemOrchestratorHint
                           : profile.system_model || copy.systemDefaultHint}
                     </span>
+                    {/* Same selected mark as a model row, so Auto never reads
+                        as merely hovered while the chip names its model. */}
+                    {autoModelSelected ? (
+                      <CheckCircle2Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                    ) : null}
                   </button>
                   {visibleSystemModels.map((model, index) => {
                     const selected = nativeKernel
