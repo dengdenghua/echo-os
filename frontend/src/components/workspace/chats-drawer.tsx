@@ -383,7 +383,7 @@ export function ChatsDrawer({ open, onOpenChange }: ChatsDrawerProps) {
               {t.sidebar.recentChats}
             </span>
             <span className="text-xs text-muted-foreground/55">
-              {filteredThreads.length}
+              {threadsPending ? null : filteredThreads.length}
             </span>
           </div>
 

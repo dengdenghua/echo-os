@@ -123,6 +123,8 @@ describe("ChatsDrawer", () => {
 
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
     expect(screen.queryByText("暂无对话")).toBeNull();
+    // No count until the list is known.
+    expect(screen.queryByText("0")).toBeNull();
     useThreadsMock.mockImplementation(() => ({ data: [] }));
   });
 });
