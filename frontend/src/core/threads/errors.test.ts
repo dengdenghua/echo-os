@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getStreamErrorMessage } from "./errors";
+import { getStreamErrorMessage, isNoModelConfigured } from "./errors";
 
 describe("getStreamErrorMessage", () => {
   it("maps missing stream endpoints to a product message", () => {
@@ -19,5 +19,24 @@ describe("getStreamErrorMessage", () => {
     expect(getStreamErrorMessage("Model timed out", "friendly")).toBe(
       "Model timed out",
     );
+  });
+});
+
+describe("isNoModelConfigured", () => {
+  it("recognises the runtime's no-model error, also inside wrappers", () => {
+    expect(
+      isNoModelConfigured(
+        "no LLM model configured — add one to data/custom_models.json (or set ANTHROPIC_API_KEY)",
+      ),
+    ).toBe(true);
+    expect(isNoModelConfigured("RuntimeError: No LLM model configured")).toBe(
+      true,
+    );
+  });
+
+  it("ignores other failures and empty values", () => {
+    expect(isNoModelConfigured("model_unavailable")).toBe(false);
+    expect(isNoModelConfigured("")).toBe(false);
+    expect(isNoModelConfigured(undefined)).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import {
   AlertTriangleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  InfoIcon,
   XCircleIcon,
 } from "lucide-react";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import { useLocalSettings } from "@/core/settings";
 import { useI18n } from "@/core/i18n/hooks";
+import { turnFailureCopy } from "@/core/i18n/locales/turn-failure";
 import {
   extractContentFromMessage,
   extractPresentFilesFromMessage,
@@ -78,6 +80,7 @@ import {
 import {
   type FailurePresentation,
   hasMessageOutputSummary,
+  isNoModelFailure,
   MessageOutputSummary,
 } from "./message-output-summary";
 import { MessageListSkeleton } from "./skeleton";
@@ -1088,7 +1091,7 @@ export function MessageList({
   /** Room-only messages/cards to merge at thread-group time boundaries. */
   timelineEntries?: readonly MessageListTimelineEntry[];
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [settings] = useLocalSettings();
   const rehypePlugins = useRehypeSplitWordsIntoSpans(thread.isLoading);
   const updateSubtask = useUpdateSubtask();
@@ -1364,8 +1367,9 @@ export function MessageList({
       // Environment / blocked hand-offs surface the readable reason from the
       // backend (``turn.error.message``) verbatim; the i18n strings are only
       // the fallback when no detail came through.
-      const message =
-        kind === "blocked"
+      const message = isNoModelFailure(failure)
+        ? turnFailureCopy(locale).noModel
+        : kind === "blocked"
           ? failure.detail !== "turn failed"
             ? failure.detail
             : t.streaming.blockedOnUser
@@ -1393,6 +1397,7 @@ export function MessageList({
       return { ...failure, kind, message };
     },
     [
+      locale,
       t.streaming.blockedOnUser,
       t.streaming.environmentBlocked,
       t.streaming.networkLost,
@@ -1432,6 +1437,8 @@ export function MessageList({
   ]);
   const isNetworkError = failureReceipt?.kind === "network";
   const isBackpressureError = failureReceipt?.kind === "backpressure";
+  // No model at all is a setup step, not a task failure.
+  const noModelFailure = isNoModelFailure(failureReceipt);
   // Environment blocks and "needs your input" hand-offs are not agent
   // failures — render them amber, not destructive red.
   const isWarningFailure =
@@ -1439,8 +1446,9 @@ export function MessageList({
     isBackpressureError ||
     failureReceipt?.kind === "environment" ||
     failureReceipt?.kind === "blocked";
-  const failureHeaderText =
-    failureReceipt?.kind === "blocked"
+  const failureHeaderText = noModelFailure
+    ? turnFailureCopy(locale).noModelTitle
+    : failureReceipt?.kind === "blocked"
       ? t.streaming.blockedOnUser
       : failureReceipt?.kind === "environment"
         ? t.streaming.environmentBlocked
@@ -2686,12 +2694,16 @@ export function MessageList({
               role="alert"
               className={cn(
                 "flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-[var(--shadow-xs)]",
-                isWarningFailure
-                  ? "border-warning/30/70 bg-warning/5 text-warning dark:border-warning/50"
-                  : "border-destructive/25 bg-destructive/8 text-destructive dark:border-destructive/35 dark:bg-destructive/12",
+                noModelFailure
+                  ? "border-info/25 bg-info/[0.04] text-foreground"
+                  : isWarningFailure
+                    ? "border-warning/30 bg-warning/5 text-warning dark:border-warning/50"
+                    : "border-destructive/25 bg-destructive/8 text-destructive dark:border-destructive/35 dark:bg-destructive/12",
               )}
             >
-              {isWarningFailure ? (
+              {noModelFailure ? (
+                <InfoIcon className="mt-0.5 size-4 shrink-0 text-info" />
+              ) : isWarningFailure ? (
                 <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-warning" />
               ) : (
                 <XCircleIcon className="mt-0.5 size-4 shrink-0" />
@@ -2707,6 +2719,21 @@ export function MessageList({
                 </div>
                 {!isNetworkError && (
                   <div className="text-sm opacity-80">{errorBannerText}</div>
+                )}
+                {noModelFailure && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("echo:open-settings", {
+                          detail: { tab: "models" },
+                        }),
+                      )
+                    }
+                    className="mt-2 rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background transition-colors hover:bg-foreground/90"
+                  >
+                    {turnFailureCopy(locale).addModel}
+                  </button>
                 )}
                 {failureReceipt?.kind === "environment" &&
                   onAuthorizeNetwork && (

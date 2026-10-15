@@ -12,11 +12,13 @@ import {
 } from "@/core/artifacts/utils";
 import { getBackendBaseURL } from "@/core/config";
 import { useI18n } from "@/core/i18n/hooks";
+import { turnFailureCopy } from "@/core/i18n/locales/turn-failure";
 import {
   stripInternalToolProtocol,
   stripLeakedRendererMarkup,
   stripUploadedFilesTag,
 } from "@/core/messages/utils";
+import { isNoModelConfigured } from "@/core/threads/errors";
 import { swallow } from "@/core/utils/log";
 import {
   getFileExtensionDisplayName,
@@ -33,8 +35,10 @@ import {
   ExternalLinkIcon,
   FilePenLineIcon,
   FilesIcon,
+  InfoIcon,
   LinkIcon,
   Loader2Icon,
+  PlusIcon,
   SettingsIcon,
   WandSparklesIcon,
   XCircleIcon,
@@ -133,6 +137,13 @@ export function failureNeedsModelSetup(
     failure?.code === "execution_unavailable" &&
     MODEL_SETUP_REASONS.has(failure.reason ?? "")
   );
+}
+
+/** No model is connected at all: a setup step, not a task failure. */
+export function isNoModelFailure(
+  failure: Pick<FailurePresentation, "detail"> | null | undefined,
+): boolean {
+  return isNoModelConfigured(failure?.detail);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -538,7 +549,7 @@ export function MessageOutputSummary({
   className?: string;
   presentation?: "final" | "process";
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { search } = useLocation();
   const { select, setOpen } = useArtifacts();
   const scanMessages = turnMessages ?? messages;
@@ -563,6 +574,10 @@ export function MessageOutputSummary({
 
   const isFailure = Boolean(failure);
   const isResolvedFailure = Boolean(failure?.resolved);
+  // No model at all: explain the setup step and offer 添加模型; 重试 could only
+  // fail again.
+  const noModel = isNoModelFailure(failure);
+  const noModelCopy = turnFailureCopy(locale);
   // Network loss, an environment block, and a "needs your input" hand-off are
   // not agent failures — render them as amber/warning, not destructive red.
   const isWarningFailure =
@@ -688,16 +703,20 @@ export function MessageOutputSummary({
             isResolvedFailure
               ? "border-border-default bg-muted/35"
               : isFailure
-                ? isWarningFailure
-                  ? "border-warning/20 bg-warning/50/[0.04]"
-                  : "border-destructive/20 bg-destructive/[0.035]"
-                : "border-success/20 bg-success/50/[0.055]",
+                ? noModel
+                  ? "border-info/25 bg-info/[0.04]"
+                  : isWarningFailure
+                    ? "border-warning/20 bg-warning/[0.04]"
+                    : "border-destructive/20 bg-destructive/[0.035]"
+                : "border-success/20 bg-success/[0.055]",
           )}
         >
           {isResolvedFailure ? (
             <CheckCircle2Icon className="size-4 shrink-0 text-success/75" />
           ) : isFailure ? (
-            isWarningFailure ? (
+            noModel ? (
+              <InfoIcon className="size-4 shrink-0 text-info" />
+            ) : isWarningFailure ? (
               <AlertTriangleIcon className="size-4 shrink-0 text-warning" />
             ) : (
               <XCircleIcon className="size-4 shrink-0 text-destructive" />
@@ -717,10 +736,17 @@ export function MessageOutputSummary({
             >
               {isResolvedFailure
                 ? t.message.previousAttemptRecovered
-                : isFailure
-                  ? (failure?.message ?? t.message.taskFailed)
-                  : t.message.taskOutputs}
+                : noModel
+                  ? noModelCopy.noModelTitle
+                  : isFailure
+                    ? (failure?.message ?? t.message.taskFailed)
+                    : t.message.taskOutputs}
             </div>
+            {noModel && (
+              <div className="text-xs text-muted-foreground">
+                {noModelCopy.noModel}
+              </div>
+            )}
             {!isFailure && (
               <div className="truncate text-xs text-muted-foreground">
                 {t.message.taskCompleted}
@@ -755,6 +781,23 @@ export function MessageOutputSummary({
               {t.message.openResult}
             </RoutedWebLink>
           )}
+          {isFailure && !isResolvedFailure && noModel && (
+            <button
+              type="button"
+              data-testid="model-setup-add-model"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("echo:open-settings", {
+                    detail: { tab: "models" },
+                  }),
+                )
+              }
+              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-transparent bg-foreground px-2.5 text-xs font-medium text-background transition-colors hover:bg-foreground/90"
+            >
+              <PlusIcon className="size-3.5" />
+              {noModelCopy.addModel}
+            </button>
+          )}
           {isFailure &&
             !isResolvedFailure &&
             failureNeedsModelSetup(failure) && (
@@ -773,7 +816,7 @@ export function MessageOutputSummary({
                 {t.message.openModelSettings}
               </button>
             )}
-          {isFailure && !isResolvedFailure && originalPrompt && (
+          {isFailure && !isResolvedFailure && !noModel && originalPrompt && (
             <button
               type="button"
               onClick={handleMakeSimilar}

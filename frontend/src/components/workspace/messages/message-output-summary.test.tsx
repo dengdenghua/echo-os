@@ -302,6 +302,40 @@ describe("MessageOutputSummary", () => {
     });
   });
 
+  it("guides a model-less turn to 添加模型 instead of 重试", () => {
+    // A fresh install has no model, so the native engine stops with the
+    // runtime's English "no LLM model configured" error. That is a setup
+    // step: explain it in the locale and offer 添加模型, never 重试.
+    const opened = vi.fn();
+    window.addEventListener("echo:open-settings", opened);
+    renderWithProviders(
+      <MessageOutputSummary
+        messages={[{ id: "u", type: "human", content: "写一句问候语" }]}
+        failure={{
+          message:
+            "no LLM model configured — add one to data/custom_models.json (or set ANTHROPIC_API_KEY)",
+          detail:
+            "no LLM model configured — add one to data/custom_models.json (or set ANTHROPIC_API_KEY)",
+          kind: "error",
+          code: "turn_failed",
+        }}
+        onRetryTask={vi.fn()}
+      />,
+      { locale: "zh-CN" },
+    );
+
+    expect(screen.getByText("先连接一个模型")).toBeInTheDocument();
+    expect(screen.queryByText(/no LLM model configured/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "重试" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "添加模型" }));
+
+    window.removeEventListener("echo:open-settings", opened);
+    expect(opened).toHaveBeenCalledOnce();
+    expect((opened.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      tab: "models",
+    });
+  });
+
   it("keeps model setup out of unrelated failures", () => {
     renderWithProviders(
       <MessageOutputSummary
@@ -944,6 +978,34 @@ describe("MessageList failure visibility", () => {
     expect(screen.queryByLabelText("审核交给")).not.toBeInTheDocument();
     // The receipt owns the failure display; the fallback banner stays off.
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("translates a model-less thread error into the setup guidance", () => {
+    const messages: Message[] = [
+      { id: "user-1", type: "human", content: "写一句问候语" },
+      {
+        id: "assistant-1",
+        type: "ai",
+        content: "",
+        tool_calls: [{ id: "tc-1", name: "web_search", args: { query: "q" } }],
+      } as AIMessage,
+    ];
+    const thread = mockThread({
+      messages,
+      error: new Error(
+        "no LLM model configured — add one to data/custom_models.json (or set ANTHROPIC_API_KEY)",
+      ),
+    });
+
+    renderMessageList(thread, "zh-CN");
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent("先连接一个模型");
+    expect(banner).toHaveTextContent("还没有可用的模型");
+    expect(banner).not.toHaveTextContent(/no LLM model configured/);
+    expect(
+      screen.getByRole("button", { name: "添加模型" }),
+    ).toBeInTheDocument();
   });
 
   it("shows the raw text when thread.error is a plain string", () => {

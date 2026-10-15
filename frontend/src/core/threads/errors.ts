@@ -40,3 +40,13 @@ export function getStreamErrorMessage(
 
   return message;
 }
+
+/**
+ * The runtime has no model to run the turn on (a fresh install before any
+ * model is added). ``UnconfiguredModelRouter`` raises this English message.
+ */
+export function isNoModelConfigured(
+  message: string | null | undefined,
+): boolean {
+  return /no LLM model configured/i.test(message ?? "");
+}
