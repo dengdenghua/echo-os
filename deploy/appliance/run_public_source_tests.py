@@ -180,6 +180,7 @@ EMBEDDED_RUNTIME_TESTS = (
     "tests/appliance/test_hub_lifecycle_lab.py",
     "tests/appliance/test_hub_operations.py",
     "tests/appliance/test_lan_discovery_functional_lab.py",
+    "tests/appliance/test_local_services.py",
     "tests/appliance/test_native_agent.py",
     "tests/appliance/test_pm_skills.py",
     "tests/appliance/test_photos.py",
