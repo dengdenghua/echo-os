@@ -1119,7 +1119,12 @@ export function CoderEngineControl({
               />
             ) : null}
 
-            {profile.execution_available === false || !profile.compatible ? (
+            {/* The Codex readiness only matters when Codex runs the turn (or
+                the Echo kernel borrows a ChatGPT subscription model). A
+                native turn on a system model ran fine while this warned
+                当前暂不可执行 · 未找到可用的 Codex App Server. */}
+            {(!nativeKernel || nativeAccountSelected) &&
+            (profile.execution_available === false || !profile.compatible) ? (
               <div className="mt-1">
                 <ProfileCompatibility profile={profile} compact />
               </div>

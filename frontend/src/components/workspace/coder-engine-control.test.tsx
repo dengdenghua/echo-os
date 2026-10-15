@@ -129,6 +129,52 @@ describe("CoderEngineControl", () => {
     expect(requested.some((url) => url.includes("/codex/account"))).toBe(false);
   });
 
+  it("keeps Codex readiness out of a native Echo turn on a system model", async () => {
+    // Golden path 2026-10: with Echo on the native engine, the composer's
+    // model menu still warned 当前暂不可执行 · 未找到可用的 Codex App Server
+    // although the turn ran fine on the system model.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = urlOf(input);
+      if (url.includes("/model-profile")) {
+        return jsonResponse({
+          ...systemProfile,
+          execution_available: false,
+          execution_unavailable_reason: "executable_unavailable",
+        });
+      }
+      if (url.includes("/account")) {
+        return jsonResponse({
+          account: null,
+          requires_openai_auth: false,
+          login_pending: false,
+          login_id: null,
+          login_error: null,
+        });
+      }
+      return jsonResponse(models);
+    });
+
+    renderWithProviders(
+      <CoderEngineControl
+        executionEngine="echo"
+        value="auto"
+        systemModels={[]}
+      />,
+      { locale: "zh-CN" },
+    );
+    const trigger = await screen.findByTestId("coder-engine-trigger");
+    await waitFor(() =>
+      expect(trigger.getAttribute("aria-label")).not.toContain(
+        "当前暂不可执行",
+      ),
+    );
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+    fireEvent.click(trigger);
+    expect(await screen.findByRole("menu")).toBeVisible();
+    expect(screen.queryByText("当前暂不可执行")).toBeNull();
+    expect(screen.queryByText("未找到可用的 Codex App Server")).toBeNull();
+  });
+
   it("lets the Echo kernel switch between system and ChatGPT subscription models without mutating the Codex profile", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
