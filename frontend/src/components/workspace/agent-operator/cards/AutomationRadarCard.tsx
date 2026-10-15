@@ -63,7 +63,7 @@ export function AutomationRadarCard({
           </div>
         </div>
         <div className="grid shrink-0 grid-cols-2 sm:grid-cols-3 gap-2 text-right font-mono text-xs">
-          <GateStat label={to("Octo auto")} value={echoScore} />
+          <GateStat label={to("Echo auto")} value={echoScore} />
           <GateStat label="Codex" value={codexScore} />
           <GateStat
             label={to("Ready")}

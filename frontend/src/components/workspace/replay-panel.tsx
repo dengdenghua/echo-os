@@ -19,6 +19,7 @@ import {
 } from "@/core/agent-trace/api";
 import { cn } from "@/lib/utils";
 
+import { formatOperatorCopy } from "./agent-operator/operator-utils";
 import { useOperatorCopy } from "./agent-operator/use-operator-copy";
 
 // ═══════════════════════════════════════════════════════════
@@ -191,6 +192,7 @@ export function BrowserDesktopReplayReviewCard({
   onRerunBlocked: () => void;
   onRejectStale: () => void;
 }) {
+  const to = useOperatorCopy();
   const topRecipe = repairRecipes.recipes[0];
   const trends = quality.replay_trends;
   const staleCount = trends.stale_source_artifact_count ?? 0;
@@ -198,32 +200,53 @@ export function BrowserDesktopReplayReviewCard({
   return (
     <div className="mt-3 rounded-lg border border-info/20 bg-info/5 px-3 py-2">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
             <ListChecksIcon className="size-4 text-info dark:text-info" />
-            Browser/Desktop replay review
+            {to("Browser/Desktop replay review")}
             <Badge variant="outline" className="text-xs">
-              {total} pending
+              {formatOperatorCopy(to, "{count} pending", { count: total })}
             </Badge>
             <Badge variant="outline" className="text-xs">
-              {repairRecipes.recipe_count} recipes
+              {formatOperatorCopy(to, "{count} recipes", {
+                count: repairRecipes.recipe_count,
+              })}
             </Badge>
             <Badge
               variant={repairVerifications.ready ? "outline" : "destructive"}
               className="text-xs"
             >
-              {repairVerifications.verified_count}/{repairVerifications.total}{" "}
-              verified
+              {formatOperatorCopy(to, "{verified}/{total} verified", {
+                verified: repairVerifications.verified_count,
+                total: repairVerifications.total,
+              })}
             </Badge>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            Browser sessions and desktop actions that produced replay evidence
-            for operator review.
-            {` Review rate ${reviewRate}%; stale artifacts ${staleCount}.`}
-            {topRecipe?.title ? ` Top recipe: ${topRecipe.title}.` : ""}
-            {repairVerifications.blocked_count > 0
-              ? ` ${repairVerifications.blocked_count} recipe(s) need rerun evidence.`
-              : ""}
+            {[
+              to(
+                "Browser sessions and desktop actions that produced replay evidence for operator review.",
+              ),
+              formatOperatorCopy(
+                to,
+                "Review rate {rate}%; stale artifacts {stale}.",
+                { rate: reviewRate, stale: staleCount },
+              ),
+              topRecipe?.title
+                ? formatOperatorCopy(to, "Top recipe: {title}.", {
+                    title: topRecipe.title,
+                  })
+                : "",
+              repairVerifications.blocked_count > 0
+                ? formatOperatorCopy(
+                    to,
+                    "{count} recipe(s) need rerun evidence.",
+                    { count: repairVerifications.blocked_count },
+                  )
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -236,7 +259,7 @@ export function BrowserDesktopReplayReviewCard({
                 : "border-success/25 bg-success/10 text-success",
             )}
           >
-            {total > 0 ? "operator action needed" : "clear"}
+            {total > 0 ? to("operator action needed") : to("nothing waiting")}
           </Badge>
           <Button
             variant="outline"
@@ -248,7 +271,7 @@ export function BrowserDesktopReplayReviewCard({
             <GlobeIcon
               className={cn("mr-1.5 size-3", browserBusy && "animate-spin")}
             />
-            Queue browser
+            {to("Queue browser")}
           </Button>
           <Button
             variant="outline"
@@ -260,7 +283,7 @@ export function BrowserDesktopReplayReviewCard({
             <MonitorIcon
               className={cn("mr-1.5 size-3", desktopBusy && "animate-spin")}
             />
-            Queue desktop
+            {to("Queue desktop")}
           </Button>
           <Button
             variant="outline"
@@ -272,7 +295,7 @@ export function BrowserDesktopReplayReviewCard({
             <GitBranchIcon
               className={cn("mr-1.5 size-3", recipeBusy && "animate-spin")}
             />
-            Queue recipes
+            {to("Queue recipes")}
           </Button>
           <Button
             variant="outline"
@@ -280,12 +303,12 @@ export function BrowserDesktopReplayReviewCard({
             className="h-7 px-2 text-xs"
             disabled={rerunBusy || repairVerifications.blocked_count === 0}
             onClick={onRerunBlocked}
-            aria-label="Rerun blocked browser and desktop repair evidence"
+            aria-label={to("Rerun blocked browser and desktop repair evidence")}
           >
             <RefreshCwIcon
               className={cn("mr-1.5 size-3", rerunBusy && "animate-spin")}
             />
-            Rerun blocked
+            {to("Rerun blocked")}
           </Button>
           <Button
             variant="outline"
@@ -297,22 +320,22 @@ export function BrowserDesktopReplayReviewCard({
             <ArchiveIcon
               className={cn("mr-1.5 size-3", staleBusy && "animate-spin")}
             />
-            Clear stale
+            {to("Clear stale")}
           </Button>
         </div>
       </div>
 
       <div className="mt-2 grid gap-2 sm:grid-cols-4">
-        <MiniStat label="pending" value={trends.pending_count} />
-        <MiniStat label="reviewed" value={trends.reviewed_count} />
-        <MiniStat label="stale" value={staleCount} />
-        <MiniStat label="review rate" value={`${reviewRate}%`} />
+        <MiniStat label={to("pending")} value={trends.pending_count} />
+        <MiniStat label={to("reviewed")} value={trends.reviewed_count} />
+        <MiniStat label={to("stale")} value={staleCount} />
+        <MiniStat label={to("review rate")} value={`${reviewRate}%`} />
       </div>
 
       <div className="mt-2 grid gap-2 lg:grid-cols-2">
         {items.length === 0 ? (
           <div className="rounded-md border border-background/70 bg-background/60 px-2 py-2 text-xs text-muted-foreground">
-            No browser or desktop replay cases are waiting.
+            {to("No browser or desktop replay cases are waiting.")}
           </div>
         ) : (
           items.map((item) => (

@@ -135,7 +135,7 @@ export const agentOperatorZhCN: AgentOperatorCopy = {
   "policy drafts": "策略草案",
   "Browser, desktop, visual replay, and signed automation policy coverage.":
     "覆盖浏览器、桌面、视觉回放和签名自动化策略。",
-  "Octo auto": "Octo 自动化",
+  "Echo auto": "Echo 自动化",
   Ready: "就绪",
   "Remaining automation edges": "剩余自动化差距",
   "Signed automation rule drafts": "签名自动化规则草案",
@@ -308,6 +308,30 @@ export const agentOperatorZhCN: AgentOperatorCopy = {
   "pass^k": "pass^k",
   browser: "浏览器",
   desktop: "桌面",
+
+  "Browser/Desktop replay review": "浏览器 / 桌面回放审核",
+  "{count} pending": "{count} 待审",
+  "{count} recipes": "{count} 个修复方案",
+  "{verified}/{total} verified": "已验证 {verified}/{total}",
+  "Browser sessions and desktop actions that produced replay evidence for operator review.":
+    "产生了回放证据、等你审核的浏览器会话和桌面操作。",
+  "Review rate {rate}%; stale artifacts {stale}.":
+    "审核率 {rate}%，过期产物 {stale} 个。",
+  "Top recipe: {title}.": "首选修复方案：{title}。",
+  "{count} recipe(s) need rerun evidence.": "{count} 个修复方案需要重跑取证。",
+  "operator action needed": "需要处理",
+  "nothing waiting": "无待审",
+  "Queue browser": "加入浏览器案例",
+  "Queue desktop": "加入桌面案例",
+  "Queue recipes": "加入修复方案",
+  "Rerun blocked browser and desktop repair evidence":
+    "重跑受阻的浏览器和桌面修复证据",
+  "Rerun blocked": "重跑受阻项",
+  "Clear stale": "清理过期项",
+  reviewed: "已审核",
+  "review rate": "审核率",
+  "No browser or desktop replay cases are waiting.":
+    "没有等待审核的浏览器或桌面回放案例。",
 };
 
 // Japanese and Korean currently inherit the English source strings (en-US is
