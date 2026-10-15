@@ -2573,6 +2573,16 @@ function RealtimePageContent({
     lastTurnToolEvents,
     realtimeApprovals,
   ] = useThreadStream(streamOptions);
+  // A new chat has no history, but its first realtime resume still reads as
+  // loading. On a cold backend the history skeleton then showed through the
+  // 你好，我是 Echo greeting for seconds.
+  const messageListThread = useMemo(
+    () =>
+      isNewThread && thread.isThreadLoading
+        ? { ...thread, isThreadLoading: false }
+        : thread,
+    [isNewThread, thread],
+  );
   useAgentPhotoResults(lastTurnToolEvents);
   useEffect(() => {
     // Keep the displayed selection stable for the running turn.
@@ -4433,7 +4443,7 @@ function RealtimePageContent({
                 <MessageList
                   className="size-full"
                   threadId={threadId}
-                  thread={thread}
+                  thread={messageListThread}
                   onOpenArtifact={openWorkbenchArtifact}
                   project={projectWorkspacePath || null}
                   onSendFollowUp={handleSendFollowUp}

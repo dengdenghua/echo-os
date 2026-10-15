@@ -49,4 +49,16 @@ describe("first-turn thread-scoped reads", () => {
       "useCoworkGroup(threadQueryable ? threadId : null)",
     );
   });
+
+  it("never shows the history skeleton on a new chat", () => {
+    // Golden path 2026-10: on a cold backend the first resume of a new chat
+    // read as loading, so MessageListSkeleton showed through the greeting.
+    const guard = sourceBetween(
+      "const messageListThread = useMemo(",
+      "useAgentPhotoResults(lastTurnToolEvents);",
+    );
+    expect(guard).toContain("isNewThread && thread.isThreadLoading");
+    expect(guard).toContain("isThreadLoading: false");
+    expect(pageSource).toContain("thread={messageListThread}");
+  });
 });
