@@ -964,14 +964,13 @@ export function IntentDesktopSurface({
                     role="menu"
                     aria-label="Agent 选择菜单"
                     className={cn(
-                      "absolute left-0 z-50 max-h-[340px] w-72 overflow-y-auto rounded-2xl border p-1.5 text-left shadow-2xl backdrop-blur-xl",
+                      "absolute left-0 z-50 max-h-[340px] w-72 overflow-y-auto rounded-2xl border p-1.5 text-left backdrop-blur-xl",
                       // The composer docks to the top of the screen in the
                       // workspace mode, so the menu opens downward there.
                       mode === "workspace"
                         ? "top-full mt-2"
                         : "bottom-full mb-2",
-                      "border-black/10 bg-card/95 text-foreground shadow-slate-900/15",
-                      "   ",
+                      "border-border bg-card/95 text-foreground shadow-[var(--echo-shadow-raised)]",
                     )}
                   >
                     {agents.length === 0 ? (

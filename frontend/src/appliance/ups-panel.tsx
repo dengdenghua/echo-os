@@ -324,8 +324,10 @@ export function UpsPanel() {
                     (!snapshot?.configured || !snapshot.available))
                 }
                 onClick={() => void previewPolicy(!policy.enabled)}
-                className={`h-8 rounded-lg px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-40 ${
-                  policy.enabled ? "bg-slate-600" : "bg-primary"
+                className={`h-8 rounded-lg px-3 text-[12px] font-semibold disabled:opacity-40 ${
+                  policy.enabled
+                    ? "border border-border bg-muted text-foreground"
+                    : "bg-primary text-primary-foreground"
                 }`}
               >
                 {policy.enabled ? "关闭自动关机" : "启用低电量关机"}

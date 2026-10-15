@@ -113,7 +113,7 @@ export function SystemModelStatus({
               label: "状态未知",
               iconState: "unknown" as const,
               detail: "尚未取得模型执行状态。",
-              className: "bg-slate-400",
+              className: "bg-muted-foreground",
             };
   const account = useQuery({
     ...coderAccountQueryOptions(queryKeys),

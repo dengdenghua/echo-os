@@ -347,7 +347,7 @@ function TaskDetailDrawer({
         type="button"
         aria-label="关闭任务详情"
         onClick={onClose}
-        className="absolute inset-0 top-12 z-10 bg-slate-950/12 backdrop-blur-[1px]"
+        className="absolute inset-0 top-12 z-10 bg-scrim/12 backdrop-blur-[1px]"
       />
       <aside
         aria-label="任务详情"
@@ -677,7 +677,7 @@ function TaskDetailDrawer({
           <button
             type="button"
             onClick={() => onOpenWorkspace()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-slate-700"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/85"
           >
             <MessageSquareTextIcon className="size-4" />
             {task.threadId ? "打开原任务" : "打开工作台"}
@@ -879,8 +879,8 @@ export function TaskSpacePanel({
     <SystemAppFrame
       label="Echo 任务空间"
       onClose={onClose}
-      overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-      className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-border bg-background/94 text-foreground shadow-2xl shadow-slate-950/35 backdrop-blur-3xl"
+      overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-scrim/18 p-4 backdrop-blur-[2px]"
+      className="relative flex h-[min(720px,calc(100vh-64px))] w-[min(920px,calc(100vw-32px))] flex-col overflow-hidden rounded-[22px] border border-border bg-background/94 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
       windowClassName="relative flex size-full flex-col overflow-hidden bg-background text-foreground"
     >
       <header className="flex h-12 shrink-0 items-center border-b border-border bg-card/70 px-4">
@@ -915,7 +915,7 @@ export function TaskSpacePanel({
           <button
             type="button"
             onClick={() => onOpenWorkspace()}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-slate-700"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/85"
           >
             打开工作台
           </button>
@@ -971,7 +971,7 @@ export function TaskSpacePanel({
                 ? "bg-breach"
                 : projection?.auditIntegrity.ok === true
                   ? "bg-core"
-                  : "bg-slate-300",
+                  : "bg-muted-foreground/50",
             )}
           />
           审计链
@@ -1076,7 +1076,7 @@ export function TaskSpacePanel({
       )}
 
       {takeoverCandidate && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 grid place-items-center bg-scrim/30 p-5 backdrop-blur-sm">
           <section
             role="alertdialog"
             aria-modal="true"
@@ -1124,7 +1124,7 @@ export function TaskSpacePanel({
       )}
 
       {resumeCandidate && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 grid place-items-center bg-scrim/30 p-5 backdrop-blur-sm">
           <section
             role="alertdialog"
             aria-modal="true"

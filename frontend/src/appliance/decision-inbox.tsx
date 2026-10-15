@@ -163,7 +163,7 @@ export function DecisionInbox({
     <SystemAppFrame
       label="审批收件箱"
       onClose={onClose}
-      overlayClassName="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 p-6"
+      overlayClassName="fixed inset-0 z-50 grid place-items-center bg-scrim/30 p-6"
       className="relative flex h-full min-h-0 flex-col bg-background"
       windowClassName="relative flex h-full min-h-0 flex-col bg-background"
     >

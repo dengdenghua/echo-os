@@ -109,7 +109,7 @@ function DeviceCard({
           aria-label={device.online ? "在线" : "离线"}
           className={cn(
             "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-border",
-            device.online ? "bg-core" : "bg-slate-300",
+            device.online ? "bg-core" : "bg-muted-foreground/50",
           )}
         />
       </span>
@@ -397,8 +397,8 @@ export function DeviceLinkPanel({
       label="设备连接"
       onClose={onClose}
       backdropButtonLabel="关闭设备连接"
-      overlayClassName="absolute inset-0 z-[82] grid place-items-center bg-slate-950/22 px-5 pb-20 pt-10 backdrop-blur-[5px]"
-      className="relative flex h-[min(620px,calc(100vh-120px))] w-[min(920px,calc(100vw-34px))] overflow-hidden rounded-[24px] border border-border bg-background/94 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.38)] backdrop-blur-3xl"
+      overlayClassName="absolute inset-0 z-[82] grid place-items-center bg-scrim/22 px-5 pb-20 pt-10 backdrop-blur-[5px]"
+      className="relative flex h-[min(620px,calc(100vh-120px))] w-[min(920px,calc(100vw-34px))] overflow-hidden rounded-[24px] border border-border bg-background/94 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
       windowClassName="relative flex size-full overflow-hidden bg-background text-foreground"
       trailing={
         <HighRiskApprovalDialog
@@ -520,7 +520,7 @@ export function DeviceLinkPanel({
           <>
             <section
               data-echo-theme="graphite"
-              className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]"
+              className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[var(--echo-shadow-raised)]"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -886,7 +886,7 @@ export function DeviceLinkPanel({
           <div className="mt-5 space-y-4">
             <section
               data-echo-theme="graphite"
-              className="rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-6 text-foreground shadow-[0_18px_50px_rgba(15,23,42,.2)]"
+              className="rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-6 text-foreground shadow-[var(--echo-shadow-raised)]"
             >
               <div className="flex items-start gap-4">
                 <span className="grid size-12 shrink-0 place-items-center rounded-[16px] bg-card/10">

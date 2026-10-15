@@ -2031,7 +2031,7 @@ export default function DesktopShellPage() {
       className={cn(
         "macos-desktop-root relative h-screen overflow-hidden bg-transparent",
         desktopTheme,
-        desktopTheme === "theme-white" ? "text-slate-900" : "text-white dark",
+        desktopTheme === "theme-white" ? "text-foreground" : "text-white dark",
         desktopMode === "pure" && "is-mode-pure",
         `mac-wallpaper-${wallpaper}`,
         `mac-liquid-${liquidGlassStyle}`,

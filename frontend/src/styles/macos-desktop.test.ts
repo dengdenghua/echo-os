@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -59,6 +59,28 @@ describe("desktop wallpapers", () => {
     expect(css).not.toMatch(/#101745|#172260|#030611|#ee6c70/i);
     expect(css).toMatch(
       /\.macos-desktop-root \.desktop-wallpaper \{[^}]*background-color: var\(--echo-ground\);/,
+    );
+  });
+});
+
+describe("system app scrims and shadows", () => {
+  it("dim and lift with the graphite tokens, not navy slate", () => {
+    const appliance = join(process.cwd(), "src/appliance");
+    const offenders = readdirSync(appliance)
+      .filter((name) => name.endsWith(".tsx") && !name.includes(".test."))
+      // Approval dialogs belong to the governance surface; left as they are.
+      .filter((name) => !name.endsWith("approval-dialog.tsx"))
+      .flatMap((name) =>
+        readFileSync(join(appliance, name), "utf8")
+          .split("\n")
+          .filter((line) =>
+            /bg-slate-950|shadow-slate-9|rgba\(15,\s*23,\s*42/.test(line),
+          )
+          .map((line) => `${name}: ${line.trim()}`),
+      );
+    expect(offenders).toEqual([]);
+    expect(css).toMatch(
+      /\.mac-dialog-overlay \{[^}]*background: color-mix\(in srgb, var\(--echo-scrim\) 10%, transparent\);/,
     );
   });
 });

@@ -133,7 +133,7 @@ function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative h-7 w-12 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${
-        checked ? "bg-primary" : "bg-slate-300"
+        checked ? "bg-primary" : "bg-foreground/20"
       }`}
     >
       <span
@@ -470,7 +470,7 @@ export function SystemDeviceSettings(props: SystemDeviceSettingsProps) {
             type="button"
             disabled={!props.lockAvailable}
             onClick={props.onLock}
-            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-slate-700 disabled:opacity-40"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-40"
           >
             立即锁屏
           </button>

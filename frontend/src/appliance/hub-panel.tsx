@@ -831,7 +831,7 @@ function AppDetailSheet({
   return (
     <div
       data-desktop-interactive
-      className="fixed inset-0 z-[128] flex justify-end bg-slate-950/24 p-2 backdrop-blur-[3px] sm:p-3"
+      className="fixed inset-0 z-[128] flex justify-end bg-scrim/24 p-2 backdrop-blur-[3px] sm:p-3"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -841,7 +841,7 @@ function AppDetailSheet({
         aria-modal="true"
         aria-label={`${app.nameZh} 应用详情`}
         aria-busy={loading}
-        className="flex h-full w-[min(570px,100%)] flex-col overflow-hidden rounded-[26px] border border-border bg-card/96 text-foreground shadow-[0_32px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        className="flex h-full w-[min(570px,100%)] flex-col overflow-hidden rounded-[26px] border border-border bg-card/96 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
       >
         <header className="flex h-14 shrink-0 items-center border-b border-border px-5">
           <span className="text-[12px] font-semibold text-muted-foreground">
@@ -1597,7 +1597,7 @@ function AgentAssetDetailSheet({
   return (
     <div
       data-desktop-interactive
-      className="fixed inset-0 z-[145] flex justify-end bg-slate-950/28 p-2 backdrop-blur-[4px] sm:p-3"
+      className="fixed inset-0 z-[145] flex justify-end bg-scrim/28 p-2 backdrop-blur-[4px] sm:p-3"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -1606,7 +1606,7 @@ function AgentAssetDetailSheet({
         role="dialog"
         aria-modal="true"
         aria-label={`${target.name} 详情`}
-        className="flex h-full w-full max-w-[520px] flex-col overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[0_28px_90px_rgba(15,23,42,.34)]"
+        className="flex h-full w-full max-w-[520px] flex-col overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[var(--echo-shadow-window)]"
       >
         <header className="flex items-start gap-4 border-b border-border px-6 py-5">
           <div className="grid size-12 shrink-0 place-items-center rounded-[15px] bg-primary text-primary-foreground shadow-[0_8px_22px_rgba(79,70,229,.24)]">
@@ -1784,7 +1784,7 @@ function AgentAssetDetailSheet({
                     type="button"
                     onClick={() => onDisable(target)}
                     disabled={busy}
-                    className="h-9 rounded-full bg-muted px-4 text-[12px] font-semibold text-foreground transition hover:bg-slate-300 disabled:opacity-40"
+                    className="h-9 rounded-full bg-muted px-4 text-[12px] font-semibold text-foreground transition hover:bg-foreground/10 disabled:opacity-40"
                   >
                     停用当前用户
                   </button>
@@ -1944,7 +1944,7 @@ function AgentConnectionDialog({
   return (
     <div
       data-desktop-interactive
-      className="fixed inset-0 z-[155] grid place-items-center bg-slate-950/38 p-5 backdrop-blur-[7px]"
+      className="fixed inset-0 z-[155] grid place-items-center bg-scrim/38 p-5 backdrop-blur-[7px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onClose();
       }}
@@ -1953,7 +1953,7 @@ function AgentConnectionDialog({
         role="dialog"
         aria-modal="true"
         aria-label={`${target.name} 账户连接`}
-        className="w-full max-w-[440px] overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[0_28px_90px_rgba(15,23,42,.36)]"
+        className="w-full max-w-[440px] overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[var(--echo-shadow-window)]"
       >
         <header className="flex items-start gap-3 border-b border-border px-6 py-5">
           <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
@@ -2785,8 +2785,8 @@ export function HubPanel({
       <SystemAppFrame
         label="ECHO Hub"
         onClose={onClose}
-        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-        className="relative flex h-[min(760px,calc(100vh-64px))] w-[min(1060px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/92 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-scrim/18 p-4 backdrop-blur-[2px]"
+        className="relative flex h-[min(760px,calc(100vh-64px))] w-[min(1060px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/92 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
         windowClassName="relative flex size-full flex-col overflow-hidden bg-background text-foreground"
       >
         <header className="relative flex h-14 shrink-0 items-center border-b border-border bg-card/58 px-5">
@@ -3260,14 +3260,14 @@ export function HubPanel({
 
       {revealedCredentials && (
         <div
-          className="fixed inset-0 z-[160] grid place-items-center bg-slate-950/44 p-5 backdrop-blur-[8px]"
+          className="fixed inset-0 z-[160] grid place-items-center bg-scrim/44 p-5 backdrop-blur-[8px]"
           data-desktop-interactive
         >
           <section
             role="dialog"
             aria-modal="true"
             aria-label={`${revealedCredentials.appName} 初始凭据`}
-            className="w-full max-w-[470px] overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[0_30px_100px_rgba(15,23,42,.38)]"
+            className="w-full max-w-[470px] overflow-hidden rounded-[24px] border border-border bg-card/96 text-foreground shadow-[var(--echo-shadow-window)]"
           >
             <div className="px-6 pb-4 pt-6">
               <div className="grid size-11 place-items-center rounded-2xl bg-warning/10 text-warning">

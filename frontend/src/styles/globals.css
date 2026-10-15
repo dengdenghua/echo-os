@@ -380,6 +380,7 @@
   /* success is the Echo Core cyan (ECHO has no green); info is signal blue. */
   --color-success: var(--echo-core);
   --color-info: var(--echo-signal);
+  --color-scrim: var(--echo-scrim);
   --animate-aurora: aurora 8s ease-in-out infinite alternate;
   @keyframes aurora {
     0% {
@@ -418,6 +419,9 @@
 }
 
 :root {
+  /* Dialog veils and scrims dim with the graphite ground on both themes
+     (bg-scrim/NN, or var(--echo-scrim) in CSS); never a navy slate. */
+  --echo-scrim: #090a0c;
   /* Shared size tokens consumed as var(--dialog-*) etc. in arbitrary values;
      the same scale as echo-ai. */
   --dialog-sm: 360px;

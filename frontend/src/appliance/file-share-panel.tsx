@@ -111,7 +111,7 @@ export function FileSharePanel({
   };
 
   return (
-    <div className="absolute inset-0 z-[80] grid place-items-center bg-slate-950/25 p-6">
+    <div className="absolute inset-0 z-[80] grid place-items-center bg-scrim/25 p-6">
       <section className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         <header className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
@@ -130,7 +130,7 @@ export function FileSharePanel({
             type="button"
             disabled={!selected || selected.kind !== "file" || busy}
             onClick={() => void beginCreate()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:bg-slate-300"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
             {busy ? (
               <Loader2Icon className="size-4 animate-spin" />

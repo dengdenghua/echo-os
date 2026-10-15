@@ -663,7 +663,7 @@ export function FileOrganizationPanel({
 
   return (
     <div
-      className="fixed inset-0 z-[130] grid place-items-center bg-slate-950/30 p-5 backdrop-blur-sm"
+      className="fixed inset-0 z-[130] grid place-items-center bg-scrim/30 p-5 backdrop-blur-sm"
       data-desktop-interactive
     >
       <section

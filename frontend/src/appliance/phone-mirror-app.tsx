@@ -383,7 +383,7 @@ export function PhoneMirrorApp({ deviceId, deviceName, onClose }: Props) {
           <div className="flex w-full items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-2">
               <i
-                className={`size-2 rounded-full ${online ? "bg-core" : "bg-slate-300"}`}
+                className={`size-2 rounded-full ${online ? "bg-core" : "bg-muted-foreground/50"}`}
               />
               {online ? "设备在线" : "等待设备连接"}
             </span>
@@ -398,7 +398,7 @@ export function PhoneMirrorApp({ deviceId, deviceName, onClose }: Props) {
                 style={{
                   maxHeight: "max(180px, calc(100cqh - 200px))",
                 }}
-                className="max-w-full touch-none select-none rounded-2xl border-[6px] border-foreground/20 bg-slate-950 shadow-xl"
+                className="max-w-full touch-none select-none rounded-2xl border-[6px] border-foreground/20 bg-scrim shadow-[var(--echo-shadow-raised)]"
                 onPointerDown={(event) => {
                   if (event.button !== 0 || controlling) return;
                   event.preventDefault();

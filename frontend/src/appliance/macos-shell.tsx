@@ -419,7 +419,7 @@ export function MacWorkspaceDropdown({
               <span
                 className={cn(
                   "size-2 rounded-full",
-                  desktopMode === "pure" ? "bg-core" : "bg-slate-300 ",
+                  desktopMode === "pure" ? "bg-core" : "bg-muted-foreground/50",
                 )}
               />
               <span>意图纯净态</span>
@@ -438,7 +438,9 @@ export function MacWorkspaceDropdown({
               <span
                 className={cn(
                   "size-2 rounded-full",
-                  desktopMode === "workspace" ? "bg-primary" : "bg-slate-300 ",
+                  desktopMode === "workspace"
+                    ? "bg-primary"
+                    : "bg-muted-foreground/50",
                 )}
               />
               <span>多窗口工作台</span>

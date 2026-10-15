@@ -328,7 +328,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
         <>
           <section
             data-echo-theme="graphite"
-            className="mt-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[0_20px_50px_rgba(15,23,42,.22)]"
+            className="mt-5 overflow-hidden rounded-[22px] bg-gradient-to-br from-[#1b1f25] to-[#0c0e11] p-5 text-foreground shadow-[var(--echo-shadow-raised)]"
           >
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
@@ -389,7 +389,7 @@ export function StorageOverview({ onOpenFiles }: { onOpenFiles?: () => void }) {
               })}
               {usage.trash.bytes > 0 && (
                 <span
-                  className="bg-slate-300/75"
+                  className="bg-muted-foreground/45"
                   style={{
                     width: `${percent(usage.trash.bytes, usage.disk.totalBytes)}%`,
                     minWidth: 3,
@@ -621,8 +621,8 @@ export function StorageCenterPanel({
     <SystemAppFrame
       label="存储中心"
       onClose={onClose}
-      overlayClassName="fixed inset-0 z-[89] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-      className="relative flex h-[min(780px,calc(100vh-56px))] w-[min(1120px,calc(100vw-28px))] overflow-hidden rounded-[24px] border border-border bg-background/94 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+      overlayClassName="fixed inset-0 z-[89] flex items-center justify-center bg-scrim/18 p-4 backdrop-blur-[2px]"
+      className="relative flex h-[min(780px,calc(100vh-56px))] w-[min(1120px,calc(100vw-28px))] overflow-hidden rounded-[24px] border border-border bg-background/94 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
       windowClassName="relative flex size-full overflow-hidden bg-background text-foreground"
     >
       <aside className="w-[210px] shrink-0 border-r border-border bg-card/52 p-4 backdrop-blur-2xl">

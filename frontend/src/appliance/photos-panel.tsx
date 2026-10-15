@@ -220,7 +220,7 @@ function PhotoTile({
         </span>
       </span>
       {photo.indexed && (
-        <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-slate-950/35 text-white backdrop-blur-md">
+        <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-scrim/35 text-white backdrop-blur-md">
           <SparklesIcon className="size-3" />
         </span>
       )}
@@ -852,8 +852,8 @@ export function PhotosPanel({
       <SystemAppFrame
         label="照片"
         onClose={onClose}
-        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-slate-950/18 p-4 backdrop-blur-[2px]"
-        className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/91 text-foreground shadow-[0_34px_100px_rgba(15,23,42,.34)] backdrop-blur-3xl"
+        overlayClassName="fixed inset-0 z-[88] flex items-center justify-center bg-scrim/18 p-4 backdrop-blur-[2px]"
+        className="relative flex h-[min(800px,calc(100vh-64px))] w-[min(1160px,calc(100vw-32px))] flex-col overflow-hidden rounded-[24px] border border-border bg-background/91 text-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-3xl"
         windowClassName="relative flex size-full flex-col overflow-hidden bg-background text-foreground"
       >
         <header className="relative flex h-14 shrink-0 items-center bg-card/52 px-5 shadow-[0_1px_0_rgba(148,163,184,.18)]">
@@ -1311,7 +1311,7 @@ export function PhotosPanel({
 
       {selected && (
         <div
-          className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/72 p-6 backdrop-blur-xl"
+          className="fixed inset-0 z-[120] grid place-items-center bg-scrim/72 p-6 backdrop-blur-xl"
           data-desktop-interactive
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setSelected(null);

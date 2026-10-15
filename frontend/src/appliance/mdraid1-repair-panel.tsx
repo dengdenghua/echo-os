@@ -243,7 +243,7 @@ export function MdRaid1RepairPanel() {
       {plan && (
         <section
           data-echo-theme="graphite"
-          className="mt-4 rounded-[22px] border border-border bg-[#101216] p-5 text-foreground shadow-lg"
+          className="mt-4 rounded-[22px] border border-border bg-background p-5 text-foreground shadow-[var(--echo-shadow-raised)]"
         >
           <h2 className="text-sm font-semibold">最终换盘复核</h2>
           <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -251,7 +251,7 @@ export function MdRaid1RepairPanel() {
             {plan.replacement.devicefile}
             ，随后由内核后台重建。服务端执行前会重新核验全部身份和状态。
           </p>
-          <label className="mt-4 block text-xs font-medium text-slate-100">
+          <label className="mt-4 block text-xs font-medium text-foreground">
             设备管理员密码
             <input
               type="password"

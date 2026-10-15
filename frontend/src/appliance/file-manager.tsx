@@ -109,7 +109,7 @@ function Breadcrumb({
       <button
         type="button"
         onClick={() => onNavigate("")}
-        className="shrink-0 rounded-md px-2 py-0.5 font-medium text-foreground transition hover:bg-slate-900/8"
+        className="shrink-0 rounded-md px-2 py-0.5 font-medium text-foreground transition hover:bg-foreground/8"
       >
         NAS
       </button>
@@ -121,7 +121,7 @@ function Breadcrumb({
             <button
               type="button"
               onClick={() => onNavigate(sub)}
-              className="rounded-md px-2 py-0.5 text-foreground transition hover:bg-slate-900/8"
+              className="rounded-md px-2 py-0.5 text-foreground transition hover:bg-foreground/8"
             >
               {part}
             </button>
@@ -730,7 +730,7 @@ export function FileManager({
                   <div className="mac-finder-transfer-actions">
                     <button
                       type="button"
-                      className="rounded-md p-1 text-muted-foreground hover:bg-slate-900/8"
+                      className="rounded-md p-1 text-muted-foreground hover:bg-foreground/8"
                       aria-label={transfer.paused ? "继续上传" : "暂停上传"}
                       onClick={() => {
                         const control = uploadControlRef.current;
@@ -1181,7 +1181,7 @@ function TrashView({
         {trash.map((entry) => (
           <li
             key={entry.id}
-            className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-900/5"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-foreground/5"
           >
             {entry.kind === "dir" ? (
               <FolderIcon className="size-5 shrink-0 text-muted-foreground" />
