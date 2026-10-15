@@ -2257,8 +2257,11 @@ export default function DesktopShellPage() {
             />
             <section
               ref={drawerRef}
+              role="dialog"
+              aria-modal={desktopDrawerOpen || undefined}
+              aria-labelledby="desktop-drawer-title"
               className={cn(
-                "absolute inset-x-8 bottom-28 top-14 mx-auto max-w-[760px] rounded-[28px] border border-border bg-card/90 p-5 text-card-foreground shadow-2xl shadow-black/24 backdrop-blur-2xl transition-all duration-300 ease-out",
+                "absolute inset-x-8 bottom-28 top-14 mx-auto max-w-[760px] rounded-[28px] border border-border bg-card/90 p-5 text-card-foreground shadow-[var(--echo-shadow-window)] backdrop-blur-2xl transition-all duration-300 ease-out",
                 desktopDrawerOpen
                   ? "translate-y-0 opacity-100"
                   : "translate-y-4 opacity-0",
@@ -2266,7 +2269,12 @@ export default function DesktopShellPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-semibold">桌面助手</h2>
+                  <h2
+                    id="desktop-drawer-title"
+                    className="text-base font-semibold"
+                  >
+                    桌面助手
+                  </h2>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {loadingItems
                       ? "正在读取桌面文件..."
