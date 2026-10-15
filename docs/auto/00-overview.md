@@ -20,6 +20,6 @@ Echo OS 是 Echo 家族的**私人云常驻执行环境**，部署在用户自�
 ## 规模
 
 - Python 模块：**1563** 个（runtime/）
-- TSX 组件：**878** 个（frontend/src）
+- TSX 组件：**879** 个（frontend/src）
 - 后端测试：**1293** 个
 

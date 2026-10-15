@@ -7,6 +7,7 @@ import {
   agentRunStatusLightPulseClass,
 } from "@/components/workspace/agent-run-status";
 import { useI18n } from "@/core/i18n/hooks";
+import { turnFailureCopy } from "@/core/i18n/locales/turn-failure";
 import type { ThreadRunStatus } from "@/core/threads/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,7 @@ export function ThreadRunStatusLight({
   idle?: "hidden" | "queue";
   status?: ThreadRunStatus;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   if (!status) {
     if (idle === "hidden") return null;
     return (
@@ -45,7 +46,9 @@ export function ThreadRunStatusLight({
         ? t.sidebar.taskStatusFailed
         : status === "waiting"
           ? t.agentWorkbench.waitingToContinue
-          : t.sidebar.taskStatusPending;
+          : status === "setup"
+            ? turnFailureCopy(locale).needsSetup
+            : t.sidebar.taskStatusPending;
   const colorClass = agentRunStatusLightClass(status);
   const pulseClass = agentRunStatusLightPulseClass(status);
 

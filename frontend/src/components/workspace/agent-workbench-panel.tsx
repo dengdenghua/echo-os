@@ -109,6 +109,7 @@ function AgentWorkbenchPanelImpl({
   onInvitePeople,
   runSettled,
   runFailed,
+  runNeedsSetup = false,
   runInterrupted,
   runBlocked,
   paused,
@@ -174,6 +175,9 @@ function AgentWorkbenchPanelImpl({
   onInvitePeople?: () => void | Promise<void>;
   runSettled?: boolean;
   runFailed?: boolean;
+  /** The last turn could not start because no model is connected yet: a
+   * neutral setup state for 主电脑, never the failure colour. */
+  runNeedsSetup?: boolean;
   runInterrupted?: boolean;
   runBlocked?: boolean;
   threadId?: string | null;
@@ -465,22 +469,25 @@ function AgentWorkbenchPanelImpl({
   const mainRunStatus = workbenchStatus(mainBlocks, mainPhases, {
     settled: runSettled,
     failed: runFailed,
+    needsSetup: runNeedsSetup,
     interrupted: runInterrupted,
     blocked: runBlocked,
   });
-  const mainRunState: AgentRunState = runFailed
-    ? "error"
-    : runInterrupted || runBlocked
-      ? "waiting"
-      : isLoading
-        ? "running"
-        : runSettled
-          ? "done"
-          : workbenchRunState({
-              blocks: mainBlocks,
-              phases: mainPhases,
-              paused,
-            });
+  const mainRunState: AgentRunState = runNeedsSetup
+    ? "setup"
+    : runFailed
+      ? "error"
+      : runInterrupted || runBlocked
+        ? "waiting"
+        : isLoading
+          ? "running"
+          : runSettled
+            ? "done"
+            : workbenchRunState({
+                blocks: mainBlocks,
+                phases: mainPhases,
+                paused,
+              });
   const machineRail = (
     <MachineScopeRail
       agents={agentTiles}

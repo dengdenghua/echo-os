@@ -9,18 +9,22 @@ export interface TurnFailureCopy {
   /** The failure card's heading for ``noModel``. */
   noModelTitle: string;
   addModel: string;
+  /** Short status for a session that only lacks a model (sidebar dot, 主电脑). */
+  needsSetup: string;
 }
 
 const zhCN: TurnFailureCopy = {
   noModel: "还没有可用的模型。添加一个模型后，重新发送即可。",
   noModelTitle: "先连接一个模型",
   addModel: "添加模型",
+  needsSetup: "待连接模型",
 };
 
 const enUS: TurnFailureCopy = {
   noModel: "No model is available yet. Add a model, then send again.",
   noModelTitle: "Connect a model first",
   addModel: "Add a model",
+  needsSetup: "Needs a model",
 };
 
 const jaJP: TurnFailureCopy = {
@@ -28,6 +32,7 @@ const jaJP: TurnFailureCopy = {
     "利用できるモデルがまだありません。モデルを追加してから、もう一度送信してください。",
   noModelTitle: "まずモデルを接続してください",
   addModel: "モデルを追加",
+  needsSetup: "モデル未接続",
 };
 
 const koKR: TurnFailureCopy = {
@@ -35,6 +40,7 @@ const koKR: TurnFailureCopy = {
     "아직 사용할 수 있는 모델이 없습니다. 모델을 추가한 뒤 다시 보내세요.",
   noModelTitle: "먼저 모델을 연결하세요",
   addModel: "모델 추가",
+  needsSetup: "모델 연결 필요",
 };
 
 export function turnFailureCopy(locale: string): TurnFailureCopy {

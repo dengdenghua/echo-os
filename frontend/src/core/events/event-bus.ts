@@ -44,7 +44,14 @@ export interface EventMap {
   "chats:sort": void;
   "thread:run-status": {
     href?: string;
-    state: "running" | "waiting" | "pending" | "error" | "done" | null;
+    state:
+      | "running"
+      | "waiting"
+      | "pending"
+      | "error"
+      | "setup"
+      | "done"
+      | null;
     threadId: string;
   };
   // A new realtime turn receives its server thread id before the workspace

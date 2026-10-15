@@ -457,6 +457,22 @@ describe("<AgentWorkbenchPanel />", () => {
     ).toBeInTheDocument();
   });
 
+  test("a session that only lacks a model is a neutral setup state, not a failure", () => {
+    renderWorkbench(
+      <AgentWorkbenchPanel
+        activeTab="agent"
+        events={[]}
+        runSettled
+        runNeedsSetup
+      />,
+    );
+    const main = screen.getByRole("button", { name: "主电脑 · 待连接模型" });
+    expect(main.className).not.toMatch(/destructive|warning/);
+    expect(
+      screen.queryByRole("button", { name: /主电脑 · (?:已完成|遇到问题)/ }),
+    ).not.toBeInTheDocument();
+  });
+
   test("shows an interrupted turn honestly instead of claiming completion", () => {
     renderWorkbench(
       <AgentWorkbenchPanel

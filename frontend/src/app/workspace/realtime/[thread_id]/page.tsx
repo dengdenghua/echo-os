@@ -116,12 +116,14 @@ import {
   MESSAGE_LIST_DEFAULT_PADDING_BOTTOM,
   MessageList,
   type MessageListTimelineEntry,
+  structuredFailureFromMessages,
 } from "@/components/workspace/messages";
 import { ModelSwitchTimelineEntry } from "@/components/workspace/messages/model-switch-timeline-entry";
 import { convertToSteps } from "@/components/workspace/messages/message-group";
 import { extractResultUrl } from "@/components/workspace/messages/message-output-summary";
 import { LoadOlderTurnsBanner } from "@/components/workspace/messages/load-older-turns-banner";
 import { ThreadProviders } from "@/components/workspace/messages/context";
+import { isNoModelConfigured } from "@/core/threads/errors";
 import { isLocallyQueuedMessage } from "@/core/threads/optimistic-messages";
 import { liveEventIsReportLike } from "@/core/threads/report-deliverable";
 import { ThreadTitle } from "@/components/workspace/thread-title";
@@ -3071,18 +3073,32 @@ function RealtimePageContent({
     (!thread.error || hasFinalArtifact) &&
     agentRunSettled &&
     (!requiresReportDeliverable || hasReportArtifact || hasFinalArtifact);
+  // A turn that could not start because no model is connected is a setup
+  // step, not a task failure: the receipt offers 添加模型, and the sidebar dot
+  // and 主电脑 stay neutral instead of turning breach red.
+  const agentRunNeedsModel = useMemo(() => {
+    if (thread.isLoading) return false;
+    const structured = structuredFailureFromMessages(lastTurnMessages);
+    const rawError = thread.error as Error | string | undefined;
+    const detail =
+      structured?.detail ??
+      (typeof rawError === "string" ? rawError : rawError?.message);
+    return isNoModelConfigured(detail);
+  }, [lastTurnMessages, thread.error, thread.isLoading]);
   const agentRunFailed =
     agentRunSettled &&
     !agentRunInterrupted &&
     !agentRunBlocked &&
     !hasCompletedAgentOutput &&
-    !hasPausedOrPendingBackgroundTask;
+    !hasPausedOrPendingBackgroundTask &&
+    !agentRunNeedsModel;
   const sidebarRunState = useMemo<
-    "running" | "waiting" | "error" | null
+    "running" | "waiting" | "error" | "setup" | null
   >(() => {
     if (hasPausedOrPendingBackgroundTask) return "waiting";
     if (agentRunInterrupted) return null;
     if (agentRunBlocked) return "waiting";
+    if (agentRunNeedsModel) return "setup";
     if (agentRunFailed || (thread.error && !thread.isLoading)) return "error";
     if (agentRunSettled) return null;
     if (
@@ -3104,6 +3120,7 @@ function RealtimePageContent({
     agentRunInterrupted,
     agentRunBlocked,
     agentRunFailed,
+    agentRunNeedsModel,
     agentRunSettled,
     hasActiveBackgroundTask,
     hasPausedOrPendingBackgroundTask,
@@ -3117,8 +3134,9 @@ function RealtimePageContent({
   // The in-page sprite pet was removed — the desktop sidecar is the only pet
   // now, so the returned mood is unused and the call is kept for its effect.
   usePetAgentEvents({
-    runState: sidebarRunState,
-    settled: agentRunSettled,
+    // A model-less session is idle for the pet: nothing ran, nothing failed.
+    runState: sidebarRunState === "setup" ? null : sidebarRunState,
+    settled: agentRunSettled && !agentRunNeedsModel,
     failed: agentRunFailed,
     streaming: Boolean(thread.streamingMessage),
   });
@@ -4843,6 +4861,9 @@ function RealtimePageContent({
                       focusedWorkbenchTurnIndex === null
                         ? agentRunFailed
                         : focusedWorkbenchAgentSnapshot?.status === "error"
+                    }
+                    runNeedsSetup={
+                      focusedWorkbenchTurnIndex === null && agentRunNeedsModel
                     }
                     runInterrupted={agentRunInterrupted}
                     runBlocked={agentRunBlocked}
