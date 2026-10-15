@@ -2313,7 +2313,7 @@ export const zhCN: Translations = {
     unassignConfirmTitle: "解绑智能体",
     unassignConfirmDescription:
       "解绑后该渠道收到的消息将不再由智能体处理，可随时重新绑定。",
-    howToSetup: "如何接入?",
+    howToSetup: "如何接入？",
     clickToChangeAgent: "点击更换智能体",
     handlingMessages: "正在处理此渠道消息",
     rebindOrUnbind: "重新绑定 / 解绑",
@@ -8076,7 +8076,7 @@ export const zhCN: Translations = {
     editCredential: "修改",
     setCredential: "设置",
     credentialLocalHint: "凭证会保存到本地 channel_credentials.json (不上云)。",
-    howToConnect: "如何接入?",
+    howToConnect: "如何接入？",
     comingSoon: "即将支持",
     unsupportedPlatform: "该平台暂未支持",
     currentConfigured: "当前已配置(留空即保留不变)",

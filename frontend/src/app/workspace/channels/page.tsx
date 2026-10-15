@@ -322,8 +322,17 @@ export default function ChannelsPage() {
                     {rows.length}
                   </div>
                 </div>
-                <div className="rounded-lg border border-success/20 bg-success/50/[0.06] px-3 py-2">
-                  <div className="flex items-center gap-1 text-xs text-success">
+                {/* Core marks a live connection; zero connected is not a state
+                    worth colouring. */}
+                <div className="rounded-lg border border-border-default bg-background/62 px-3 py-2">
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 text-xs",
+                      connectedCount > 0
+                        ? "text-success"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     <span
                       className={cn(
                         "inline-block size-1.5 rounded-full",
@@ -334,7 +343,12 @@ export default function ChannelsPage() {
                     />
                     {t.channels.connectedCount(connectedCount)}
                   </div>
-                  <div className="mt-1 text-lg font-semibold text-success">
+                  <div
+                    className={cn(
+                      "mt-1 text-lg font-semibold",
+                      connectedCount > 0 && "text-success",
+                    )}
+                  >
                     {connectedCount}
                   </div>
                 </div>
@@ -639,7 +653,7 @@ function ChannelCard({
                 <RoutedWebLink
                   href={row.help_url}
                   openTargetSource="channel-help"
-                  className="ml-1 text-primary underline underline-offset-2 hover:opacity-80 cursor-pointer"
+                  className="ml-1 cursor-pointer whitespace-nowrap text-primary underline underline-offset-2 hover:opacity-80"
                   onClick={(e) => {
                     if (!row.help_url || row.help_url === "#") {
                       e.preventDefault();
