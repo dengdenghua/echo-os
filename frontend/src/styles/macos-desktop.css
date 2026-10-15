@@ -9101,3 +9101,58 @@ html[data-echo-theme] [data-sonner-toast] [data-description] {
   color: var(--echo-ink);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
 }
+
+/* About on short screens -----------------------------------------------------
+ * The full layout is about 610 px tall; at 1280x720 the space above the Dock
+ * is 587 px, so About scrolled and the © line sat on its bottom edge. Below
+ * 800 px of height it tightens instead: a smaller mark, less padding and
+ * shorter rows, so everything down to the © line fits without scrolling.
+ * The scroll cap stays as the fallback for even shorter screens. */
+@media (max-height: 800px) {
+  .macos-desktop-root .mac-about-dialog {
+    min-height: 0;
+    padding: 24px 26px 16px;
+  }
+
+  .macos-desktop-root .mac-about-dialog .mac-about-mark {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+  }
+
+  .macos-desktop-root .mac-about-dialog .mac-about-mark svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .macos-desktop-root .mac-about-dialog h1 {
+    margin-top: 10px;
+    font-size: 22px;
+  }
+
+  .macos-desktop-root .mac-about-dialog dl {
+    margin-top: 14px;
+    padding: 8px 14px;
+  }
+
+  .macos-desktop-root .mac-about-dialog dl div {
+    min-height: 22px;
+  }
+
+  .macos-desktop-root .mac-about-dialog .mac-about-update {
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+
+  .macos-desktop-root .mac-about-dialog .mac-about-update-actions {
+    margin-top: 8px;
+  }
+
+  .macos-desktop-root .mac-about-dialog .mac-about-settings {
+    margin-top: 10px;
+  }
+
+  .macos-desktop-root .mac-about-dialog > small {
+    margin-top: 8px;
+  }
+}

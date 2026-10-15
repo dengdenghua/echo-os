@@ -40,6 +40,16 @@ describe("desktop dialogs on short screens", () => {
       /\.mac-about-dialog \{[^}]*max-height: 100%;\s*overflow-y: auto;/,
     );
   });
+
+  it("tighten About below 800 px so it fits at 1280x720 without scrolling", () => {
+    const compact = css.slice(css.indexOf("@media (max-height: 800px)"));
+    expect(compact).toMatch(
+      /^@media \(max-height: 800px\) \{\s*\.macos-desktop-root \.mac-about-dialog \{\s*min-height: 0;/,
+    );
+    expect(compact).toMatch(
+      /\.mac-about-dialog \.mac-about-mark \{\s*width: 72px;\s*height: 72px;/,
+    );
+  });
 });
 
 describe("desktop wallpapers", () => {
