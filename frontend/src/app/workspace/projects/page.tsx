@@ -520,7 +520,7 @@ export default function ProjectsPage() {
                 {t.sidebar.navProjects}
               </h1>
               <span className="min-w-0 truncate text-xs font-normal text-muted-foreground max-sm:hidden">
-                里程碑健康度 · 风险 · 下一步 · 复盘 —— 真实 PM 视角
+                里程碑进度、风险、下一步和复盘
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
