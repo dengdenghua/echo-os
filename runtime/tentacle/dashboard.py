@@ -32,7 +32,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from fastapi import Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 
-from runtime.safety.auth import resolve_principal
+from runtime.safety.auth import require_operator, resolve_principal
 from runtime.safety.auth.websocket import accepted_auth_subprotocol, websocket_bearer_token
 from runtime.tentacle._dashboard_helpers import _auto_detect_vlm_config
 from runtime.tentacle._dashboard_html import _DASHBOARD_HTML
@@ -100,6 +100,19 @@ def create_tentacle_router(
             request.state.device_workspace_actor = identity.actor_id
             return
         raise HTTPException(401, "invalid tentacle auth token")
+
+    from .remote_desktop_api import create_remote_desktop_router
+
+    def _require_remote_operator(request: FastAPIRequest) -> None:
+        require_operator(
+            request, identity_store, _enforce_auth,
+            jwt_secret=jwt_secret, jwt_issuer=jwt_issuer, jwt_audience=jwt_audience,
+        )
+
+    router.include_router(
+        create_remote_desktop_router(lambda: getattr(coordinator, "remote_desktop", None)),
+        dependencies=[Depends(_require_remote_operator)],
+    )
 
     from .mirror_api import create_mirror_router
 

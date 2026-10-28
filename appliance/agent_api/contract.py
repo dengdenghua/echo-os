@@ -156,6 +156,11 @@ _DOMAINS: dict[str, tuple[_Symbol, ...]] = {
             "create_task_workspace_router",
         ),
         _Symbol("mirror_router", "runtime.tentacle.mirror_api", "create_mirror_router"),
+        _Symbol(
+            "remote_desktop_router",
+            "runtime.tentacle.remote_desktop_api",
+            "create_remote_desktop_router",
+        ),
     ),
     "skills": (
         _Symbol("skill", "runtime.execution.suckers.registry", "Skill"),

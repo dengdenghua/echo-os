@@ -664,6 +664,7 @@ def create_device_link_router(
 
     from appliance.agent_api.devices import (
         create_device_mirror_router,
+        create_device_remote_desktop_router,
         create_device_task_workspace_router,
     )
 
@@ -674,6 +675,11 @@ def create_device_link_router(
 
     router.include_router(
         create_device_mirror_router(lambda: service._coordinator),
+        dependencies=[Depends(require_operator)],
+    )
+
+    router.include_router(
+        create_device_remote_desktop_router(lambda: service._coordinator),
         dependencies=[Depends(require_operator)],
     )
 
