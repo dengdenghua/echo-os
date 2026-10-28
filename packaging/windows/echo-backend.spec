@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
 
 
 repo_root = Path(SPECPATH).parents[1]
@@ -41,6 +41,9 @@ hiddenimports = collect_submodules("runtime") + [
     "appliance.task_projection",
 ]
 
+hiddenimports += collect_submodules("aiortc") + collect_submodules("av") + collect_submodules("mss")
+hiddenimports += ["pylibsrtp", "_cffi_backend", "pyautogui._pyautogui_win"]
+
 datas = collect_data_files("runtime", include_py_files=False)
 reflex_rules = repo_root / "data" / "reflex_rules.yaml"
 if reflex_rules.exists():
@@ -49,7 +52,7 @@ if reflex_rules.exists():
 a = Analysis(
     [str(entry)],
     pathex=[str(repo_root)],
-    binaries=[],
+    binaries=collect_dynamic_libs("av") + collect_dynamic_libs("pylibsrtp"),
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
