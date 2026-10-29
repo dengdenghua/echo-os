@@ -68,7 +68,8 @@ def focused_snapshot(desktop, api):
     if selections > 1:
         return None
     start, end = text.getSelection(0) if selections else (0, 0)
-    if end < start:
+    count = text.characterCount
+    if start < 0 or end < start or end > count or count < 0:
         return None
     identity = [node.getApplication().get_process_id()]
     parent = node
@@ -79,7 +80,8 @@ def focused_snapshot(desktop, api):
         parent = parent.parent
         if parent is None:
             return None
-    return {"target": identity, "count": text.characterCount, "selected": end - start}
+    units = "utf16" if node.getApplication().toolkitName.lower() == "qt" else "codepoints"
+    return {"target": identity, "count": count, "selected": end - start, "units": units}
 
 
 def insert_focused_text(desktop, value, api, can_edit=None):
@@ -116,7 +118,7 @@ def insert_focused_text(desktop, value, api, can_edit=None):
         # Qt and browser editors can count astral characters differently. Use
         # the editor's own offset units rather than splitting an emoji pair.
         inserted = text.characterCount - before
-        if inserted not in (len(value), len(value.encode("utf-16-le")) // 2):
+        if inserted != length:
             return FAILED
         caret = start + inserted
         if not text.setCaretOffset(caret) and text.caretOffset != caret:

@@ -104,14 +104,14 @@ def type_with_display(display, value, emit, sleep=time.sleep, observe=None):
                     base = before["count"] - before["selected"]
                     codepoints = len(symbols)
                     utf16 = sum(2 if symbol > 0x100FFFF else 1 for symbol in symbols)
-                    expected = {base + codepoints, base + utf16}
+                    expected = base + (utf16 if before["units"] == "utf16" else codepoints)
                     while True:
                         after = observe()
                         if after is None or after["target"] != before["target"]:
                             raise OSError("Focused editor changed during input")
-                        if after["count"] in expected:
+                        if after["count"] == expected:
                             break
-                        if after["count"] > max(expected) or time.monotonic() > deadline:
+                        if after["count"] > expected or time.monotonic() > deadline:
                             raise OSError("Focused editor did not confirm the entire text")
                         sleep(0.03)
                 else:
