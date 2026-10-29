@@ -109,25 +109,11 @@ def type_unicode(text: str) -> None:
             except FileNotFoundError:
                 unavailable = True
             if unavailable:
-                # Terminal-style widgets may have no editable accessibility
-                # interface. Keep libxdo's normal pacing: 1ms loses Unicode
-                # keymap changes in real Qt/XIM event queues.
-                subprocess.run(
-                    [
-                        "/usr/bin/xdotool",
-                        "type",
-                        "--clearmodifiers",
-                        "--delay",
-                        "12",
-                        "--file",
-                        "-",
-                    ],
-                    **options,
-                    timeout=15,
-                    check=True,
-                )
-        except (OSError, subprocess.SubprocessError):
-            raise OSError("Linux Unicode input failed; check the X11 session and xdotool") from None
+                from runtime.tentacle.remote_desktop_x11_keys import type_x11_text
+
+                type_x11_text(text)
+        except (ImportError, OSError, subprocess.SubprocessError):
+            raise OSError("Linux Unicode input failed; check the X11 session and input dependencies") from None
     else:
         if not text.isascii():
             raise ValueError("Unicode input requires a Windows or macOS desktop")
