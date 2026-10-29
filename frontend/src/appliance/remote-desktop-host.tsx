@@ -14,15 +14,21 @@ async function request(
   method = "GET",
   body?: unknown,
 ): Promise<HostStatus> {
-  const response = await fetch(
+  const options: RequestInit = {
+    method,
+    credentials: "include",
+    headers: { ...authHeader(), "Content-Type": "application/json" },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  };
+  let response = await fetch(
     `/api/appliance/device-link/remote-desktop/${path}`,
-    {
-      method,
-      credentials: "include",
-      headers: { ...authHeader(), "Content-Type": "application/json" },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    },
+    options,
   );
+  // The native desktop mounts Agent's device service, while NAS mounts appliance.
+  // Only a missing route selects the native API; authorization failures stay final.
+  if (response.status === 404) {
+    response = await fetch(`/api/tentacle/remote-desktop/${path}`, options);
+  }
   if (!response.ok)
     throw new Error("无法更新电脑远控设置，请确认设备连接和管理员登录状态。");
   return response.json();

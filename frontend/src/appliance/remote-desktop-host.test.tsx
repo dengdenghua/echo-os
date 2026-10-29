@@ -7,6 +7,30 @@ vi.mock("./auth", () => ({
 }));
 afterEach(() => vi.unstubAllGlobals());
 
+it("uses the native host service when the appliance route is absent", async () => {
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: false, status: 404 })
+    .mockResolvedValue({
+      ok: true,
+      json: async () => ({ state: "ready", permissions: {}, active: [] }),
+    });
+  vi.stubGlobal("fetch", fetcher);
+  render(<RemoteDesktopHost deviceId="phone" online />);
+  await waitFor(() =>
+    expect(screen.getByLabelText("此手机的电脑远控权限")).toBeEnabled(),
+  );
+  expect(fetcher.mock.calls[1][0]).toBe("/api/tentacle/remote-desktop/status");
+});
+
+it("does not fall back after an appliance permission refusal", async () => {
+  const fetcher = vi.fn().mockResolvedValue({ ok: false, status: 403 });
+  vi.stubGlobal("fetch", fetcher);
+  render(<RemoteDesktopHost deviceId="phone" online />);
+  await screen.findByRole("alert");
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+
 it("starts denied and explicitly grants the selected phone; revoke stays available offline", async () => {
   const status = {
     state: "ready",
