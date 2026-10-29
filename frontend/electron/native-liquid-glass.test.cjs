@@ -223,6 +223,43 @@ test("KWin blur receives only the validated rectangular surface region", () => {
   ]);
 });
 
+test("empty X11 blur regions remove the property without passing an empty cardinal list", () => {
+  const calls = [];
+  const handle = Buffer.alloc(8);
+  handle.writeUInt32LE(0x400017, 0);
+  installKWinBlurRegion(handle, [], {
+    execFile: (...args) => calls.push(args),
+  });
+  assert.deepEqual(calls[0][1], [
+    "-id",
+    "0x400017",
+    "-remove",
+    KWIN_BLUR_REGION,
+  ]);
+});
+
+test("empty surfaces do not create a Linux background window", async () => {
+  const controller = new NativeLiquidGlassController({
+    window: { getContentSize: () => [800, 600], isDestroyed: () => false },
+    packaged: false,
+    resourcesPath: "/unused",
+    platform: "linux",
+    environment: {
+      ECHO_SHELL_MODE: "desktop",
+      XDG_SESSION_TYPE: "x11",
+      DISPLAY: ":0",
+    },
+    xpropAvailable: true,
+    createLinuxScene: () => {
+      throw new Error("Unexpected background allocation");
+    },
+  });
+  const result = await controller.sync({ wallpaper: "orbit", surfaces: [] });
+  assert.equal(result.supported, true);
+  assert.equal(result.active, false);
+  assert.equal(result.surfaceCount, 0);
+});
+
 test("Linux controller installs and removes one compositor scene", async () => {
   const calls = [];
   let sceneClosed = false;

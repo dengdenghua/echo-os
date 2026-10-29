@@ -222,6 +222,10 @@ function installKWinBlurRegion(
   { execFile = execFileSync, xpropPath = DEFAULT_XPROP_PATH } = {},
 ) {
   const windowId = x11WindowIdentifier(handle);
+  if (surfaces.length === 0) {
+    removeKWinBlurRegion(handle, { execFile, xpropPath });
+    return windowId;
+  }
   execFile(
     xpropPath,
     [
@@ -463,6 +467,10 @@ class NativeLiquidGlassController {
         backend: capabilities.backend,
         surfaceCount: 0,
       };
+    }
+    if (validated.surfaces.length === 0) {
+      this.deactivate();
+      return { active: false, ...capabilities, surfaceCount: 0 };
     }
 
     const wallpaperPath = resolveWallpaperPath({
