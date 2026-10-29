@@ -14,10 +14,10 @@ if [[ -f /root/echo-preview-proxy.env ]]; then
 fi
 apt-get update
 apt-get install -y --no-install-recommends \
-  ca-certificates curl python3 python3-venv python3-dev build-essential unzip \
+  ca-certificates curl python3 python3-venv python3-dev python3-tk build-essential unzip libglib2.0-bin \
   xserver-xorg-core xserver-xorg-video-all xserver-xorg-input-all xinit \
   x11-utils x11-xserver-utils xss-lock xsecurelock kwin-x11 wmctrl xdotool \
-  sddm sddm-theme-breeze dbus-x11 libkscreenlocker6 libkf6config-bin \
+  sddm sddm-theme-breeze dbus-x11 dbus-user-session libkscreenlocker6 libkf6config-bin \
   fcitx5 fcitx5-chinese-addons fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 \
   fcitx5-frontend-qt5 fcitx5-frontend-qt6 fonts-noto-cjk fonts-noto-color-emoji \
   plasma-workspace libqt6sql6-sqlite python3-pyqt6.qtqml xclip \
@@ -52,6 +52,9 @@ for name, digest in manifest['payloads'].items():
     assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, 'Payload checksum mismatch'
 PY
 tar -xzf source.tar.gz -C /opt/echo-os --no-same-owner
+mkdir -p /opt/echo-os/codex
+tar -xzf codex-linux.tar.gz -C /opt/echo-os/codex --no-same-owner
+/opt/echo-os/codex/bin/codex --version
 mkdir -p /opt/echo-os/frontend/release/linux-unpacked
 unzip -oq electron-linux.zip -d /opt/echo-os/frontend/release/linux-unpacked
 desktop=/opt/echo-os/frontend/release/linux-unpacked
@@ -75,8 +78,13 @@ install -m 0644 /opt/echo-os/deploy/desktop-session/echo_notification_store.py /
 install -m 0644 /opt/echo-os/deploy/desktop-session/echo-lock.pam /etc/pam.d/echo-lock
 install -d /usr/share/kwin/scripts/org.echoos.windowbridge
 cp -a /opt/echo-os/deploy/desktop-session/kwin-window-bridge/. /usr/share/kwin/scripts/org.echoos.windowbridge/
-chmod 0755 /opt/echo-os/deploy/desktop-session/echo-desktop-session.sh /opt/echo-os/packaging/vm-preview/session.sh
-install -d -o echo -g echo -m 0700 /home/echo/.local/share/echo-preview /home/echo/.config/systemd/user
+chmod 0755 /opt/echo-os/deploy/desktop-session/echo-desktop-session.sh /opt/echo-os/packaging/vm-preview/session.sh /opt/echo-os/packaging/vm-preview/desktop.sh
+install -d -o echo -g echo -m 0700 /home/echo/.local /home/echo/.local/share \
+  /home/echo/.local/share/echo-preview /home/echo/.config /home/echo/.config/systemd \
+  /home/echo/.config/systemd/user
+install -d -o echo -g echo -m 0700 /home/echo/.config/fcitx5
+install -o echo -g echo -m 0600 /opt/echo-os/packaging/vm-preview/fcitx5-profile \
+  /home/echo/.config/fcitx5/profile
 
 /opt/echo-os/.venv/bin/python - <<'PY'
 import json, os, pathlib, yaml
@@ -88,6 +96,7 @@ config = yaml.safe_load(pathlib.Path('/opt/echo-os/packaging/desktop/config.desk
 config['name'] = 'echo-os-development-preview'
 config['local_auth'] = auth.model_dump(mode='json')
 config['oct']['enabled'] = False
+config['oct']['jwt_secret'] = config['local_auth']['jwt_secret']
 config['tentacle'] = {'enabled': False}
 path = pathlib.Path('/home/echo/.local/share/echo-preview/config.yaml')
 path.write_text(yaml.safe_dump(config, allow_unicode=True))
@@ -100,7 +109,7 @@ cat > /usr/share/xsessions/echo-preview.desktop <<'EOF'
 [Desktop Entry]
 Name=Echo OS Development Preview
 Comment=Debian 13 + Echo OS, development and integration only
-Exec=dbus-run-session /opt/echo-os/packaging/vm-preview/session.sh
+Exec=/opt/echo-os/packaging/vm-preview/session.sh
 Type=Application
 DesktopNames=Echo;KDE
 EOF

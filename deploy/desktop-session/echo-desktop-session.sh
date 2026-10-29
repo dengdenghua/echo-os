@@ -8,6 +8,7 @@ DEFAULT_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/echo-os"
 READY_FILE="${ECHO_DESKTOP_READY_FILE:-$DEFAULT_RUNTIME_DIR/desktop-ready}"
 READY_TEMP_FILE="${READY_FILE}.$$"
 NATIVE_APP_IPC_READY_FILE="$DEFAULT_RUNTIME_DIR/native-app-ipc-ready"
+export ECHO_RENDERER_READY_FILE="$DEFAULT_RUNTIME_DIR/renderer-ready"
 LOCK_SERVICE=/usr/lib/echo-os/echo-session-lock
 KWIN_BRIDGE_SERVICE=/usr/lib/echo-os/echo-kwin-window-bridge
 KWIN_BRIDGE_SOCKET="$DEFAULT_RUNTIME_DIR/kwin-window-bridge.sock"
@@ -121,7 +122,7 @@ accessibility_address_ready() {
 }
 
 cleanup() {
-  rm -f -- "$READY_FILE" "$READY_TEMP_FILE" "$NATIVE_APP_IPC_READY_FILE"
+  rm -f -- "$READY_FILE" "$READY_TEMP_FILE" "$NATIVE_APP_IPC_READY_FILE" "$ECHO_RENDERER_READY_FILE"
   [[ -n "${SHELL_PID:-}" ]] && kill "$SHELL_PID" 2>/dev/null || true
   [[ -n "${LOCK_SERVICE_PID:-}" ]] && kill "$LOCK_SERVICE_PID" 2>/dev/null || true
   [[ -n "${KWIN_PID:-}" ]] && kill "$KWIN_PID" 2>/dev/null || true
@@ -134,7 +135,7 @@ cleanup() {
   [[ -n "${ACCESSIBILITY_BUS_PID:-}" ]] && kill "$ACCESSIBILITY_BUS_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
-for command_name in gdbus python3 stat timeout; do
+for command_name in gdbus python3 stat timeout xdotool; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "Echo OS session dependency missing: $command_name" >&2
     exit 1
@@ -148,7 +149,7 @@ chmod 0700 "$DEFAULT_RUNTIME_DIR"
   exit 1
 }
 mkdir -p "$(dirname "$READY_FILE")"
-rm -f -- "$READY_FILE" "$READY_TEMP_FILE"
+rm -f -- "$READY_FILE" "$READY_TEMP_FILE" "$ECHO_RENDERER_READY_FILE"
 
 [[ -x "$ACCESSIBILITY_BUS" ]] || {
   echo "Echo OS AT-SPI bus launcher is missing: $ACCESSIBILITY_BUS" >&2
@@ -426,12 +427,18 @@ SHELL_PID=$!
 
 # Keep the interactive shell below native applications. Electron also marks it
 # skip-taskbar; EWMH here makes the session behavior explicit at the WM layer.
-# Electron's X11 WM_CLASS is the app name, i.e. package.json "name"
-# ("echo-frontend.echo-frontend"), not --class; the Liquid Glass background
-# window is excluded by title.
+# Find the visible window belonging to the exact Electron process. Window-class
+# strings vary with package metadata, and some X11 visuals are absent from
+# KWin's managed-client list while they are being mapped.
 for _attempt in $(seq 1 100); do
   SHELL_WINDOW_ID="$(
-    wmctrl -lx | awk 'tolower($0) ~ /echo-shell|echo-os-desktop|echo-frontend/ && tolower($0) !~ /echo liquid glass background/ { print $1; exit }'
+    for candidate in $(xdotool search --onlyvisible --pid "$SHELL_PID" 2>/dev/null || true); do
+      title="$(xdotool getwindowname "$candidate" 2>/dev/null || true)"
+      if [[ -n "$title" && "$title" != "Echo Liquid Glass Background" ]]; then
+        printf '0x%x\n' "$candidate"
+        break
+      fi
+    done
   )"
   if [[ -n "$SHELL_WINDOW_ID" ]]; then
     wmctrl -ir "$SHELL_WINDOW_ID" -b remove,above,fullscreen || true

@@ -1479,13 +1479,21 @@ function createMainWindow() {
     nativeLiquidGlassController = null;
   });
 
-  win.once("ready-to-show", () => {
+  const showMainWindow = () => {
+    if (win.isDestroyed()) return;
     if (DESKTOP_SESSION) {
       win.maximize();
       win.setSkipTaskbar(true);
     }
     win.show();
-  });
+  };
+  win.once("ready-to-show", showMainWindow);
+  // X11 virtual GPUs can finish loading a transparent window without emitting
+  // its first-paint signal while hidden. Mapping the loaded native shell lets
+  // Chromium produce that frame and lets KWin discover the desktop window.
+  if (DESKTOP_SESSION && process.platform === "linux") {
+    win.webContents.once("did-finish-load", showMainWindow);
+  }
   win.on("enter-full-screen", () => {
     win.webContents.send("window:fullscreen-changed", { fullScreen: true });
   });

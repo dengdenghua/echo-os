@@ -12,7 +12,7 @@ echo "== 1. 安装 Xorg / KWin / EWMH / Electron 运行依赖 =="
 apt-get update
 apt-get install -y \
   xserver-xorg-core xinit x11-utils x11-xserver-utils dbus-x11 \
-  xss-lock xsecurelock kwin-x11 kwin-wayland libkscreenlocker6 xwayland wmctrl \
+  xss-lock xsecurelock kwin-x11 kwin-wayland libkscreenlocker6 xwayland wmctrl xdotool \
   dolphin konsole firefox-esr kate okular gwenview ark haruna kde-spectacle kcalc \
   xdg-utils desktop-file-utils 7zip bzip2 unar unzip zip \
   fcitx5 fcitx5-chinese-addons fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 \

@@ -8,6 +8,9 @@ WorkingDirectory=/home/echo/.local/share/echo-preview
 Environment=HOME=/home/echo
 Environment=ECHO_DATA_DIR=/home/echo/.local/share/echo-preview
 Environment=ECHO_HOME=/home/echo/.local/share/echo-preview
+Environment=ECHO_RESOURCES_DIR=/opt/echo-os
+Environment=ECHO_CODEX_EXECUTABLE=/opt/echo-os/codex/bin/codex
+Environment=ECHO_CODEX_BUNDLE_DIR=/opt/echo-os/codex
 Environment=ECHO_WEBUI_DIST=/opt/echo-os/frontend/dist
 Environment=ECHO_APPLIANCE=1
 Environment=ECHO_APP_EXTENSIONS=appliance.extension
