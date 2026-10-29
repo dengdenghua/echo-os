@@ -42,6 +42,7 @@ hiddenimports = collect_submodules("runtime") + [
 ]
 
 hiddenimports += collect_submodules("aiortc") + collect_submodules("av") + collect_submodules("mss")
+hiddenimports += collect_submodules("pyaudiowpatch")
 hiddenimports += ["pylibsrtp", "_cffi_backend", "pyautogui._pyautogui_win"]
 
 datas = collect_data_files("runtime", include_py_files=False)
@@ -52,7 +53,7 @@ if reflex_rules.exists():
 a = Analysis(
     [str(entry)],
     pathex=[str(repo_root)],
-    binaries=collect_dynamic_libs("av") + collect_dynamic_libs("pylibsrtp"),
+    binaries=collect_dynamic_libs("pyaudiowpatch") + collect_dynamic_libs("av") + collect_dynamic_libs("pylibsrtp"),
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

@@ -23,7 +23,7 @@ apt-get install -y --no-install-recommends \
   plasma-workspace libqt6sql6-sqlite python3-pyqt6.qtqml xclip \
   at-spi2-core python3-pyatspi python3-dbus python3-gi \
   polkitd polkit-kde-agent-1 powerdevil upower power-profiles-daemon \
-  pipewire pipewire-pulse wireplumber alsa-utils \
+  pipewire pipewire-pulse wireplumber alsa-utils pulseaudio-utils \
   libgtk-3-0t64 libnss3 libasound2t64 libgbm1 libdrm2 libxss1 libxtst6 \
   libxrandr2 libxcomposite1 libxdamage1 libatk-bridge2.0-0t64 \
   libatspi2.0-0t64 libcups2t64 mesa-utils libgl1-mesa-dri \
