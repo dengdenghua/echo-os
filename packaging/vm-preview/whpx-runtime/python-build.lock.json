@@ -1,0 +1,35 @@
+[
+  {
+    "name": "meson",
+    "version": "1.12.1"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3"
+  },
+  {
+    "name": "pip",
+    "version": "25.0.1"
+  },
+  {
+    "name": "pycotap",
+    "version": "1.3.1"
+  },
+  {
+    "name": "qemu",
+    "version": "0.6.1.0a1",
+    "editable_project_location": "<QEMU_SOURCE>/python"
+  },
+  {
+    "name": "qemu.qmp",
+    "version": "0.0.6"
+  },
+  {
+    "name": "setuptools",
+    "version": "84.2.1"
+  },
+  {
+    "name": "wheel",
+    "version": "0.48.0"
+  }
+]

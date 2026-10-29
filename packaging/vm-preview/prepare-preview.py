@@ -36,6 +36,9 @@ def main() -> None:
     ):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--guest-proxy", default="")
+    parser.add_argument(
+        "--qemu-root", type=Path, help="Private QEMU folder containing executables and share/"
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     output = args.output.resolve()
@@ -255,7 +258,9 @@ def main() -> None:
     base = downloads / args.base_image.name
     if args.base_image.resolve() != base.resolve():
         shutil.copyfile(args.base_image, base)
-    qemu_root = Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "qemu"
+    qemu_root = (
+        args.qemu_root or Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "qemu"
+    ).resolve()
     subprocess.run(
         [
             str(qemu_root / "qemu-img.exe"),
@@ -284,6 +289,7 @@ def main() -> None:
             {
                 "python": sys.executable,
                 "qemu": str(qemu_root / "qemu-system-x86_64.exe"),
+                "qemu_sha256": digest(qemu_root / "qemu-system-x86_64.exe"),
                 "firmware_code": str(qemu_root / "share/edk2-x86_64-code.fd"),
                 "base_image": "downloads/" + base.name,
                 "base_sha256": digest(base),

@@ -1,0 +1,79 @@
+{
+  "identity": "v1-feature-gated",
+  "meaning": "Exact already-built candidate identities, not guaranteed byte-for-byte rebuild output.",
+  "dynamic_dependencies_explicitly_added": [
+    "SDL3.dll (loaded by SDL2-compat)"
+  ],
+  "files": [
+    {
+      "path": "SDL2.dll",
+      "sha256": "7730b5f7193238ce24b99a889339fa05cc3513db512cdd919213f3e6ec25ff23",
+      "bytes": 380874
+    },
+    {
+      "path": "SDL3.dll",
+      "sha256": "7c856cc78c474d4b6463502ecfcfdf2b5f331c6aab14309fcca374a73009305a",
+      "bytes": 4033450
+    },
+    {
+      "path": "libfdt-1.dll",
+      "sha256": "f5cfc89c258fee56229290d331c29e98ae230312ff063bfa0a5377750c6cdda5",
+      "bytes": 213430
+    },
+    {
+      "path": "libglib-2.0-0.dll",
+      "sha256": "3a1abec0184b238db54399cb9243393d9436d96b8fdb9bd9f2875da207c5b458",
+      "bytes": 1568604
+    },
+    {
+      "path": "libiconv-2.dll",
+      "sha256": "94ec68fb8d342b6c91b6b48a8d95092819cdcd006a7166e0b68062f946afd08a",
+      "bytes": 1141951
+    },
+    {
+      "path": "libintl-8.dll",
+      "sha256": "0e5a178731e6be6d115442a6ade3df7f03265cd1fc4338f8b6f86a8001cbf582",
+      "bytes": 298164
+    },
+    {
+      "path": "libpcre2-8-0.dll",
+      "sha256": "1f609cde2ce432efb7d2b0c7b84a14a6dbfc9622d1ac1a3cbadf51c5b0b4dada",
+      "bytes": 706022
+    },
+    {
+      "path": "libpixman-1-0.dll",
+      "sha256": "12e693d94829f013e0bd7c042b30998b20e91ece7b6f4d5f075ddbb58b373c92",
+      "bytes": 737775
+    },
+    {
+      "path": "libslirp-0.dll",
+      "sha256": "cc6815664e406becebe599cc82e31cc7513dda2ec5d848182f6f16ff7d433f15",
+      "bytes": 212508
+    },
+    {
+      "path": "libwinpthread-1.dll",
+      "sha256": "ee4f503512b09d7e2668518c41d6c176755a354523ae15aa4d36220c9cb31791",
+      "bytes": 73820
+    },
+    {
+      "path": "libzstd.dll",
+      "sha256": "48368ab0ca622d0ec12f41ce85d91f22866bf5da92c77a69a06483564c93816c",
+      "bytes": 1217412
+    },
+    {
+      "path": "qemu-img.exe",
+      "sha256": "4340ee1c06be279bb1f47e3affd9e89be9f633fcc5ef70ae6065a61e9cf611c1",
+      "bytes": 2253361
+    },
+    {
+      "path": "qemu-system-x86_64.exe",
+      "sha256": "50fa6de81bd0bb8b6bbc32db19abba6872d0c75ba2084824c75fc9002c1bd9df",
+      "bytes": 27788910
+    },
+    {
+      "path": "zlib1.dll",
+      "sha256": "aa830bc48588d8bf15da816887d75eee707ba0d03f2dd78a65550b00623af7fc",
+      "bytes": 209242
+    }
+  ]
+}

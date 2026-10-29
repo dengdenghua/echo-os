@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "identity": "echo-os-qemu-11.1.3-whpx-20261022-feature-gated",
+  "classification": "Private compatibility build; not an official released QEMU compatibility version.",
+  "source": {
+    "url": "https://download.qemu.org/qemu-11.1.3.tar.xz",
+    "file": "qemu-11.1.3.tar.xz",
+    "sha256": "5a8289c7940dc77d3873c81a6c29ba3afe1446fc9d36e77fa1658cdbecb84b22"
+  },
+  "upstream": {
+    "series_subject": "[PATCH 00/11] whpx: i386: updates for QEMU 11.2",
+    "series_date": "2026-10-22",
+    "cover_url": "https://www.mail-archive.com/qemu-devel@nongnu.org/msg1237509.html",
+    "mbox": {
+      "path": "upstream-20261022.mbox.gz",
+      "gzip_sha256": "10ffc96f520dbcf906a0b91237a9442003a5e3d93eb34ff7d551b13ebf4070f8",
+      "payload_sha256": "b147c59868a49c0c227bc6aa98a3c67f9d042c00a49dc3b4dcb193c435edf4fd",
+      "gzip_bytes": 29615,
+      "payload_bytes": 105128,
+      "gzip_mtime": 0,
+      "gzip_filename": "",
+      "url": "https://patchew.org/QEMU/20261022235859.88753-1-mohamed@unpredictable.fr/mbox"
+    },
+    "mbox_note": "Patchew mbox contains the 11 original patch emails; cover is linked separately.",
+    "patches": [
+      {
+        "path": "patches/01-upstream.patch.gz",
+        "gzip_sha256": "c1b09fb699032699470fab7cc827e4a1a592496a4e111dad35ff9b8654b227e7",
+        "payload_sha256": "8b12d02fcc6056b24a8fa3dfdc561716406a488dd2469e90fa867960a49425aa",
+        "gzip_bytes": 1186,
+        "payload_bytes": 3084,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 1,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 01/11] target/i386/whpx: fix VMX capability MSR values",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-2-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:49 +0200",
+        "signed_off_by": [
+          "Doug Cook <dcook@microsoft.com>"
+        ],
+        "author": "Doug Cook <dcook@microsoft.com>"
+      },
+      {
+        "path": "patches/02-upstream.patch.gz",
+        "gzip_sha256": "953627b57f8a26066ea3b8586f4d9cc3ab99aee7e5f5be73712a9fec89b6db85",
+        "payload_sha256": "2d14d77699ab0ca145b36fb6ff18e7c4a12dd4c1c73f875c79d8bbb113b36b7d",
+        "gzip_bytes": 1755,
+        "payload_bytes": 5299,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 2,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 02/11] target/i386/whpx: whpx_get_xsave_state error handling",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-3-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:50 +0200",
+        "signed_off_by": [
+          "Doug Cook <dcook@microsoft.com>"
+        ],
+        "author": "\"Doug Cook (WINDOWS)\" <dcook@microsoft.com>"
+      },
+      {
+        "path": "patches/03-upstream.patch.gz",
+        "gzip_sha256": "7c0f3add30f7d9e5261e20b5596df352ad6f359d9dfe1a9237f0e0e78bdafca9",
+        "payload_sha256": "2e95c9939a638183b6c14e0c5849953b8bf8be381ba1405af1375e17c34b82d8",
+        "gzip_bytes": 519,
+        "payload_bytes": 1072,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 3,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 03/11] whpx: i386: get APIC state before VM save",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-4-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:51 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/04-upstream.patch.gz",
+        "gzip_sha256": "c0ccc4f66ee0bc928c3681df5a2e0d8103e260bae4bf40185a2d71fbde3951f1",
+        "payload_sha256": "5e386a42c324f7657af50fc77e47d9fe79783fb5792c08246b63e03739b7d09f",
+        "gzip_bytes": 441,
+        "payload_bytes": 841,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 4,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 04/11] whpx: i386: fix TPR encodings for local APIC",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-5-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:52 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/05-upstream.patch.gz",
+        "gzip_sha256": "95626391da1d8c6256b5a05b13156b9ffa3ce04023cc67655d3bf64697fbe063",
+        "payload_sha256": "8da3248b4bcb48b83f6f7312d3622e07203422545b2946be191bb32d11a49f4e",
+        "gzip_bytes": 699,
+        "payload_bytes": 2095,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 5,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 05/11] whpx: i386: save/restore xss",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-6-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:53 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/06-upstream.patch.gz",
+        "gzip_sha256": "5b004302ef68ab6382c0c4a3917a7ff2e2038f0b0323369c1604cc099e8cc63d",
+        "payload_sha256": "84074e9a333ad64f1ec4ab64781736f399d78b10972af38039cd131d9480cbb3",
+        "gzip_bytes": 557,
+        "payload_bytes": 1008,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 6,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 06/11] whpx: i386: make nested virtualisation init failure non-fatal",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-7-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:54 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/07-upstream.patch.gz",
+        "gzip_sha256": "e9bf06ddb3a6a9469ee88736ae4078bfd9aa97fd4fda23d59697e9d3750004ad",
+        "payload_sha256": "3d5e70a9ba9364276cc9b9354f516ed17afbe8eb418d2c12eeb00d295ce74c40",
+        "gzip_bytes": 1130,
+        "payload_bytes": 2462,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 7,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 07/11] whpx: i386: allow migration for restricted scenarios",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-8-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:55 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/08-upstream.patch.gz",
+        "gzip_sha256": "0fa3f45338249ae9db707223323d4ee5d11549743f85ee20937d9cf8eadff379",
+        "payload_sha256": "1d00ce11d2bff2f7cb567aa10316ce36981c7f6606e4d9c8f7bcfffeb46a7e60",
+        "gzip_bytes": 516,
+        "payload_bytes": 956,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 8,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 08/11] whpx: i386: avoid updating hflags for vmexits",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-9-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:56 +0200",
+        "signed_off_by": [
+          "Boden Randin <bodenrandin1@gmail.com>"
+        ],
+        "author": "Boden Randin <bodenrandin1@gmail.com>"
+      },
+      {
+        "path": "patches/09-upstream.patch.gz",
+        "gzip_sha256": "45dcf3f34debd1d2c104501af0b68086965758449102ccce4ca3cdf74c559106",
+        "payload_sha256": "c0274a58fa3c411cb3411df0cd68ec12574ee936f4de9661954931daaf4f0360",
+        "gzip_bytes": 1310,
+        "payload_bytes": 2642,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 9,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 09/11] target/i386/whpx: handle processor reset",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-10-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:57 +0200",
+        "signed_off_by": [
+          "Doug Cook <dcook@microsoft.com>"
+        ],
+        "author": "\"Doug Cook (WINDOWS)\" <dcook@microsoft.com>"
+      },
+      {
+        "path": "patches/10-upstream.patch.gz",
+        "gzip_sha256": "cc65ba5c31b960cfa96ce42115967f74ad783c2222e9ba7fc17838b2ad43eb0a",
+        "payload_sha256": "ee2bde656c19832fa715243814f9e91362939b20bf72c1fc17f99feb1261419d",
+        "gzip_bytes": 788,
+        "payload_bytes": 1487,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 10,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 10/11] target/arm/whpx: handle processor reset",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-11-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:58 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      },
+      {
+        "path": "patches/11-upstream.patch.gz",
+        "gzip_sha256": "302406a7bca8f25abf0a7acce72dd50767c8a4a9c3f7a7df55a9583dfa364582",
+        "payload_sha256": "f2254b465eed0207067c5aa72dbe1ff765fda09d10c08766aa313180ae84d2b5",
+        "gzip_bytes": 573,
+        "payload_bytes": 952,
+        "gzip_mtime": 0,
+        "gzip_filename": "",
+        "index": 11,
+        "role": "upstream-source-patch",
+        "subject": "[PATCH 11/11] docs: whpx: update documentation",
+        "sender": "Mohamed Mediouni <mohamed@unpredictable.fr>",
+        "message_id": "<20261022235859.88753-12-mohamed@unpredictable.fr>",
+        "date": "Fri, 23 Oct 2026 01:58:59 +0200",
+        "signed_off_by": [
+          "Mohamed Mediouni <mohamed@unpredictable.fr>"
+        ],
+        "author": "Mohamed Mediouni <mohamed@unpredictable.fr>"
+      }
+    ]
+  },
+  "local_patches": [
+    {
+      "path": "patches/12-native-cpython-build-adapter.patch.gz",
+      "gzip_sha256": "92d3a0d4c70238ae76dac0fe4e3950e66d3b0b555f7ac489c2d3dd3842df83c1",
+      "payload_sha256": "46bb742099cdaf07140b8f422287e5b9335578814af1fea20e6ff44f9b702441",
+      "gzip_bytes": 204,
+      "payload_bytes": 343,
+      "gzip_mtime": 0,
+      "gzip_filename": "",
+      "role": "local-build-adapter",
+      "description": "Allow native CPython pyvenv/Scripts when pyvenv/bin is absent; build driver only.",
+      "author": "Echo OS local compatibility build"
+    },
+    {
+      "path": "patches/13-tsc-deadline-feature-gate.patch.gz",
+      "gzip_sha256": "875283bd0ecd2be53c082d87ae4c485319db2a1e651f0611ec20b8e00084972d",
+      "payload_sha256": "e3c2700f0417059e520eabadbcab0a315879b29eb30f799b5ae7991ae378c5d6",
+      "gzip_bytes": 652,
+      "payload_bytes": 1332,
+      "gzip_mtime": 0,
+      "gzip_filename": "",
+      "role": "local-runtime-fix",
+      "description": "Clear TSC deadline only on native LAPIC reset after its queried feature bank was successfully enabled.",
+      "author": "Echo OS local compatibility build"
+    }
+  ],
+  "application_order": [
+    "patches/01-upstream.patch.gz",
+    "patches/02-upstream.patch.gz",
+    "patches/03-upstream.patch.gz",
+    "patches/04-upstream.patch.gz",
+    "patches/05-upstream.patch.gz",
+    "patches/06-upstream.patch.gz",
+    "patches/07-upstream.patch.gz",
+    "patches/08-upstream.patch.gz",
+    "patches/09-upstream.patch.gz",
+    "patches/10-upstream.patch.gz",
+    "patches/11-upstream.patch.gz",
+    "patches/12-native-cpython-build-adapter.patch.gz",
+    "patches/13-tsc-deadline-feature-gate.patch.gz"
+  ],
+  "toolchain": {
+    "versions": {
+      "gcc": "MSYS2 GCC 16.2.0 Rev6 UCRT64",
+      "python": "3.12.14",
+      "meson": "1.12.1",
+      "ninja": "1.13.2",
+      "pkgconf": "3.0.10"
+    },
+    "packages_file": "toolchain-packages.lock.json",
+    "packages_sha256": "78462c633e74b1c8facc84adc7b816e35dc26c02e814286f2f1cdb5c3f02b2bc",
+    "package_base_url": "https://repo.msys2.org/mingw/ucrt64/",
+    "repository_index_url": "https://repo.msys2.org/mingw/ucrt64/ucrt64.db",
+    "repository_index_sha256": "eebce5fabdf493d3468da1739f164f48de74abe84ff00236e7aaec056b53a64b",
+    "critical_files": [
+      {
+        "path": "bin/gcc.exe",
+        "sha256": "70325d325c126905fc04c5bc57727969f4529173a139c129e3ff92b7adc2941e",
+        "bytes": 3297488
+      },
+      {
+        "path": "bin/g++.exe",
+        "sha256": "5f30e02408ab97050fcbfa39bb391b0923cf9402063920b849ab8491e63334b3",
+        "bytes": 3300560
+      },
+      {
+        "path": "bin/ld.exe",
+        "sha256": "a279cc83f198a606f255a597b3a067b51f11a9bbf8fe46de2a0dc8bb71b47f4f",
+        "bytes": 1930154
+      },
+      {
+        "path": "bin/ninja.exe",
+        "sha256": "6db3d9e4443835fe40d4b1425a0a13012ae810c449f74ba5cb059e6ca16df4f0",
+        "bytes": 419917
+      },
+      {
+        "path": "bin/pkgconf.exe",
+        "sha256": "232ce7083cdccce95a6602ff8e73d805f38407b33a7d4113f837d62e5f0a87bd",
+        "bytes": 84973
+      },
+      {
+        "path": "include/winhvplatform.h",
+        "sha256": "c5a626d2f6c6b067fa1080a5eb15a8e6223ae6c53351efd3fea7b0e2bcd21c5b",
+        "bytes": 14971
+      },
+      {
+        "path": "include/winhvplatformdefs.h",
+        "sha256": "db5c73363a3028e25dad027f210a25a6cc99da39375882a6c2d2720d0e3b5384",
+        "bytes": 105632
+      },
+      {
+        "path": "include/winhvemulation.h",
+        "sha256": "ebcee5e64f4ab386351bbfc4312267a8bd5b6d478327ed5435aab3bdba9f9de2",
+        "bytes": 3600
+      }
+    ]
+  },
+  "python_environment_file": "python-build.lock.json",
+  "reference_runtime_file": "reference-runtime.lock.json",
+  "configure_args": [
+    "--target-list=x86_64-softmmu",
+    "--without-default-features",
+    "--enable-whpx",
+    "--enable-sdl",
+    "--enable-slirp",
+    "--enable-pixman",
+    "--enable-tcg",
+    "--enable-zstd",
+    "--disable-docs",
+    "--disable-werror",
+    "--disable-debug-info",
+    "--enable-tools",
+    "--disable-install-blobs"
+  ],
+  "targets": [
+    "qemu-system-x86_64.exe",
+    "qemu-img.exe"
+  ],
+  "max_jobs": 2,
+  "reference_vm_profile": {
+    "machine": "q35,pic=off",
+    "accelerator": "whpx,hyperv=off,kernel-irqchip=on",
+    "cpu": "max",
+    "smp": "2"
+  },
+  "validation_scope": {
+    "underlying_sequence": "Previously built successfully in the private development workspace.",
+    "parameterized_wrapper": "CLI help and Python syntax checked; no new full rebuild or VM run in delivery preparation.",
+    "runtime_acceptance": "Maintained separately by the parent Echo OS VM acceptance task."
+  }
+}

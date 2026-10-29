@@ -1,0 +1,111 @@
+{
+  "identity": "echo-os-qemu-11.1.3-whpx-20261022-feature-gated",
+  "meaning": "SHA256 of delivery files; excludes this manifest itself.",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "sha256": "879398dbf301e6f33ef0aa4d1e8a87949696eec05bf7b5e2ac04e78862e2b50f",
+      "bytes": 91
+    },
+    {
+      "path": "patches/01-upstream.patch.gz",
+      "sha256": "c1b09fb699032699470fab7cc827e4a1a592496a4e111dad35ff9b8654b227e7",
+      "bytes": 1186
+    },
+    {
+      "path": "patches/02-upstream.patch.gz",
+      "sha256": "953627b57f8a26066ea3b8586f4d9cc3ab99aee7e5f5be73712a9fec89b6db85",
+      "bytes": 1755
+    },
+    {
+      "path": "patches/03-upstream.patch.gz",
+      "sha256": "7c0f3add30f7d9e5261e20b5596df352ad6f359d9dfe1a9237f0e0e78bdafca9",
+      "bytes": 519
+    },
+    {
+      "path": "patches/04-upstream.patch.gz",
+      "sha256": "c0ccc4f66ee0bc928c3681df5a2e0d8103e260bae4bf40185a2d71fbde3951f1",
+      "bytes": 441
+    },
+    {
+      "path": "patches/05-upstream.patch.gz",
+      "sha256": "95626391da1d8c6256b5a05b13156b9ffa3ce04023cc67655d3bf64697fbe063",
+      "bytes": 699
+    },
+    {
+      "path": "patches/06-upstream.patch.gz",
+      "sha256": "5b004302ef68ab6382c0c4a3917a7ff2e2038f0b0323369c1604cc099e8cc63d",
+      "bytes": 557
+    },
+    {
+      "path": "patches/07-upstream.patch.gz",
+      "sha256": "e9bf06ddb3a6a9469ee88736ae4078bfd9aa97fd4fda23d59697e9d3750004ad",
+      "bytes": 1130
+    },
+    {
+      "path": "patches/08-upstream.patch.gz",
+      "sha256": "0fa3f45338249ae9db707223323d4ee5d11549743f85ee20937d9cf8eadff379",
+      "bytes": 516
+    },
+    {
+      "path": "patches/09-upstream.patch.gz",
+      "sha256": "45dcf3f34debd1d2c104501af0b68086965758449102ccce4ca3cdf74c559106",
+      "bytes": 1310
+    },
+    {
+      "path": "patches/10-upstream.patch.gz",
+      "sha256": "cc65ba5c31b960cfa96ce42115967f74ad783c2222e9ba7fc17838b2ad43eb0a",
+      "bytes": 788
+    },
+    {
+      "path": "patches/11-upstream.patch.gz",
+      "sha256": "302406a7bca8f25abf0a7acce72dd50767c8a4a9c3f7a7df55a9583dfa364582",
+      "bytes": 573
+    },
+    {
+      "path": "patches/12-native-cpython-build-adapter.patch.gz",
+      "sha256": "92d3a0d4c70238ae76dac0fe4e3950e66d3b0b555f7ac489c2d3dd3842df83c1",
+      "bytes": 204
+    },
+    {
+      "path": "patches/13-tsc-deadline-feature-gate.patch.gz",
+      "sha256": "875283bd0ecd2be53c082d87ae4c485319db2a1e651f0611ec20b8e00084972d",
+      "bytes": 652
+    },
+    {
+      "path": "python-build.lock.json",
+      "sha256": "844a3e1a786dec2957191aaa7bc549f0d34951e7ac98cf34bf1bca21da4c0e73",
+      "bytes": 502
+    },
+    {
+      "path": "README.md",
+      "sha256": "b83b96b7dee6553d0341ddb5224718bcadacdd7c591e630b37938ae9d4203929",
+      "bytes": 4285
+    },
+    {
+      "path": "rebuild.py",
+      "sha256": "5c445ef537e20a4389c5d1961def2d0e47c4b0d483ad57638ac6ffd0e546d476",
+      "bytes": 8969
+    },
+    {
+      "path": "reference-runtime.lock.json",
+      "sha256": "73da340c033a82778e3cedf8e26fb836662821a5f59243a4fd0080f6d0b47ae6",
+      "bytes": 2362
+    },
+    {
+      "path": "source.lock.json",
+      "sha256": "47f8c44c60c2e2194779f8a6bc839fb906c4537919ca485f506081db41822952",
+      "bytes": 15155
+    },
+    {
+      "path": "toolchain-packages.lock.json",
+      "sha256": "78462c633e74b1c8facc84adc7b816e35dc26c02e814286f2f1cdb5c3f02b2bc",
+      "bytes": 23489
+    },
+    {
+      "path": "upstream-20261022.mbox.gz",
+      "sha256": "10ffc96f520dbcf906a0b91237a9442003a5e3d93eb34ff7d551b13ebf4070f8",
+      "bytes": 29615
+    }
+  ]
+}

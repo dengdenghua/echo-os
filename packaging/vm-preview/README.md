@@ -8,6 +8,25 @@
 默认分配 4GB 内存、2 个虚拟处理器和 32GB 动态磁盘。首次启动需要网络安装 Debian 软件包及锁定的 Python 依赖。
 没有 WHPX 的机器可显式选择 `Start-EchoOS.ps1 -Accelerator tcg`；软件虚拟化的完整桌面验收尚未完成。
 
+### 双核 WHPX 启动兼容配置
+
+Windows 11 26100 / Ryzen 7 8745H / Linux 6.12 的本机预览使用独立的 QEMU 11.1.3 兼容引擎，
+包含上游 2026-10-22 的 11 项 WHPX 修复及 TSC deadline 可选特性检查。
+来源、精确补丁、工具链锁和重建步骤见 [whpx-runtime](whpx-runtime/README.md)。
+普通的 11.1.3 发布包尚未包含这些修复，单独调整 CPU 数量不足以解决问题。
+
+该 EFI 预览配置显式使用原生 APIC，关闭虚拟机的旧式 PIC 和客户机 Hyper-V 优化接口，
+并设置 1 个插槽、2 个核心、每核 1 个线程。WHPX 硬件加速保持启用，CPU 模型保持 `max`。
+系统内重启由同一 QEMU 进程完成。
+
+制包时用 `--qemu-root` 指定包含 `qemu-system-x86_64.exe`、`qemu-img.exe` 和 `share/` 的私有运行目录。
+生成的 `host.json` 固定引擎 SHA256；启动器在启动前校验，并显式指定固件所在的数据目录。
+运行目录保留引擎源码、上游补丁和构建记录。手工更新输出套件的 `.ps1` 时也须使用 UTF-8 BOM，
+以兼容 Windows PowerShell 5.1；准备脚本会自动添加该编码标记。
+
+验证需重复冷启动和系统内重启，并同时确认 Linux `nproc` 为 2、QMP 中有两个 vCPU、
+桌面/渲染器就绪、Agent 健康、中文输入和系统声音通过。参数中的处理器数量和窗口出现本身不代表成功。
+
 ## 准备与启动
 
 准备脚本需要 Python 3.11+、PyYAML、pycdlib 1.14.0、Node、@electron/asar、OpenSSH 和 OpenSSL。

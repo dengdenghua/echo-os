@@ -17,6 +17,7 @@ if ($freeCommitMiB -lt $neededMiB) {
 foreach ($file in @($hostConfig.qemu, $hostConfig.python, $hostConfig.firmware_code, (Join-Path $kitRoot 'private/seed.iso'), (Join-Path $kitRoot 'echo-os-preview.qcow2'))) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "缺少启动文件：$file" }
 }
+if ($hostConfig.qemu_sha256 -and (Get-PreviewFileHash $hostConfig.qemu) -ne $hostConfig.qemu_sha256) { throw '虚拟机引擎校验失败，请检查已验证的运行组件。' }
 if ((Get-PreviewFileHash (Join-Path $kitRoot $hostConfig.base_image)) -ne $hostConfig.base_sha256) { throw 'Linux 基础镜像校验失败' }
 if ((Get-PreviewFileHash (Join-Path $kitRoot 'payload/manifest.json')) -ne $hostConfig.payload_manifest_sha256) { throw '安装内容清单校验失败' }
 if ($CheckOnly) { Write-Output '文件与内存检查通过；未启动虚拟机。'; exit 0 }
@@ -28,8 +29,12 @@ $serverScript = Join-Path $kitRoot 'payload-server.py'
 $serverArgs = '"{0}" "{1}"' -f $serverScript,$payloadRoot
 $server = Start-Process -FilePath $hostConfig.python -ArgumentList $serverArgs -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $kitRoot 'logs/payload.out.log') -RedirectStandardError (Join-Path $kitRoot 'logs/payload.err.log')
 try {
-  $accelOptions = if ($Accelerator -eq 'whpx') { 'whpx,kernel-irqchip=off' } else { 'tcg,thread=single' }
-  $qemuArgs = @('-name','Echo-OS-Development-Preview','-machine','q35','-accel',$accelOptions,'-cpu','max','-smp','2','-m',"$MemoryMiB",'-drive',"if=pflash,format=raw,readonly=on,file=$($hostConfig.firmware_code)",'-drive','if=pflash,format=raw,file=firmware/uefi-vars.fd','-drive','file=echo-os-preview.qcow2,if=virtio,format=qcow2','-drive','file=private/seed.iso,media=cdrom,readonly=on','-device','virtio-vga','-display','sdl,gl=off','-device','qemu-xhci','-device','usb-tablet','-netdev','user,id=net0,hostfwd=tcp:127.0.0.1:18080-:8000,hostfwd=tcp:127.0.0.1:22422-:22','-device','virtio-net-pci,netdev=net0','-qmp','tcp:127.0.0.1:18082,server=on,wait=off','-serial','file:logs/serial.log')
+  # The validated EFI profile uses WHPX's native APIC without the legacy PIC.
+  # Pair it with the private, patched runtime documented in whpx-runtime/.
+  $accelOptions = if ($Accelerator -eq 'whpx') { 'whpx,hyperv=off,kernel-irqchip=on' } else { 'tcg,thread=single' }
+  $machineOptions = if ($Accelerator -eq 'whpx') { 'q35,pic=off' } else { 'q35' }
+  $qemuDataRoot = Split-Path -Parent $hostConfig.firmware_code
+  $qemuArgs = @('-L',$qemuDataRoot,'-name','Echo-OS-Development-Preview','-machine',$machineOptions,'-accel',$accelOptions,'-cpu','max','-smp','2,sockets=1,cores=2,threads=1','-m',"$MemoryMiB",'-drive',"if=pflash,format=raw,readonly=on,file=$($hostConfig.firmware_code)",'-drive','if=pflash,format=raw,file=firmware/uefi-vars.fd','-drive','file=echo-os-preview.qcow2,if=virtio,format=qcow2','-drive','file=private/seed.iso,media=cdrom,readonly=on','-device','virtio-vga','-display','sdl,gl=off','-device','qemu-xhci','-device','usb-tablet','-netdev','user,id=net0,hostfwd=tcp:127.0.0.1:18080-:8000,hostfwd=tcp:127.0.0.1:22422-:22','-device','virtio-net-pci,netdev=net0','-qmp','tcp:127.0.0.1:18082,server=on,wait=off','-serial','file:logs/serial.log')
   Write-Output '正在启动 Echo OS 开发预览虚拟机。首次启动会联网安装桌面与组件，请保留此窗口。'
   Push-Location -LiteralPath $kitRoot
   try { & $hostConfig.qemu @qemuArgs; if ($LASTEXITCODE -ne 0) { throw "虚拟机退出，错误码 $LASTEXITCODE；请查看 logs。" } }
