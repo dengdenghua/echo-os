@@ -30,6 +30,7 @@ if ($CheckOnly) { Write-Output '文件与内存检查通过；未启动虚拟机
 foreach ($port in @(18080,18082,18083,22422)) {
   if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) { throw "端口 $port 已占用，请先停止已有的预览实例。" }
 }
+New-Item -ItemType Directory -Path (Join-Path $kitRoot 'logs') -Force | Out-Null
 $payloadRoot = Join-Path $kitRoot 'payload'
 $serverScript = Join-Path $kitRoot 'payload-server.py'
 $serverArgs = '"{0}" "{1}"' -f $serverScript,$payloadRoot
