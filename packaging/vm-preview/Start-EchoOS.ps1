@@ -2,6 +2,12 @@ param([ValidateRange(2048,8192)][int]$MemoryMiB = 4096, [ValidateSet('whpx','tcg
 $ErrorActionPreference = 'Stop'
 $kitRoot = $PSScriptRoot
 $hostConfig = Get-Content -LiteralPath (Join-Path $kitRoot 'host.json') -Raw | ConvertFrom-Json
+foreach ($property in @('python', 'qemu', 'firmware_code')) {
+  $configuredPath = $hostConfig.$property
+  if ($configuredPath -and -not [System.IO.Path]::IsPathRooted($configuredPath)) {
+    $hostConfig.$property = Join-Path $kitRoot $configuredPath
+  }
+}
 function Get-PreviewFileHash([string]$Path) {
   $algorithm = [System.Security.Cryptography.SHA256]::Create()
   $stream = [System.IO.File]::OpenRead($Path)
