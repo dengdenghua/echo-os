@@ -36,6 +36,10 @@ $serverScript = Join-Path $kitRoot 'payload-server.py'
 $serverArgs = '"{0}" "{1}"' -f $serverScript,$payloadRoot
 $server = Start-Process -FilePath $hostConfig.python -ArgumentList $serverArgs -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $kitRoot 'logs/payload.out.log') -RedirectStandardError (Join-Path $kitRoot 'logs/payload.err.log')
 try {
+  # Keep this software framebuffer independent of host Direct3D initialization.
+  # WHPX still accelerates both virtual CPUs; only the SDL display is software.
+  $previousRenderDriver = $env:SDL_RENDER_DRIVER
+  if (-not $env:SDL_RENDER_DRIVER) { $env:SDL_RENDER_DRIVER = 'software' }
   # The validated EFI profile uses WHPX's native APIC without the legacy PIC.
   # Pair it with the private, patched runtime documented in whpx-runtime/.
   $accelOptions = if ($Accelerator -eq 'whpx') { 'whpx,hyperv=off,kernel-irqchip=on' } else { 'tcg,thread=single' }
@@ -47,5 +51,6 @@ try {
   try { & $hostConfig.qemu @qemuArgs; if ($LASTEXITCODE -ne 0) { throw "虚拟机退出，错误码 $LASTEXITCODE；请查看 logs。" } }
   finally { Pop-Location }
 } finally {
+  $env:SDL_RENDER_DRIVER = $previousRenderDriver
   if (-not $server.HasExited) { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
 }
