@@ -427,6 +427,13 @@ def mount_routers_a(
         )
     )
 
+    from runtime.sensing.gateway.work_computer_router import create_work_computer_router
+
+    app.include_router(create_work_computer_router(
+        identity_store=ctx.identity_store, require_auth=ctx.require_auth,
+        jwt_secret=ctx.jwt_secret, jwt_issuer=ctx.jwt_issuer, jwt_audience=ctx.jwt_audience,
+    ))
+
     from runtime.sensing.gateway.computer_router import create_computer_router
 
     app.include_router(

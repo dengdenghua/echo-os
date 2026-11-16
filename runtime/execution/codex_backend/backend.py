@@ -19,6 +19,7 @@ from typing import Any, Literal, Protocol, Self, cast
 from runtime.safety.approval.approval_gate import ApprovalProvider
 from runtime.safety.sandboxing.sandbox import (
     BackendChoice,
+    BubblewrapBackend,
     SandboxPolicy,
     SandboxViolation,
     SeatbeltBackend,
@@ -82,6 +83,8 @@ class CodexExecutionRequest:
     source_codex_home: Path | None = None
     model: str | None = None
     effort: str | None = None
+    auto_compact_token_limit: int | None = None
+    model_context_window: int | None = None
     sandbox_mode: CodexSandboxMode = "workspace-write"
     approval_reviewer: Literal["user", "auto_review"] = "user"
     approval_policy: Literal["on-request", "never"] = "on-request"
@@ -130,6 +133,10 @@ class CodexExecutionRequest:
             if not source_home.is_absolute():
                 raise ValueError("source_codex_home must be absolute")
             object.__setattr__(self, "source_codex_home", source_home)
+        if self.auto_compact_token_limit is not None and (type(self.auto_compact_token_limit) is not int or not 32000 <= self.auto_compact_token_limit <= 1000000):
+            raise ValueError("auto_compact_token_limit must be between 32000 and 1000000")
+        if self.model_context_window is not None and (type(self.model_context_window) is not int or not 8192 <= self.model_context_window <= 2000000):
+            raise ValueError("model_context_window must be between 8192 and 2000000")
         for field_name in ("model", "effort"):
             value = getattr(self, field_name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
@@ -252,6 +259,7 @@ class CodexExecutionSession:
         self._inner_thread_id: str | None = None
         self._inner_turn_id: str | None = None
         self._turn_started = False
+        self._engine_lease = None
         self._start_attempted = False
         self._closed = False
         self._auth_seeded = False
@@ -308,6 +316,14 @@ class CodexExecutionSession:
         if self._start_attempted:
             raise CodexBackendStateError("Codex execution session can only be started once")
         self._start_attempted = True
+        from runtime.execution.engine_packages.versions import task_lease
+        self._engine_lease = task_lease("codex")
+        self._engine_lease.__enter__()
+        if self._client_factory is CodexAppServerClient:
+            from dataclasses import replace
+            from runtime.execution.engine_packages.store import installed_executable
+            if managed := installed_executable("codex"):
+                self.request = replace(self.request, command=(managed, *self.request.command[1:]))
         try:
             process_backend = self._effective_process_backend()
             context = self._security.prepare(
@@ -335,6 +351,19 @@ class CodexExecutionSession:
                 host_env=self.request.host_env,
             )
             self._context = context
+            # Model metadata is resolved when the app-server starts. Thread-level
+            # overrides alone do not update its synthesized provider catalog.
+            startup_controls = {}
+            if self.request.model_context_window is not None:
+                startup_controls["model_context_window"] = self.request.model_context_window
+            if self.request.auto_compact_token_limit is not None:
+                startup_controls["model_auto_compact_token_limit"] = self.request.auto_compact_token_limit
+            if startup_controls:
+                original_config = context.config_path.read_text(encoding="utf-8")
+                context.config_path.write_text(
+                    "".join(f"{key} = {value}\n" for key, value in startup_controls.items()) + original_config,
+                    encoding="utf-8",
+                )
             if self.request.source_codex_home is not None:
                 self._auth_seeded = self._security.seed_auth_from_codex_home(
                     context,
@@ -342,6 +371,8 @@ class CodexExecutionSession:
                     authority=_SERVER_AUTHORITY,
                 )
 
+            from .proxy_catalog import configure_proxy_catalog
+            configure_proxy_catalog(context, self.request)
             broker = CodexApprovalBroker(
                 self._approval_provider,
                 outer_thread_id=self.request.outer_thread_id,
@@ -553,6 +584,11 @@ class CodexExecutionSession:
         overrides = context.thread_start_security_overrides()
         permissions = _permission_profile(overrides)
         params = _thread_extra_params(overrides, resume=True)
+        if self.request.auto_compact_token_limit is not None:
+            params["config"] = {"model_auto_compact_token_limit": self.request.auto_compact_token_limit}
+        if self.request.model_context_window is not None:
+            params.setdefault("config", {})["model_context_window"] = self.request.model_context_window
+        _logger.info("Codex thread controls model=%s effort=%s config=%s", self.request.model, self.request.effort, params.get("config", {}))
         # ``thread/resume`` can otherwise restore a stale App Server catalog.
         # Reassert the exact current-turn catalog, including an explicit empty
         # list when Echo revoked every tool since the previous turn.
@@ -580,6 +616,11 @@ class CodexExecutionSession:
         overrides = context.thread_start_security_overrides()
         permissions = _permission_profile(overrides)
         params = _thread_extra_params(overrides, resume=False)
+        if self.request.auto_compact_token_limit is not None:
+            params["config"] = {"model_auto_compact_token_limit": self.request.auto_compact_token_limit}
+        if self.request.model_context_window is not None:
+            params.setdefault("config", {})["model_context_window"] = self.request.model_context_window
+        _logger.info("Codex thread controls model=%s effort=%s config=%s", self.request.model, self.request.effort, params.get("config", {}))
         params["dynamicTools"] = [dict(spec) for spec in self.request.dynamic_tools]
         if self.request.developer_instructions is not None:
             params["developerInstructions"] = self.request.developer_instructions
@@ -641,6 +682,9 @@ class CodexExecutionSession:
                 except BaseException as exc:  # noqa: BLE001 - preserve first cleanup failure
                     if first_error is None:
                         first_error = exc
+            if self._engine_lease is not None:
+                self._engine_lease.__exit__(None, None, None)
+                self._engine_lease = None
             if first_error is not None and not suppress_errors:
                 raise first_error
 
@@ -670,6 +714,13 @@ class CodexExecutionSession:
         """
 
         try:
+            read_roots: tuple[Path, ...] = ()
+            if process_backend is not None and isinstance(process_backend.backend, BubblewrapBackend):
+                executable = Path(self.request.command[0]).resolve(strict=True)
+                bundle = executable.parent
+                if bundle.name == "bin" and (bundle.parent / "codex-resources").is_dir():
+                    bundle = bundle.parent
+                read_roots = (bundle,)
             policy = SandboxPolicy(
                 workspace=context.workspace,
                 allow_network=True,
@@ -679,6 +730,7 @@ class CodexExecutionSession:
                     context.task_root,
                     context.scratch_root,
                 ),
+                additional_read_roots=read_roots,
             )
         except SandboxViolation as exc:
             raise CodexSecurityError(f"invalid Codex outer sandbox policy: {exc}") from exc

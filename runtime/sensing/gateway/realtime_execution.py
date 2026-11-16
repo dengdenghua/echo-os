@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from runtime.execution.agent_policy import select_agent_route
 from runtime.execution.artifact_contracts import HandoffRecorder
 from runtime.execution.codex_backend.readiness import CodexReadiness
 from runtime.execution.engines import (
@@ -22,7 +23,6 @@ from runtime.execution.engines import (
     ExecutionPhase,
     ExecutionRoute,
     ExecutionSupervisor,
-    select_execution_route,
 )
 from runtime.platform.models import ParsedIntent
 from runtime.protocol import ServerMethod, Turn
@@ -131,7 +131,25 @@ def codex_readiness_for_turn(runtime: Any, turn: Turn, agent: Any) -> CodexReadi
             return CodexReadiness(False, "principal_unavailable")
         scope = TenantScope(tenant_id=tenant, actor_id=actor) if actor and tenant else None
         preference = CodexModelPreferenceStore(state_root / "model_profile.json").read(scope)
-        profile = _execution_profile(runtime._stack, agent, {}, preference=preference)
+        from runtime.platform.process.session import Session
+        from runtime.sensing.gateway._realtime_react_stream_helpers import (
+            _apply_codex_task_model_override,
+        )
+        from runtime.sensing.gateway.realtime_turn_input import _input_metadata
+
+        input_metadata = _input_metadata(turn.params)
+        context = input_metadata.get("context", input_metadata)
+        context = dict(context) if isinstance(context, dict) else {}
+        context["execution_engine"] = "codex"
+        _apply_codex_task_model_override(context)
+        # Only the opaque, host-created model override crosses this probe.
+        # Request dictionaries never become credential or identity authority.
+        parent = Session(actor=actor, metadata={
+            "_server_codex_execution_override": context.get("_server_codex_execution_override"),
+        })
+        profile = _execution_profile(
+            runtime._stack, agent, {"caller_session": parent}, preference=preference,
+        )
         return inspect_codex_readiness(
             profile,
             tools_available=getattr(getattr(runtime._stack, "executor", None), "registry", None)
@@ -163,53 +181,30 @@ async def select_turn_execution(
     reflection_fast_path: bool,
     coordinated: bool = False,
 ) -> ExecutionRoute:
-    requested = str(getattr(turn.params, "execution_engine", "auto") or "auto").strip().lower()
-    # ``native`` was the public spelling before the unified supervisor. Keep
-    # old clients and persisted drafts working while durable evidence uses the
-    # canonical ``octopus`` engine id.
-    if requested == "native":
-        requested = "octopus"
-    config = getattr(getattr(runtime, "_stack", None), "config", None)
-    default_member = getattr(getattr(config, "execution", None), "member_engine", "octopus")
-    route = select_execution_route(
+    if turn.params.execution_engine == "codebuddy":
+        from runtime.execution.codebuddy_backend import inspect_readiness, resolve_model
+        from runtime.safety.privacy import PrivacyViolation, deny_private_operation
+        from runtime.sensing.gateway.realtime_codebuddy_backend import scope_for_turn
+        try:
+            deny_private_operation("codebuddy_execution")
+        except PrivacyViolation as exc:
+            raise EngineSelectionError(str(exc), engine=EngineId.CODEBUDDY, reason="privacy") from exc
+        status = await asyncio.to_thread(inspect_readiness, scope_for_turn(turn))
+        if not status["available"]:
+            raise EngineSelectionError(status["reason"], engine=EngineId.CODEBUDDY, reason="unavailable")
+        resolve_model(turn.params.model)
+        return ExecutionRoute(EngineId.CODEBUDDY, "codebuddy_cli", "explicit_engine")
+    # Old clients may still send auto/native/OpenCode. New OS turns always
+    # use the product policy; those hints cannot select a weaker fallback.
+    route = select_agent_route(
         project_command=project_command,
         group_fanout=group_fanout,
         topology_id=topology_id,
-        codex_partner=codex_partner,
-        reflection_fast_path=reflection_fast_path,
-        requested_engine=None if requested == "auto" else EngineId(requested),
-        coding_task=is_coding_task(intent),
         coordinated=coordinated,
-        coordinator_engine=EngineId.OPENCODE if default_member == "opencode" else None,
-        default_engine=EngineId.OPENCODE if default_member == "opencode" else None,
     )
-    if route.engine is EngineId.OCTOPUS:
-        return route
-    if route.engine is EngineId.OPENCODE:
-        from runtime.execution.opencode_backend import inspect_readiness
-        from runtime.sensing.gateway.realtime_opencode_backend import scope_for_turn
-
-        # Readiness must validate the exact host-selected Zen model. Passing
-        # no selection would always reject the explicit OpenCode route, while
-        # accepting a catalog row different from the request would make the
-        # durable execution evidence lie about model ownership.
-        selection = getattr(turn.params, "model", None)
-        status = await asyncio.to_thread(
-            inspect_readiness,
-            scope_for_turn(turn),
-            selection,
-        )
-        if status["available"]:
-            return route
-        raise EngineSelectionError(status["reason"], engine=EngineId.OPENCODE, reason="unavailable")
     readiness = await asyncio.to_thread(codex_readiness_for_turn, runtime, turn, agent)
     if readiness.available:
         return route
-    if requested == "auto" and route.reason == "coding_task":
-        # This is selection before any effects, not recovery from a failed
-        # engine. Explicit Codex choices and operator-selected Codex roles
-        # fail closed instead of acquiring a weaker execution path.
-        return ExecutionRoute(EngineId.OCTOPUS, "react", f"codex_unavailable:{readiness.reason}")
     raise EngineSelectionError(
         codex_unavailable_message(readiness.reason),
         engine=EngineId.CODEX,
@@ -321,6 +316,20 @@ class OpenCodeExecutionAdapter:
             )
 
 
+@dataclass(frozen=True, slots=True)
+class CodeBuddyExecutionAdapter:
+    host: _TurnHost
+    engine = EngineId.CODEBUDDY
+
+    async def execute(self, request: TurnExecutionRequest, phase: ExecutionPhase) -> None:
+        from runtime.sensing.gateway.realtime_codebuddy_backend import drive_codebuddy
+        h = self.host
+        async with h.context.activate(h.runtime, h.turn, h.agent, request.intent, request.text):
+            if await _dispatch_host_driver(h, request, phase):
+                return
+            await drive_codebuddy(h.runtime, h.turn, h.log, h.emitter, request.intent, h.agent, h.provider, text=request.text)
+
+
 def bind_turn_execution(
     runtime: Any,
     turn: Turn,
@@ -359,6 +368,7 @@ def bind_turn_execution(
     adapter = {
         EngineId.CODEX: CodexExecutionAdapter,
         EngineId.OPENCODE: OpenCodeExecutionAdapter,
+        EngineId.CODEBUDDY: CodeBuddyExecutionAdapter,
         EngineId.OCTOPUS: NativeExecutionAdapter,
     }[route.engine](host)
 

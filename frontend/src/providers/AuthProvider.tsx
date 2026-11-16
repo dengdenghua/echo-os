@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import {
   getAuthStatus,
+  desktopOwnerLogin,
   getMe,
   getToken,
   getUser as getStoredUser,
@@ -264,6 +265,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .catch((error: unknown) => ({ currentUser: null, error }))
           : { currentUser: null, error: null };
       if (controller.signal.aborted) return;
+      if (!current.currentUser && status.enabled) {
+        const owner = await desktopOwnerLogin();
+        if (controller.signal.aborted) return;
+        if (owner) {
+          setUser(normalizeUserIdentity(owner));
+          return;
+        }
+      }
       if (current.currentUser) {
         setUser(
           normalizeUserIdentity(current.currentUser, storedUser || tokenUser),

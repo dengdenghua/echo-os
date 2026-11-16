@@ -25,6 +25,9 @@ class SidecarConfigContext(Protocol):
     @property
     def approval_reviewer(self) -> str: ...
 
+    @property
+    def runtime_read_paths(self) -> tuple[Path, ...]: ...
+
 
 def validate_provider_profile(
     config: Mapping[str, object],
@@ -126,11 +129,11 @@ def validate_permission_profile(
                 str(context.workspace / subpath): "read"
                 for subpath in protected_workspace_subpaths
             },
-            ":tmpdir": "deny",
             ":slash_tmp": "deny",
             str(context.state_root): "deny",
         }
         expected_network = {"enabled": False}
+    expected_filesystem.update({str(path): "read" for path in context.runtime_read_paths})
     if _non_null_items(profile.get("filesystem")) != expected_filesystem:
         errors.append(
             f"permissions.{profile_name}.filesystem must allow only minimal runtime, "

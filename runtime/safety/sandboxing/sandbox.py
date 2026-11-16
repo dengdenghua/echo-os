@@ -291,6 +291,9 @@ class SandboxPolicy:
     callers never widen authority to a common parent merely for convenience.
     """
 
+    additional_read_roots: tuple[Path, ...] = ()
+    """Server-selected runtime bundles mounted read-only by namespace backends."""
+
     def __post_init__(self) -> None:
         workspace = self.workspace.expanduser().resolve(strict=False)
         system_paths = _protected_system_paths()
@@ -332,6 +335,23 @@ class SandboxPolicy:
             if root not in normalized:
                 normalized.append(root)
         object.__setattr__(self, "additional_write_roots", tuple(normalized))
+        read_roots: list[Path] = []
+        for raw_root in self.additional_read_roots:
+            candidate = Path(raw_root).expanduser()
+            if not candidate.is_absolute() or candidate.is_symlink():
+                raise SandboxViolation("additional read roots must be absolute non-symlink directories")
+            try:
+                root = candidate.resolve(strict=True)
+            except OSError as exc:
+                raise SandboxViolation("additional read root does not exist") from exc
+            if not root.is_dir() or root.parent == root:
+                raise SandboxViolation("additional read root must be a non-root directory")
+            for writable in (workspace, *normalized):
+                if root == writable or root in writable.parents or writable in root.parents:
+                    raise SandboxViolation("additional read roots must not overlap writable roots")
+            if root not in read_roots:
+                read_roots.append(root)
+        object.__setattr__(self, "additional_read_roots", tuple(read_roots))
 
     def env_for(self) -> dict[str, str]:
         env = {k: os.environ[k] for k in self.allowed_env if k in os.environ}
@@ -572,7 +592,7 @@ class BubblewrapBackend:
             wrapped.extend(["--proc", "/proc"])
         wrapped.extend(["--tmpfs", "/tmp"])  # nosec B108 — bwrap tmpfs mount arg, not a temp file
 
-        mount_roots = _unique_paths([workspace, *policy.additional_write_roots])
+        mount_roots = _unique_paths([workspace, *policy.additional_write_roots, *policy.additional_read_roots])
         namespace_parents: list[Path] = []
         for mount_root in mount_roots:
             for parent in reversed(mount_root.parents):
@@ -592,6 +612,7 @@ class BubblewrapBackend:
         mount_specs = [
             (workspace, workspace_flag),
             *[(root, "--bind") for root in policy.additional_write_roots],
+            *[(root, "--ro-bind") for root in policy.additional_read_roots],
         ]
         # A deeper exact root must be mounted after its parent so it cannot be
         # hidden by a later broad bind.  This is especially relevant to a

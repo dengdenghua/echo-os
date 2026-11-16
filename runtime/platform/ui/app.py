@@ -181,4 +181,6 @@ def create_app(
     mount_routers_a(ctx, journal_path=journal_path)
     mount_routers_b(ctx, journal_path=journal_path)
     mount_square_router(ctx)
+    from runtime.sensing.gateway.engine_packages_router import mount_engine_packages_router
+    mount_engine_packages_router(ctx)
     return ctx.app

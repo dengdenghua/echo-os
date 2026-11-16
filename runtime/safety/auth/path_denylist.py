@@ -212,7 +212,27 @@ def pop_turn_denylist(token: object) -> None:
 # ── Match decision ────────────────────────────────────────────
 
 
-def is_blocked(resolved: str | Path) -> tuple[bool, str | None]:
+def _is_managed_workspace_target(target: Path, workspace_scope: str | Path | None) -> bool:
+    """Recognize only a scoped task directory inside Echo's managed namespace."""
+    if workspace_scope is None:
+        return False
+    try:
+        from runtime.platform.process.paths import app_paths
+
+        namespace = app_paths().data_dir / "workspaces"
+        scope = Path(workspace_scope).absolute()
+        # Never exempt a link into another part of application state.
+        if namespace.resolve() != namespace.absolute() or scope.resolve() != scope:
+            return False
+        relative = scope.relative_to(namespace)
+        return len(relative.parts) >= 3 and target.is_relative_to(scope)
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
+def is_blocked(
+    resolved: str | Path, *, workspace_scope: str | Path | None = None,
+) -> tuple[bool, str | None]:
     """Whether a *resolved* (canonical absolute) path is blocked.
 
     Returns ``(True, prefix)`` when blocked, ``(False, None)``
@@ -231,7 +251,13 @@ def is_blocked(resolved: str | Path) -> tuple[bool, str | None]:
     target_norm = os.path.normcase(target)
 
     candidates: list[str] = []
-    candidates.extend(_DEFAULT_DENIES)
+    managed = _is_managed_workspace_target(Path(target), workspace_scope)
+    # The shipped app-state default must not make server-allocated workspaces
+    # unusable. User and per-turn restrictions below ALWAYS retain precedence.
+    candidates.extend(
+        raw for raw in _DEFAULT_DENIES
+        if not (managed and raw in {"~/.local/share", "%APPDATA%"})
+    )
     candidates.extend(_load_user_denylist())
     candidates.extend(_TURN_DENYLIST.get())
 

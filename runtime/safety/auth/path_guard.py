@@ -155,7 +155,7 @@ def check_path(
         try:
             from runtime.safety.auth.path_denylist import is_blocked
 
-            blocked, prefix = is_blocked(resolved)
+            blocked, prefix = is_blocked(resolved, workspace_scope=sandbox_dir)
             if blocked:
                 return PathVerdict(
                     False,

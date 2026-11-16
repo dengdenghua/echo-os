@@ -89,6 +89,35 @@ def _mode(path: Path) -> int:
     return stat.S_IMODE(path.stat().st_mode)
 
 
+def test_packaged_executable_has_exact_read_only_inner_permission(tmp_path: Path) -> None:
+    manager, workspace, state_root = _manager(tmp_path)
+    executable = tmp_path / "installed" / "bin" / "codex"
+    executable.parent.mkdir(parents=True)
+    executable.write_text("fixture", encoding="utf8")
+    context = manager.prepare(
+        realm_id="local", tenant_id="test", thread_id="thread", task_id="turn",
+        workspace=workspace, codex_executable=str(executable), host_env={},
+    )
+    config = _config(context)
+    files = config["permissions"][PERMISSION_PROFILE]["filesystem"]
+    assert files[str(executable.resolve())] == "read"
+    assert str(executable.parent) not in files
+    assert files[str(state_root.resolve())] == "deny"
+    context.validate_effective_config(config)
+    files[str(executable.resolve())] = "write"
+    with pytest.raises(CodexSecurityError, match="filesystem"):
+        context.validate_effective_config(config)
+
+
+def test_executable_cannot_carve_out_private_state(tmp_path: Path) -> None:
+    manager, workspace, state_root = _manager(tmp_path)
+    state_root.mkdir(parents=True)
+    executable = state_root / "codex"
+    executable.write_text("fixture", encoding="utf8")
+    with pytest.raises(CodexSecurityError, match="private sidecar state"):
+        manager.prepare(realm_id="local", tenant_id="test", thread_id="thread", task_id="turn", workspace=workspace, codex_executable=str(executable), host_env={})
+
+
 def test_thread_home_persists_while_task_and_scratch_are_isolated(tmp_path: Path) -> None:
     manager, workspace, _state_root = _manager(tmp_path)
     first = _prepare(manager, workspace, task_id="task-1")
@@ -209,7 +238,7 @@ def test_launch_and_tool_environments_do_not_inherit_credentials(tmp_path: Path)
     assert launch_env["LANG"] == "zh_CN.UTF-8"
     assert launch_env["HOME"] == str(context.app_home)
     assert launch_env["CODEX_HOME"] == str(context.codex_home)
-    assert launch_env["TMPDIR"] == str(context.task_root / "tmp")
+    assert launch_env["TMPDIR"] == str(context.scratch_root / "runtime-tmp")
     for name in (
         "OPENAI_API_KEY",
         "GITHUB_TOKEN",
@@ -287,7 +316,6 @@ def test_generated_workspace_write_config_is_locked_and_self_validating(tmp_path
         str(context.workspace / ".git"): "read",
         str(context.workspace / ".agents"): "read",
         str(context.workspace / ".codex"): "read",
-        ":tmpdir": "deny",
         ":slash_tmp": "deny",
         str(context.state_root): "deny",
     }
@@ -363,7 +391,6 @@ def test_generated_read_only_config_keeps_workspace_read_only_and_private_scratc
         str(context.workspace / ".git"): "read",
         str(context.workspace / ".agents"): "read",
         str(context.workspace / ".codex"): "read",
-        ":tmpdir": "deny",
         ":slash_tmp": "deny",
         str(context.state_root): "deny",
     }

@@ -1,3 +1,4 @@
+import { TVEngineSettings } from "@/app/tv/engine-settings";
 import { useState } from "react";
 import { Library, LayoutGrid, Network, Sparkles } from "lucide-react";
 
@@ -109,6 +110,7 @@ export function AppMarketplacePanel({
         />
       </TabsContent>
       <TabsContent value="all">
+        <TVEngineSettings />
         <CapabilityMarketPanel
           searchQuery={searchQuery}
           view="all"

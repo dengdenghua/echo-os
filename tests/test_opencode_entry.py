@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -20,33 +21,25 @@ def test_opencode_is_a_distinct_explicit_route() -> None:
     assert route.driver_for(ExecutionPhase.STEERING) == "opencode_server"
 
 
-def test_opencode_readiness_checks_the_requested_model(monkeypatch) -> None:
-    import asyncio
-
+def test_legacy_opencode_hint_uses_single_os_engine(monkeypatch) -> None:
     from runtime.execution import opencode_backend
+    from runtime.execution.codex_backend.readiness import CodexReadiness
 
-    seen = []
-
-    def ready(scope, selection=None):
-        seen.append(selection)
-        return {"available": True, "reason": None}
-
-    monkeypatch.setattr(opencode_backend, "inspect_readiness", ready)
-    turn = Turn(
-        threadId="thread",
-        params=TurnParams(
-            threadId="thread",
-            executionEngine="opencode",
-            model="big-pickle",
-        ),
+    monkeypatch.setattr(
+        realtime_execution, "codex_readiness_for_turn", lambda *_: CodexReadiness(True)
     )
-    intent = ParsedIntent(raw="x", intent_type="task", normalized_goal="x")
+    monkeypatch.setattr(
+        opencode_backend,
+        "inspect_readiness",
+        lambda *_: (_ for _ in ()).throw(AssertionError("must not select OpenCode")),
+    )
+    turn = Turn(threadId="thread", params=TurnParams(threadId="thread", executionEngine="opencode"))
     route = asyncio.run(
         realtime_execution.select_turn_execution(
-            SimpleNamespace(_stack=SimpleNamespace(config=None)),
+            SimpleNamespace(),
             turn,
             object(),
-            intent,
+            ParsedIntent(raw="x", intent_type="task", normalized_goal="x"),
             project_command=False,
             group_fanout=False,
             topology_id=None,
@@ -54,8 +47,7 @@ def test_opencode_readiness_checks_the_requested_model(monkeypatch) -> None:
             reflection_fast_path=False,
         )
     )
-    assert route.engine is EngineId.OPENCODE
-    assert seen == ["big-pickle"]
+    assert route.engine is EngineId.CODEX
 
 
 def test_opencode_adapter_binds_the_authenticated_host_request(tmp_path, monkeypatch) -> None:
@@ -74,7 +66,9 @@ def test_opencode_adapter_binds_the_authenticated_host_request(tmp_path, monkeyp
     emitter = SimpleNamespace(notify=AsyncMock(), is_turn_interrupted=lambda _id: False)
     seen = []
 
-    async def fake_drive(runtime, current_turn, _log, _emitter, _intent, _agent, _provider, *, text):
+    async def fake_drive(
+        runtime, current_turn, _log, _emitter, _intent, _agent, _provider, *, text
+    ):
         from runtime.execution.request import current_execution_request
         from runtime.platform.process.session import current_session
 

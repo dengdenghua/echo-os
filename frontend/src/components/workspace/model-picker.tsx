@@ -97,7 +97,7 @@ function contextWindowTokens(model: PickerModel): number {
 function formatContextWindow(tokens: number): string {
   if (tokens >= 1_000_000) {
     const millions = tokens / 1_000_000;
-    return `${Number.isInteger(millions) ? millions : millions.toFixed(1)}M`;
+    return `${Number.isInteger(millions) ? millions : Number(millions.toFixed(2))}M`;
   }
   if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}K`;
   return tokens.toLocaleString();
@@ -138,7 +138,14 @@ export function ModelContextSetting({
 
   // This is a quick *choice*, not a model-spec readout. Keep the existing
   // picker unchanged for models that only expose one context window.
-  if (!selected || options.length < 2) return null;
+  if (!selected || selected.unavailable) return null;
+  if (options.length < 2) {
+    const tokens = Number(selected.context_window);
+    return <section data-testid="model-context-setting" className={cn("flex items-center justify-between gap-2 text-xs", className)}>
+      <span className="text-muted-foreground">{t.modelPicker.contextLength}</span>
+      <span>{Number.isFinite(tokens) && tokens > 0 ? `${formatContextWindow(tokens)}${selected.context_source === "official_api" ? "（官方 API 上限）" : ""}` : "由引擎管理（未上报上限）"}</span>
+    </section>;
+  }
 
   const current =
     options.find((model) => modelMatchesValue(model, value)) ??
@@ -247,6 +254,7 @@ const EFFORT_STRENGTH: Record<ReasoningEffort, number> = {
   high: 4,
   xhigh: 5,
   max: 6,
+  ultra: 7,
 };
 
 function resolveEffectiveEffort(
@@ -286,6 +294,7 @@ function reasoningEffortLabel(
       return t.inputBox.reasoningEffortHigh;
     case "xhigh":
       return t.inputBox.reasoningEffortXHigh;
+    case "ultra": return "Ultra";
     case "max":
       return t.inputBox.reasoningEffortMax;
   }

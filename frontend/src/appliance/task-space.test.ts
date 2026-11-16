@@ -12,6 +12,7 @@ import {
   useEchoTaskProjection,
 } from "./task-space";
 import type { EchoTaskProjection } from "./task-space";
+import { DEFAULT_LOCAL_SETTINGS, saveLocalSettings } from "@/core/settings/local";
 
 vi.mock("@/appliance/auth", () => ({
   authHeader: () => ({ Authorization: "Bearer browser-session" }),
@@ -23,6 +24,7 @@ vi.mock("@/core/auth/api", () => ({
 
 beforeEach(() => {
   vi.unstubAllGlobals();
+  localStorage.clear();
   actor.value = "one";
 });
 
@@ -139,15 +141,32 @@ describe("Echo task projection client", () => {
         Authorization: "Bearer browser-session",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt: "整理下载文件夹", agentId: "general" }),
+      body: JSON.stringify({ prompt: "整理下载文件夹", agentId: "general", permission_mode: "default", network_access: "deny" }),
     });
 
     await startEchoTask("写周报");
     expect(fetchMock).toHaveBeenLastCalledWith(
       "/api/task-runs/start",
-      expect.objectContaining({ body: JSON.stringify({ prompt: "写周报" }) }),
+      expect.objectContaining({ body: JSON.stringify({ prompt: "写周报", permission_mode: "default", network_access: "deny" }) }),
     );
   });
+
+  it.each(["default", "acceptEdits", "bypassPermissions", "plan"] as const)(
+    "sends the account's saved %s permission with its network selection",
+    async (permission_mode) => {
+      saveLocalSettings({ ...DEFAULT_LOCAL_SETTINGS, context: {
+        ...DEFAULT_LOCAL_SETTINGS.context, permission_mode, network_access: "common",
+      } });
+      const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+        schema: "echo.task_run_start.v1", thread_id: "t-permissions",
+      }), { status: 202 }));
+      vi.stubGlobal("fetch", fetchMock);
+      await startEchoTask("读取测试文件");
+      expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toMatchObject({
+        permission_mode, network_access: "common",
+      });
+    },
+  );
 
   it("explains why a background task could not start", async () => {
     vi.stubGlobal(

@@ -1,0 +1,237 @@
+/* Geometry follows the full-screen tvOS Top Shelf and six-item Dock. */
+.tv-home {
+  --tv-dock-height: 14vh;
+  /* Caption and status clearance follows text size as well as screen height. */
+  --tv-dock-clearance: max(7vh, 2.9em);
+  position: relative;
+  min-height: 100vh;
+}
+.tv-top-shelf {
+  min-height: calc(100vh - var(--tv-dock-height) - var(--tv-dock-clearance));
+  position: relative;
+}
+.tv-shelf-copy {
+  position: absolute;
+  top: 8vh;
+  left: 5vw;
+  animation: tv-shelf-appear 220ms ease-out;
+  max-width: 60vw;
+}
+.tv-shelf-copy h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.05em;
+  font-size: 5.2vw;
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  text-shadow: 0 2px 22px #0004;
+}
+.tv-shelf-copy h1 img {
+  width: 1.1em;
+  height: 1.1em;
+  margin-left: -0.2em;
+}
+.tv-shelf-description {
+  margin: 0.45em 0 0;
+  color: #ffffffc9;
+  font-size: 1.05em;
+  line-height: 1.5;
+  text-shadow: 0 1px 12px #0007;
+}
+.tv-launcher {
+  display: grid;
+  height: var(--tv-dock-height);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 2.2vw;
+  margin: 0 3vw;
+  padding: 1.5vh 2vw;
+  border-radius: 3.2vw;
+  background: linear-gradient(150deg, #ffffff20, #ffffff09 65%);
+  border: 1px solid #ffffff2a;
+  backdrop-filter: blur(26px) saturate(135%);
+  box-shadow:
+    inset 0 1px 1px #ffffff30,
+    0 18px 50px #0003;
+}
+.echo-tv .tv-launcher-app {
+  position: relative;
+  display: block;
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  background: none;
+  border: 0;
+  border-radius: 1.5vw;
+  outline: none;
+  box-shadow: none;
+  overflow: visible;
+}
+.tv-app-tile {
+  width: 100%;
+  height: 100%;
+  border-radius: 1.35vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background:
+    linear-gradient(135deg, #ffffff14, #ffffff00 45%, #041a2b08), var(--tv-tile);
+  border: 1px solid #ffffff38;
+  box-shadow:
+    inset 0 1px 1px #ffffff66,
+    inset 0 -1px 1px #17384c1a,
+    0 4px 10px #17384c1f;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    box-shadow 220ms ease,
+    filter 220ms ease;
+}
+.echo-tv .tv-app-tile > svg {
+  width: 40%;
+  height: 55%;
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 2px #17384c24);
+}
+.tv-echo-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  font-size: 2.2vw;
+  letter-spacing: -0.055em;
+}
+.tv-echo-logo img {
+  width: 1.4em;
+  height: 1.4em;
+  margin-left: -0.15em;
+}
+.tv-echo-logo b {
+  font-weight: 650;
+}
+.tv-app-name {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  bottom: -2.1em;
+  font-size: 0.75em;
+  font-weight: 500;
+  opacity: 0;
+  color: white;
+  text-shadow: 0 2px 12px #000b;
+  transition: opacity 140ms ease;
+}
+.echo-tv .tv-launcher-app[data-tv-focus]:focus,
+.echo-tv .tv-launcher-app:hover {
+  background: none;
+  outline: none;
+  box-shadow: none;
+  transform: none;
+}
+.echo-tv .tv-launcher-app:focus .tv-app-tile {
+  transform: scale(1.13);
+  filter: brightness(1.05);
+  box-shadow:
+    inset 0 1px 2px #ffffffb3,
+    inset 0 -1px 1px #17384c1a,
+    0 0 0 1px #ffffffa6,
+    0 0 0 3px #ffffff1f,
+    0 8px 20px #14384d38,
+    0 2px 5px #14384d24;
+}
+.tv-launcher-app:focus .tv-app-name {
+  opacity: 1;
+}
+.tv-tone-echo {
+  --tv-tile: linear-gradient(155deg, #516173, #334356 65%, #283648);
+}
+.tv-tone-library {
+  --tv-tile: linear-gradient(150deg, #ff476b, #ff184b 55%, #e7003b);
+}
+.tv-tone-knowledge {
+  --tv-tile: linear-gradient(150deg, #ffcc58, #ff9f0a 70%);
+}
+.tv-tone-apps {
+  --tv-tile: linear-gradient(155deg, #31c5ff, #087aff);
+}
+.tv-tone-computer {
+  --tv-tile: linear-gradient(150deg, #e8f9ff73, #a8dce54d 60%, #6faec833);
+}
+.tv-tone-search {
+  --tv-tile: linear-gradient(155deg, #45dedb, #0aaaaf);
+}
+.tv-tone-settings {
+  --tv-tile: linear-gradient(150deg, #e1e3e9, #8c919b);
+}
+.tv-tone-settings svg {
+  color: #3e424a;
+  stroke-width: 1.7 !important;
+}
+@media (forced-colors: active) {
+  .echo-tv .tv-app-tile {
+    border-color: ButtonText;
+    box-shadow: none;
+  }
+  .echo-tv .tv-launcher-app:focus .tv-app-tile {
+    outline: 2px solid Highlight;
+    outline-offset: 4px;
+    filter: none;
+    box-shadow: none;
+  }
+}
+.tv-home-status {
+  position: absolute;
+  right: 4vw;
+  bottom: 2vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6em;
+  font-size: 0.65em;
+  color: #ffffffa6;
+  margin: 0;
+}
+.tv-status-dot {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: #c7c7cc;
+  display: inline-block;
+}
+.tv-status-dot[data-ready="true"] {
+  background: #93dfbe;
+}
+@keyframes tv-shelf-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-aspect-ratio: 4/3) {
+  .tv-launcher {
+    height: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3em 2em;
+    padding: 2em;
+  }
+  .tv-top-shelf {
+    min-height: 45vh;
+  }
+  .echo-tv .tv-launcher-app {
+    height: auto;
+  }
+  .tv-app-tile {
+    height: auto;
+    aspect-ratio: 1.66;
+  }
+  .tv-home-status {
+    position: static;
+    margin: 4vh 4vw 0;
+  }
+  .tv-app-name {
+    opacity: 1;
+  }
+}

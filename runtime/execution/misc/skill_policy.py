@@ -8,6 +8,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from runtime.execution.misc.read_only_intent import workspace_read_only_text
+
 FULL_ACCESS_MARKERS: frozenset[str] = frozenset(
     {
         "*",
@@ -92,6 +94,15 @@ def is_audit_read_only_context(context: Mapping[str, Any] | None) -> bool:
     return workflow_preset_from_context(context) in AUDIT_READ_ONLY_WORKFLOW_PRESETS
 
 
+def is_enforced_read_only_context(context: Mapping[str, Any] | None) -> bool:
+    """Honor the trusted per-turn restriction independently of UI workflow mode."""
+    ctx = context or {}
+    nested = ctx.get("metadata")
+    metadata = nested if isinstance(nested, Mapping) else {}
+    return bool(ctx.get("_read_only_turn_enforced") is True
+                or metadata.get("_read_only_turn_enforced") is True)
+
+
 def _verification_command_is_safe(tool_name: str, command: Any) -> bool:
     """Accept focused test/lint commands without exposing a general shell."""
 
@@ -168,11 +179,19 @@ def audit_read_only_tool_denial(
     from silently bypassing the contract.
     """
 
-    if not is_audit_read_only_context(context):
+    if not is_audit_read_only_context(context) and not is_enforced_read_only_context(context):
         return None
     name = normalize_skill_name(skill_name)
     payload = args or {}
-    if name in _AUDIT_CONTROL_TOOLS:
+    control_tools = (_AUDIT_CONTROL_TOOLS if is_audit_read_only_context(context)
+                     else frozenset({"todo_read", "todo_write", "write_todos"}))
+    if name in control_tools:
+        return None
+    if name == "computer_observe":
+        # Observation only: this fixed wrapper cannot submit input or choose
+        # an output path. Its private screenshot/evidence cache is diagnostic
+        # bookkeeping, not a project edit. Do not extend the strict voter
+        # allow-list or allow screen_capture, which writes a caller-chosen file.
         return None
     if name in {"run_tests", "lint_check"}:
         if name == "lint_check" and bool(payload.get("fix")):
@@ -193,6 +212,11 @@ def audit_read_only_tool_denial(
 
     if is_read_only_skill(name):
         return None
+    if not is_audit_read_only_context(context):
+        return (
+            f"[read-only] tool '{name}' is blocked by this turn's explicit read-only "
+            "policy. Start an authorized mutating turn before applying changes."
+        )
     return (
         f"[audit-read-only] tool '{name}' is blocked by workflow preset "
         f"{workflow_preset_from_context(context)!r}: audit tasks may read, search, "
@@ -209,7 +233,7 @@ def filter_audit_read_only_tool_specs(
     """Narrow an advertised catalog to the executable audit surface."""
 
     items = list(specs)
-    if not is_audit_read_only_context(context):
+    if not is_audit_read_only_context(context) and not is_enforced_read_only_context(context):
         return items
     return [
         spec
@@ -248,7 +272,7 @@ def goal_forbids_local_workspace_access(value: str) -> bool:
 def goal_is_read_only(value: str) -> bool:
     """Whether the user requested a non-mutating workspace operation."""
 
-    text = str(value or "").lower()
+    text = workspace_read_only_text(value)
     return bool(
         re.search(r"\bread[- ]only\b", text)
         or re.search(
@@ -272,13 +296,13 @@ def filter_tool_specs_for_workspace_contract(
 ) -> tuple[list[Any], str | None]:
     """Enforce local-workspace restrictions at every tool catalog boundary."""
 
-    if is_audit_read_only_context(user_context):
+    if is_audit_read_only_context(user_context) or is_enforced_read_only_context(user_context):
         return (
             filter_audit_read_only_tool_specs(
                 tool_specs,
                 context=user_context,
             ),
-            "audit_read_only",
+            "audit_read_only" if is_audit_read_only_context(user_context) else "read_only",
         )
     if goal_forbids_local_workspace_access(goal):
         allowed = [

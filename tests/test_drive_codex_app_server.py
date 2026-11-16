@@ -35,6 +35,13 @@ from runtime.safety.sandboxing.sandbox import (
 from runtime.sensing.gateway import realtime_codex_backend as mod
 
 
+@pytest.fixture(autouse=True)
+def _fake_command_resolution(monkeypatch):
+    # This driver suite uses a fake App Server and synthetic Unix paths even
+    # on Windows. Executable discovery is tested by test_codex_command.py.
+    monkeypatch.setattr(mod, "resolve_codex_app_server_command", lambda executable: (executable, "app-server", "--strict-config", "--listen", "stdio://"))
+
+
 def _agent(
     *,
     command: str = "/opt/echo/bin/codex",

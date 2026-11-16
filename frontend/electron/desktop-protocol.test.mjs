@@ -32,6 +32,68 @@ afterEach(() => {
 });
 
 describe("desktop renderer origin", () => {
+  it("aborts old-document streams while keeping completed and new requests intact", async () => {
+    const signals = [];
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8000",
+      fetchImpl: async (url, init) => {
+        signals.push(init.signal);
+        return url.includes("/stream")
+          ? new Response(new ReadableStream())
+          : Response.json({ ok: true });
+      },
+    });
+    await (await handler(new Request("echo-app://app/api/health"))).json();
+    await handler(new Request("echo-app://app/api/preview/stream"));
+    handler.abortPending();
+    expect(signals[0].aborted).toBe(false);
+    expect(signals[1].aborted).toBe(true);
+    await handler(new Request("echo-app://app/api/preview/stream"));
+    expect(signals[2].aborted).toBe(false);
+    handler.abortPending();
+    expect(signals[2].aborted).toBe(true);
+  });
+  it("releases the upstream event stream when the renderer cancels", async () => {
+    let upstreamSignal;
+    const cancelled = vi.fn();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8000",
+      fetchImpl: async (_url, init) => {
+        upstreamSignal = init.signal;
+        return new Response(new ReadableStream({ cancel: cancelled }), {
+          headers: { "Content-Type": "text/event-stream" },
+        });
+      },
+    });
+    const response = await handler(
+      new Request("echo-app://app/api/preview/stream"),
+    );
+    await response.body.cancel();
+    expect(upstreamSignal.aborted).toBe(true);
+    expect(cancelled).toHaveBeenCalledOnce();
+  });
+
+  it("forwards a navigation abort to an outstanding backend fetch", async () => {
+    let upstreamSignal;
+    const controller = new AbortController();
+    const handler = desktopProtocol.createDesktopProtocolHandler({
+      distRoot,
+      backendBaseURL: "http://127.0.0.1:8000",
+      fetchImpl: async (_url, init) => {
+        upstreamSignal = init.signal;
+        return new Response("ok");
+      },
+    });
+    await handler(
+      new Request("echo-app://app/api/auth/status", {
+        signal: controller.signal,
+      }),
+    );
+    controller.abort();
+    expect(upstreamSignal.aborted).toBe(true);
+  });
   it("accepts only the fixed app scheme and host", () => {
     expect(desktopProtocol.isDesktopAppURL("echo-app://app/index.html")).toBe(
       true,

@@ -135,12 +135,28 @@ function verifyAsar(archive, sourceRoot) {
       fail(`ASAR contains a host-native addon: ${entry}`);
     }
   }
-  for (const relative of [
-    "electron/main.cjs",
-    "electron/desktop-updater.cjs",
-    "electron/shell-profile.cjs",
-  ]) {
-    const packaged = asar.extractFile(archive, relative);
+  // HTML renderers, preload scripts and companion sprites are runtime files
+  // too. A CJS-only package can boot while silently losing these surfaces.
+  const runtimeFiles = [];
+  function visit(directory, relative) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const child = `${relative}/${entry.name}`;
+      const absolute = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) fail(`shell source is a symlink: ${child}`);
+      if (entry.isDirectory()) visit(absolute, child);
+      else if (
+        entry.isFile() &&
+        !/(?:\.test\.cjs|\.node-test\.cjs|\.test\.mjs)$/.test(child)
+      ) {
+        runtimeFiles.push(child);
+      }
+    }
+  }
+  visit(path.join(sourceRoot, "frontend", "electron"), "electron");
+  for (const relative of runtimeFiles) {
+    if (!entries.includes(relative))
+      fail(`ASAR runtime resource is missing: ${relative}`);
+    const packaged = asar.extractFile(archive, path.normalize(relative));
     const source = fs.readFileSync(path.join(sourceRoot, "frontend", relative));
     if (!packaged.equals(source))
       fail(`ASAR source differs from checkout: ${relative}`);

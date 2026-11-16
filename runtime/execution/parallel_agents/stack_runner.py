@@ -176,13 +176,21 @@ def make_stack_subagent_runner(
                 )
 
         ctx: dict[str, Any] = context if isinstance(context, dict) else {}
+        from runtime.execution.agent_policy import uses_single_agent_policy
+
+        single_engine = uses_single_agent_policy(stack)
+        if single_engine and agent is None:
+            if agent_registry is not None and agent_registry.has("general"):
+                agent = agent_registry.get("general")
+            else:
+                raise RuntimeError("Echo assistant role is unavailable; reload the Agent service")
         if agent is not None:
             from runtime.execution.codex_backend.role_runner import (
                 agent_uses_codex_execution_backend,
                 run_agent_role_sync,
             )
 
-            if agent_uses_codex_execution_backend(agent):
+            if single_engine or agent_uses_codex_execution_backend(agent):
                 result = run_agent_role_sync(
                     stack,
                     agent,

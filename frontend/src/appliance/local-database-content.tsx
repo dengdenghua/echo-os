@@ -1,3 +1,4 @@
+import { KnowledgePluginCard } from "./knowledge-plugin-card";
 import { quoteDatabaseFiles } from "@/core/composer-file-inbox";
 import { AI_MODE_CHANGED } from "@/core/privacy/api";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -85,7 +86,6 @@ import {
   classifyVideoTags,
   searchVideoByText,
   ocrVideoKeyframes,
-  listNASModels,
   listNASSources,
   listNASDirectory,
   nasResourceId,
@@ -94,7 +94,6 @@ import {
   NASRequestTimeoutError,
   openNASApp,
   revealNASApp,
-  downloadNASModel,
   searchNAS,
   startNASService,
   updateNASPolicy,
@@ -233,7 +232,6 @@ const LIBRARY_KEYS = new Set<LibraryKey>([
   "sources",
 ]);
 
-const VISION_AUTO_DOWNLOAD_KEY = "echo.storage.clip-autodownload.v1";
 const DOCUMENT_PAGE_SIZE = 60;
 const IMAGE_PAGE_SIZE = 96;
 
@@ -434,10 +432,14 @@ export default function StoragePage() {
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
-  const didAutoStartRef = useRef(false);
 
   const libraryParam = searchParams.get("library");
   const activeLibrary = isLibraryKey(libraryParam) ? libraryParam : "computer";
+  useEffect(() => {
+    setHasSearchResult(false);
+    setHits([]);
+    setSearchMessage(null);
+  }, [activeLibrary]);
   const libraries = useMemo(() => buildLibraries(copy), [copy]);
   const activeMeta = libraries.find((item) => item.key === activeLibrary)!;
 
@@ -488,23 +490,6 @@ export default function StoragePage() {
     }
   }, [copy]);
 
-  const maybeAutoDownloadVision = useCallback(async () => {
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(VISION_AUTO_DOWNLOAD_KEY)) return;
-    try {
-      const models = await listNASModels();
-      const vision = models.find((item) => item.model_id === "vision-default");
-      if (!vision || vision.provider === "local" || vision.status === "loading")
-        return;
-      const accepted = await downloadNASModel("vision-default");
-      if (accepted.status === "loading" || accepted.status === "running") {
-        window.localStorage.setItem(VISION_AUTO_DOWNLOAD_KEY, "started");
-      }
-    } catch {
-      // Model download is optional; settings keeps a manual retry path.
-    }
-  }, []);
-
   const ensureNASService = useCallback(async () => {
     const startResult = await startNASService();
     // A missing sibling or a failed launch cannot become ready by polling.
@@ -527,28 +512,8 @@ export default function StoragePage() {
   }, [copy, refreshNAS]);
 
   useEffect(() => {
-    const init = async () => {
-      if (await refreshNAS()) {
-        void maybeAutoDownloadVision();
-        return;
-      }
-      if (didAutoStartRef.current) return;
-      didAutoStartRef.current = true;
-      try {
-        if (await ensureNASService()) void maybeAutoDownloadVision();
-      } catch (error) {
-        if (isStorageConnectivityError(error)) {
-          setServiceError(copy.service.networkError);
-        }
-      }
-    };
-    void init();
-  }, [
-    copy.service.networkError,
-    ensureNASService,
-    maybeAutoDownloadVision,
-    refreshNAS,
-  ]);
+    void refreshNAS();
+  }, [refreshNAS]);
 
   useEffect(() => {
     const reconnect = () => {
@@ -703,6 +668,7 @@ export default function StoragePage() {
         <div className="flex size-full overflow-hidden">
           <section className="workspace-panel flex min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-card">
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card">
+              <KnowledgePluginCard onChange={refreshNAS} />
               {serviceError && activeLibrary !== "computer" && (
                 <div className="flex items-center justify-between gap-3 border-b border-warning/70 bg-warning/5 px-4 py-2 text-xs text-warning">
                   <span className="min-w-0 truncate">{serviceError}</span>
@@ -2483,6 +2449,10 @@ function PreviewPanel({
     try {
       const full = await readNASTextDocument(item.resourceId);
       if (version !== operation.current) return;
+      if (full.read_only) {
+        toast.info("知识库提供只读预览，请在原应用中编辑文档后重新索引。");
+        return;
+      }
       setDocument(full);
       setSavedText(full.text);
       setDraft(full.text);
@@ -3017,6 +2987,7 @@ function AppListRow({
 }) {
   const Icon = item.icon;
   const iconUrl = useNASAsset(item.iconUrl);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
   return (
     <button
       type="button"
@@ -3034,8 +3005,8 @@ function AppListRow({
       )}
     >
       <span className="flex size-14 items-center justify-center overflow-hidden rounded-xl bg-black/[0.025] transition-transform group-hover:-translate-y-0.5 group-active:scale-95">
-        {iconUrl ? (
-          <img src={iconUrl} alt="" className="size-14 object-contain" />
+        {iconUrl && failedUrl !== iconUrl ? (
+          <img src={iconUrl} alt="" className="size-14 object-contain" onError={() => setFailedUrl(iconUrl)} />
         ) : (
           <Icon className="size-7 text-muted-foreground" />
         )}

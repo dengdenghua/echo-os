@@ -40,7 +40,7 @@ describe("ModuleEditorDialog", () => {
 
     expect(screen.getByText("工作台核心")).toBeInTheDocument();
     expect(screen.getByText("知识与存储")).toBeInTheDocument();
-    expect(screen.getByText("社区与发现")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "广场" })).toBeInTheDocument();
   });
 
   it("shows pinned modules as non-interactive with an always-on label", () => {

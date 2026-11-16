@@ -63,6 +63,58 @@ def _request(tool: str, arguments: dict[str, Any], *, call_id: str = "call-1") -
     )
 
 
+def test_model_scope_hint_matches_tool_session_sandbox_subdirectory(tmp_path):
+    broker = _broker(
+        tmp_path, SkillRegistry(), names=(),
+        context={"mode": "code", "sandbox_mode": "sandbox", "permission_mode": "default"},
+    )
+    hint = broker.filesystem_scope_instructions()
+    assert f"Write/command root: {tmp_path / '.echo-work' / 'outer-thread'}" in hint
+    assert f"Read root: {tmp_path}" in hint
+    assert "absolute path returned by the write tool" in hint
+
+
+@pytest.mark.asyncio
+async def test_screenshot_bridge_emits_image_and_preserves_exact_call_cache(tmp_path):
+    import base64
+    import io
+    import json
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (40, 20), "white").save(buffer, format="PNG")
+    url = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+    calls = []
+
+    def capture():
+        calls.append(True)
+        return {"ok": True, "dataUrl": url}
+
+    registry = SkillRegistry()
+    registry.register(Skill(
+        name="screen_capture", description="Synthetic test screenshot",
+        handler=capture, trusted_source="skill://public/screen_capture",
+    ), verify_tests=False)
+    broker = _broker(tmp_path, registry, names=("screen_capture",),
+                     goal="capture desktop screenshot")
+    from runtime.safety.approval.approval_gate import ApprovalDecision
+
+    broker._approval_provider = SimpleNamespace(
+        request=lambda *args, **kwargs: ApprovalDecision(approved=True, reason="synthetic test")
+    )
+    request = _request(broker.catalog.names[0], {})
+    result = await broker(request)
+    assert result["success"], result
+    assert result["contentItems"][1] == {"type": "inputImage", "imageUrl": url}
+    metadata = json.loads(result["contentItems"][0]["text"])
+    assert metadata["visual_observation"]["attached"]
+    assert metadata["visual_observation"]["review_status"] == "unreviewed"
+    assert "base64" not in result["contentItems"][0]["text"]
+    assert await broker(request) == result
+    assert len(calls) == 1
+
+
 @pytest.mark.asyncio
 async def test_callback_worker_retains_host_request_and_permission_ceiling(tmp_path, monkeypatch):
     import asyncio
@@ -104,7 +156,7 @@ async def test_callback_worker_retains_host_request_and_permission_ceiling(tmp_p
 
     observed = []
 
-    def execute(_stack, _call):
+    def execute(_stack, _call, *, image_items=None):
         request = current_execution_request()
         observed.append(request)
         assert request.task.task_id == "host-task"
@@ -119,7 +171,7 @@ async def test_callback_worker_retains_host_request_and_permission_ceiling(tmp_p
     )
     # A callback may arrive on a worker after the original scope has exited.
     entry = next(iter(broker._entries.values()))
-    output, failed, _taint = await asyncio.to_thread(
+    output, failed, _taint, images = await asyncio.to_thread(
         broker._execute_sync,
         entry,
         {"payload": {}},
@@ -484,3 +536,33 @@ async def test_selected_codex_plugin_is_loaded_on_demand_without_ambient_surface
     # turn selection withdraws the action from the next App Server catalog.
     revoked = _broker(tmp_path, registry, names=("base_read",), context={})
     assert "demo-plugin__hello" not in revoked.catalog.names
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reason,code", [
+    ("timeout", "approval_timeout"),
+    ("connection_lost", "approval_connection_lost"),
+])
+async def test_approval_failure_reports_no_execution(tmp_path, reason, code):
+    from runtime.safety.approval.approval_gate import ApprovalDecision
+
+    calls = []
+    class PendingApproval:
+        def request(self, req, *, timeout=120.0):
+            return ApprovalDecision(approved=False, reason=reason)
+
+    registry = SkillRegistry()
+    registry.register(Skill(
+        name="exec_shell", description="Execute a shell command.",
+        trusted_source="skill://public/exec_shell",
+        handler=lambda command: calls.append(command),
+    ), verify_tests=False)
+    broker = _broker(tmp_path, registry, names=("exec_shell",),
+                     context={"permission_mode": "bypassPermissions"})
+    broker._approval_provider = PendingApproval()
+    result = await broker(_request(broker.catalog.names[0], {"command": "true"}))
+    assert result["success"] is False
+    text = result["contentItems"][0]["text"]
+    assert code in text
+    assert "this tool call was not executed" in text
+    assert calls == []

@@ -189,6 +189,19 @@ export interface SystemUpdateStatus {
 }
 
 export interface EchoElectronAPI {
+  auth?: {
+    desktopOwnerLogin: () => Promise<{
+      ok: boolean;
+      reason?: string;
+      access_token?: string;
+      user?: {
+        actor_id?: string;
+        username?: string;
+        display_name?: string;
+        provider?: string;
+      };
+    }>;
+  };
   isElectron: true;
   platform: NodeJS.Platform;
   /** Synchronous backend URL injected by Electron preload for packaged builds. */

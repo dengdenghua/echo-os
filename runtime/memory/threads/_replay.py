@@ -270,7 +270,7 @@ def _apply_turn_update(turn: Turn, payload: dict[str, Any]) -> None:
                 turn.execution = execution
                 turn.execution_engine = (
                     execution.engine
-                    if execution.engine in {"codex", "opencode", "octopus"}
+                    if execution.engine in {"codex", "opencode", "octopus", "codebuddy"}
                     else "echo"
                 )
     model_selection = payload.get("executionModel")

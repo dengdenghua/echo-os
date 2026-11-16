@@ -25,6 +25,8 @@ from typing import Any
 import httpx
 
 from runtime.execution.host_mcp_connection import HostMCPConnection
+from runtime.execution.engine_packages.store import installed_executable
+from runtime.execution.engine_packages.versions import leased
 from runtime.platform.capabilities.tenant_context import use_capability_scope
 from runtime.platform.connectors.credential_store import CredentialStore
 from runtime.platform.models.custom_model_selection import resolve_custom_model_selection
@@ -37,6 +39,8 @@ class OpenCodeError(RuntimeError):
 
 
 def executable() -> str | None:
+    if managed := installed_executable("opencode"):
+        return managed
     configured = os.environ.get("ECHO_OPENCODE_BIN")
     if configured:
         path = Path(configured).expanduser()
@@ -191,6 +195,7 @@ def child_environment(
 
 
 @asynccontextmanager
+@leased("opencode")
 async def managed_server(
     command: str,
     root: Path,
@@ -205,6 +210,8 @@ async def managed_server(
     deny_private_operation("opencode_zen")
     if os.environ.get("ECHO_DEPLOYMENT_MODE", "local").strip().lower() != "local":
         raise OpenCodeError("OpenCode 引擎目前仅支持本地运行。")
+    from runtime.execution.engine_packages.store import refresh_managed_command
+    command = refresh_managed_command("opencode", command)
     if command != executable():
         raise OpenCodeError("OpenCode 执行文件未经过本机配置。")
     from runtime.platform.process.tree import process_group_kwargs, terminate_pid_tree

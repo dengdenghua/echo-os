@@ -109,7 +109,7 @@ def test_auto_preview_preserves_external_model_owner() -> None:
         }
     )
 
-    assert external_model_owner(params) == "opencode"
+    assert external_model_owner(params) == "codex"
 
 
 def test_audit_imperative_promotes_to_executable_development() -> None:

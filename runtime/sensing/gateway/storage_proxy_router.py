@@ -118,7 +118,7 @@ def _safe_storage_path(path: str) -> str:
     return clean
 
 
-def _upstream_headers(request: Request) -> dict[str, str]:
+def _upstream_headers(request: Request, token: str | None = None) -> dict[str, str]:
     headers = {
         name: value
         for name, value in request.headers.items()
@@ -126,7 +126,7 @@ def _upstream_headers(request: Request) -> dict[str, str]:
     }
     from runtime.execution.suckers.storage_skills import _storage_token
 
-    token = _storage_token()
+    token = _storage_token() if token is None else token
     if token:
         headers["Authorization"] = f"Bearer {token}"
     return headers
@@ -314,6 +314,25 @@ def create_storage_proxy_router(
 
     async def proxy_storage(request: Request, storage_path: str) -> Any:
         _auth(request)
+        if getattr(request.app.state, "plugin_hub", None) is not None:
+            from runtime.safety.auth.principal import require_operator
+
+            require_operator(
+                request,
+                identity_store,
+                require_auth,
+                jwt_secret=jwt_secret,
+                jwt_issuer=jwt_issuer,
+                jwt_audience=jwt_audience,
+            )
+        from runtime.execution.suckers.storage_skills import _base_url
+        from runtime.platform.plugins.knowledge_storage import managed_service
+
+        try:
+            service = managed_service(request)
+            base_url, token = service.endpoint() if service else (_base_url(), None)
+        except RuntimeError as exc:
+            raise HTTPException(503, str(exc)) from exc
         safe_path = _safe_storage_path(storage_path)
         if safe_path == "v1/policy":
             if request.method == "GET":
@@ -327,8 +346,12 @@ def create_storage_proxy_router(
             from runtime.safety.auth.principal import require_operator
 
             require_operator(
-                request, identity_store, require_auth,
-                jwt_secret=jwt_secret, jwt_issuer=jwt_issuer, jwt_audience=jwt_audience,
+                request,
+                identity_store,
+                require_auth,
+                jwt_secret=jwt_secret,
+                jwt_issuer=jwt_issuer,
+                jwt_audience=jwt_audience,
             )
         content_length = request.headers.get("content-length")
         if content_length:
@@ -344,7 +367,7 @@ def create_storage_proxy_router(
         from runtime.execution.suckers.storage_skills import _base_url
 
         try:
-            require_local_endpoint(_base_url(), operation="storage_gateway")
+            require_local_endpoint(base_url, operation="storage_gateway")
         except PrivacyViolation as exc:
             raise HTTPException(403, str(exc)) from exc
 
@@ -354,7 +377,7 @@ def create_storage_proxy_router(
             follow_redirects=False,
             trust_env=False,
         )
-        url = f"{_base_url().rstrip('/')}/{safe_path}"
+        url = f"{base_url.rstrip('/')}/{safe_path}"
         try:
             if privacy_enabled() and (
                 client._trust_env is not False or client.follow_redirects is not False
@@ -367,9 +390,9 @@ def create_storage_proxy_router(
                 # An independent Storage service must explicitly acknowledge
                 # the restriction before it receives this request's content.
                 policy_reply = await client.put(
-                    f"{_base_url()}/v1/policy",
+                    f"{base_url}/v1/policy",
                     json=policy,
-                    headers=_upstream_headers(request),
+                    headers=_upstream_headers(request, token),
                     follow_redirects=False,
                 )
                 policy_reply.raise_for_status()
@@ -380,20 +403,20 @@ def create_storage_proxy_router(
                     raise PrivacyViolation("本地数据库未确认系统策略，已停止执行。")
                 if policy["mode"] == "privacy":
                     models_reply = await client.get(
-                        f"{_base_url()}/v1/models",
-                        headers=_upstream_headers(request),
+                        f"{base_url}/v1/models",
+                        headers=_upstream_headers(request, token),
                         follow_redirects=False,
                     )
                     models_reply.raise_for_status()
                     verify_private_storage(acknowledged, models_reply.json())
             if policy != storage_policy():
                 raise PrivacyViolation("隐私策略在准备请求时已变化，请重试。")
-            require_local_endpoint(_base_url(), operation="storage_gateway")
+            require_local_endpoint(base_url, operation="storage_gateway")
             upstream_request = client.build_request(
                 request.method,
                 url,
                 params=list(request.query_params.multi_items()),
-                headers=_upstream_headers(request),
+                headers=_upstream_headers(request, token),
                 content=body,
             )
             upstream = await client.send(upstream_request, stream=True, follow_redirects=False)
@@ -411,7 +434,11 @@ def create_storage_proxy_router(
                     {"detail": "Storage 连接中断，请重新读取文件确认保存状态；草稿应保留"},
                     status_code=503,
                 )
-            fallback = await _desktop_storage_fallback(request, safe_path, body)
+            fallback = (
+                await _desktop_storage_fallback(request, safe_path, body)
+                if service is None
+                else None
+            )
             if fallback is not None:
                 return fallback
             return JSONResponse(

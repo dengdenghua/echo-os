@@ -22,10 +22,15 @@ from runtime.platform.process.paths import app_paths
 
 ACTIVATION_SCHEMA = "echo.workbench_activation.v1"
 FACTORY_WORKBENCHES: dict[str, dict[str, str]] = {
+    "knowledge_storage": {
+        "version": "0.2.0",
+        "data_dir_name": "knowledge-storage",
+        "default": "available",
+    },
     "narrative_studio": {
         "version": "0.2.0",
         "data_dir_name": "narrative-studio",
-    }
+    },
 }
 
 
@@ -92,7 +97,7 @@ class WorkbenchActivationStore:
         error = None
         if not isinstance(raw, dict) or raw.get("schema") != ACTIVATION_SCHEMA:
             available = self.factory_path(plugin_id).is_dir()
-            installed = available and not descriptor_exists
+            installed = available and not descriptor_exists and spec.get("default") != "available"
             enabled = installed
             updated_at = None
             explicit = descriptor_exists
@@ -110,6 +115,9 @@ class WorkbenchActivationStore:
             "enabled": enabled,
             "source": "factory",
             "version": spec["version"],
+            "installed_version": raw.get("version")
+            if isinstance(raw, dict) and installed
+            else None,
             "factory_path": str(self.factory_path(plugin_id)),
             "activation_path": str(activation),
             "data_path": str(self.data_path(plugin_id)),

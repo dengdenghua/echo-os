@@ -504,6 +504,10 @@ def _public_driver_error_message(exc: BaseException) -> str:
         return message
     return "任务执行时出错，已停止。可以重试；如果反复出现，请在「终端日志」查看详情。"
 
+from runtime.execution.engine_packages.versions import task_scope
+
+
+@task_scope
 async def _start_turn(
     runtime: CerebrumRuntime,
     params: dict[str, Any],
@@ -1080,6 +1084,7 @@ async def _start_turn(
                 thread_id=thread_id,
                 turn_id=turn.id,
                 trace_store=runtime._trace_store,
+                is_interrupted=lambda: emitter.is_turn_interrupted(turn.id),
             )
         provider: ApprovalProvider = runtime._wrap_with_policy(interactive_provider)
         agent = runtime._resolve_agent(validated)
@@ -1209,7 +1214,7 @@ async def _start_turn(
                 reflection_fast_path=reflection,
                 coordinated=coordinated,
             )
-            if route.engine in {"opencode", "codex"}:
+            if route.engine in {"opencode", "codex", "codebuddy"}:
                 validated = validated.model_copy(update={"model": requested_model_before_routing})
                 turn.params = validated
                 intent = intent.model_copy(
@@ -1267,6 +1272,7 @@ async def _start_turn(
                     else {
                         "codex_app_server": "codex",
                         "opencode_server": "opencode",
+                        "codebuddy_cli": "codebuddy",
                     }.get(turn_driver, "octopus")
                 )
             context = intent.user_context if isinstance(intent.user_context, dict) else {}
@@ -1314,13 +1320,9 @@ async def _start_turn(
             runtime._snapshot_to_thread_store(thread_id, log, intent)
             return turn
 
-        turn.execution_engine = (
-            "opencode"
-            if turn_driver == "opencode_server"
-            else "codex"
-            if turn_driver == "codex_app_server"
-            else "echo"
-        )
+        # Preserve the bound engine even when the primary driver is a host
+        # project/team dispatcher rather than the model continuation itself.
+        turn.execution_engine = execution.route.engine.value if execution is not None else "codex"
 
         # Native tool turns consume steering between model rounds. Other
         # drivers (reflection, topology, Project OS) may finish one atomic

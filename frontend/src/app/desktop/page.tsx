@@ -2116,6 +2116,7 @@ export default function DesktopShellPage() {
           desktopTheme={desktopTheme}
           onToggleTheme={handleToggleDesktopTheme}
           onOpenAbout={() => setOverlay("about", true)}
+          onOpenTV={() => navigate("/tv")}
           onOpenFiles={openFinder}
           onOpenSettings={openSystemSettings}
           appStoreAvailable

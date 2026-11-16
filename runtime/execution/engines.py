@@ -22,6 +22,7 @@ class EngineId(StrEnum):
     NATIVE = "octopus"
     CODEX = "codex"
     OPENCODE = "opencode"
+    CODEBUDDY = "codebuddy"
 
 
 class ExecutionPhase(StrEnum):
@@ -57,6 +58,8 @@ class ExecutionRoute:
             return "codex_app_server"
         if self.engine is EngineId.OPENCODE:
             return "opencode_server"
+        if self.engine is EngineId.CODEBUDDY:
+            return "codebuddy_cli"
         return self.driver if phase is ExecutionPhase.PRIMARY else "react"
 
 

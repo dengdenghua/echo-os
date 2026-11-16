@@ -1,3 +1,7 @@
+import { QueryClientContext } from "@tanstack/react-query";
+import { coderQueryKeys, type CoderModelProfile } from "@/core/coder/api";
+import { useOptionalAuth } from "@/providers/AuthProvider";
+import { readCodexContextBudget } from "@/core/models/codex-context-budget";
 /**
  * Realtime-backed implementation of `useThreadStream`.
  *
@@ -7,6 +11,7 @@
  */
 
 import {
+  useContext,
   useCallback,
   useEffect,
   useMemo,
@@ -1136,6 +1141,9 @@ export function useThreadStreamRealtime(
     context,
   } = opts;
 
+  const modelControlCache = useContext(QueryClientContext);
+  const modelControlUser = useOptionalAuth()?.user;
+  const modelControlPrincipal = modelControlUser?.actor_id || modelControlUser?.user_id || "local";
   const realtime = useRealtimeThread({ threadId });
   const {
     state,
@@ -1365,13 +1373,35 @@ export function useThreadStreamRealtime(
     }
   }, [state]);
 
-  // Stable `stop` ref so callers can `useRef(thread.stop)` without
-  // tearing on every render (the code page does this around L1195).
-  const stopRef = useRef(() => {
-    void interrupt();
-  });
+  // Stable `stop` ref so callers can `useRef(thread.stop)` without tearing on
+  // every render. Preserve the interrupt promise so callers can await and
+  // surface failures. Concurrent calls share one request; this matters because
+  // a slow acknowledgement otherwise leaves enough time for a double click to
+  // send multiple turn/interrupt requests.
+  const stopInFlightRef = useRef<{
+    interrupt: typeof interrupt;
+    promise: Promise<void>;
+  } | null>(null);
+  const stopRef = useRef<() => Promise<void>>(() => Promise.resolve());
   stopRef.current = () => {
-    void interrupt();
+    const current = stopInFlightRef.current;
+    if (current?.interrupt === interrupt) return current.promise;
+
+    const operation = {
+      interrupt,
+      promise: Promise.resolve(),
+    };
+    operation.promise = (async () => {
+      try {
+        await interrupt();
+      } finally {
+        if (stopInFlightRef.current === operation) {
+          stopInFlightRef.current = null;
+        }
+      }
+    })();
+    stopInFlightRef.current = operation;
+    return operation.promise;
   };
   const stop = useCallback(() => stopRef.current(), []);
 
@@ -1461,6 +1491,8 @@ export function useThreadStreamRealtime(
             context && typeof context === "object"
               ? (context as Record<string, unknown>)
               : {};
+          const currentModelProfile = modelControlCache?.getQueryData<CoderModelProfile>(coderQueryKeys(modelControlPrincipal).profile);
+          const budgetModel = rawContext.model_scope === "task" ? model : (currentModelProfile?.effective_model || model);
           const explicitMode = stringValue(rawContext.mode);
           const selectedMode = explicitMode ?? "code";
           const explicitCapabilityMode = stringValue(
@@ -1472,6 +1504,7 @@ export function useThreadStreamRealtime(
           const runtimeContext = applyCodexComposerModeContext(
             stripUndefinedValues({
               ...rawContext,
+              codex_autocompact: readCodexContextBudget(modelControlPrincipal, budgetModel || "auto"),
               mode: selectedMode,
               capability_mode:
                 explicitCapabilityMode ??
@@ -1570,6 +1603,8 @@ export function useThreadStreamRealtime(
       effectiveApprovalPolicy,
       effectiveSandboxPolicy,
       model,
+      modelControlPrincipal,
+      modelControlCache,
       context,
       permissionRuntime.mode,
       permissionRuntime.approvalReviewer,

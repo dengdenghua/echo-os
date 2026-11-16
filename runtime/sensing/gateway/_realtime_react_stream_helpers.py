@@ -211,6 +211,10 @@ def _apply_react_session_metadata(
     _apply_orchestration_grant(session_metadata)
     session_metadata["_execution_stack"] = stack
     session_metadata["_approval_provider"] = approval_provider
+    _apply_codex_task_model_override(session_metadata)
+
+
+def _apply_codex_task_model_override(session_metadata: dict[str, Any]) -> None:
     # A task-scoped Codex selection is promoted to the opaque Python marker
     # consumed by role_runner.  The marker itself is never accepted from the
     # client; this boundary derives it from the already-normalized turn

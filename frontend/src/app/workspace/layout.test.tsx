@@ -49,6 +49,14 @@ vi.mock("@/components/workspace/workspace-sidebar", () => ({
   WorkspaceSidebar: () => <aside>sidebar</aside>,
 }));
 
+test("knowledge routes use application navigation even in explicit workbench presentation", () => {
+  renderWithProviders(<WorkspaceLayout />, { locale: "zh-CN", initialRoute: "/workspace/storage?library=sources&presentation=workbench" });
+  expect(screen.queryByText("sidebar")).not.toBeInTheDocument();
+  expect(screen.getByRole("navigation", { name: "知识库导航" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "返回桌面" })).toHaveAttribute("href", "/desktop");
+  expect(screen.getByTestId("workspace-location")).toHaveTextContent("/workspace/storage?library=sources");
+});
+
 vi.mock("@/appliance/system-model-status", () => ({
   SystemModelStatus: ({ onOpenSettings }: { onOpenSettings: () => void }) => (
     <button onClick={onOpenSettings}>模型与用量</button>

@@ -125,7 +125,7 @@ _LOCKED_OFF_FEATURES = (
     "shell_snapshot",
     "tool_suggest",
 )
-_VERSIONED_LOCKED_OFF_FEATURES = ("api_key_model_discovery",)
+_VERSIONED_LOCKED_OFF_FEATURES = ("api_key_cyber_access_programs", "api_key_model_discovery", "skill_mcp_dependency_install", "skill_search")
 _ALLOWED_ENABLED_FEATURES = frozenset({"mentions_v2"})
 _PROTECTED_WORKSPACE_SUBPATHS = (".git", ".agents", ".codex")
 
@@ -218,7 +218,9 @@ class CodexSidecarContext:
     _launch_env: Mapping[str, str] = field(repr=False)
     provider_profile: CodexProviderProfile | None = field(default=None, repr=False)
     selected_app_ids: tuple[str, ...] = ()
+    prefer_mxc: bool = False
     locked_off_features: tuple[str, ...] = _LOCKED_OFF_FEATURES
+    runtime_read_paths: tuple[Path, ...] = ()
 
     @property
     def sqlite_home(self) -> Path:
@@ -328,10 +330,14 @@ class CodexSidecarContext:
             for feature_name, enabled in features.items():
                 if (
                     feature_name not in self.locked_off_features
+                    and not (feature_name == "prefer_mxc" and self.prefer_mxc)
                     and feature_name not in _ALLOWED_ENABLED_FEATURES
                     and enabled not in (None, False)
                 ):
                     errors.append(f"unknown executable feature is enabled: features.{feature_name}")
+
+        if self.prefer_mxc and features is not None:
+            _expect_value(features, "prefer_mxc", True, errors, prefix="features.")
 
         agents = _mapping_at(config, "agents", errors)
         if agents is not None and _non_null_items(agents) != {"enabled": False}:
@@ -582,6 +588,7 @@ class CodexSidecarSecurity:
             tool_home / ".config",
             tool_home / ".local" / "share",
             tool_tmp,
+            scratch_root / "runtime-tmp",
         ):
             _ensure_private_directory(directory, root=state_root)
 
@@ -623,7 +630,11 @@ class CodexSidecarSecurity:
             allowlist=self._policy.host_env_allowlist,
             codex_home=codex_home,
             app_home=app_home,
-            app_tmp=task_root / "tmp",
+            # Codex's Linux filesystem helper stages synthetic mount targets
+            # in TMPDIR before entering its inner sandbox. Keep this disposable
+            # staging under the already-authorized scratch tree, not under the
+            # denied credential/state tree. CODEX_HOME and app HOME stay private.
+            app_tmp=scratch_root / "runtime-tmp",
         )
         if provider_profile is not None and provider_profile.scoped_bearer_token is not None:
             # This fixed, turn-scoped credential is visible only to the App
@@ -634,6 +645,17 @@ class CodexSidecarSecurity:
             if auth_env_key is None:  # guarded again at the security boundary
                 raise CodexSecurityError("scoped provider authentication is incomplete")
             launch_env[auth_env_key] = provider_profile.scoped_bearer_token
+        runtime_read_paths: tuple[Path, ...] = ()
+        if codex_executable:
+            executable = Path(codex_executable).expanduser()
+            if executable.is_absolute() and executable.is_file():
+                executable = executable.resolve(strict=True)
+                if executable.is_relative_to(state_root):
+                    raise CodexSecurityError("Codex executable cannot be inside private sidecar state")
+                # The Linux inner sandbox re-execs this exact binary. :minimal
+                # does not include packaged installations under /opt. Grant
+                # only the server-resolved file, never its parent directory.
+                runtime_read_paths = (executable,)
         context = CodexSidecarContext(
             state_root=state_root,
             thread_root=thread_root,
@@ -656,6 +678,8 @@ class CodexSidecarSecurity:
             provider_profile=provider_profile,
             selected_app_ids=tuple(dict.fromkeys(selected_app_ids)),
             locked_off_features=_locked_off_features_for(codex_executable),
+            runtime_read_paths=runtime_read_paths,
+            prefer_mxc=(os.name == "nt" and "prefer_mxc" in (supported_codex_features(codex_executable) or ())),
             _launch_env=MappingProxyType(launch_env),
         )
         _read_binding_file(context)
@@ -720,6 +744,13 @@ def _build_launch_env(
             "no_proxy": "127.0.0.1,localhost,::1",
         }
     )
+    if os.name == "nt":
+        system_root = result.get("SYSTEMROOT") or result.get("WINDIR")
+        if system_root:
+            result["SYSTEMDRIVE"] = os.path.splitdrive(system_root)[0]
+        local_data = app_home / "local-app-data"
+        local_data.mkdir(parents=True, exist_ok=True)
+        result["LOCALAPPDATA"] = str(local_data)
     return result
 
 
@@ -732,6 +763,7 @@ def _tool_environment(context: CodexSidecarContext) -> dict[str, str]:
         "PATH": path_value,
         "HOME": str(context.tool_home),
         "USERPROFILE": str(context.tool_home),
+        **({"LOCALAPPDATA": str(context.tool_home)} if os.name == "nt" else {}),
         "TMPDIR": str(context.tool_tmp),
         "TMP": str(context.tool_tmp),
         "TEMP": str(context.tool_tmp),
@@ -750,6 +782,7 @@ def _tool_environment(context: CodexSidecarContext) -> dict[str, str]:
             "TERM",
             "COLORTERM",
             "SYSTEMROOT",
+            "SYSTEMDRIVE",
             "COMSPEC",
             "PATHEXT",
             "WINDIR",
@@ -858,6 +891,7 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
             ),
             "",
             "[features]",
+            *(("prefer_mxc = true",) if context.prefer_mxc else ()),
             *[
                 f"{name} = {str(bool(context.selected_app_ids) if name == 'apps' else False).lower()}"
                 for name in context.locked_off_features
@@ -902,11 +936,11 @@ def _render_codex_config(context: CodexSidecarContext) -> str:
                 f'{_toml_string(str(context.workspace / subpath))} = "read"'
                 for subpath in _PROTECTED_WORKSPACE_SUBPATHS
             ),
-            '":tmpdir" = "deny"',
             '":slash_tmp" = "deny"',
             f'{_toml_string(str(context.state_root))} = "deny"',
         ]
     )
+    filesystem_lines.extend(f'{_toml_string(str(path))} = "read"' for path in context.runtime_read_paths)
     lines.extend(
         [
             f"[permissions.{PERMISSION_PROFILE}.filesystem]",

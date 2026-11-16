@@ -407,7 +407,7 @@ def _turn_model(turn: Turn) -> str | None:
 
 def _turn_execution_engine(turn: Turn) -> str:
     value = str(getattr(turn, "execution_engine", None) or "").strip().lower()
-    return value if value in {"codex", "echo", "octopus", "opencode"} else "echo"
+    return value if value in {"codex", "echo", "octopus", "opencode", "codebuddy"} else "echo"
 
 
 def _goal_fingerprint(goal: str) -> str:

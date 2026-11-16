@@ -22,6 +22,7 @@ def register_app(app: Any, _context: Any) -> None:
 
     from appliance.agent_api.contract import require_agent_api_contract
     from appliance.agent_ui import mount_agent_ui
+    from appliance.native_task_auth import NativeTaskAuthenticator
     from appliance.task_projection import create_task_projection_router
 
     mount_agent_ui(app)
@@ -41,7 +42,7 @@ def register_app(app: Any, _context: Any) -> None:
             supervisor=getattr(app.state, "task_supervisor", None),
             realtime_gateway=getattr(app.state, "realtime_gateway", None),
             audit=None,
-            jwt_secret=None,
+            authenticator=NativeTaskAuthenticator(_context),
             organization_service=lambda: getattr(app.state, "echo_file_organization", None),
         )
     )

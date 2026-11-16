@@ -1,0 +1,39 @@
+# Echo work display only. Flat native chrome, no bevels or thick resize handles.
+border.width: 1
+padding.width: 8
+padding.height: 5
+window.handle.width: 0
+window.client.padding.width: 0
+window.label.text.justify: center
+window.*.border.color: #d5dfdf
+window.*.title.bg: flat solid
+window.*.title.bg.color: #f2f5f3
+window.*.title.separator.color: #e7ece9
+window.*.label.bg: parentrelative
+window.active.label.text.color: #53676d
+window.inactive.label.text.color: #97a4a7
+window.*.button.*.bg: parentrelative
+window.*.button.*.image.color: #647b80
+window.*.button.hover.bg: flat solid
+window.*.button.hover.bg.color: #dbe5e0
+window.*.button.pressed.bg: flat solid
+window.*.button.pressed.bg.color: #cad9d2
+window.*.button.disabled.image.color: #bec9c9
+window.*.handle.bg: flat solid
+window.*.handle.bg.color: #f2f5f3
+window.*.grip.bg: flat solid
+window.*.grip.bg.color: #f2f5f3
+*.font: shadow=n
+menu.border.color: #d5dfdf
+menu.border.width: 1
+menu.title.bg: flat solid
+menu.title.bg.color: #f2f5f3
+menu.title.text.color: #53676d
+menu.items.bg: flat solid
+menu.items.bg.color: #fbfcfa
+menu.items.text.color: #53676d
+menu.items.disabled.text.color: #97a4a7
+menu.items.active.bg: flat solid
+menu.items.active.bg.color: #e3ebe6
+menu.items.active.text.color: #304c46
+menu.separator.color: #d5dfdf

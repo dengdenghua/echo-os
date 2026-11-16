@@ -12,6 +12,7 @@ export interface NASManifest {
 }
 
 export interface NASTextDocument {
+  read_only?: boolean;
   resource_id: string;
   text: string;
   revision: string;

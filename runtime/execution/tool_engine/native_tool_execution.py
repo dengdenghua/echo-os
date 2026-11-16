@@ -24,6 +24,7 @@ from .tool_protocol import (
     normalize_step_tool_result,
     normalize_tool_call,
     normalize_tool_result,
+    output_signals_error,
 )
 
 TOOL_OUTPUT_MAX_CHARS = 16_000
@@ -40,6 +41,7 @@ def execute_native_tool_call(
     step_id: int = 0,
     arm_id: ArmId | None = None,
     budget: Budget | None = None,
+    image_items: list[dict[str, str]] | None = None,
 ) -> tuple[str, bool]:
     """Run one native tool request through the normal executor chokepoint.
 
@@ -117,6 +119,7 @@ def execute_native_tool_call(
                 step_id=step_id,
                 arm_id=arm_id,
                 budget=budget,
+                image_items=image_items,
             )
     finally:
         set_injection_gate_handled(previous_handled)
@@ -134,6 +137,7 @@ def _execute_approved_native_call(
     step_id: int,
     arm_id: ArmId | None,
     budget: Budget | None,
+    image_items: list[dict[str, str]] | None = None,
 ) -> tuple[str, bool]:
     effect_receipt = None
     if hasattr(executor, "execute_step"):
@@ -213,6 +217,18 @@ def _execute_approved_native_call(
             return (f"(TypeError: {exc})", True)
         except (RuntimeError, ValueError, OSError, PermissionError) as exc:
             return (f"(skill error: {type(exc).__name__}: {exc})", True)
+
+    if image_items is None and isinstance(output, dict) and "_mcp_images" in output:
+        output = {key: value for key, value in output.items() if key != "_mcp_images"}
+        output["visual_observation"] = {
+            "attached": False,
+            "review_status": "unreviewed",
+            "reason": "This execution path has no image delivery channel.",
+        }
+    if image_items is not None and not output_signals_error(output):
+        from .tool_images import image_observation
+
+        output = image_observation(normalized.name, output, image_items)
 
     result = normalize_tool_result(
         normalized,

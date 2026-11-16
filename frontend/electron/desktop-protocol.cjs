@@ -217,6 +217,40 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+function forwardResponseBody(response, controller, release = () => {}) {
+  if (!response.body) {
+    release();
+    return response;
+  }
+  const reader = response.body.getReader();
+  return new Response(
+    new ReadableStream({
+      async pull(stream) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            release();
+            stream.close();
+          } else stream.enqueue(value);
+        } catch (error) {
+          release();
+          stream.error(error);
+        }
+      },
+      cancel(reason) {
+        release();
+        controller.abort();
+        return reader.cancel(reason);
+      },
+    }),
+    {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    },
+  );
+}
+
 function createDesktopProtocolHandler({
   distRoot,
   backendBaseURL,
@@ -230,7 +264,8 @@ function createDesktopProtocolHandler({
     throw new TypeError("fetchImpl is required");
   }
 
-  return async function handleDesktopRequest(request) {
+  const active = new Set();
+  const handler = async function handleDesktopRequest(request) {
     const appURL = parseDesktopAppURL(request.url);
     if (!appURL) {
       return errorResponse(403, "desktop_origin_denied");
@@ -238,11 +273,18 @@ function createDesktopProtocolHandler({
 
     if (isBackendRoute(appURL.pathname)) {
       const method = String(request.method || "GET").toUpperCase();
+      const controller = new AbortController();
+      active.add(controller);
+      const release = () => active.delete(controller);
+      controller.signal.addEventListener("abort", release, { once: true });
       const init = {
         method,
         headers: proxyHeaders(request.headers),
         redirect: "manual",
         bypassCustomProtocolHandlers: true,
+        signal: request.signal
+          ? AbortSignal.any([request.signal, controller.signal])
+          : controller.signal,
       };
       if (method !== "GET" && method !== "HEAD" && request.body) {
         init.body = request.body;
@@ -259,13 +301,18 @@ function createDesktopProtocolHandler({
             buildBackendTargetURL(appURL, trustedBackendOrigin),
             init,
           );
-          return rewriteBackendRedirect(response, trustedBackendOrigin);
+          return forwardResponseBody(
+            rewriteBackendRedirect(response, trustedBackendOrigin),
+            controller,
+            release,
+          );
         } catch (error) {
           if (attempt < attempts && isTransientFetchError(error)) {
             await delay(retryDelayMs * attempt);
             continue;
           }
-          onProxyError?.(error);
+          release();
+          if (!init.signal.aborted) onProxyError?.(error);
           return backendStartingResponse();
         }
       }
@@ -297,6 +344,13 @@ function createDesktopProtocolHandler({
       }
     }
   };
+  // Electron does not reliably propagate protocol Request cancellation when
+  // its document is replaced. The owning window must cancel upstream streams.
+  handler.abortPending = () => {
+    for (const controller of active) controller.abort();
+    active.clear();
+  };
+  return handler;
 }
 
 module.exports = {

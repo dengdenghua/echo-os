@@ -1,3 +1,4 @@
+import { isMainConversationRoute } from "@/core/workspace/knowledge-application";
 import {
   ArrowLeftIcon,
   AppWindowIcon,
@@ -43,6 +44,7 @@ import {
 } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { WorkspaceAppMenu } from "./workspace-app-menu";
 import { swallow } from "@/core/utils/log";
 import { currentActorId } from "@/core/auth/api";
 import {
@@ -491,6 +493,7 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
     }
   }, [pathname, pendingThreadPath]);
   const sidebarPathname = syncedSidebarPathname(pathname, pendingThreadPath);
+  const conversationNavigation = isMainConversationRoute(pathname);
   useCloseMobileSidebarOnChange(`${pathname}${search}`);
 
   // Resolve a NavRoute's labelKey against the sidebar namespace. The cast
@@ -1123,20 +1126,23 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
               between local folders and registered remote mounts without
               diving into a settings page. Hidden when the sidebar is
               collapsed to icon-only mode (the trigger label would clip). */}
-          <SidebarGroup className="p-0 px-1 pb-0.5 group-data-[collapsible=icon]:hidden">
-            <WorkspaceSwitcher
-              activeWorkspaceId={activeWorkspaceId}
-              onSwitch={handleSwitchWorkspace}
-            />
-          </SidebarGroup>
-          <SidebarGroup className="p-0 px-1 pb-0.5 group-data-[collapsible=icon]:px-0">
-            <SurfaceCreateButton
-              agentId={activeAgentId}
-              workspacePath={activeTaskWorkspacePath}
-            />
-          </SidebarGroup>
-          {/* Unified sidebar — no more surface branching. All navigation
-            items are always visible regardless of the current route. */}
+          {conversationNavigation && (
+            <>
+              <SidebarGroup className="p-0 px-1 pb-0.5 group-data-[collapsible=icon]:hidden">
+                <WorkspaceSwitcher
+                  activeWorkspaceId={activeWorkspaceId}
+                  onSwitch={handleSwitchWorkspace}
+                />
+              </SidebarGroup>
+              <SidebarGroup className="p-0 px-1 pb-0.5 group-data-[collapsible=icon]:px-0">
+                <SurfaceCreateButton
+                  agentId={activeAgentId}
+                  workspacePath={activeTaskWorkspacePath}
+                />
+              </SidebarGroup>
+            </>
+          )}
+          {/* Application navigation remains available outside conversations. */}
           <NavSection
             items={workbenchCapabilityItems}
             pathname={pathname}
@@ -1147,43 +1153,44 @@ export function WorkspaceSidebar(props: React.ComponentProps<typeof Sidebar>) {
             pathname={pathname}
             search={search}
           />
-          <EditModulesButton onOpen={() => setModuleEditorOpen(true)} />
-          {fileExplorerTarget ? (
-            <ProjectFileExplorerView
-              target={fileExplorerTarget}
-              fallbackWorkDir={activeWorkDir}
-              onBack={() => setFileExplorerTarget(null)}
-            />
-          ) : (
-            <>
-              <ProjectsSection
-                actor={actor}
-                groups={projectOrder}
-                byProject={byProject}
-                projectIcons={projectOsSidebar.projectIconByName}
-                pathname={sidebarPathname}
-                search={search}
-                deletableProjects={deletableProjects}
-                deletingProject={deletingProject}
-                groupingEnabled={projectGroupingEnabled}
-                runStatusByHref={runStatusByHref}
-                onDeleteProject={deleteProject}
-                onToggleGrouping={toggleProjectGrouping}
-                onOpenFiles={openThreadFiles}
-                onNewProject={() => void pickProjectFolder()}
+          <WorkspaceAppMenu onManage={() => setModuleEditorOpen(true)} />
+          {conversationNavigation &&
+            (fileExplorerTarget ? (
+              <ProjectFileExplorerView
+                target={fileExplorerTarget}
+                fallbackWorkDir={activeWorkDir}
+                onBack={() => setFileExplorerTarget(null)}
               />
-              <ChatsSection
-                actor={actor}
-                threads={sidebarHistoryThreads}
-                pathname={sidebarPathname}
-                search={search}
-                label={t.sidebar.sectionChats}
-                agentId={activeAgentId}
-                workspacePath={activeTaskWorkspacePath}
-                runStatusByHref={runStatusByHref}
-              />
-            </>
-          )}
+            ) : (
+              <>
+                <ProjectsSection
+                  actor={actor}
+                  groups={projectOrder}
+                  byProject={byProject}
+                  projectIcons={projectOsSidebar.projectIconByName}
+                  pathname={sidebarPathname}
+                  search={search}
+                  deletableProjects={deletableProjects}
+                  deletingProject={deletingProject}
+                  groupingEnabled={projectGroupingEnabled}
+                  runStatusByHref={runStatusByHref}
+                  onDeleteProject={deleteProject}
+                  onToggleGrouping={toggleProjectGrouping}
+                  onOpenFiles={openThreadFiles}
+                  onNewProject={() => void pickProjectFolder()}
+                />
+                <ChatsSection
+                  actor={actor}
+                  threads={sidebarHistoryThreads}
+                  pathname={sidebarPathname}
+                  search={search}
+                  label={t.sidebar.sectionChats}
+                  agentId={activeAgentId}
+                  workspacePath={activeTaskWorkspacePath}
+                  runStatusByHref={runStatusByHref}
+                />
+              </>
+            ))}
         </SidebarContent>
 
         <SidebarFooter className="border-t border-border-subtle p-1.5">
@@ -1240,36 +1247,6 @@ function NavSection({
             search={search}
           />
         ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  );
-}
-
-/** 侧栏底部的「编辑侧栏」入口 —— 对标钉钉侧栏那个 `+`。 */
-function EditModulesButton({ onOpen }: { onOpen: () => void }) {
-  const { t } = useI18n();
-  return (
-    <SidebarGroup className="p-0 px-1 pb-0.5 group-data-[collapsible=icon]:px-0">
-      <SidebarMenu className="gap-0.5">
-        <SidebarMenuItem className="justify-center">
-          <SidebarMenuButton
-            tooltip={t.sidebar.editModules}
-            aria-label={t.sidebar.editModules}
-            onClick={onOpen}
-            className={cn(
-              "group/nav h-9 w-full text-sm opacity-55 transition-[opacity,background-color,border-color]",
-              "border border-transparent hover:border-border-subtle hover:bg-muted/32 hover:opacity-100",
-              "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0",
-            )}
-          >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors group-hover/nav:text-foreground">
-              <PlusIcon className="size-[16px]" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-left group-data-[collapsible=icon]:hidden">
-              {t.sidebar.editModules}
-            </span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );

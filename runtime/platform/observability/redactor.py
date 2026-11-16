@@ -143,10 +143,13 @@ _BUILTIN_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "phone",
-        # E.164 (+XX...) or common US shapes.
+        # E.164 (+XX...) or common US shapes. Do not match digit runs
+        # embedded in opaque IDs: corrupting a workspace hash also corrupts
+        # the path supplied to the model and later tool calls.
         re.compile(
+            r"(?<![A-Za-z0-9_])(?:"
             r"\+?\d{1,3}[\s\-]?\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{3,4}"
-            r"|\(\d{3}\)\s?\d{3}-\d{4}"
+            r"|\(\d{3}\)\s?\d{3}-\d{4})(?![A-Za-z0-9_])"
         ),
     ),
     (

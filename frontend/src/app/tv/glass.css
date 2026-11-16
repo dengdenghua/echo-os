@@ -1,0 +1,209 @@
+/* Glass belongs to the controls. Never filter the work image or ancestors of
+   the fixed screen keyboard: a backdrop filter would change its containing block. */
+.echo-tv {
+  --tv-glass-solid: #263445;
+  --tv-glass-tint: #14223580;
+  --tv-glass-control-tint: #142235c4;
+  --tv-glass-text: #f4f7fa;
+  --tv-glass-edge: #ffffff3b;
+  --tv-glass-blur: blur(clamp(14px, 1.5vw, 28px)) saturate(120%);
+  --tv-glass-reflection: linear-gradient(
+    135deg,
+    #ffffff24,
+    #ffffff04 40%,
+    #ffffff0c 100%
+  );
+  --tv-glass-shadow:
+    inset 0 1px 1px #ffffff52, inset 0 -1px 1px #0015251a, 0 12px 34px #061b2b2e;
+  /* The broad Dock uses clear glass; small text controls retain their own tint. */
+  --tv-dock-tint: #eafaff12;
+  --tv-dock-blur: blur(clamp(9px, 1vw, 16px)) saturate(150%) brightness(1.04);
+  --tv-dock-reflection: linear-gradient(
+    115deg,
+    #ffffff24,
+    #ffffff05 25%,
+    #ffffff00 50%,
+    #ffffff0a 78%,
+    #ffffff20
+  );
+}
+.echo-tv[data-wallpaper="lake"] {
+  --tv-glass-solid: #e3eef2;
+  --tv-glass-tint: #e5f3fa2b;
+  --tv-glass-control-tint: #e9f4fac4;
+  --tv-glass-text: #193942;
+  --tv-glass-edge: #ffffff66;
+  --tv-glass-reflection: linear-gradient(
+    135deg,
+    #ffffff38,
+    #ffffff05 40%,
+    #ffffff14 100%
+  );
+  --tv-glass-shadow:
+    inset 0 1px 1px #ffffff85, inset 0 -1px 1px #1d405e1a, 0 10px 30px #1b4b6624;
+}
+.echo-tv[data-wallpaper]
+  :is(
+    .tv-launcher,
+    .tv-header-end,
+    .tv-computer-brand,
+    .tv-computer-title > :where(button),
+    .tv-computer-mini
+  ) {
+  background: var(--tv-glass-solid);
+  color: var(--tv-glass-text);
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-shadow);
+}
+.echo-tv .tv-computer-toolbar {
+  background: #edf4f7;
+  border-color: #ffffff80;
+  box-shadow:
+    inset 0 1px 1px #ffffffb3,
+    inset 0 -1px 0 #12354a14,
+    0 6px 18px #15344e24;
+}
+@supports (backdrop-filter: blur(1px)) {
+  .echo-tv[data-wallpaper]
+    :is(
+      .tv-launcher,
+      .tv-header-end,
+      .tv-computer-brand,
+      .tv-computer-title > :where(button),
+      .tv-computer-mini
+    ) {
+    background: var(--tv-glass-reflection), var(--tv-glass-control-tint);
+    backdrop-filter: var(--tv-glass-blur);
+  }
+  .echo-tv[data-wallpaper] .tv-launcher {
+    background: var(--tv-dock-reflection), var(--tv-dock-tint);
+    backdrop-filter: var(--tv-dock-blur);
+    border-color: #ffffff59 #ffffff12 #12374a20;
+    box-shadow:
+      inset 0 1px 2px #ffffff80,
+      inset 0 -1px 1px #082b3926,
+      0 4px 12px #082b3914,
+      0 12px 28px #082b391c;
+  }
+  .echo-tv .tv-computer-toolbar {
+    background: linear-gradient(135deg, #ffffff70, #ffffff10 65%), #edf5f8b8;
+    backdrop-filter: blur(18px) saturate(115%);
+  }
+  .echo-tv:is([data-wallpaper="beach"], [data-wallpaper="lake"])
+    .tv-tone-computer
+    .tv-app-tile {
+    color: #173842;
+  }
+}
+.tv-launcher {
+  position: relative;
+}
+/* An edge-only reflection: the icons remain crisp and hit targets stay intact. */
+@supports (mask-composite: exclude) {
+  .tv-launcher::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    background: linear-gradient(
+        165deg,
+        #ffffffc2,
+        #ffffff38 24%,
+        #ffffff00 48%,
+        #ffffff0a 74%,
+        #173a4b33
+      )
+      border-box;
+    mask:
+      linear-gradient(#fff 0 0) padding-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+.echo-tv .tv-computer-screen {
+  border-color: #ffffff80;
+  box-shadow:
+    0 14px 40px #122d462e,
+    0 2px 7px #122d4624;
+}
+.tv-computer-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 1px #ffffff66;
+  pointer-events: none;
+}
+.echo-tv :is(.tv-computer-menu, .tv-computer-inputs, .tv-computer-tasks) {
+  background: linear-gradient(140deg, #324354f7, #1c2c3df7);
+  border-color: #ffffff33;
+  box-shadow:
+    inset 0 1px 0 #ffffff24,
+    0 12px 30px #09203433;
+}
+.echo-tv[data-wallpaper] .tv-computer-title > button:focus-visible,
+.echo-tv[data-wallpaper] .tv-computer-mini:focus-visible {
+  background: #f2f6f8;
+  color: #213542;
+  outline: 3px solid white;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #142c4566;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .echo-tv:is([data-wallpaper="beach"], [data-wallpaper="lake"])
+    .tv-tone-computer
+    .tv-app-tile {
+    color: var(--tv-glass-text);
+  }
+  .echo-tv[data-wallpaper]
+    :is(
+      .tv-launcher,
+      .tv-header-end,
+      .tv-computer-brand,
+      .tv-computer-title > :where(button),
+      .tv-computer-mini
+    ) {
+    background: var(--tv-glass-solid);
+    backdrop-filter: none;
+    border-color: var(--tv-glass-edge);
+  }
+  .echo-tv .tv-computer-toolbar {
+    background: #edf4f7;
+    backdrop-filter: none;
+  }
+  .tv-launcher::after,
+  .tv-computer-screen::after {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-tv:is([data-wallpaper="beach"], [data-wallpaper="lake"])
+    .tv-tone-computer
+    .tv-app-tile {
+    color: CanvasText;
+  }
+  .echo-tv[data-wallpaper]
+    :is(
+      .tv-launcher,
+      .tv-header-end,
+      .tv-computer-brand,
+      .tv-computer-title > :where(button),
+      .tv-computer-mini,
+      .tv-computer-toolbar,
+      .tv-computer-menu,
+      .tv-computer-inputs,
+      .tv-computer-tasks
+    ) {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .tv-launcher::after,
+  .tv-computer-screen::after {
+    display: none;
+  }
+}

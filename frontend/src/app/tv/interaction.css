@@ -1,0 +1,305 @@
+.echo-tv[data-large-text="true"] {
+  font-size: clamp(21px, 1.5vw, 34px);
+}
+.echo-tv[data-reduce-motion="true"] *,
+.echo-tv[data-reduce-motion="true"] *::before {
+  animation: none !important;
+  transition: none !important;
+}
+.echo-tv[data-reduce-motion="true"] .tv-launcher-app:focus .tv-app-tile {
+  transform: none;
+}
+.tv-conversation,
+.tv-settings {
+  width: 94vw;
+  height: 94vh;
+  margin: 3vh auto;
+  padding: 3vh 3vw;
+  border: 1px solid #ffffff26;
+  border-radius: 1.2em;
+  background: #192234f5;
+  overflow: auto;
+}
+.tv-panel-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1em;
+  margin-bottom: 1em;
+}
+.tv-panel-header h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  flex: 1;
+  margin: 0;
+}
+.tv-connection {
+  color: #c6d7e2;
+  font-size: 0.8em;
+}
+.tv-transcript {
+  height: 43vh;
+  overflow: auto;
+  padding: 1.1em 1.5em;
+  border-radius: 0.8em;
+  background: #0c1424;
+  scroll-behavior: auto;
+}
+.tv-message {
+  padding: 0.6em 0 1.2em;
+}
+.tv-message h3 {
+  margin: 0 0 0.5em;
+  font-size: 0.8em;
+  color: #acc9e5;
+}
+.tv-message-userMessage {
+  margin-left: 10%;
+  padding: 1em 1.3em;
+  border-radius: 0.8em;
+  background: #ffffff0b;
+}
+.tv-message pre,
+.tv-approval pre {
+  font: inherit;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.tv-turn-status {
+  font-size: 0.65em;
+  color: #889eb4;
+}
+.tv-conversation-compose {
+  margin-top: 1em;
+}
+.tv-approval {
+  border: 1px solid #d3ad6650;
+  border-radius: 0.8em;
+  padding: 1em;
+  margin: 1em 0;
+  background: #b9903310;
+}
+.tv-approval pre {
+  max-height: 25vh;
+  overflow: auto;
+  font-size: 0.8em;
+  margin-bottom: 1em;
+}
+.tv-approval button {
+  margin-right: 1em;
+}
+.tv-history-list,
+.tv-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 0.5em;
+}
+.tv-history-list button,
+.tv-settings-list button {
+  text-align: left;
+  justify-content: flex-start;
+}
+.tv-history-list strong {
+  max-width: 75%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.tv-history-list small {
+  margin-left: auto;
+}
+.tv-field {
+  margin: 1.1em 0;
+}
+.tv-field > label {
+  display: block;
+  color: #ccd6e7;
+  font-size: 0.8em;
+  margin-bottom: 0.6em;
+}
+.tv-field-row {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+.tv-field-row > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.tv-field-row input,
+.tv-field-row textarea {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  background: #0c1424;
+  padding: 0.7em 1em;
+  border: 1px solid #ffffff25;
+  border-radius: 0.65em;
+}
+.tv-field-row textarea {
+  min-height: 4.5em;
+  max-height: 20vh;
+  resize: vertical;
+}
+.tv-settings-layout {
+  display: grid;
+  grid-template-columns: 23% minmax(0, 1fr);
+  gap: 3vw;
+}
+.tv-settings-layout > nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  padding: 0.5em;
+}
+.tv-settings-layout > nav button {
+  justify-content: flex-start;
+}
+.tv-settings-layout > nav button[aria-current] {
+  background: #edf3ff;
+  color: #172335;
+}
+.tv-settings-content {
+  min-height: 60vh;
+  padding: 0.5em 1em 2em;
+}
+.tv-settings-content h3 {
+  font-size: 1.25em;
+  margin: 0.5em 0 1em;
+}
+.tv-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  flex-wrap: wrap;
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: 0.75em;
+  background: #ffffff08;
+}
+.tv-settings-row > span {
+  flex: 1;
+  min-width: 10em;
+  overflow-wrap: anywhere;
+}
+.tv-settings-row small,
+.tv-settings-list small {
+  display: block;
+  color: #acbbcd;
+  font-size: 0.7em;
+  margin-top: 0.5em;
+}
+.tv-folder-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8em;
+  margin: 1em 0;
+}
+.tv-folder-list button {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.tv-plugin-card {
+  padding: 1em;
+  background: #ffffff08;
+  border-radius: 0.8em;
+  margin: 1em 0;
+  overflow-wrap: anywhere;
+}
+.tv-keyboard-backdrop,
+.tv-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #030914c9;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tv-keyboard {
+  width: 88vw;
+  max-height: 90vh;
+  overflow: auto;
+  background: #283349;
+  padding: 2vh 2vw;
+  border: 1px solid #ffffff30;
+  border-radius: 1em;
+}
+.tv-keyboard header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+.tv-keyboard h2 {
+  font-size: 1.1em;
+  flex: 1;
+}
+.tv-keyboard-draft {
+  display: block;
+  padding: 0.8em;
+  background: #111c2f;
+  border-radius: 0.5em;
+  min-height: 2.7em;
+  max-height: 12vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  margin: 0.8em 0;
+  white-space: pre-wrap;
+}
+.tv-key-grid {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 0.5em;
+  margin: 1em 0.3em;
+}
+.tv-key-grid button {
+  padding-inline: 0.1em;
+  border-radius: 0.4em;
+}
+.tv-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.8em;
+  min-height: 3em;
+  font-size: 0.9em;
+}
+.tv-candidates > span {
+  font-size: 0.8em;
+}
+.tv-confirm {
+  max-width: 65vw;
+  max-height: 85vh;
+  overflow: auto;
+  padding: 2em;
+  border-radius: 1em;
+  background: #283349;
+}
+.tv-confirm p {
+  line-height: 1.7;
+}
+.echo-tv button[aria-pressed="true"] {
+  border-color: #cadcff;
+  background: #ffffff28;
+}
+@media (max-width: 900px) {
+  .tv-settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .tv-settings-layout > nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .tv-key-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+  .tv-confirm {
+    max-width: 90vw;
+  }
+}

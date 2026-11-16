@@ -14,7 +14,7 @@ if [[ -f /root/echo-preview-proxy.env ]]; then
 fi
 apt-get update
 apt-get install -y --no-install-recommends \
-  ca-certificates curl python3 python3-venv python3-dev python3-tk build-essential unzip libglib2.0-bin \
+  ca-certificates curl python3 python3-venv python3-dev python3-tk build-essential unzip libglib2.0-bin bubblewrap \
   xserver-xorg-core xserver-xorg-video-all xserver-xorg-input-all xinit \
   x11-utils x11-xserver-utils xss-lock xsecurelock kwin-x11 wmctrl xdotool \
   sddm sddm-theme-breeze dbus-x11 dbus-user-session libkscreenlocker6 libkf6config-bin \

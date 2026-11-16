@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>工作笔记</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+*{box-sizing:border-box}body{margin:0;height:100vh;background:#fbfcfa;color:#293d45;font:18px system-ui,sans-serif;overflow:hidden}main{height:100%;display:flex;flex-direction:column;padding:26px 44px 0}input,textarea{display:block;width:100%;border:0;border-radius:7px;background:transparent;color:inherit;font:inherit;outline:none}input{flex:none;padding:8px 0 16px;font-size:32px;line-height:1.4;font-weight:600;letter-spacing:-.5px}textarea{flex:1;min-height:80px;resize:none;margin:9px 0 0;padding:12px 0 20px;font-size:22px;line-height:1.8}input::placeholder{color:#9ba6ab;font-weight:400}textarea::placeholder{color:#9ba6ab}input:focus-visible,textarea:focus-visible{box-shadow:0 2px 0 #8cadb7}footer{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:70px;border-top:1px solid #e7ece9;color:#75848b;font-size:14px}.saved{display:flex;align-items:center;gap:8px}.saved:before{content:"";width:6px;height:6px;border-radius:50%;background:#8da99c}#count{margin-left:14px;color:#8b969b;font-variant-numeric:tabular-nums}button{padding:9px 19px;border:1px solid #d4dedc;border-radius:10px;background:#edf2ef;color:#36554c;font:15px system-ui;cursor:pointer;transition:background .15s}button:hover{background:#dfe9e4}button:focus-visible{outline:3px solid #5b8996;outline-offset:3px}button:active{background:#d1dfd8}@media(max-height:400px){main{padding:12px 28px 0}input{font-size:26px;padding-bottom:6px}textarea{font-size:20px;margin-top:4px}footer{min-height:54px}}@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+<main><input aria-label="笔记标题" id="title" placeholder="给想法起个名字"><textarea aria-label="笔记内容" id="note" placeholder="从这里开始，写下你的想法…"></textarea><footer><div class="saved"><span id="status" role="status">尚未保存</span><span id="count"></span></div><button id="save">保存笔记</button></footer></main>
+<script>
+const title=document.querySelector('#title'),note=document.querySelector('#note'),status=document.querySelector('#status'),count=document.querySelector('#count');
+const updateCount=()=>{count.textContent=note.value.length+' 字';};
+try{const data=JSON.parse(localStorage.getItem('echo.work.note')||'{}');title.value=data.title||'';note.value=data.note||'';if(data.at)status.textContent='已恢复保存的笔记';}catch{}updateCount();
+for(const field of [title,note])field.addEventListener('input',()=>{status.textContent='未保存的修改';updateCount();});
+document.querySelector('#save').onclick=()=>{try{localStorage.setItem('echo.work.note',JSON.stringify({title:title.value,note:note.value,at:Date.now()}));status.textContent='已保存';}catch{status.textContent='保存失败，请重试';}};
+</script></html>

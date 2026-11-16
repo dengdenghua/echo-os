@@ -134,6 +134,20 @@ export function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function desktopOwnerLogin(): Promise<User | null> {
+  if (!window.echo?.isElectron || !window.echo.auth) return null;
+  const result = await window.echo.auth.desktopOwnerLogin();
+  if (!result.ok || !result.access_token || !result.user?.actor_id) return null;
+  const user: User = {
+    user_id: result.user.actor_id,
+    actor_id: result.user.actor_id,
+    username: result.user.display_name || result.user.username || "owner",
+    provider: "local",
+  };
+  _writeToken(result.access_token, user);
+  return user;
+}
+
 export function jsonAuthHeaders(): Record<string, string> {
   return { "Content-Type": "application/json", ...authHeaders() };
 }

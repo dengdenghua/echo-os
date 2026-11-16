@@ -277,6 +277,10 @@ async def _drive_group_fanout(
         return
 
     async def _fallback_to_react() -> None:
+        from runtime.execution.agent_policy import uses_single_agent_policy
+
+        if uses_single_agent_policy(getattr(runtime, "_stack", None)):
+            raise RuntimeError("团队执行未完成，已停止自动回退。请查看任务记录后重新提交。")
         loop = asyncio.get_running_loop()
         gateway_provider = GatewayApprovalProvider(
             emitter,
@@ -296,10 +300,16 @@ async def _drive_group_fanout(
         await runtime._drive_react(turn, log, emitter, intent, provider, agent)
 
     def _record_fallback_audit(reason: str, exc: BaseException | None = None) -> None:
+        from runtime.execution.agent_policy import uses_single_agent_policy
+
         payload: dict[str, Any] = {
             "schema": "echo.group_fanout_fallback.v1",
             "reason": reason,
-            "fallback": "react",
+            "fallback": (
+                "blocked_single_engine"
+                if uses_single_agent_policy(getattr(runtime, "_stack", None))
+                else "react"
+            ),
         }
         if exc is not None:
             payload.update(

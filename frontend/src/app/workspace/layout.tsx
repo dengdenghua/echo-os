@@ -1,5 +1,5 @@
 import { Fragment, lazy, Suspense, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ListChecksIcon } from "lucide-react";
 
 import { Banner } from "@/components/ui/banner";
@@ -30,6 +30,11 @@ import { SystemModelStatus } from "@/appliance/system-model-status";
 import { TaskSpacePanel } from "@/appliance/task-space-panel";
 import { useEchoTaskProjection } from "@/appliance/task-space";
 import { ShellModeSwitch } from "@/components/retained-shell-routes";
+import {
+  isKnowledgeApplication,
+  useConversationReturnRoute,
+} from "@/core/workspace/knowledge-application";
+import { KnowledgeApplicationLayout } from "@/components/workspace/knowledge-application-layout";
 
 const CommandPalette = lazy(() =>
   import("@/components/workspace/command-palette").then((m) => ({
@@ -86,6 +91,8 @@ export default function WorkspaceLayout({
 }: {
   embeddedInWindow?: boolean;
 }) {
+  const { pathname } = useLocation();
+  const conversationReturn = useConversationReturnRoute();
   const electron = inElectron();
   const navigate = useNavigate();
   const activeAgentId = useActiveAgentId() ?? "general";
@@ -132,6 +139,36 @@ export default function WorkspaceLayout({
     },
     [currentSearch, navigate],
   );
+  if (isKnowledgeApplication(pathname) && !embeddedWorkspace) {
+    return (
+      <SidebarProvider
+        className={cn(
+          "workspace-shell overflow-hidden",
+          embeddedInWindow ? "h-full min-h-0" : "h-screen",
+        )}
+        defaultOpen={false}
+        style={
+          electron && !embeddedInWindow
+            ? { paddingTop: ELECTRON_TITLE_BAR_HEIGHT }
+            : undefined
+        }
+      >
+        <NasAlertNotifications />
+        <KnowledgeApplicationLayout
+          returnTo={preserveWorkbenchPresentation(
+            conversationReturn,
+            currentSearch,
+          )}
+          desktopHref={embeddedInWindow ? undefined : "/desktop"}
+        >
+          <WorkspaceRouteOutlet />
+        </KnowledgeApplicationLayout>
+        <Suspense fallback={null}>
+          <CommandPalette />
+        </Suspense>
+      </SidebarProvider>
+    );
+  }
   return (
     <Fragment>
       <NasAlertNotifications />

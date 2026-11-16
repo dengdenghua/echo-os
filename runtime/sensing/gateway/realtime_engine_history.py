@@ -129,7 +129,7 @@ class EngineHistory:
 
 
 def engine_history_for_turn(log: Any, turn: Any, engine: str) -> EngineHistory:
-    if engine not in {"native", "octopus", "codex", "opencode"}:
+    if engine not in {"native", "octopus", "codex", "opencode", "codebuddy"}:
         raise ValueError("unknown execution engine for history projection")
     replay = getattr(log, "replay", None)
     if not callable(replay):

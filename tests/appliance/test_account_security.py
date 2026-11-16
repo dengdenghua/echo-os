@@ -80,6 +80,42 @@ def _approval(
     return str(response.json()["approvalToken"])
 
 
+@pytest.mark.parametrize("password", ["Eight7!a", "中文密码测试八位"])
+def test_eight_character_rotation_and_login(tmp_path, monkeypatch, password) -> None:
+    app = _configured_app(tmp_path, monkeypatch)
+    with TestClient(app) as client:
+        status, token = _login(client, "original-device-pass")
+        assert status == 200 and token
+        approval = _approval(
+            client,
+            action="credentials.rotate",
+            target="admin",
+            password="original-device-pass",
+            token=token,
+        )
+        headers = {"Authorization": f"Bearer {token}", APPROVAL_HEADER: approval}
+        rejected = client.post(
+            "/api/appliance/credentials/rotate",
+            headers=headers,
+            json={"newPassword": password[:-1]},
+        )
+        assert rejected.status_code == 422
+        rotated = client.post(
+            "/api/appliance/credentials/rotate",
+            headers=headers,
+            json={"newPassword": password},
+        )
+        assert rotated.status_code == 200, rotated.text
+        assert (
+            client.get(
+                "/api/appliance/apps", headers={"Authorization": f"Bearer {token}"}
+            ).status_code
+            == 401
+        )
+        assert _login(client, "original-device-pass")[0] == 401
+        assert _login(client, password)[0] == 200
+
+
 def test_revoke_and_password_rotation_change_live_auth(tmp_path, monkeypatch) -> None:
     app = _configured_app(tmp_path, monkeypatch)
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from uuid import uuid4
 
+import pytest
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -906,6 +908,7 @@ def test_start_runs_a_new_server_held_turn_for_the_caller(tmp_path):
     assert params["threadId"].startswith("t")
     assert params["userItemId"] == body["user_item_id"]
     assert params["userItemId"].startswith("itm_user_")
+    assert params["executionEngine"] == "codex"
     assert params["approvalPolicy"] == "on-request"
     [block] = params["input"]
     assert block["text"] == "整理下载文件夹"
@@ -949,3 +952,48 @@ def test_start_reports_an_unavailable_runtime(tmp_path):
 
     assert missing.status_code == 503
     assert busy.status_code == 503
+
+
+@pytest.mark.parametrize("mode", ["default", "acceptEdits", "bypassPermissions", "plan"])
+@pytest.mark.parametrize("network", ["deny", "common", "full"])
+def test_desktop_start_preserves_selected_permissions_through_gateway(tmp_path, mode, network):
+    gateway = _FakeRecoveryGateway()
+    client = _start_app(tmp_path, gateway, require_auth=True)
+    response = client.post(
+        "/api/task-runs/start",
+        json={"prompt": "读取测试文档", "permission_mode": mode, "network_access": network},
+        headers={"Authorization": "Bearer sk-alice"},
+    )
+    assert response.status_code == 202
+    params, conn = gateway.calls[0]
+    context = params["input"][0]["metadata"]["context"]
+    assert context["permission_mode"] == mode
+    assert context["network_access"] == network
+    assert context["approval_delivery"] == "server_hold"
+    assert conn.actor_id == "alice"
+    assert params["approvalPolicy"] == ("never" if mode == "bypassPermissions" else "on-request")
+    assert params["sandboxPolicy"]["type"] == ("dangerFullAccess" if mode == "bypassPermissions" else "workspaceWrite")
+    assert params["sandboxPolicy"]["networkAccess"] == (network == "full")
+    assert params["sandboxPolicy"].get("egressAllowCommon", False) == (network == "common")
+    assert params["planningMode"] == (mode == "plan")
+
+
+def test_desktop_start_rejects_unknown_permission_presets(tmp_path):
+    gateway = _FakeRecoveryGateway()
+    client = _start_app(tmp_path, gateway)
+    for payload in ({"permission_mode": "unsafe-custom"}, {"network_access": "anything"}):
+        response = client.post("/api/task-runs/start", json={"prompt": "测试", **payload})
+        assert response.status_code == 422
+    assert gateway.calls == []
+
+
+def test_start_explicit_codebuddy_retains_caller_and_model(tmp_path):
+    gateway = _FakeRecoveryGateway()
+    client = _start_app(tmp_path, gateway, require_auth=True)
+    response = client.post("/api/task-runs/start", json={"prompt": "你好", "execution_engine": "codebuddy", "model": "codebuddy/hy4std"}, headers={"Authorization": "Bearer sk-alice"})
+    assert response.status_code == 202
+    params, connection = gateway.calls[0]
+    assert params["executionEngine"] == "codebuddy"
+    assert params["model"] == "codebuddy/hy4std"
+    assert connection.actor_id == "alice"
+    assert params["approvalPolicy"] == "on-request"

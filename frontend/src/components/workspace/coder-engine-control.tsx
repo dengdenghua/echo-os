@@ -1,3 +1,4 @@
+import { CodexContextBudget } from "./codex-context-budget";
 import {
   coderAccountQueryOptions,
   coderRateLimitsQueryOptions,
@@ -136,7 +137,7 @@ const COPY = {
     apiKeyPlaceholder: "sk-…（只提交给本机后端）",
     apiKeyHint: "Key 不会进入 URL、localStorage、角色配置或日志。",
     submitApiKey: "连接 API Key",
-    logout: "断开连接",
+    logout: "切换账号",
     model: "Codex 模型",
     modelDefault: "使用 Codex 默认模型",
     modelUnavailable: "连接账号后加载可用模型",
@@ -237,7 +238,7 @@ const COPY = {
     apiKeyHint:
       "The key is never placed in a URL, localStorage, role profile, or log.",
     submitApiKey: "Connect API key",
-    logout: "Disconnect",
+    logout: "Switch account",
     model: "Codex model",
     modelDefault: "Use Codex default model",
     modelUnavailable: "Connect an account to load available models",
@@ -347,6 +348,7 @@ const DEFAULT_REASONING_EFFORTS: ReasoningEffort[] = [
 function reasoningLabel(effort: ReasoningEffort, locale: string) {
   const zh = locale.toLowerCase().startsWith("zh");
   const labels: Record<ReasoningEffort, [string, string]> = {
+    ultra: ["极致", "Ultra"],
     off: ["关闭", "Off"],
     minimal: ["极低", "Minimal"],
     low: ["低", "Low"],
@@ -677,12 +679,12 @@ export function CoderEngineControl({
         : activeSystemModel?.reasoning_efforts;
     if (Array.isArray(raw)) {
       return raw.filter((effort): effort is ReasoningEffort =>
-        ["off", "minimal", "low", "medium", "high", "xhigh", "max"].includes(
+        ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"].includes(
           effort,
         ),
       );
     }
-    return DEFAULT_REASONING_EFFORTS;
+    return [];
   }, [
     activeCodexModel?.reasoning_efforts,
     activeSystemModel?.reasoning_efforts,
@@ -762,7 +764,7 @@ export function CoderEngineControl({
       {
         source: "follow_system",
         ...(model ? { model } : {}),
-        reasoning_effort: profile?.reasoning_effort,
+        reasoning_effort: systemModels.find(candidate => modelMatches(candidate, model || ""))?.reasoning_efforts?.includes(profile?.reasoning_effort as ReasoningEffort) ? profile?.reasoning_effort : undefined,
       },
       {
         onSuccess: (nextProfile) => {
@@ -1129,6 +1131,8 @@ export function CoderEngineControl({
               </div>
             )}
 
+            <CodexContextBudget model={(taskProfile || nativeKernel) ? value : profile?.effective_model || value} disabled={disabled || controlPending} />
+            {viewSource === "codex_account" && activeCodexModel && <ModelContextSetting models={[]} selected={{...activeCodexModel, name: activeCodexModel.id, reasoning_efforts: []}} onChange={() => {}} />}
             {viewSource === "follow_system" && activeSystemModel ? (
               <ModelContextSetting
                 models={systemModels}
@@ -1465,7 +1469,9 @@ export function CoderEngineSettings() {
                     : "bg-muted text-muted-foreground",
               )}
             >
-              {account
+              {accountQuery.isError
+                ? (locale === "zh-CN" ? "连接异常" : "Connection unavailable")
+                : account
                 ? copy.connected
                 : loginPending
                   ? copy.pending
@@ -1520,7 +1526,11 @@ export function CoderEngineSettings() {
           role="alert"
           className="mt-4 rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3 text-sm text-destructive"
         >
-          {copy.loadFailed}
+          <p>{locale === "zh-CN" ? "Codex 连接暂时不可用，账号信息可能已过期。" : "Codex connection is unavailable; account details may be stale."}</p>
+          <Button type="button" size="sm" variant="outline" disabled={busy || loginPending}
+            onClick={() => account ? void logout() : void beginLogin("chatgpt")}>
+            {locale === "zh-CN" ? (account ? "切换账号" : "重新登录") : (account ? "Switch account" : "Sign in again")}
+          </Button>
         </div>
       ) : optionalWithoutCodex ? (
         <div
@@ -2019,3 +2029,4 @@ export function CoderEngineSettings() {
     </section>
   );
 }
+

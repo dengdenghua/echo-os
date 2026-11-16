@@ -36,6 +36,7 @@ from runtime.execution.request import ExecutionRequest
 from runtime.execution.tool_engine.effect_receipts import should_refresh_read_result
 from runtime.execution.tool_engine.native_tool_execution import execute_native_tool_call
 from runtime.execution.tool_engine.session_metadata import project_tool_session_metadata
+from runtime.execution.tool_engine.tool_images import valid_inline_image
 from runtime.execution.tool_spec_builder import build_anthropic_tool_specs
 from runtime.memory.journal.journal_context import (
     current_agent_id,
@@ -74,6 +75,7 @@ _MAX_TOOL_NAME_CHARS = 128
 _MAX_DESCRIPTION_CHARS = 4_000
 _MAX_FAILURE_CHARS = 8_000
 _MAX_RESULT_CACHE = 256
+_MAX_RESULT_CACHE_CHARS = 8 * 1024 * 1024
 _MAX_ARGUMENT_DEPTH = 16
 _MAX_ARGUMENT_NODES = 2_048
 _MAX_ARGUMENT_CHARS = 65_536
@@ -159,6 +161,10 @@ def validate_dynamic_tool_response(value: Any) -> dict[str, Any]:
         # Media payloads can be data URLs, so retain a larger but still bounded
         # ceiling than ordinary text. The App Server client's frame ceiling is
         # the independent final transport guard.
+        if field == "imageUrl" and not valid_inline_image(payload):
+            return dynamic_tool_failure("invalid Echo dynamic tool image")
+        if field != "text" and len(payload) > 512_000:
+            return dynamic_tool_failure("oversized Echo dynamic tool media")
         limit = 512_000 if field != "text" else 100_000
         items.append({"type": str(kind), field: _bounded_text(payload, limit=limit)})
     return {"contentItems": items, "success": bool(value["success"])}
@@ -470,10 +476,10 @@ class HostToolBroker:
         approval_provider: ApprovalProvider | None,
         is_interrupted: Any,
         server_auto_approve: bool = False,
-        execution_engine: Literal["native", "codex", "opencode"],
+        execution_engine: Literal["native", "codex", "opencode", "codebuddy"],
         max_tools: int = _MAX_DYNAMIC_TOOLS,
     ) -> None:
-        if execution_engine not in {"native", "codex", "opencode"}:
+        if execution_engine not in {"native", "codex", "opencode", "codebuddy"}:
             raise ValueError("unsupported host execution engine")
         if type(max_tools) is not int or not 1 <= max_tools <= _MAX_DYNAMIC_TOOLS:
             raise ValueError("host tool catalog limit must be between 1 and 256")
@@ -560,6 +566,10 @@ class HostToolBroker:
             execution_lease=self._execution_lease,
             execution_request=self._execution_request,
         )
+        from runtime.platform.work_computer import work_computer
+        computer_bound = work_computer().bound(actor or "local", outer_thread_id)
+        if computer_bound:
+            self._context["extra_tool_allowlist"] = [*coerce_skill_names(self._context.get("extra_tool_allowlist")), "echo_computer"]
         with session_scope(catalog_session):
             plugin_actions = _load_selected_plugin_actions(
                 registry,
@@ -587,6 +597,12 @@ class HostToolBroker:
                 goal,
                 user_context=dict(self._context),
             )
+
+        if computer_bound:
+            # A work-window task cannot fall through to tools that drive the TV.
+            specs = [spec for spec in specs if spec.name in {"echo_computer", "search_documents"}]
+            if not any(spec.name == "echo_computer" for spec in specs):
+                raise RuntimeError("Echo 的电脑工具不可用，请检查服务能力")
 
         used_names: set[str] = set()
         entries: dict[str, _CatalogEntry] = {}
@@ -809,6 +825,20 @@ class HostToolBroker:
             if not decision.approved:
                 self._network_denials.note_denial(entry.skill_name, risk, arguments)
                 reason = decision.reason or "user declined the tool request"
+                # These failures occur before _execute_sync. Distinguish an
+                # unanswered approval from an uncertain handler timeout so the
+                # model cannot imply that a click/key might already have run.
+                if reason == "timeout":
+                    reason = (
+                        "Echo approval timed out (approval_timeout); this tool call "
+                        "was not executed. Do not report a handler timeout or retry "
+                        "the action automatically."
+                    )
+                elif reason == "connection_lost":
+                    reason = (
+                        "Echo approval connection was lost (approval_connection_lost); "
+                        "this tool call was not executed."
+                    )
                 if is_network_risk(risk):
                     reason += (
                         " — this network access was refused; do not retry it or reach "
@@ -822,7 +852,7 @@ class HostToolBroker:
             approval_handled = True
 
         try:
-            output, is_error, observed_taint = await asyncio.to_thread(
+            output, is_error, observed_taint, image_items = await asyncio.to_thread(
                 self._execute_sync,
                 entry,
                 arguments,
@@ -847,14 +877,18 @@ class HostToolBroker:
                             "type": "inputText",
                             "text": output or ("tool failed" if is_error else "tool completed"),
                         }
-                    ],
+                    ] + (image_items if not is_error else []),
                     "success": not is_error,
                 }
             )
 
         self._results[call_id] = (advertised, fingerprint, result)
         self._results.move_to_end(call_id)
-        while len(self._results) > _MAX_RESULT_CACHE:
+        while len(self._results) > _MAX_RESULT_CACHE or sum(
+            len(item.get("text", item.get("imageUrl", item.get("audioUrl", ""))))
+            for _, _, cached in self._results.values()
+            for item in cached["contentItems"]
+        ) > _MAX_RESULT_CACHE_CHARS:
             self._results.popitem(last=False)
         return dict(result)
 
@@ -863,6 +897,23 @@ class HostToolBroker:
         # transport reader task's ambient Session (which may be unrelated).
         with session_scope(self._execution_session(auto_approve=False)):
             return self._approval_provider.request(request, timeout=120.0)
+
+    def filesystem_scope_instructions(self) -> str:
+        """Describe the same scoped session used by actual tool execution."""
+        from runtime.platform.process.scope import resolve_execution_scope
+
+        with session_scope(self._execution_session(auto_approve=False)) as session:
+            scope = resolve_execution_scope(session)
+        return (
+            "\n\nHOST TOOL FILESYSTEM SCOPE (server-resolved):\n"
+            f"Read root: {scope.primary_read}\n"
+            f"Write/command root: {scope.primary_write}\n"
+            "For exec_shell, omit cwd to use the server's command root, or use the "
+            "exact write/command root above. Relative write paths resolve there. "
+            "To read a file you just created, pass the absolute path returned by the "
+            "write tool; the read root can differ from the write root. "
+            "These paths describe existing permissions and grant no additional access."
+        )
 
     def _execution_session(self, *, auto_approve: bool) -> Session:
         metadata = dict(self._metadata)
@@ -888,7 +939,7 @@ class HostToolBroker:
         arguments: dict[str, Any],
         call_id: str,
         approval_handled: bool,
-    ) -> tuple[str, bool, str]:
+    ) -> tuple[str, bool, str, list[dict[str, str]]]:
         session = self._execution_session(auto_approve=approval_handled)
         # Attribute journal records (file_op with its diff and rollback
         # hashes) to this conversation, as the native ReAct turn does, so the
@@ -906,6 +957,7 @@ class HostToolBroker:
                 mark_injection_taint(self._taint)
             set_injection_gate_handled(approval_handled)
             try:
+                image_items: list[dict[str, str]] = []
                 output, is_error = execute_native_tool_call(
                     self._stack,
                     {
@@ -913,8 +965,9 @@ class HostToolBroker:
                         "name": entry.skill_name,
                         "arguments": dict(arguments),
                     },
+                    image_items=image_items,
                 )
-                return output, is_error, current_injection_taint()
+                return output, is_error, current_injection_taint(), image_items
             finally:
                 set_injection_gate_handled(False)
 

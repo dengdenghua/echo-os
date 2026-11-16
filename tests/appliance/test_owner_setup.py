@@ -74,7 +74,7 @@ def test_fresh_device_offers_setup_and_lands_signed_in(tmp_path, monkeypatch):
     assert status["ownerSetupRequired"] is True
     assert status["reachable"] is True
     assert status["username"] == "admin"
-    assert status["passwordRules"]["minCharacters"] == 12
+    assert status["passwordRules"]["minCharacters"] == 8
 
     # Lower-case and without the dash still matches the printed code.
     response = _setup(client, codes[0].replace("-", "").lower())
@@ -193,7 +193,7 @@ def test_lan_client_can_complete_setup(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     ("password", "problem"),
     [
-        ("Short-1a", "password_too_short"),
+        ("Short-1", "password_too_short"),
         ("alllowercaseletters", "password_too_simple"),
         ("ALLUPPER12345678", "password_too_simple"),
         ("Aa1!Aa1!Aa1!Aa1!", "password_too_repetitive"),

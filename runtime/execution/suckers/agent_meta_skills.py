@@ -627,7 +627,11 @@ def register_agent_meta_skills(registry: SkillRegistry) -> int:
                 "Key params: name (required), args (object, default {}).\n"
                 'Example: execute_skill({"name": "code_search", "args": {"query": "TODO"}})'
             ),
-            affinity=["meta", "skill", "catalog", "execute"],
+            # The dispatcher rejects writes, meta recursion, ambiguous and
+            # disabled targets before invoking them. Re-run its live ACL gate
+            # for every delivery rather than treating a read as an unknown write.
+            affinity=["meta", "skill", "catalog", "execute", "read"],
+            replay_policy="refresh_read",
             cost_profile="low",
             trusted_source="skill://public/execute_skill",
             handler=_execute_skill_for_registry(registry),

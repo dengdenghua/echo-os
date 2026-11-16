@@ -159,6 +159,7 @@ def _search_documents(
     *,
     top_k: int | str = 8,
     source_ids: Any = None,
+    _requester: Any = None,
     **kw: Any,
 ) -> dict[str, Any]:
     """Search the user's local documents through echo-storage and return
@@ -180,7 +181,7 @@ def _search_documents(
 
     try:
         policy = storage_policy()
-        acknowledged = _request("PUT", "/v1/policy", policy)
+        acknowledged = (_requester or _request)("PUT", "/v1/policy", policy)
         if acknowledged is None:
             fallback = _desktop_search_fallback(query, top_k=k, source_ids=sids)
             if fallback is not None:
@@ -193,11 +194,13 @@ def _search_documents(
         if policy["mode"] == "privacy":
             verify_private_storage(
                 acknowledged,
-                _request("GET", "/v1/models"),
+                (_requester or _request)("GET", "/v1/models"),
             )
         if policy != storage_policy():
             raise PrivacyViolation("隐私策略在准备检索时已变化，请重试。")
-        resp = _request("POST", "/v1/search", {"query": query, "top_k": k, "source_ids": sids})
+        resp = (_requester or _request)(
+            "POST", "/v1/search", {"query": query, "top_k": k, "source_ids": sids}
+        )
     except PrivacyViolation as exc:
         return {
             "ok": False,
@@ -274,18 +277,24 @@ _SEARCH_DOCUMENTS_DESCRIPTION = (
 )
 
 
-def register_storage_skills(registry: SkillRegistry) -> int:
+def register_storage_skills(registry: SkillRegistry, *, requester: Any = None) -> int:
     """Register the File Agent document-search skill. Always registered; it
     self-reports at call time when Storage isn't available."""
+
+    def search(query: str = "", **kwargs: Any) -> dict[str, Any]:
+        kwargs.pop("_requester", None)
+        return _search_documents(query, _requester=requester, **kwargs)
+
     registry.register(
         Skill(
             name="search_documents",
             description=_SEARCH_DOCUMENTS_DESCRIPTION,
-            affinity=["knowledge", "documents", "files", "file_agent", "rag", "retrieval"],
+            affinity=["knowledge", "documents", "files", "file_agent", "rag", "retrieval", "search"],
             cost_profile="low",  # one local HTTP call to a sibling service
             trusted_source="skill://public/search_documents",
-            handler=_search_documents,
+            handler=search if requester else _search_documents,
             privacy_local=True,
+            replay_policy="refresh_read",
             tests=[
                 SkillTestCase(
                     name="missing_query_returns_error",

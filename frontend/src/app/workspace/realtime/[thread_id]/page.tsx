@@ -1,3 +1,4 @@
+import { assistantExecutionEngine } from "@/core/coder/execution-policy";
 import { Settings2Icon, XIcon } from "lucide-react";
 import { useAgentPhotoResults } from "@/appliance/use-agent-photo-results";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -67,6 +68,7 @@ import {
   type AgentWorkbenchProcessEventSnapshot,
 } from "@/components/workspace/agent-workbench-events";
 import { ChatBox, useThreadChat } from "@/components/workspace/chats";
+import { useThreadStopController } from "@/components/workspace/use-thread-stop-controller";
 import { ChatsDrawer } from "@/components/workspace/chats-drawer";
 import { ChatHeaderMenuButton } from "@/components/workspace/chat-header-menu-button";
 import {
@@ -1121,19 +1123,7 @@ function RealtimePageContent({
     slack: "Slack",
     discord: "Discord",
   };
-  const selectedExecutionEngine = (() => {
-    if (displayAgent?.capabilities?.execution_backend === "codex_app_server") {
-      return "codex" as const;
-    }
-    // OpenCode Zen rows are explicit model ownership. Selecting one in the
-    // ordinary model picker must stamp the request so the host can bind the
-    // real OpenCode adapter instead of silently running Echo Mix.
-    const modelName = String(settings.context.model_name || "").toLowerCase();
-    if (modelName.startsWith("opencode") || modelName.startsWith("zen-")) {
-      return "opencode" as const;
-    }
-    return "echo" as const;
-  })();
+  const selectedExecutionEngine = assistantExecutionEngine();
   const currentTaskAgentName = displayAgent?.name ?? effectiveAgentId;
   const composerDisplayAgent = useMemo(
     () =>
@@ -3792,28 +3782,29 @@ function RealtimePageContent({
     [closeSpecialUtilityPanels, effectiveAgentId, researchLoading, threadId],
   );
 
-  // Implementation note.
-  // Implementation note.
-  // Implementation note.
-  // Implementation note.
   const pauseTask = usePauseTask();
-  const handleStop = useCallback(async () => {
-    const activeForThread = (tasks.data?.active ?? []).find(
-      (t) => t.thread_id === threadId,
-    );
-    await thread.stop();
-    if (activeForThread) {
-      try {
-        await pauseTask.mutateAsync({
-          taskId: activeForThread.task_id,
-          reason: "user_request",
-          note: t.chatPage.stopNote,
-        });
-      } catch (e) {
-        swallow(e);
-      }
-    }
-  }, [thread, threadId, tasks.data, pauseTask, t.chatPage.stopNote]);
+  const activeTaskId = (tasks.data?.active ?? []).find(
+    (task) => task.thread_id === threadId,
+  )?.task_id;
+  const pauseActiveTask = useCallback(async () => {
+    if (!activeTaskId) return;
+    await pauseTask.mutateAsync({
+      taskId: activeTaskId,
+      reason: "user_request",
+      note: t.chatPage.stopNote,
+    });
+  }, [activeTaskId, pauseTask, t.chatPage.stopNote]);
+  const { stop: handleStop, isStopping } = useThreadStopController({
+    threadId,
+    stopThread: thread.stop,
+    pauseActiveTask: activeTaskId ? pauseActiveTask : undefined,
+    isRunning: thread.isLoading,
+    onFailure: (error) => {
+      toast.error("停止请求未成功，请重试", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    },
+  });
 
   const hasResearchPanel = showResearch && (!!researchJob || !!researchError);
   const hasSpecialUtilityPanel =
@@ -4729,6 +4720,7 @@ function RealtimePageContent({
                           showInspirationToggle={!embeddedDesignChat}
                           allowAgentModes={!embeddedDesignChat}
                           onStop={handleStop}
+                          isStopping={isStopping}
                           isUploading={isUploading}
                           autoFocus={isNewThread}
                           defaultValue={composerSeed}

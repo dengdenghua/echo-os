@@ -63,7 +63,7 @@ class ExecutionTask:
     parent_task_id: str | None = None
     artifacts: ArtifactContract | None = None
     # Set only by the host adapter, never by serializable tool arguments.
-    execution_engine: Literal["native", "octopus", "codex", "opencode"] | None = None
+    execution_engine: Literal["native", "octopus", "codex", "opencode", "codebuddy"] | None = None
     # Approval and authorization context are host-owned and travel with the
     # immutable request into callback workers. They are deliberately excluded
     # from all client-facing protocol models.
@@ -76,7 +76,7 @@ class ExecutionTask:
             raise ValueError("execution requires host task and thread coordinates")
         if bool(self.actor_id) != bool(self.tenant_id):
             raise ValueError("execution principal is incomplete")
-        if self.execution_engine not in {None, "native", "octopus", "codex", "opencode"}:
+        if self.execution_engine not in {None, "native", "octopus", "codex", "opencode", "codebuddy"}:
             raise ValueError("unknown host execution engine")
 
 

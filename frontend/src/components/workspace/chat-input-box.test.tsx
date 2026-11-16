@@ -200,6 +200,30 @@ beforeEach(() => {
   );
 });
 
+describe("composer autofocus around application menus", () => {
+  it("keeps keyboard focus in an open menu when the composer loads late", () => {
+    const menu = document.createElement("div");
+    menu.setAttribute("role", "dialog");
+    const pin = document.createElement("button");
+    pin.textContent = "Pin app";
+    menu.append(pin);
+    document.body.append(menu);
+    pin.focus();
+    try {
+      renderWithProviders(
+        <ChatInputBox mode="react" threadId="new" autoFocus />,
+      );
+      expect(pin).toHaveFocus();
+    } finally {
+      menu.remove();
+    }
+  });
+  it("focuses a new composer when no application menu is active", () => {
+    renderWithProviders(<ChatInputBox mode="react" threadId="new" autoFocus />);
+    expect(screen.getByTestId("chat-composer-input")).toHaveFocus();
+  });
+});
+
 describe("<ChatInputBox /> cowork materials", () => {
   it("places the automation target picker inside the plus menu", async () => {
     renderWithProviders(
@@ -1342,6 +1366,35 @@ describe("<ChatInputBox /> cowork materials", () => {
 });
 
 describe("<ChatInputBox /> live steering", () => {
+  it.each(["streaming", "ready"] as const)(
+    "preserves the draft and prevents new input while stopping from %s",
+    (status) => {
+      const onSubmit = vi.fn();
+      const onStop = vi.fn();
+      renderWithProviders(
+        <ChatInputBox
+          threadId={`thread-stopping-${status}`}
+          status={status}
+          defaultValue="未发送的中文草稿"
+          isStopping
+          onSubmit={onSubmit}
+          onStop={onStop}
+        />,
+      );
+      const input = screen.getByTestId("chat-composer-input");
+      expect(input).toHaveValue("未发送的中文草稿");
+      expect(input).toBeDisabled();
+      const stop = screen.getByRole("button", { name: /停止|Stop/i });
+      expect(stop).toBeDisabled();
+      expect(stop).toHaveAttribute("aria-busy", "true");
+      expect(screen.queryByTestId("chat-steer-button")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("chat-send-button")).not.toBeInTheDocument();
+      fireEvent.click(stop);
+      expect(onStop).not.toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    },
+  );
+
   it("keeps text input sendable while a turn is streaming", () => {
     const onSubmit = vi.fn();
     const onStop = vi.fn();
@@ -1697,5 +1750,18 @@ it("receives database references queued before the target composer mounts withou
     expect(onSubmit).toHaveBeenCalledWith({
       text: expect.stringContaining("C:/资料/工作计划.md"),
     }),
+  );
+});
+
+it("keeps global permission selection distinct from an active task", () => {
+  const { rerender } = renderWithProviders(
+    <ChatInputBox status="streaming" permissionMode="bypassPermissions" />,
+  );
+  expect(screen.getByTestId("permission-mode-trigger")).toHaveAccessibleName(
+    "Next task permissions: Full access",
+  );
+  rerender(<ChatInputBox status="ready" permissionMode="bypassPermissions" />);
+  expect(screen.getByTestId("permission-mode-trigger")).toHaveAccessibleName(
+    "Permissions: Full access",
   );
 });

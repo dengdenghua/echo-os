@@ -35,6 +35,9 @@ import { toast } from "sonner";
 import type { LinkedDevice } from "./device-link";
 import { cn } from "@/lib/utils";
 import { currentActorId } from "@/core/auth/api";
+import { useLocalSettings } from "@/core/settings/hooks";
+import { normalizePermissionMode } from "@/core/permissions";
+import { PermissionIndicator } from "@/components/workspace/permission-indicator";
 import {
   actorScopedStorageKey,
   readActorScopedStorageValue,
@@ -267,6 +270,7 @@ export function IntentDesktopSurface({
   className,
 }: IntentDesktopSurfaceProps) {
   const actor = currentActorId();
+  const [settings, setSettings] = useLocalSettings();
   const [internalMode, setInternalMode] = useState<DesktopMode>(() =>
     getSafeInitialMode(initialMode),
   );
@@ -925,6 +929,15 @@ export function IntentDesktopSurface({
             </div>
 
             {/* 底部：Agent 选择与起步示例 */}
+            {onDispatchIntent && (
+              <div className="mt-1 flex justify-end">
+                <PermissionIndicator
+                  compact
+                  mode={normalizePermissionMode(settings.context.permission_mode)}
+                  onModeChange={(permission_mode) => setSettings("context", { permission_mode })}
+                />
+              </div>
+            )}
             <div className="relative mt-2.5 flex items-center justify-between gap-3 border-t border-black/5 pt-2.5 ">
               <div
                 className="relative flex shrink-0 items-center gap-1.5"

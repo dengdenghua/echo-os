@@ -13,6 +13,10 @@ def background_model_calls_enabled(stack: Any) -> bool:
     selected = getattr(execution, "background_model_calls", None)
     if isinstance(selected, bool):
         return selected
+    from runtime.execution.agent_policy import uses_single_agent_policy
+
+    if uses_single_agent_policy(stack):
+        return False
     # Retain legacy/native policy. Choosing an external member engine does
     # not implicitly authorize a second host model for unattended jobs.
     return getattr(execution, "member_engine", "native") not in {"codex", "opencode"}

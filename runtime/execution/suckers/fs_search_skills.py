@@ -427,6 +427,16 @@ def register_fs_search_skills(registry: SkillRegistry) -> int:
     """Register glob_files / grep_text / tree / read_file_range.
 
     Returns number of skills registered (always 4)."""
+    # Startup verification must not scan the service's working directory,
+    # which can be private application state and correctly denied by policy.
+    # Keep a small empty fixture alive for repeated registry verification;
+    # its lifetime is tied to the registry, not a global temp cache.
+    import tempfile
+    import weakref
+
+    probe = tempfile.TemporaryDirectory(prefix="echo-fs-skill-check-")
+    weakref.finalize(registry, probe.cleanup)
+    probe_root = probe.name
     registry.register(
         Skill(
             name="glob_files",
@@ -451,7 +461,7 @@ def register_fs_search_skills(registry: SkillRegistry) -> int:
                 SkillTestCase(
                     name="glob_returns_expected_shape",
                     tier="golden",
-                    args={"pattern": "*.py", "root": "."},
+                    args={"pattern": "*.py", "root": probe_root},
                     expect=SkillExpect(schema_keys=["files", "count", "pattern"]),
                 ),
             ],
@@ -481,7 +491,7 @@ def register_fs_search_skills(registry: SkillRegistry) -> int:
                 SkillTestCase(
                     name="valid_search_returns_matches_shape",
                     tier="golden",
-                    args={"pattern": "^$|.*", "root": ".", "glob": "*.py", "max_matches": 5},
+                    args={"pattern": "^$|.*", "root": probe_root, "glob": "*.py", "max_matches": 5},
                     expect=SkillExpect(schema_keys=["matches", "count", "scanned_files"]),
                 ),
             ],
@@ -511,7 +521,7 @@ def register_fs_search_skills(registry: SkillRegistry) -> int:
                 SkillTestCase(
                     name="valid_tree_shape",
                     tier="golden",
-                    args={"root": ".", "max_depth": 1},
+                    args={"root": probe_root, "max_depth": 1},
                     expect=SkillExpect(schema_keys=["tree", "nodes", "root"]),
                 ),
             ],

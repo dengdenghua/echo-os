@@ -200,7 +200,6 @@ async def test_real_codex_builtin_tools_obey_workspace_profile() -> None:
             str(workspace / ".git"): "read",
             str(workspace / ".agents"): "read",
             str(workspace / ".codex"): "read",
-            ":tmpdir": "deny",
             ":slash_tmp": "deny",
             str(state_root): "deny",
         }

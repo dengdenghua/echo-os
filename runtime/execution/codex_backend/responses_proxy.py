@@ -789,19 +789,21 @@ def _append_input_items(
             _append_message_item(messages, images_b64, item)
         elif item_type in {"function_call", "custom_tool_call", "local_shell_call"}:
             call_id, name, tool_input = _history_tool_call(item_type, item)
-            messages.append(
-                Message(
-                    role="assistant",
-                    content=[
-                        {
-                            "type": "tool_use",
-                            "id": call_id,
-                            "name": name,
-                            "input": tool_input,
-                        }
-                    ],
-                )
-            )
+            block = {"type": "tool_use", "id": call_id, "name": name, "input": tool_input}
+            # Responses represents a parallel batch as adjacent call items.
+            # Chat Completions requires them in ONE assistant message before
+            # the result messages; separate assistant turns leave earlier
+            # calls unanswered and providers reject the next model request.
+            previous = messages[-1] if messages else None
+            if (
+                previous is not None
+                and previous.role == "assistant"
+                and isinstance(previous.content, list)
+                and all(part.get("type") == "tool_use" for part in previous.content)
+            ):
+                previous.content.append(block)
+            else:
+                messages.append(Message(role="assistant", content=[block]))
         elif item_type in {
             "function_call_output",
             "custom_tool_call_output",

@@ -28,6 +28,7 @@ Environment=HOME=/home/echo
 Environment=USER=echo
 Environment=LOGNAME=echo
 Environment=ECHO_NATIVE_OS=1
+Environment=ECHO_AUTOMATION_FEEDBACK_DISCOVERY=1
 Environment=ECHO_APPLIANCE=1
 Environment=ECHO_APPLIANCE_REQUIRE_PROVISIONED_AUTH=1
 Environment=ECHO_PROMPT_SKILL_REFRESH_DEADLINE_S=0

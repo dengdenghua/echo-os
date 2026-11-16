@@ -30,6 +30,7 @@ import {
 } from "@/appliance/account-security";
 import { AuditEvidencePanel } from "@/appliance/audit-evidence-panel";
 import { requestHighRiskApproval } from "@/appliance/approval";
+import { OWNER_PASSWORD_MIN_CHARACTERS } from "@/appliance/owner-setup";
 import { HighRiskApprovalDialog } from "@/appliance/high-risk-approval-dialog";
 import { OmvStorageHealth } from "@/appliance/omv-storage-health";
 import { OmvSharingPanel } from "@/appliance/omv-sharing-panel";
@@ -144,8 +145,8 @@ export function AccountSecurityPanel({
 
   const rotate = async () => {
     setError(null);
-    if (newPassword.length < 12) {
-      setError("新密码至少需要 12 个字符");
+    if ([...newPassword].length < OWNER_PASSWORD_MIN_CHARACTERS) {
+      setError(`新密码至少需要 ${OWNER_PASSWORD_MIN_CHARACTERS} 个字符`);
       return;
     }
     if (new TextEncoder().encode(newPassword).length > 72) {
@@ -532,6 +533,7 @@ export function AccountSecurityPanel({
                   <input
                     id={newPasswordId}
                     type="password"
+                    placeholder={`至少 ${OWNER_PASSWORD_MIN_CHARACTERS} 个字符`}
                     autoComplete="new-password"
                     value={newPassword}
                     disabled={busy}

@@ -15,6 +15,7 @@ import { WorkbenchSurfaceProvider } from "@/core/workbench/workbench-surface";
 import { LOCAL_DATABASE_APP_ID } from "@/core/workbench/apps";
 import { DetachedRouterContext } from "./detached-router-context";
 import { sourceArtifactRoute } from "@/core/storage/file-location";
+import { useKnowledgeApplication } from "@/components/workspace/knowledge-application-layout";
 import {
   preserveWorkbenchPresentation,
   workbenchRoute,
@@ -37,6 +38,7 @@ export function LocalDatabaseSurface({
   onOpenWorkbench?: (route: string) => void;
 }) {
   const [params, setParams] = useSearchParams();
+  const application = useKnowledgeApplication();
   const navigate = useNavigate();
   const { search } = useLocation();
   // The system database is one app across all personas. Its sidebar pin is
@@ -56,91 +58,103 @@ export function LocalDatabaseSurface({
       data-testid="local-database-app"
       className="flex size-full min-h-0 flex-col bg-background text-foreground"
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <h1 className="flex items-center gap-2 text-sm font-semibold">
-          <DatabaseIcon className="size-4" />
-          本地数据库
-        </h1>
-        {params.get("sourceThread") && params.get("sourceArtifact") && (
-          <a
-            className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
-            href={`#${preserveWorkbenchPresentation(
-              sourceArtifactRoute(
-                params.get("sourceThread")!,
-                params.get("sourceArtifact")!,
-              ),
-              search,
-            )}`}
-          >
-            返回原产物
-          </a>
-        )}
-        {params.get("sourceThread") && (
-          <a
-            className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
-            href={`#${preserveWorkbenchPresentation(
-              `/workspace/realtime/${encodeURIComponent(params.get("sourceThread")!)}`,
-              search,
-            )}`}
-            onClick={(event) => {
-              if (!shouldRouteAnchorClick(event)) return;
-              event.preventDefault();
-              (onOpenWorkbench ?? navigate)(
-                preserveWorkbenchPresentation(
-                  `/workspace/realtime/${encodeURIComponent(params.get("sourceThread")!)}`,
-                  search,
+      {(!application || params.get("sourceThread")) && (
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+          {!application && (
+            <h1 className="flex items-center gap-2 text-sm font-semibold">
+              <DatabaseIcon className="size-4" />
+              本地数据库
+            </h1>
+          )}
+          {params.get("sourceThread") && params.get("sourceArtifact") && (
+            <a
+              className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+              href={`#${preserveWorkbenchPresentation(
+                sourceArtifactRoute(
+                  params.get("sourceThread")!,
+                  params.get("sourceArtifact")!,
                 ),
-              );
-            }}
-          >
-            返回原任务
-          </a>
-        )}
-        <button
-          type="button"
-          className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
-          onClick={() =>
-            openWorkbench(`/workspace/storage?${params.toString()}`)
-          }
+                search,
+              )}`}
+            >
+              返回原产物
+            </a>
+          )}
+          {params.get("sourceThread") && (
+            <a
+              className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+              href={`#${preserveWorkbenchPresentation(
+                `/workspace/realtime/${encodeURIComponent(params.get("sourceThread")!)}`,
+                search,
+              )}`}
+              onClick={(event) => {
+                if (!shouldRouteAnchorClick(event)) return;
+                event.preventDefault();
+                (onOpenWorkbench ?? navigate)(
+                  preserveWorkbenchPresentation(
+                    `/workspace/realtime/${encodeURIComponent(params.get("sourceThread")!)}`,
+                    search,
+                  ),
+                );
+              }}
+            >
+              返回原任务
+            </a>
+          )}
+          {!application && (
+            <>
+              <button
+                type="button"
+                className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+                onClick={() =>
+                  openWorkbench(`/workspace/storage?${params.toString()}`)
+                }
+              >
+                在工作台中打开
+              </button>
+              <button
+                type="button"
+                aria-pressed={enabled}
+                onClick={() =>
+                  setModuleEnabledGlobally(LOCAL_DATABASE_APP_ID, !enabled)
+                }
+                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+              >
+                <PanelLeftIcon className="size-3.5" />
+                {enabled ? "从工作台侧边栏移除" : "添加到工作台侧边栏"}
+              </button>
+            </>
+          )}
+        </header>
+      )}
+      {!application && (
+        <nav
+          aria-label="本地数据库分类"
+          className="flex shrink-0 gap-1 overflow-x-auto border-b p-2"
         >
-          在工作台中打开
-        </button>
-        <button
-          type="button"
-          aria-pressed={enabled}
-          onClick={() =>
-            setModuleEnabledGlobally(LOCAL_DATABASE_APP_ID, !enabled)
-          }
-          className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
-        >
-          <PanelLeftIcon className="size-3.5" />
-          {enabled ? "从工作台侧边栏移除" : "添加到工作台侧边栏"}
-        </button>
-      </header>
-      <nav
-        aria-label="本地数据库分类"
-        className="flex shrink-0 gap-1 overflow-x-auto border-b p-2"
-      >
-        {LIBRARIES.map(([key, label]) => (
-          <button
-            type="button"
-            key={key}
-            aria-current={
-              (params.get("library") || "overview") === key ? "page" : undefined
-            }
-            onClick={() =>
-              setParams((previous) => {
-                const next = new URLSearchParams(previous);
-                next.set("library", key);
-                return next;
-              })
-            }
-            className="shrink-0 rounded-md px-3 py-1.5 text-xs hover:bg-muted aria-[current=page]:bg-muted aria-[current=page]:font-semibold"
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+          {LIBRARIES.map(([key, label]) => (
+            <button
+              type="button"
+              key={key}
+              aria-current={
+                (params.get("library") || "overview") === key
+                  ? "page"
+                  : undefined
+              }
+              onClick={() =>
+                setParams((previous) => {
+                  const next = new URLSearchParams(previous);
+                  next.set("library", key);
+                  return next;
+                })
+              }
+              className="shrink-0 rounded-md px-3 py-1.5 text-xs hover:bg-muted aria-[current=page]:bg-muted aria-[current=page]:font-semibold"
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
       <div className="min-h-0 flex-1">
         <WorkbenchSurfaceProvider surface="browser">
           <Suspense

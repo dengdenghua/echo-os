@@ -5,7 +5,7 @@ import hashlib
 import logging
 from contextlib import suppress
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -66,6 +66,11 @@ class TaskStartRequest(BaseModel):
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
+    computer: bool = False
+    execution_engine: Literal["codex", "codebuddy"] = "codex"
+    model: str | None = Field(default=None, max_length=160)
+    permission_mode: Literal["default", "acceptEdits", "bypassPermissions", "plan"] = "default"
+    network_access: Literal["deny", "common", "full"] = "deny"
     prompt: str = Field(min_length=1, max_length=_MAX_START_PROMPT_CHARS)
     agent_id: str | None = Field(
         default=None,
@@ -750,13 +755,27 @@ def create_task_runs_router(
 
         thread_id = f"t{uuid4().hex[:24]}"
         user_item_id = f"itm_user_{uuid4().hex}"
-        # Mirrors the workbench's defaults for a new task; everything else
-        # (model, permissions) resolves server-side as for any new thread.
+        if body.computer:
+            from runtime.platform.work_computer import ComputerError, work_computer
+            try:
+                work_computer().bind(actor or "local", thread_id)
+                work_computer().thread_active = lambda tid: tid in gateway._active_turn_threads
+            except ComputerError as exc:
+                raise HTTPException(409, str(exc)) from exc
+
+        # Carry the caller's visible permission selection into the same
+        # turn/start authorization path as the workbench. The gateway still
+        # enforces allow_client_auto_approve and derives the reviewer itself.
+        full_access = body.permission_mode == "bypassPermissions"
         context: dict[str, Any] = {
             "mode": "code",
             "capability_mode": "code",
             "code_mode": "solo",
             "approval_delivery": "server_hold",
+            "permission_mode": body.permission_mode,
+            "network_access": body.network_access,
+            "execution_environment": "local" if full_access else "sandbox",
+            "sandbox_mode": "full" if full_access else "sandbox",
         }
         if body.agent_id:
             context["agent_name"] = body.agent_id
@@ -772,9 +791,17 @@ def create_task_runs_router(
         )
         params = {
             "threadId": thread_id,
+            "executionEngine": body.execution_engine,
+            **({"model": body.model} if body.model else {}),
             "userItemId": user_item_id,
             "input": [{"type": "text", "text": body.prompt, "metadata": {"context": context}}],
-            "approvalPolicy": "on-request",
+            "approvalPolicy": "never" if full_access else "on-request",
+            "sandboxPolicy": {
+                "type": "dangerFullAccess" if full_access else "workspaceWrite",
+                "networkAccess": body.network_access == "full",
+                **({"egressAllowCommon": True} if body.network_access == "common" else {}),
+            },
+            "planningMode": body.permission_mode == "plan",
         }
 
         def _detach_trigger() -> None:

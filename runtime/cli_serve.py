@@ -593,6 +593,7 @@ def run_serve(
     from runtime.platform.i18n import _
 
     c = _Colors(color)
+    desktop_owner_token = os.environ.pop("ECHO_DESKTOP_OWNER_TOKEN", None)
     try:
         cfg = load_from_yaml(config_path)
         # Development launchers isolate device listeners without rewriting a
@@ -621,6 +622,12 @@ def run_serve(
         .lower()
     )
     allow_local_workspace_access = deployment_mode == "local" and _is_loopback_host(host)
+    from runtime.adapters.integrations.local_auth.desktop_owner import configure_desktop_owner
+
+    cfg = configure_desktop_owner(
+        cfg, desktop_owner_token, local_loopback=allow_local_workspace_access
+    )
+    desktop_owner_token = None
     bind_error = _insecure_bind_error(
         host=host,
         uds=uds,
@@ -886,8 +893,10 @@ def run_serve(
             start_storage_heartbeat,
         )
 
-        storage_start = maybe_start_storage()
-        start_storage_heartbeat()
+        storage_start = "plugin_managed"
+        if getattr(app.state, "plugin_hub", None) is None:
+            storage_start = maybe_start_storage()
+            start_storage_heartbeat()
         if storage_start in {"started", "already_running"}:
             print(c.dim("  local knowledge storage: ready (managed with this session)"))
         elif storage_start == "not_found":

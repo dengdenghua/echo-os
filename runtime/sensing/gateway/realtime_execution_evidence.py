@@ -11,7 +11,7 @@ def record_execution(
     log: Any,
     turn: Any,
     *,
-    engine: Literal["native", "octopus", "codex", "opencode"],
+    engine: Literal["native", "octopus", "codex", "opencode", "codebuddy"],
     driver: str,
     model: str | None = None,
 ) -> None:

@@ -7,6 +7,7 @@ import {
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { PermissionMode } from "@/core/permissions";
 import { useI18n } from "@/core/i18n/hooks";
+import { permissionScopeCopy } from "@/core/i18n/locales/permission-scope";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,7 @@ interface PermissionIndicatorProps {
   onModeChange: (mode: PermissionMode) => void;
   className?: string;
   compact?: boolean;
+  activeTask?: boolean;
 }
 
 const PERMISSION_TRIGGER_TONE =
@@ -38,9 +40,11 @@ export function PermissionIndicator({
   onModeChange,
   className,
   compact = false,
+  activeTask = false,
 }: PermissionIndicatorProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { confirm, confirmDialog } = useConfirmDialog();
+  const scope = permissionScopeCopy(locale);
   const labels: Record<PermissionMode, { label: string; description: string }> =
     {
       default: {
@@ -62,6 +66,9 @@ export function PermissionIndicator({
     };
   const current = labels[mode] ?? labels.default;
   const isBypassMode = mode === "bypassPermissions";
+  const controlLabel = activeTask
+    ? scope.label
+    : t.chatInputBox.permissionModeLabel;
 
   const handleModeChange = async (value: string) => {
     const nextMode = value as PermissionMode;
@@ -69,7 +76,7 @@ export function PermissionIndicator({
     if (nextMode === "bypassPermissions") {
       const accepted = await confirm({
         title: t.chatInputBox.permissionModeBypassConfirmTitle,
-        description: t.chatInputBox.permissionModeBypassConfirmDesc,
+        description: `${t.chatInputBox.permissionModeBypassConfirmDesc}${activeTask ? ` ${scope.hint}` : ""}`,
         confirmLabel: t.chatInputBox.permissionModeBypassConfirmAction,
         destructive: false,
       });
@@ -94,15 +101,18 @@ export function PermissionIndicator({
                   : cn("h-8 rounded-lg px-2.5", PERMISSION_TRIGGER_TONE),
               className,
             )}
-            title={`${t.chatInputBox.permissionModeLabel}: ${current.description}`}
-            aria-label={`${t.chatInputBox.permissionModeLabel}: ${current.label}`}
+            title={`${controlLabel}: ${current.description}${activeTask ? ` ${scope.hint}` : ""}`}
+            aria-label={`${controlLabel}: ${current.label}`}
           >
             {isBypassMode ? (
               <ShieldAlertIcon className="size-3.5 text-warning" />
             ) : (
               <ShieldCheckIcon className="size-3 opacity-75" />
             )}
-            <span>{current.label}</span>
+            <span>
+              {activeTask ? scope.prefix : ""}
+              {current.label}
+            </span>
             <ChevronDownIcon className="size-3 opacity-35" />
           </button>
         </DropdownMenuTrigger>
@@ -113,8 +123,16 @@ export function PermissionIndicator({
           className="w-64"
         >
           <DropdownMenuLabel className="text-xs text-muted-foreground">
-            {t.chatInputBox.permissionModeLabel}
+            {controlLabel}
           </DropdownMenuLabel>
+          {activeTask && (
+            <p
+              data-testid="permission-scope-hint"
+              className="px-2 pb-2 text-xs leading-5 text-muted-foreground"
+            >
+              {scope.hint}
+            </p>
+          )}
           <DropdownMenuRadioGroup value={mode} onValueChange={handleModeChange}>
             {PERMISSION_OPTIONS.map((option) => {
               const item = labels[option];

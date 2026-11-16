@@ -89,7 +89,7 @@ export async function fetchAgentTaskFileChanges(
   );
   if (response.status === 401) throw new Error("登录已失效，请重新登录");
   if (response.status === 404)
-    throw new Error("没有权限查看这个任务的文件改动");
+    throw new Error("任务不存在，或当前账户无权查看文件改动");
   if (!response.ok) throw new Error("暂时无法读取这个任务的文件改动记录");
   return parse(await response.json(), taskId);
 }

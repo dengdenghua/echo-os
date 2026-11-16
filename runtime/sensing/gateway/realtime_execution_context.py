@@ -82,6 +82,15 @@ class RealtimeExecutionContext:
             _file_write_lease_history=[],
             _file_read_snapshots={},
         )
+        from runtime.sensing.gateway._realtime_react_stream_helpers import (
+            _apply_codex_task_model_override,
+        )
+
+        metadata["execution_engine"] = turn.execution.engine if turn.execution else "codex"
+        for key in ("model_scope", "model_name", "reasoning_effort"):
+            if isinstance(context.get(key), str):
+                metadata[key] = context[key]
+        _apply_codex_task_model_override(metadata)
         session = Session(
             actor=actor,
             agent=agent if hasattr(agent, "agent_id") else None,

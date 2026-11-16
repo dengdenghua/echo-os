@@ -13,6 +13,7 @@ Environment=ECHO_CODEX_EXECUTABLE=/opt/echo-os/codex/bin/codex
 Environment=ECHO_CODEX_BUNDLE_DIR=/opt/echo-os/codex
 Environment=ECHO_WEBUI_DIST=/opt/echo-os/frontend/dist
 Environment=ECHO_APPLIANCE=1
+Environment=ECHO_AUTOMATION_FEEDBACK_DISCOVERY=1
 Environment=ECHO_APP_EXTENSIONS=appliance.extension
 Environment=ECHO_REQUIRED_APP_EXTENSIONS=1
 Environment=ECHO_PROMPT_SKILL_REFRESH_DEADLINE_S=0

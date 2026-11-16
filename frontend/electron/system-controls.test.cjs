@@ -156,6 +156,18 @@ function fakeExec(responses, calls) {
     assert.deepStrictEqual(calls[6].args, ["-q", "set", "0%"]);
   });
 
+  await test("successful command with unchanged sink volume reports failure", async () => {
+    const options = { platform: "linux", nativeShell: true, tools: TOOLS,
+      execFileImpl: fakeExec({
+        "wpctl set-volume @DEFAULT_AUDIO_SINK@ 90%": { stdout: "" },
+        "wpctl get-volume @DEFAULT_AUDIO_SINK@": { stdout: "Volume: 1.00\n" },
+      }, []),
+    };
+    const result = await setAudioVolume(90, options);
+    assert.strictEqual(result.ok, false);
+    assert.match(result.error, /未应用音量/);
+  });
+
   await test("invalid renderer values are rejected before execution", async () => {
     let executed = false;
     const options = {

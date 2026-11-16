@@ -36,7 +36,7 @@ def _engine_owns_summary(turns: list[Any]) -> bool:
         execution = getattr(turn, "execution", None)
         # Unknown legacy evidence keeps its existing policy; it must not
         # inherit an older external engine's policy across another turn.
-        return execution is not None and execution.engine in {"codex", "opencode"}
+        return execution is not None and execution.engine in {"codex", "opencode", "codebuddy"}
     return False
 
 

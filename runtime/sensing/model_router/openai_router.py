@@ -606,6 +606,17 @@ class OpenAIModelRouter(Provider, ModelRouter):
                 payload["reasoning_effort"] = _openai_reasoning_effort(request.reasoning_effort)
             if request.enable_thinking:
                 payload["thinking"] = {"type": "enabled"}
+        if (
+            request.tools
+            and not request.enable_thinking
+            and self._profile_for_model(model).thinking_request_style == "deepseek"
+        ):
+            # DeepSeek enables thinking by default. A caller that disables
+            # thinking for a tool loop (e.g. the Responses bridge, which does
+            # not replay provider-private reasoning) must explicitly disable
+            # it on the wire, or the next tool result produces HTTP 400.
+            payload.pop("reasoning_effort", None)
+            payload["thinking"] = {"type": "disabled"}
         return normalize_openai_compat_payload(
             payload,
             profile=self._profile_for_model(model),

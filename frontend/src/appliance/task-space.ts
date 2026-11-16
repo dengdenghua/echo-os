@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { authHeader } from "@/appliance/auth";
 import { currentActorId } from "@/core/auth/api";
+import { getLocalSettings } from "@/core/settings/local";
+import { normalizeNetworkAccess, normalizePermissionMode } from "@/core/permissions";
 
 export type EchoTaskStatus =
   | "pending"
@@ -376,14 +378,26 @@ export type EchoTaskStartResponse = {
 export async function startEchoTask(
   prompt: string,
   agentId?: string,
+  computer = false,
+  engine: "codex" | "codebuddy" = "codex",
+  model?: string,
 ): Promise<EchoTaskStartResponse> {
+  const { context } = getLocalSettings();
   const response = await fetch("/api/task-runs/start", {
     method: "POST",
     headers: {
       ...authHeader(),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ prompt, ...(agentId ? { agentId } : {}) }),
+    body: JSON.stringify({
+      prompt,
+      execution_engine: engine,
+      ...(model ? { model } : {}),
+      ...(agentId ? { agentId } : {}),
+      ...(computer ? { computer } : {}),
+      permission_mode: normalizePermissionMode(context.permission_mode),
+      network_access: normalizeNetworkAccess(context.network_access) ?? "deny",
+    }),
   });
   if (!response.ok) {
     const detail = await response

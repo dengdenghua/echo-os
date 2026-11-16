@@ -8,6 +8,8 @@ from runtime.execution.tool_engine.role_instructions import (
     resolve_explicit_skill_instructions,
 )
 
+from .result_emission import DYNAMIC_RESULT_CONTRACT
+
 _CODEX_CONTRACT = (
     "<echo-codex-role-contract>\n"
     "You are the standard Echo role identified above; Codex App Server "
@@ -35,9 +37,9 @@ def compose_codex_role_instructions(
         context=context,
         goal=goal,
         registry=registry,
-        max_chars=160_000 - len(_CODEX_CONTRACT) - 2,
+        max_chars=160_000 - len(_CODEX_CONTRACT) - len(DYNAMIC_RESULT_CONTRACT) - 4,
     )
-    return role + "\n\n" + _CODEX_CONTRACT
+    return role + "\n\n" + DYNAMIC_RESULT_CONTRACT + "\n\n" + _CODEX_CONTRACT
 
 
 __all__ = ["compose_codex_role_instructions", "resolve_explicit_skill_instructions"]

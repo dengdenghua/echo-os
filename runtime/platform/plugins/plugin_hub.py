@@ -234,6 +234,7 @@ class PluginHub:
                         "source": activation["source"],
                         "activation_path": activation.get("activation_path"),
                         "data_path": activation.get("data_path"),
+                        "installed_version": activation.get("installed_version"),
                         "recoveries": activation.get("recoveries", []),
                         "activation_error": activation.get("error"),
                     }
@@ -409,6 +410,9 @@ class PluginHub:
                 jobs_registry=self._jobs_registry,
                 contribution_registry=self._contribution_registry,
                 config=effective_config,
+                data_dir=str(self._activation_store.data_path(name))
+                if self._activation_store.is_factory(name)
+                else None,
             )
 
             # 5. Call on_load (which triggers register_skills/channels/routes).
@@ -646,6 +650,27 @@ class PluginHub:
                 started.append(name)
         return started
 
+    def activate_plugin(self, name: str) -> dict[str, Any]:
+        """Load and start one discovered plugin as a single host operation.
+
+        This is the runtime entry point for on-demand plugins. If startup of a
+        newly loaded plugin fails, its registrations and imported external
+        module are removed so callers never observe a half-active capability.
+        """
+
+        with self._lock_internal:
+            was_loaded = name in self._plugins
+            if self.load(name) is None:
+                raise RuntimeError(f"failed to load plugin: {name}")
+            if not self.start(name):
+                if not was_loaded:
+                    self.unload(name)
+                raise RuntimeError(f"failed to start plugin: {name}")
+            detail = self.get_plugin_detail(name)
+            if detail is None:  # Defensive: load succeeded from discovery.
+                raise RuntimeError(f"activated plugin disappeared: {name}")
+            return {"ok": True, **detail}
+
     def stop(self, name: str) -> bool:
         """Stop a started plugin (calls on_stop)."""
         with self._lock_internal:
@@ -732,6 +757,22 @@ class PluginHub:
                 self._activation_store.restore_state(name, previous)
                 raise
             return self._lifecycle_result(name, result)
+
+    def upgrade_plugin(self, name: str) -> dict[str, Any]:
+        """Refresh a factory implementation without changing enablement or data."""
+        with self._lock_internal:
+            self._require_factory_plugin(name)
+            previous = self._activation_store.state(name)
+            if not previous["installed"]:
+                raise ValueError(f"plugin is not installed: {name}")
+            self.unload(name)
+            try:
+                return self.install_plugin(name, enabled=previous["enabled"])
+            except Exception:
+                self._activation_store.restore_state(name, previous)
+                if previous["enabled"]:
+                    self._activate_runtime(name)
+                raise
 
     def disable_plugin(self, name: str) -> dict[str, Any]:
         """Stop/unload a plugin and persist its disabled state."""

@@ -17,6 +17,39 @@ fi
 
 echo "ECHO_LOCK_SCREEN_LAUNCHED provider=xsecurelock pam=${XSECURELOCK_PAM_SERVICE:-unknown}"
 
+# Optional decoration suppression, never a prerequisite for secure locking.
+# Normal exec retains this PID/start time; the suspend branch keeps this
+# wrapper alive until XSecureLock exits. Dead markers are ignored by the shell.
+python3 - "$$" <<'PY' || true
+import json, os, pathlib, stat, sys, tempfile
+try:
+    home = pathlib.Path.home().resolve()
+    current = home
+    for part in ('.cache', 'echo-os', 'automation-feedback'):
+        current = current / part
+        current.mkdir(mode=0o700, exist_ok=True)
+        info = current.lstat()
+        mask = 0o077 if part == 'automation-feedback' else 0o022
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & mask:
+            raise ValueError('private feedback directory unavailable')
+    pid = int(sys.argv[1])
+    proc = pathlib.Path('/proc') / str(pid)
+    raw = (proc / 'stat').read_text()
+    start = raw[raw.rfind(')') + 2:].split()[19]
+    marker = {'pid': pid, 'start': start, 'display': os.environ.get('DISPLAY', '')}
+    target = current / f'lock-{pid}.json'
+    fd, temporary = tempfile.mkstemp(prefix='.lock-', dir=current)
+    try:
+        with os.fdopen(fd, 'w') as output:
+            json.dump(marker, output)
+        os.replace(temporary, target)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+except Exception:
+    pass
+PY
+
 if [[ -n "${XSS_SLEEP_LOCK_FD:-}" && -e "/dev/fd/$XSS_SLEEP_LOCK_FD" ]]; then
   # Do not let the child retain logind's delay-lock descriptor. Keep our copy
   # briefly while XSecureLock establishes its windows and input grabs, then

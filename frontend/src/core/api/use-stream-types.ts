@@ -23,7 +23,7 @@ export interface UseStreamResult<TState extends Record<string, unknown>> {
   isLoading: boolean;
   isThreadLoading?: boolean;
   error: Error | undefined;
-  stop: () => void;
+  stop: () => void | Promise<void>;
   refresh: () => Promise<void>;
   submit: (
     input: Record<string, unknown>,

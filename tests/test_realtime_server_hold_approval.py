@@ -236,6 +236,47 @@ def test_interruption_releases_the_hold(tmp_path):
     assert result["decision"] == ApprovalDecision(approved=False, reason="interrupted")
 
 
+def test_detached_turn_stop_releases_hold_without_a_scoped_cancel_token(tmp_path):
+    from runtime.sensing.gateway._realtime_gateway_approval import SharedTurnInterrupts
+
+    supervisor, _guard, session = _setup(tmp_path)
+    interrupts = SharedTurnInterrupts()
+    interrupts.register("turn-1")
+    worker, result = _ask_in_thread(
+        session, _provider(is_interrupted=lambda: interrupts.is_interrupted("turn-1")), _request()
+    )
+    _wait_for(lambda: _status(supervisor) == TaskRunStatus.WAITING_APPROVAL)
+    assert interrupts.request_interrupt("unrelated-turn") is False
+    assert worker.is_alive()
+    assert interrupts.request_interrupt("turn-1") is True
+    worker.join(timeout=2)
+    assert not worker.is_alive()
+    assert result["decision"] == ApprovalDecision(approved=False, reason="interrupted")
+    record = supervisor.store.get("task-1")
+    assert record.metadata["approval_hold"] is None
+    assert record.metadata["approval_required"] is False
+    assert record.metadata["approval_hold_outcome"] == "interrupted"
+
+
+def test_stopped_turn_cannot_open_another_approval(tmp_path):
+    supervisor, _guard, session = _setup(tmp_path)
+    interactive = _RecordingInteractive()
+    with session_scope(session):
+        result = _provider(interactive, is_interrupted=lambda: True).request(_request())
+    assert result == ApprovalDecision(approved=False, reason="interrupted")
+    assert _status(supervisor) != TaskRunStatus.WAITING_APPROVAL
+    assert interactive.calls == []
+
+
+def test_broken_stop_source_denies_instead_of_waiting(tmp_path):
+    _supervisor, _guard, session = _setup(tmp_path)
+    def broken():
+        raise RuntimeError("interrupt source unavailable")
+    with session_scope(session):
+        result = _provider(is_interrupted=broken).request(_request())
+    assert result == ApprovalDecision(approved=False, reason="interrupted")
+
+
 def test_a_lost_lease_denies_instead_of_waiting_forever(tmp_path):
     supervisor, guard, session = _setup(tmp_path)
     worker, result = _ask_in_thread(session, _provider(), _request())

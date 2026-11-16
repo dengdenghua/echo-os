@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# This preview is the TV edition; desktop management remains available in Settings.
+export ECHO_START_SURFACE="${ECHO_START_SURFACE:-tv}"
 # The preview uses a 2D virtual GPU; keep Chromium on the software renderer.
 args=(--disable-gpu --disable-gpu-compositing)
 if [[ "${ECHO_PREVIEW_DEBUG_PORT:-}" =~ ^[0-9]{4,5}$ ]]; then

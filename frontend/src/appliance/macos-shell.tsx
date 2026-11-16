@@ -495,6 +495,7 @@ export function MacMenuBar({
   onToggleNotifications,
   onToggleLiquidGlass,
   onOpenAbout,
+  onOpenTV,
   onOpenFiles,
   onOpenSettings,
   appStoreAvailable,
@@ -521,6 +522,7 @@ export function MacMenuBar({
   onToggleNotifications: () => void;
   onToggleLiquidGlass?: () => void;
   onOpenAbout: () => void;
+  onOpenTV?: () => void;
   onOpenFiles: () => void;
   onOpenSettings: () => void;
   appStoreAvailable: boolean;
@@ -768,6 +770,7 @@ export function MacMenuBar({
                 { label: "关于本机", onSelect: () => select(onOpenAbout) },
                 { divider: true },
                 { label: "系统设置…", onSelect: () => select(onOpenSettings) },
+                ...(onOpenTV ? [{ label: "大屏模式", onSelect: () => select(onOpenTV) }] : []),
                 {
                   label: "应用中心…",
                   disabled: !appStoreAvailable,

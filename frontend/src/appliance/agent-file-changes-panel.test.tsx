@@ -95,7 +95,7 @@ describe("Agent task file changes", () => {
     stubChanges({ detail: "task not found" }, 404);
     render(<AgentFileChangesPanel taskId="task-1" />);
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "没有权限查看这个任务的文件改动",
+      "任务不存在，或当前账户无权查看文件改动",
     );
   });
 });

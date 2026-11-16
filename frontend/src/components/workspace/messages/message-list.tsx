@@ -1,3 +1,4 @@
+import { isQuotaExhausted, modelLimitMessage } from "./model-limit";
 import type { AIMessage, Message } from "@/core/api/types";
 import type { BaseStream } from "@/core/api/use-stream-types";
 import type { ComponentProps, ReactNode } from "react";
@@ -829,6 +830,8 @@ export function failureKind(
 ): FailurePresentation["kind"] {
   const signal = `${code ?? ""}\n${detail}`;
   const normalized = signal.toLowerCase();
+  if (!isQuotaExhausted(signal) && /http_429|rate.?limit|too many requests|请求过多|限流/i.test(signal)) return "rate-limit";
+  if (isQuotaExhausted(signal) || failureKindHint === "quota-exhausted") return "quota-exhausted";
   // A genuine "needs your input" hand-off is never a failure — amber/waiting.
   if (disposition === "blocked_on_user") {
     return "blocked";
@@ -1394,7 +1397,7 @@ export function MessageList({
                         : hasStructuredReadableDetail
                           ? failure.detail
                           : t.streaming.turnFailed;
-      return { ...failure, kind, message };
+      return { ...failure, kind, message: kind === "quota-exhausted" || kind === "rate-limit" ? modelLimitMessage(failure.detail, kind === "quota-exhausted", locale) : message };
     },
     [
       locale,
@@ -1441,12 +1444,12 @@ export function MessageList({
   const noModelFailure = isNoModelFailure(failureReceipt);
   // Environment blocks and "needs your input" hand-offs are not agent
   // failures — render them amber, not destructive red.
-  const isWarningFailure =
+  const isWarningFailure = failureReceipt?.kind === "quota-exhausted" || failureReceipt?.kind === "rate-limit" ||
     isNetworkError ||
     isBackpressureError ||
     failureReceipt?.kind === "environment" ||
     failureReceipt?.kind === "blocked";
-  const failureHeaderText = noModelFailure
+  const failureHeaderText = failureReceipt?.kind === "quota-exhausted" ? (locale.startsWith("zh") ? "引擎额度已耗尽" : "Engine quota exhausted") : noModelFailure
     ? turnFailureCopy(locale).noModelTitle
     : failureReceipt?.kind === "blocked"
       ? t.streaming.blockedOnUser
@@ -2720,7 +2723,7 @@ export function MessageList({
                 {!isNetworkError && (
                   <div className="text-sm opacity-80">{errorBannerText}</div>
                 )}
-                {noModelFailure && (
+                {(noModelFailure || failureReceipt?.kind === "quota-exhausted" || failureReceipt?.kind === "rate-limit") && (
                   <button
                     type="button"
                     onClick={() =>
@@ -2732,7 +2735,7 @@ export function MessageList({
                     }
                     className="mt-2 rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background transition-colors hover:bg-foreground/90"
                   >
-                    {turnFailureCopy(locale).addModel}
+                    {failureReceipt?.kind === "quota-exhausted" ? (locale.startsWith("zh") ? "切换引擎" : "Switch engine") : turnFailureCopy(locale).addModel}
                   </button>
                 )}
                 {failureReceipt?.kind === "environment" &&

@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getToken: vi.fn(),
   getStoredUser: vi.fn(),
   clearTokens: vi.fn(),
+  desktopOwnerLogin: vi.fn().mockResolvedValue(null),
 }));
 
 function backendStartingError(retryAfterMs = 3_000) {
@@ -21,6 +22,7 @@ function backendStartingError(retryAfterMs = 3_000) {
 
 vi.mock("@/core/auth/api", () => ({
   getAuthStatus: mocks.getAuthStatus,
+  desktopOwnerLogin: mocks.desktopOwnerLogin,
   isBackendStartingError: (error: unknown) =>
     error instanceof Error &&
     "code" in error &&
@@ -62,6 +64,7 @@ function AuthControls() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.desktopOwnerLogin.mockResolvedValue(null);
   mocks.getToken.mockReturnValue(null);
   mocks.getStoredUser.mockReturnValue(null);
   mocks.getAuthStatus.mockResolvedValue({
@@ -86,6 +89,16 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+});
+
+it("establishes the native desktop owner before allowing workbench navigation", async () => {
+  mocks.getAuthStatus.mockResolvedValue({ enabled: true, session_present: false });
+  mocks.desktopOwnerLogin.mockResolvedValue({ user_id: "local:owner", actor_id: "local:owner", username: "owner", provider: "local" });
+  renderWithProviders(<AuthProvider><AuthState /></AuthProvider>);
+  expect(await screen.findByText("authenticated")).toBeInTheDocument();
+  expect(screen.getByText("local:owner")).toBeInTheDocument();
+  expect(mocks.desktopOwnerLogin).toHaveBeenCalledOnce();
+  expect(mocks.getMe).not.toHaveBeenCalled();
 });
 
 it("recovers an authenticated actor from the HttpOnly cookie after browser restart", async () => {

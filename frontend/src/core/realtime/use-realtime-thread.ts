@@ -106,6 +106,7 @@ export interface UseRealtimeThreadValue {
     sandboxPolicy?: SandboxPolicy;
     planningMode?: boolean;
     model?: string;
+    executionEngine?: "codex" | "codebuddy";
     effort?: ReasoningEffort;
     metadata?: Record<string, unknown>;
     /** Optional topology id for callers that explicitly need the
@@ -1273,6 +1274,7 @@ export function useRealtimeThread(
       try {
         await client.request("turn/start", {
           threadId: args.threadId,
+          ...(input.executionEngine ? { executionEngine: input.executionEngine } : {}),
           input: [
             {
               type: "text",

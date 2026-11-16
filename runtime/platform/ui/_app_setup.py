@@ -192,6 +192,15 @@ def setup_app(
             "use only for trusted local development"
         )
 
+    # Internal bridge calls authenticate as the current session actor.
+    from runtime.safety.auth.internal_token import configure_internal_token_signer
+
+    configure_internal_token_signer(
+        secret=cocoloop_jwt_secret,
+        issuer=cocoloop_jwt_issuer,
+        audience=cocoloop_jwt_audience,
+    )
+
     _install_legacy_control_plane_auth(
         app,
         identity_store=cocoloop_identity_store,

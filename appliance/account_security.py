@@ -50,7 +50,7 @@ from appliance.security import ApplianceAuthenticator, resolve_authenticator
 from appliance.totp import AdministratorTotp
 
 AUTH_HASH_ENV = "ECHO_APPLIANCE_ADMIN_PASSWORD_HASH"
-MIN_PASSWORD_CHARACTERS = 12
+MIN_PASSWORD_CHARACTERS = 8
 MAX_PASSWORD_BYTES = 72  # bcrypt's portable input limit
 OWNER_PASSWORD_MIN_CHARACTER_KINDS = 3
 OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS = 6
@@ -59,7 +59,7 @@ OWNER_PASSWORD_MIN_DISTINCT_CHARACTERS = 6
 def owner_password_problem(password: str) -> str | None:
     """Return why a first owner password is too weak, or ``None``.
 
-    The rule mirrors the first-boot form: at least 12 characters, at most 72
+    The rule mirrors the first-boot form: at least 8 characters, at most 72
     UTF-8 bytes (bcrypt), at least three of lowercase / uppercase / digits /
     other characters, and no long runs of the same few characters.
     """
@@ -360,7 +360,9 @@ class ApplianceAccountSecurity:
     def rotate_password(self, *, actor: str, new_password: str) -> int:
         encoded = new_password.encode("utf-8")
         if len(new_password) < MIN_PASSWORD_CHARACTERS:
-            raise AccountSecurityError(422, "new password must contain at least 12 characters")
+            raise AccountSecurityError(
+                422, f"new password must contain at least {MIN_PASSWORD_CHARACTERS} characters"
+            )
         if len(encoded) > MAX_PASSWORD_BYTES:
             raise AccountSecurityError(422, "new password must be at most 72 UTF-8 bytes")
 

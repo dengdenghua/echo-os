@@ -903,6 +903,67 @@ describe("useThreadStreamRealtime permissions", () => {
     expect(result.current[0].isThreadLoading).toBe(true);
   });
 
+  it("returns the interrupt promise and deduplicates a slow stop request", async () => {
+    let resolveInterrupt!: () => void;
+    const interrupt = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveInterrupt = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(undefined);
+    vi.mocked(useRealtimeThread).mockReturnValue({
+      state: makeConversation([]),
+      connected: true,
+      startTurn: vi.fn().mockResolvedValue(undefined),
+      resolveApproval: vi.fn(),
+      resume: vi.fn().mockResolvedValue(undefined),
+      interrupt,
+      compact: vi.fn().mockResolvedValue({ compacted: false }),
+      decideHunk: vi.fn().mockResolvedValue(undefined),
+    });
+    const { result } = renderHook(() =>
+      useThreadStreamRealtime({ threadId: "th-test" }),
+    );
+
+    const firstStop = result.current[0].stop();
+    const secondStop = result.current[0].stop();
+
+    expect(firstStop).toBe(secondStop);
+    expect(interrupt).toHaveBeenCalledTimes(1);
+
+    resolveInterrupt();
+    await expect(firstStop).resolves.toBeUndefined();
+    await expect(result.current[0].stop()).resolves.toBeUndefined();
+    expect(interrupt).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps interrupt rejections observable to the stop caller", async () => {
+    const interrupt = vi
+      .fn()
+      .mockRejectedValue(new Error("interrupt was rejected"));
+    vi.mocked(useRealtimeThread).mockReturnValue({
+      state: makeConversation([]),
+      connected: true,
+      startTurn: vi.fn().mockResolvedValue(undefined),
+      resolveApproval: vi.fn(),
+      resume: vi.fn().mockResolvedValue(undefined),
+      interrupt,
+      compact: vi.fn().mockResolvedValue({ compacted: false }),
+      decideHunk: vi.fn().mockResolvedValue(undefined),
+    });
+    const { result } = renderHook(() =>
+      useThreadStreamRealtime({ threadId: "th-test" }),
+    );
+
+    await expect(result.current[0].stop()).rejects.toThrow(
+      "interrupt was rejected",
+    );
+    expect(interrupt).toHaveBeenCalledTimes(1);
+  });
+
   it("stops showing the history skeleton after an empty resume settles", () => {
     mockRealtime();
 
@@ -1870,6 +1931,16 @@ describe("useThreadStreamRealtime permissions", () => {
     });
   });
 
+  it("reads saved compact budget at send time", async () => {
+    const startTurn = mockRealtime();
+    const { result } = renderHook(() => useThreadStreamRealtime({threadId:"th-test",model:"gpt-test", context:{model_scope:"task"}}));
+    localStorage.setItem("echo:codex-context-budget:local:gpt-test", "64000");
+    act(() => { result.current[1]("th-test", {text:"budget check",files:[]}); });
+    await waitFor(() => expect(startTurn).toHaveBeenCalled());
+    expect(startTurn.mock.calls[0]?.[0]?.metadata?.context?.codex_autocompact).toBe(64000);
+    localStorage.removeItem("echo:codex-context-budget:local:gpt-test");
+  });
+
   it("sends selected reasoning effort as top-level turn effort", async () => {
     const startTurn = mockRealtime();
     const { result } = renderHook(() =>
@@ -2160,4 +2231,66 @@ describe("uploadPromptInputFiles", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
+});
+
+it("keeps steering permissions unchanged and applies the selected mode only to the next turn", async () => {
+  let state: Conversation = makeConversation([
+    { ...makeTurn([], "turn-active"), status: "inProgress", completedAt: null },
+  ]);
+  const steer = vi.fn().mockResolvedValue(undefined);
+  const startTurn = vi.fn().mockResolvedValue(undefined);
+  vi.mocked(useRealtimeThread).mockImplementation(() => ({
+    state,
+    connected: true,
+    startTurn,
+    steer,
+    resolveApproval: vi.fn(),
+    resume: vi.fn().mockResolvedValue(undefined),
+    interrupt: vi.fn().mockResolvedValue(undefined),
+    compact: vi.fn().mockResolvedValue({ compacted: false }),
+    decideHunk: vi.fn().mockResolvedValue(undefined),
+  }));
+  const { result, rerender } = renderHook(
+    ({ permission }: { permission: string }) =>
+      useThreadStreamRealtime({
+        threadId: "th-test",
+        context: { permission_mode: permission },
+      }),
+    { initialProps: { permission: "default" } },
+  );
+  rerender({ permission: "bypassPermissions" });
+  act(() => {
+    result.current[1]("th-test", { text: "核对目前结果", files: [] });
+  });
+  await waitFor(() => expect(steer).toHaveBeenCalledTimes(1));
+  const itemId = steer.mock.calls[0]![0].itemId as string;
+  expect(steer).toHaveBeenCalledWith({ input: "核对目前结果", itemId });
+  expect(startTurn).not.toHaveBeenCalled();
+  state = makeConversation([
+    makeTurn(
+      [
+        {
+          id: itemId,
+          type: "steeringUserMessage",
+          status: "completed",
+          createdAt: DONE_TS,
+          text: "核对目前结果",
+          targetTurnId: "turn-active",
+          source: "user",
+        },
+      ],
+      "turn-active",
+    ),
+  ]);
+  rerender({ permission: "bypassPermissions" });
+  act(() => {
+    result.current[1]("th-test", { text: "开始下一轮", files: [] });
+  });
+  await waitFor(() => expect(startTurn).toHaveBeenCalledTimes(1));
+  expect(startTurn).toHaveBeenCalledWith(
+    expect.objectContaining({
+      approvalPolicy: "never",
+      sandboxPolicy: expect.objectContaining({ type: "dangerFullAccess" }),
+    }),
+  );
 });

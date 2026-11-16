@@ -133,6 +133,11 @@ class GatewayApprovalProvider(ApprovalProvider):
             if not future.done():
                 future.cancel()
         action = (decision or {}).get("action", "decline")
+        # The client can expire first (e.g. a timer races the gateway).
+        # Preserve known lifecycle reasons instead of recording a human refusal.
+        reason = (decision or {}).get("reason")
+        if action != "accept" and isinstance(reason, str) and reason in {"timeout", "connection_lost"}:
+            return self._deny(req, reason=reason, label=reason)
         result = ApprovalDecision(
             approved=(action == "accept"),
             reason=action,
@@ -203,6 +208,7 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
         wall_clock: Callable[[], float] = time.time,
+        is_interrupted: Callable[[], bool] | None = None,
     ) -> None:
         self._interactive = interactive
         self._thread_id = thread_id
@@ -213,11 +219,23 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         self._sleep = sleep
         self._clock = clock
         self._wall_clock = wall_clock
+        self._is_interrupted = is_interrupted
         self._lock = threading.Lock()
+
+    def _turn_interrupted(self) -> bool:
+        if self._is_interrupted is None:
+            return False
+        try:
+            return bool(self._is_interrupted())
+        except Exception:  # A broken authoritative stop source must fail closed.
+            _logger.exception("server-hold approval: interrupt source unavailable")
+            return True
 
     def request(self, req: ApprovalRequest, *, timeout: float = 120.0) -> ApprovalDecision:
         from runtime.platform.process.session import current_session
 
+        if self._turn_interrupted():
+            return ApprovalDecision(approved=False, reason="interrupted")
         guard = getattr(current_session(), "execution_lease", None)
         if guard is None or guard.bound_task_id is None:
             return self._interactive.request(req, timeout=timeout)
@@ -272,7 +290,10 @@ class ServerHoldApprovalProvider(ApprovalProvider):
         deadline = self._clock() + hold_window_s
         cancellation = current_cancellation_token()
         while True:
-            if cancellation.is_cancelled:
+            # Codex tool requests run in a worker thread without the ReAct
+            # cancellation scope. Consult the authoritative turn emitter as
+            # well, including detached/server-held desktop turns.
+            if cancellation.is_cancelled or self._turn_interrupted():
                 return self._finish(
                     guard=guard, req=req, approved=False, reason="interrupted", label="interrupted"
                 )

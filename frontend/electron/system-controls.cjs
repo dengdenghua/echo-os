@@ -388,12 +388,12 @@ async function setAudioVolume(percentage, options = {}) {
     ["set-volume", "@DEFAULT_AUDIO_SINK@", `${value}%`],
     options.execFileImpl,
   );
-  return result.ok
-    ? {
-        ok: true,
-        audio: await readAudioState(selected.executable, options.execFileImpl),
-      }
-    : { ok: false, error: result.stderr };
+  if (!result.ok) return { ok: false, error: result.stderr };
+  const audio = await readAudioState(selected.executable, options.execFileImpl);
+  if (!audio.available || audio.volume == null || Math.abs(audio.volume - value) > 1) {
+    return { ok: false, error: "音频设备未应用音量，请检查输出设备", audio };
+  }
+  return { ok: true, audio };
 }
 
 async function setDisplayBrightness(percentage, options = {}) {

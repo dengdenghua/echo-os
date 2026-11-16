@@ -2147,6 +2147,96 @@
         "title": "CompleteBody",
         "type": "object"
       },
+      "ComputerCommand": {
+        "properties": {
+          "action": {
+            "enum": [
+              "inspect",
+              "home",
+              "navigate",
+              "click",
+              "text",
+              "key",
+              "launch"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "element": {
+            "default": -1,
+            "exclusiveMaximum": 60.0,
+            "minimum": -1.0,
+            "title": "Element",
+            "type": "integer"
+          },
+          "generation": {
+            "maxLength": 64,
+            "title": "Generation",
+            "type": "string"
+          },
+          "key": {
+            "default": "",
+            "maxLength": 24,
+            "title": "Key",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 8000,
+            "title": "Text",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Url",
+            "type": "string"
+          },
+          "x": {
+            "default": 0,
+            "exclusiveMaximum": 1280.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "default": 0,
+            "exclusiveMaximum": 720.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action",
+          "generation"
+        ],
+        "title": "ComputerCommand",
+        "type": "object"
+      },
+      "ComputerControl": {
+        "properties": {
+          "controller": {
+            "enum": [
+              "human",
+              "agent"
+            ],
+            "title": "Controller",
+            "type": "string"
+          },
+          "generation": {
+            "maxLength": 64,
+            "title": "Generation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "controller",
+          "generation"
+        ],
+        "title": "ComputerControl",
+        "type": "object"
+      },
       "ConstitutionProfileResponse": {
         "properties": {
           "available": {
@@ -3859,6 +3949,256 @@
           }
         },
         "title": "DualHelixShadowSettingsBody",
+        "type": "object"
+      },
+      "EngineInstallJob": {
+        "properties": {
+          "engine": {
+            "title": "Engine",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "received": {
+            "title": "Received",
+            "type": "integer"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mirror",
+                  "upstream"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "state": {
+            "enum": [
+              "checking",
+              "downloading",
+              "installing",
+              "done",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "engine",
+          "version",
+          "state",
+          "received",
+          "total"
+        ],
+        "title": "EngineInstallJob",
+        "type": "object"
+      },
+      "EngineListResponse": {
+        "properties": {
+          "engines": {
+            "items": {
+              "$ref": "#/components/schemas/EngineStatus"
+            },
+            "title": "Engines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "engines"
+        ],
+        "title": "EngineListResponse",
+        "type": "object"
+      },
+      "EngineStatus": {
+        "properties": {
+          "active_tasks": {
+            "default": 0,
+            "title": "Active Tasks",
+            "type": "integer"
+          },
+          "can_rollback": {
+            "default": false,
+            "title": "Can Rollback",
+            "type": "boolean"
+          },
+          "can_uninstall": {
+            "title": "Can Uninstall",
+            "type": "boolean"
+          },
+          "download_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Size"
+          },
+          "homepage": {
+            "title": "Homepage",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "installed_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed Size"
+          },
+          "installed_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installed Version"
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EngineInstallJob"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "license": {
+            "title": "License",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pending_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Version"
+          },
+          "previous_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Version"
+          },
+          "revision": {
+            "default": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bundled",
+                  "installed",
+                  "configured",
+                  "system"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "state": {
+            "enum": [
+              "ready",
+              "installing",
+              "pending_activation",
+              "update_available",
+              "not_installed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "supported": {
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "update_available": {
+            "title": "Update Available",
+            "type": "boolean"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "version",
+          "license",
+          "homepage",
+          "supported",
+          "state",
+          "update_available",
+          "can_uninstall"
+        ],
+        "title": "EngineStatus",
         "type": "object"
       },
       "EnsureRoomBody": {
@@ -7842,6 +8182,53 @@
               }
             ],
             "title": "Agentid"
+          },
+          "computer": {
+            "default": false,
+            "title": "Computer",
+            "type": "boolean"
+          },
+          "execution_engine": {
+            "default": "codex",
+            "enum": [
+              "codex",
+              "codebuddy"
+            ],
+            "title": "Execution Engine",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "network_access": {
+            "default": "deny",
+            "enum": [
+              "deny",
+              "common",
+              "full"
+            ],
+            "title": "Network Access",
+            "type": "string"
+          },
+          "permission_mode": {
+            "default": "default",
+            "enum": [
+              "default",
+              "acceptEdits",
+              "bypassPermissions",
+              "plan"
+            ],
+            "title": "Permission Mode",
+            "type": "string"
           },
           "prompt": {
             "maxLength": 8000,
@@ -21849,6 +22236,78 @@
         ]
       }
     },
+    "/api/config/codebuddy/login": {
+      "post": {
+        "operationId": "codebuddy_login_api_config_codebuddy_login_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Codebuddy Login Api Config Codebuddy Login Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Codebuddy Login",
+        "tags": [
+          "config",
+          "config"
+        ]
+      }
+    },
+    "/api/config/codebuddy/models": {
+      "get": {
+        "operationId": "codebuddy_models_api_config_codebuddy_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Codebuddy Models Api Config Codebuddy Models Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Codebuddy Models",
+        "tags": [
+          "config",
+          "config"
+        ]
+      }
+    },
+    "/api/config/codebuddy/status": {
+      "get": {
+        "operationId": "codebuddy_status_api_config_codebuddy_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Codebuddy Status Api Config Codebuddy Status Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Codebuddy Status",
+        "tags": [
+          "config",
+          "config"
+        ]
+      }
+    },
     "/api/config/custom-models": {
       "get": {
         "description": "List user-added models. ``api_key`` is NEVER echoed back —\npresence reported as ``has_api_key`` boolean only.",
@@ -27722,6 +28181,195 @@
         "summary": "Preview Creative Skill Files",
         "tags": [
           "design-studio"
+        ]
+      }
+    },
+    "/api/engines": {
+      "get": {
+        "operationId": "list_engines_api_engines_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Engines",
+        "tags": [
+          "engines"
+        ]
+      }
+    },
+    "/api/engines/{engine_id}": {
+      "delete": {
+        "operationId": "uninstall_engine_api_engines__engine_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "title": "Engine Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Uninstall Engine",
+        "tags": [
+          "engines"
+        ]
+      }
+    },
+    "/api/engines/{engine_id}/install": {
+      "post": {
+        "operationId": "install_engine_api_engines__engine_id__install_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "title": "Engine Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Install Engine",
+        "tags": [
+          "engines"
+        ]
+      }
+    },
+    "/api/engines/{engine_id}/rollback": {
+      "post": {
+        "operationId": "rollback_engine_api_engines__engine_id__rollback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "title": "Engine Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rollback Engine",
+        "tags": [
+          "engines"
+        ]
+      }
+    },
+    "/api/engines/{engine_id}/update": {
+      "post": {
+        "operationId": "update_engine_api_engines__engine_id__update_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "title": "Engine Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Engine",
+        "tags": [
+          "engines"
         ]
       }
     },
@@ -39747,6 +40395,46 @@
           }
         },
         "summary": "Unload Plugin",
+        "tags": [
+          "plugin-hub"
+        ]
+      }
+    },
+    "/api/plugin-hub/plugins/{name}/upgrade": {
+      "post": {
+        "operationId": "upgrade_plugin_api_plugin_hub_plugins__name__upgrade_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upgrade Plugin",
         "tags": [
           "plugin-hub"
         ]
@@ -52076,6 +52764,160 @@
         "summary": "Api Wiki Update",
         "tags": [
           "wiki"
+        ]
+      }
+    },
+    "/api/work-computer/control": {
+      "post": {
+        "operationId": "control_api_work_computer_control_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputerControl"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Control",
+        "tags": [
+          "work-computer"
+        ]
+      }
+    },
+    "/api/work-computer/frame": {
+      "get": {
+        "operationId": "frame_api_work_computer_frame_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Frame",
+        "tags": [
+          "work-computer"
+        ]
+      }
+    },
+    "/api/work-computer/input": {
+      "post": {
+        "operationId": "command_api_work_computer_input_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComputerCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Command",
+        "tags": [
+          "work-computer"
+        ]
+      }
+    },
+    "/api/work-computer/start": {
+      "post": {
+        "operationId": "start_api_work_computer_start_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Start",
+        "tags": [
+          "work-computer"
+        ]
+      }
+    },
+    "/api/work-computer/status": {
+      "get": {
+        "operationId": "status_api_work_computer_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Status",
+        "tags": [
+          "work-computer"
+        ]
+      }
+    },
+    "/api/work-computer/stop": {
+      "post": {
+        "operationId": "stop_api_work_computer_stop_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stop",
+        "tags": [
+          "work-computer"
         ]
       }
     },

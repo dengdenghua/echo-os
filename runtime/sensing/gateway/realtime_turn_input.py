@@ -382,20 +382,11 @@ def _input_metadata(params: TurnParams | list[dict[str, Any]]) -> dict[str, Any]
 
 
 def external_model_owner(params: TurnParams) -> str | None:
-    """Identify external model ownership for input shaping.
+    """Keep host smart routing from substituting the assistant's model.
 
-    Execution admission remains host-owned; this advisory value only prevents
-    local smart routing from replacing an explicitly selected external model.
+    Legacy client metadata is not an engine-selection authority.
     """
-    if params.execution_engine in {"codex", "opencode"}:
-        return params.execution_engine
-    if params.execution_engine != "auto":
-        return None
-    metadata = _input_metadata(params)
-    context = metadata.get("context")
-    context = context if isinstance(context, dict) else metadata
-    preview = str(context.get("execution_engine") or "").strip().lower()
-    return preview if preview in {"codex", "opencode"} else None
+    return "codex"
 
 
 def _agent_id_from_params(params: TurnParams) -> str | None:

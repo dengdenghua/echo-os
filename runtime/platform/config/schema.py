@@ -154,6 +154,8 @@ class ExecutionConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    # OS has one execution engine. Provider/model selection remains separate.
+    agent_engine: Literal["codex"] = "codex"
     deployment_mode: Literal["local", "shared", "commercial", "production", "server"] = "local"
     # None preserves the member policy; False disables optional unattended
     # model work. It never disables approval checks or privacy enforcement.

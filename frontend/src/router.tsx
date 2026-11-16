@@ -22,6 +22,7 @@ const PublicThreadSharePage = lazy(() => import("./app/share/[token]/page"));
 const DesktopPage = lazy(() => import("./app/desktop/page"));
 const TopBrowserPage = lazy(() => import("./components/desktop-browser-entry"));
 const MediaAppPage = lazy(() => import("./app/apps/media/page"));
+const TVPage = lazy(() => import("./app/tv/page"));
 const SLOW_PAGE_LOADING_MS = 8_000;
 
 function LegacyAccountRouteRedirect() {
@@ -104,6 +105,7 @@ export function AppRouter() {
             <Route path="/desktop" element={<DesktopPage />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/tv" element={<TVPage />} />
               <Route
                 path="/settings"
                 element={

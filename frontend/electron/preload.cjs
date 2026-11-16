@@ -39,6 +39,7 @@ const api = {
   isElectron: true,
   platform: process.platform,
   backendBaseURL: ipcRenderer.sendSync("backend:getBaseURLSync"),
+  auth: { desktopOwnerLogin: invoke("auth:desktopOwnerLogin") },
 
   // 原生 shell(A 路线):本地已装应用 枚举/启动。Dock/启动器渲染真实应用清单。
   apps: {

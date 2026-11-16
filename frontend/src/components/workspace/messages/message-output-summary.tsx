@@ -107,6 +107,8 @@ export type FailurePresentation = {
   /** A later user turn completed successfully, so this is historical audit. */
   resolved?: boolean;
   kind:
+    | "quota-exhausted"
+    | "rate-limit"
     | "error"
     | "network"
     | "backpressure"
@@ -580,7 +582,7 @@ export function MessageOutputSummary({
   const noModelCopy = turnFailureCopy(locale);
   // Network loss, an environment block, and a "needs your input" hand-off are
   // not agent failures — render them as amber/warning, not destructive red.
-  const isWarningFailure =
+  const isWarningFailure = failure?.kind === "quota-exhausted" || failure?.kind === "rate-limit" ||
     failure?.kind === "network" ||
     failure?.kind === "environment" ||
     failure?.kind === "blocked";
@@ -800,7 +802,7 @@ export function MessageOutputSummary({
           )}
           {isFailure &&
             !isResolvedFailure &&
-            failureNeedsModelSetup(failure) && (
+            (failureNeedsModelSetup(failure) || failure?.kind === "quota-exhausted" || failure?.kind === "rate-limit") && (
               <button
                 type="button"
                 onClick={() =>
@@ -813,10 +815,10 @@ export function MessageOutputSummary({
                 className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-border-default bg-background/70 px-2 text-xs font-medium text-foreground transition-colors hover:border-border hover:bg-muted/55"
               >
                 <SettingsIcon className="size-3" />
-                {t.message.openModelSettings}
+                {failure?.kind === "quota-exhausted" ? (locale.startsWith("zh") ? "切换引擎" : "Switch engine") : t.message.openModelSettings}
               </button>
             )}
-          {isFailure && !isResolvedFailure && !noModel && originalPrompt && (
+          {isFailure && !isResolvedFailure && failure?.kind !== "quota-exhausted" && !noModel && originalPrompt && (
             <button
               type="button"
               onClick={handleMakeSimilar}

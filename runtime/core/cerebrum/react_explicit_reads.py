@@ -26,6 +26,7 @@ from runtime.core.cerebrum.react_guards import _explicit_source_paths
 from runtime.core.cerebrum.react_parsing import _parse_action
 from runtime.core.cerebrum.react_types import ReActStep
 from runtime.core.cerebrum.todo_protocol import _is_narrow_read_only_command
+from runtime.execution.misc.read_only_intent import workspace_read_only_text
 from runtime.platform.models import Step
 
 _EXPLICIT_READ_RECOVERY_PATH_RE = re.compile(
@@ -235,7 +236,25 @@ def _bound_explicit_large_reads(
 
 def _explicit_read_only_goal(value: str | None) -> bool:
     """Whether the current user turn explicitly forbids workspace mutation."""
-    text = str(value or "").lower()
+    text = workspace_read_only_text(value)
+    from runtime.core.cerebrum.react_goal_analysis import _goal_requests_code_mutation
+
+    if _goal_requests_code_mutation(text, include_colloquial=False):
+        # A bounded write request may also protect unrelated files. That
+        # qualifier is not a global read-only mandate. Explicit "read-only"
+        # and unqualified prohibitions below still take precedence.
+        text = re.sub(
+            r"(?:不要|严禁|禁止|不得|不可|不允许|不)\s*"
+            r"(?:修改|改动|更改|编辑|写入|创建|新增|添加|删除|提交)\s*"
+            r"(?:其他|其它|其余|无关|别的)",
+            " ", text,
+        )
+        text = re.sub(
+            r"\b(?:do\s+not|don't|must\s+not|never)\s+"
+            r"(?:modify|change|edit|write|create|update|add|remove|delete|patch)\s+"
+            r"(?:any\s+)?(?:other|unrelated|remaining)\b",
+            " ", text,
+        )
     return bool(
         re.search(r"\bread[- ]only\b", text)
         or re.search(

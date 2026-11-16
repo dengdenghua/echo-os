@@ -115,6 +115,29 @@ def test_additional_system_write_authority_is_rejected(tmp_path):
         SandboxPolicy(workspace=tmp_path, additional_write_roots=(system,))
 
 
+def test_runtime_read_mount_does_not_grant_writes(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    bundle = tmp_path / "runtime-bundle"
+    workspace.mkdir()
+    bundle.mkdir()
+    monkeypatch.setattr("shutil.which", lambda _: "/usr/bin/bwrap")
+    command, _, _ = sandbox_module.BubblewrapBackend().transform(
+        ["tool"], {}, workspace,
+        SandboxPolicy(workspace=workspace, additional_read_roots=(bundle,)),
+    )
+    index = command.index(str(bundle.resolve()))
+    assert command[index - 1] == "--ro-bind"
+    assert command[index + 1] == str(bundle.resolve())
+
+
+def test_runtime_read_mount_rejects_overlapping_or_broad_roots(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    for root in (workspace, tmp_path, Path(tmp_path.anchor), Path("relative")):
+        with pytest.raises(SandboxViolation):
+            SandboxPolicy(workspace=workspace, additional_read_roots=(root,))
+
+
 def test_read_only_seatbelt_profile_grants_only_exact_private_root(tmp_path, monkeypatch):
     workspace = tmp_path / "workspace"
     private = tmp_path / "private-state"

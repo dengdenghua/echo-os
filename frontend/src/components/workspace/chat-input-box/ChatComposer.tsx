@@ -26,7 +26,7 @@ import {
   TargetIcon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -147,6 +147,7 @@ export function ChatComposer({
   onDeepResearch,
   onSubmit,
   onStop,
+  isStopping = false,
   isUploading = false,
   className,
 }: ChatInputBoxProps) {
@@ -188,6 +189,13 @@ export function ChatComposer({
   const [researchConfigOpen, setResearchConfigOpen] = useState(false);
   const submitLockRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    if (!autoFocus) return;
+    // Lazy conversation loading must not dismiss an application menu that
+    // the user already opened while waiting for the composer.
+    if (document.activeElement?.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+    textareaRef.current?.focus();
+  }, [autoFocus]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
@@ -327,6 +335,7 @@ export function ChatComposer({
   // blocks too — silently dropping it is worse than making the user decide.
   const isBusy =
     disabled ||
+    isStopping ||
     uploadingMaterials ||
     isUploading ||
     attachmentUploads.isUploading ||
@@ -1281,7 +1290,6 @@ export function ChatComposer({
             .join(",")}`}
           data-testid="chat-composer-input"
           ref={textareaRef}
-          autoFocus={autoFocus}
           disabled={isBusy}
           placeholder={placeholder ?? t.inputBox.placeholder}
           aria-label={placeholder ?? t.inputBox.placeholder}
@@ -1736,6 +1744,7 @@ export function ChatComposer({
             <div className="composer-footer__secondary contents">
               <PermissionIndicator
                 mode={resolvedPermissionMode}
+                activeTask={status === "streaming" || status === "submitted"}
                 onModeChange={(nextMode) => onPermissionModeChange?.(nextMode)}
                 compact
               />
@@ -1847,7 +1856,7 @@ export function ChatComposer({
               />
             </div>
           )}
-          {status === "streaming" && sendableDraftText ? (
+          {status === "streaming" && sendableDraftText && !isStopping ? (
             <>
               <button
                 type="button"
@@ -1869,15 +1878,21 @@ export function ChatComposer({
                 <SquareIcon className="size-3" fill="currentColor" />
               </button>
             </>
-          ) : status === "streaming" ? (
+          ) : status === "streaming" || isStopping ? (
             <button
               type="button"
               onClick={onStop}
+              disabled={isStopping}
+              aria-busy={isStopping}
               className="flex size-[42px] items-center justify-center rounded-lg border border-border bg-muted/60 text-muted-foreground transition-all duration-base hover:border-destructive/25 hover:bg-destructive/10 hover:text-destructive active:scale-95 sm:size-8"
               title={stopLabel}
               aria-label={stopLabel}
             >
-              <SquareIcon className="size-3" fill="currentColor" />
+              {isStopping ? (
+                <Loader2Icon className="size-3 animate-spin" />
+              ) : (
+                <SquareIcon className="size-3" fill="currentColor" />
+              )}
             </button>
           ) : (
             <button

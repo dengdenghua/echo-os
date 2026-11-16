@@ -16,7 +16,7 @@ afterEach(() => {
 describe("owner password rule", () => {
   // Same cases as tests/appliance/test_owner_setup.py.
   it.each([
-    ["Short-1a", "至少需要 12 个字符"],
+    ["Short-1", "至少需要 8 个字符"],
     ["alllowercaseletters", "至少三类"],
     ["ALLUPPER12345678", "至少三类"],
     ["Aa1!Aa1!Aa1!Aa1!", "重复的字符太多"],
@@ -26,6 +26,7 @@ describe("owner password rule", () => {
   });
 
   it.each([
+    "Short-1a",
     "Harbor-Light-2147",
     "harbor light 2147",
     "记忆不灭文明回响Echo2147",

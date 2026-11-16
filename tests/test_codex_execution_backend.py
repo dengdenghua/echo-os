@@ -47,6 +47,10 @@ class _FakeContext:
     cleaned: bool = False
     config_validated: bool = False
 
+    @property
+    def config_path(self) -> Path:
+        return self.codex_home / "config.toml"
+
     def launch_env(self) -> dict[str, str]:
         return {
             "PATH": "/safe/bin",
@@ -98,6 +102,8 @@ class _FakeSecurity:
 
     def prepare(self, **kwargs: Any) -> _FakeContext:
         self.prepare_kwargs = kwargs
+        self.context.codex_home.mkdir(parents=True, exist_ok=True)
+        self.context.config_path.write_text("# isolated test config\n", encoding="utf-8")
         return self.context
 
     def seed_auth_from_codex_home(
@@ -871,4 +877,36 @@ async def test_interrupt_steer_and_notification_scope(tmp_path: Path) -> None:
         },
         3.0,
     )
+    await session.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("resume", [False, True])
+async def test_compact_budget_reaches_start_and_resume(tmp_path: Path, resume: bool) -> None:
+    from dataclasses import replace
+    session, _, _, _, client = _make_session(tmp_path, binding=_binding() if resume else None)
+    session.request = replace(session.request, auto_compact_token_limit=64000)
+    await session.start()
+    call = next(value for name, value in client.calls if name == ("thread/resume" if resume else "thread/start"))
+    params = call[1] if resume else call
+    assert params["extra_params"]["config"] == {"model_auto_compact_token_limit": 64000}
+    await session.close()
+
+@pytest.mark.parametrize("budget", [True, 0, 31999, 1000001, 64000.5, "64000"])
+def test_compact_budget_rejects_invalid_values(tmp_path: Path, budget) -> None:
+    from dataclasses import replace
+    session, *_ = _make_session(tmp_path)
+    with pytest.raises(ValueError, match="auto_compact_token_limit"):
+        replace(session.request, auto_compact_token_limit=budget)
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("resume", [False, True])
+async def test_proxy_window_and_changed_budget_reach_engine(tmp_path: Path, resume: bool) -> None:
+    from dataclasses import replace
+    session, _, _, _, client = _make_session(tmp_path, binding=_binding() if resume else None)
+    session.request = replace(session.request, auto_compact_token_limit=32000, model_context_window=1000000)
+    await session.start()
+    call = next(value for name, value in client.calls if name == ("thread/resume" if resume else "thread/start"))
+    params = call[1] if resume else call
+    assert params["extra_params"]["config"] == {"model_auto_compact_token_limit": 32000, "model_context_window": 1000000}
     await session.close()

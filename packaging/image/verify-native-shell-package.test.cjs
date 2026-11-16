@@ -34,6 +34,8 @@ async function fixture({
   staleMain = false,
   testFile = false,
   nativeAddon = false,
+  missingResource = null,
+  staleResource = null,
 } = {}) {
   const root = fs.mkdtempSync(
     path.join(os.tmpdir(), "echo-native-shell-test-"),
@@ -58,13 +60,23 @@ async function fixture({
     path.join(asarSource, "dist", "index.html"),
     "<!doctype html>\n",
   );
-  for (const name of ["main.cjs", "desktop-updater.cjs", "shell-profile.cjs"]) {
-    const source = fs.readFileSync(
-      path.join(REPO_ROOT, "frontend", "electron", name),
-    );
+  fs.cpSync(
+    path.join(REPO_ROOT, "frontend", "electron"),
+    path.join(asarSource, "electron"),
+    {
+      recursive: true,
+      filter: (source) =>
+        !/(?:\.test\.cjs|\.node-test\.cjs|\.test\.mjs)$/.test(source),
+    },
+  );
+  if (staleMain)
+    fs.writeFileSync(path.join(asarSource, "electron", "main.cjs"), "stale\n");
+  if (missingResource)
+    fs.unlinkSync(path.join(asarSource, "electron", missingResource));
+  if (staleResource) {
     fs.writeFileSync(
-      path.join(asarSource, "electron", name),
-      staleMain && name === "main.cjs" ? Buffer.from("stale\n") : source,
+      path.join(asarSource, "electron", staleResource),
+      "stale\n",
     );
   }
   if (testFile) {
@@ -123,6 +135,15 @@ async function run() {
   await rejectsMutation({ staleMain: true });
   await rejectsMutation({ testFile: true });
   await rejectsMutation({ nativeAddon: true });
+  for (const missingResource of [
+    "automation-feedback.html",
+    "automation-feedback-preload.cjs",
+    "companion.html",
+    "companion-assets/idle.webp",
+    "work-desktop.html",
+  ])
+    await rejectsMutation({ missingResource });
+  await rejectsMutation({ staleResource: "companion.css" });
   await rejectsMutation({}, (packageRoot) =>
     fs.writeFileSync(path.join(packageRoot, "echo-os-desktop"), fakeElf(183)),
   );

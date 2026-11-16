@@ -101,6 +101,7 @@ it("keeps desktop settings inline while retaining nested approval and busy guard
 });
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(requestHighRiskApproval).mockResolvedValue({
     approvalToken: "one-shot.signature",
     expiresIn: 90,
@@ -206,6 +207,54 @@ beforeEach(() => {
 });
 
 describe("Echo OS account security settings", () => {
+  it.each(["Eight7!a", "中文密码测试八位"])(
+    "accepts an eight-character password: %s",
+    async (password) => {
+      const user = userEvent.setup();
+      render(
+        <AccountSecurityPanel
+          open
+          onClose={vi.fn()}
+          onSessionEnded={vi.fn()}
+        />,
+      );
+      expect(screen.getByPlaceholderText("至少 8 个字符")).toBeInTheDocument();
+      await user.type(screen.getByLabelText("当前密码"), "current-device-pass");
+      await user.type(screen.getByLabelText("新密码"), password);
+      await user.type(screen.getByLabelText("确认新密码"), password);
+      await user.click(screen.getByRole("button", { name: "更新密码" }));
+      await waitFor(() =>
+        expect(rotateAdminPassword).toHaveBeenCalledWith(
+          password,
+          "one-shot.signature",
+        ),
+      );
+    },
+  );
+
+  it.each(["Short7!", "😀😀😀😀😀😀😀"])(
+    "rejects fewer than eight characters before approval: %s",
+    async (password) => {
+      const user = userEvent.setup();
+      render(
+        <AccountSecurityPanel
+          open
+          onClose={vi.fn()}
+          onSessionEnded={vi.fn()}
+        />,
+      );
+      await user.type(screen.getByLabelText("当前密码"), "current-device-pass");
+      await user.type(screen.getByLabelText("新密码"), password);
+      await user.type(screen.getByLabelText("确认新密码"), password);
+      await user.click(screen.getByRole("button", { name: "更新密码" }));
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "新密码至少需要 8 个字符",
+      );
+      expect(requestHighRiskApproval).not.toHaveBeenCalled();
+      expect(rotateAdminPassword).not.toHaveBeenCalled();
+    },
+  );
+
   it("rotates the password through a password-bound approval", async () => {
     const user = userEvent.setup();
     const onSessionEnded = vi.fn();

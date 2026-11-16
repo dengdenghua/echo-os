@@ -1,3 +1,6 @@
+if (process.env.ECHO_WORK_COMPUTER === "1") {
+  require("./work-computer.cjs");
+} else {
 /**
  * Echo desktop shell — main process.
  *
@@ -14,6 +17,7 @@ const {
   protocol,
   safeStorage,
   screen,
+  powerMonitor,
   shell,
   session,
   systemPreferences,
@@ -23,8 +27,16 @@ const fs = require("fs");
 const fsp = require("fs/promises");
 const os = require("os");
 const path = require("path");
+const { createAutomationFeedback } = require("./automation-feedback.cjs");
+let automationFeedback = null;
+const { createDesktopCompanion } = require("./desktop-companion.cjs");
+let desktopCompanion = null;
 const { pathToFileURL } = require("url");
-const { spawnBackend, killBackend } = require("./backend-runtime.cjs");
+const {
+  spawnBackend,
+  killBackend,
+  loginDesktopOwner,
+} = require("./backend-runtime.cjs");
 const {
   isSameAppLocation,
   safeOpenExternal,
@@ -32,6 +44,7 @@ const {
 const desktopUpdater = require("./desktop-updater.cjs");
 const desktopProtocol = require("./desktop-protocol.cjs");
 const shellProfile = require("./shell-profile.cjs");
+const { openLocalPath } = require("./local-path-launcher.cjs");
 const {
   ensureDesktopConfigFile,
   ensureDesktopResources,
@@ -64,6 +77,7 @@ const { resolveDevURL } = require("./dev-url.cjs");
 // `session` 是旧 Cage/kiosk 会话；`desktop` 是目标 C 的 KWin 通用桌面会话。
 const SHELL_MODE = process.env.ECHO_SHELL_MODE || "";
 const DESKTOP_SESSION = SHELL_MODE === "desktop";
+const { nativeEntryRoute } = require("./shell-entry.cjs");
 // The Echo OS directory package has a distinct immutable executable identity.
 // Bind production behavior to that identity so a missing session environment
 // variable can never make the resource-minimal OS shell try to start the
@@ -106,6 +120,7 @@ if (process.platform === "win32") {
 }
 
 let mainWindow = null;
+let abortDesktopRequests = () => {};
 // URL the main window's renderer is served from (packaged entry or dev server).
 // IPC and main-frame navigation are only trusted on this location.
 let appRendererUrl = null;
@@ -167,6 +182,12 @@ function installDesktopRendererProtocol() {
       console.warn("[echo] desktop asset unavailable:", error.message),
   });
   protocol.handle(desktopProtocol.DESKTOP_APP_SCHEME, handler);
+  abortDesktopRequests = handler.abortPending;
+  require("./desktop-websocket-auth.cjs").installDesktopWebSocketAuth({
+    session: session.defaultSession,
+    backendBaseURL: resolveBackendBaseURL(),
+    getContents: () => mainWindow?.webContents,
+  });
 }
 
 function backendConfigPath() {
@@ -710,6 +731,16 @@ function registerIpc() {
     });
 
   // app
+  ipcMain.handle("auth:desktopOwnerLogin", async (event) => {
+    if (
+      event.sender !== mainWindow?.webContents ||
+      event.senderFrame !== event.sender.mainFrame ||
+      !isSameAppLocation(event.senderFrame?.url, appRendererUrl)
+    ) {
+      return { ok: false, reason: "forbidden" };
+    }
+    return loginDesktopOwner(resolveBackendBaseURL());
+  });
   handle("app:getVersion", () => app.getVersion());
   handle("app:openExternal", (url) => safeOpenExternal(shell, url));
   handle("app:getPlatform", () => process.platform);
@@ -983,8 +1014,7 @@ function registerIpc() {
     }
   });
   handle("desktop:openItem", async (p) => {
-    const error = await shell.openPath(p);
-    return error ? { ok: false, error } : { ok: true };
+    return openLocalPath(p, { openPath: shell.openPath });
   });
   handle("desktop:moveItem", async (srcPath, destDir) => {
     try {
@@ -1243,8 +1273,7 @@ function registerIpc() {
   handle("browser:openDownload", async (id) => {
     const dl = downloads.get(id);
     if (!dl?.path) return { ok: false, error: "download not found" };
-    const error = await shell.openPath(dl.path);
-    return error ? { ok: false, error } : { ok: true };
+    return openLocalPath(dl.path, { openPath: shell.openPath });
   });
 
   handle("browser:pauseDownload", (id) => {
@@ -1438,6 +1467,7 @@ async function createLinuxGlassBackgroundScene(hostWindow, wallpaperPath) {
 }
 
 function createMainWindow() {
+  automationFeedback?.start();
   const nativeTransparency = shouldUseTransparentWindow();
   const win = new BrowserWindow({
     width: 1440,
@@ -1475,6 +1505,7 @@ function createMainWindow() {
       createLinuxGlassBackgroundScene(win, wallpaperPath),
   });
   win.once("closed", () => {
+    automationFeedback?.stop();
     nativeLiquidGlassController?.deactivate();
     nativeLiquidGlassController = null;
   });
@@ -1506,6 +1537,13 @@ function createMainWindow() {
   });
   // Leaving the app location would hand `window.echo` to foreign content, so
   // keep the main frame on the renderer and send ordinary links outward.
+  win.webContents.on("did-start-navigation", (event, _url, inPlace, mainFrame) => {
+    if ((event.isMainFrame ?? mainFrame) && !(event.isSameDocument ?? inPlace)) {
+      abortDesktopRequests();
+    }
+  });
+  win.webContents.on("render-process-gone", () => abortDesktopRequests());
+  win.webContents.on("destroyed", () => abortDesktopRequests());
   win.webContents.on("will-navigate", (event, url) => {
     const target = event.url ?? url;
     if (isSameAppLocation(target, appRendererUrl)) return;
@@ -1540,9 +1578,8 @@ function createMainWindow() {
   const useBuiltRenderer =
     app.isPackaged || NATIVE_SHELL || BUILT_RENDERER_SMOKE;
   if (useBuiltRenderer) {
-    const entry = DESKTOP_SESSION
-      ? `${desktopProtocol.DESKTOP_APP_ENTRY_URL}#/desktop`
-      : desktopProtocol.DESKTOP_APP_ENTRY_URL;
+    const route = nativeEntryRoute({ desktopSession: DESKTOP_SESSION, startSurface: process.env.ECHO_START_SURFACE });
+    const entry = desktopProtocol.DESKTOP_APP_ENTRY_URL + (route ? `#${route}` : "");
     appRendererUrl = entry;
     win.loadURL(entry).catch((error) => {
       console.error("[echo] desktop renderer failed to load:", error);
@@ -1596,6 +1633,8 @@ if (!app.requestSingleInstanceLock()) {
     });
   };
   app.on("before-quit", (event) => {
+    desktopCompanion?.shutdown();
+    automationFeedback?.stop();
     if (backendShutdownComplete) return;
     event.preventDefault();
     finishAfterBackendShutdown(() => app.quit());
@@ -1626,6 +1665,11 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
+    try {
+      automationFeedback = createAutomationFeedback({ app, BrowserWindow, screen, nativeAgent: NATIVE_SHELL });
+      powerMonitor.on("lock-screen", () => automationFeedback?.stop());
+      powerMonitor.on("unlock-screen", () => automationFeedback?.start());
+    } catch (error) { console.warn("[echo] input feedback unavailable:", error.message); }
     if (!app.isPackaged) app.setAsDefaultProtocolClient("echo");
     try {
       if (app.isPackaged || NATIVE_SHELL || BUILT_RENDERER_SMOKE) {
@@ -1653,6 +1697,14 @@ if (!app.requestSingleInstanceLock()) {
     trackDownloads(browserProfileSession());
     await loadEnabledExtensions();
     mainWindow = createMainWindow();
+    if (process.env.ECHO_PET_DISABLED !== "1" && !BUILT_RENDERER_SMOKE) {
+      desktopCompanion = createDesktopCompanion({
+        app, BrowserWindow, ipcMain, screen, Menu: require("electron").Menu,
+        getMainWindow: () => mainWindow, devURL: DEV_URL, brand: "Echo OS",
+      });
+      desktopCompanion.start();
+      mainWindow.once("closed", () => desktopCompanion?.shutdown());
+    }
     const standaloneSmoke = process.env.ECHO_SMOKE === "1";
     const nativeAppSmokeRequested = Boolean(
       process.env.ECHO_NATIVE_APP_SMOKE_ID,
@@ -1775,4 +1827,6 @@ if (!app.requestSingleInstanceLock()) {
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
+}
+
 }

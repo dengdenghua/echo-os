@@ -1,0 +1,310 @@
+/* The desktop is the window. Auxiliary controls float outside its image. */
+.echo-tv .tv-computer-window {
+  --computer-width: min(55vw, calc((60vh - 4em) * 16 / 9));
+  position: fixed;
+  z-index: 80;
+  left: calc((100vw - var(--computer-width)) / 2);
+  top: 8vh;
+  width: var(--computer-width);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65em;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #f5f5f7;
+  font-size: clamp(14px, 1.15vw, 36px);
+}
+.echo-tv .tv-computer-window[hidden],
+.echo-tv .tv-computer-mini[hidden],
+.tv-computer-tasks[hidden] {
+  display: none;
+}
+.echo-tv .tv-computer-window button {
+  border: 1px solid #ffffff26;
+  border-radius: 0.65em;
+  background: #ffffff12;
+  color: inherit;
+  font-size: 0.9em;
+  min-height: 2.2em;
+  padding: 0.45em 0.7em;
+  white-space: nowrap;
+}
+.echo-tv .tv-computer-window button:focus-visible,
+.tv-computer-screen:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #17233360;
+}
+.echo-tv .tv-computer-window button:disabled {
+  opacity: 0.38;
+}
+.tv-computer-title {
+  position: absolute;
+  bottom: calc(100% + 0.55em);
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.tv-computer-title > span {
+  flex: 1;
+}
+.tv-computer-brand,
+.echo-tv .tv-computer-title > button {
+  background: #243044b8;
+  backdrop-filter: blur(16px);
+  border: 1px solid #ffffff35;
+  border-radius: 100px;
+  box-shadow: 0 2px 10px #17233318;
+}
+.tv-computer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.4em 0.8em;
+  font-size: 0.8em;
+}
+.tv-computer-brand strong {
+  font-weight: 500;
+}
+.tv-computer-brand svg,
+.tv-computer-title button svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.echo-tv .tv-computer-title > button {
+  display: grid;
+  place-items: center;
+  width: 2.2em;
+  padding: 0;
+}
+.tv-computer-body {
+  order: 0;
+  position: relative;
+  min-width: 0;
+}
+.tv-computer-screen {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border-radius: 1em;
+  background: #172333;
+  cursor: default;
+  border: 1px solid #ffffff55;
+  box-shadow:
+    0 1em 3em #102a4338,
+    0 2px 6px #102a4328;
+}
+.tv-computer-screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.tv-computer-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1em;
+}
+.tv-computer-empty svg {
+  width: 3em;
+  height: 3em;
+  opacity: 0.5;
+}
+.tv-computer-empty small {
+  opacity: 0.7;
+}
+.tv-computer-cursor {
+  position: absolute;
+  width: 1em;
+  height: 1em;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #1119;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px #000;
+}
+.tv-computer-toolbar {
+  order: 1;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.35em 0.4em 0.35em 0.9em;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid #ffffffb0;
+  border-radius: 100px;
+  background: #f9fbfcf0;
+  color: #263442;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 0.3em 1em #18334a1f;
+}
+.tv-computer-toolbar > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.85em;
+}
+.tv-computer-toolbar i {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: #7e8c9b;
+}
+.tv-computer-toolbar[data-controller="human"] i {
+  background: #2584d6;
+}
+.tv-computer-toolbar[data-controller="agent"] i {
+  background: #35a77d;
+}
+.echo-tv .tv-computer-toolbar > button {
+  background: #243343;
+  color: white;
+  border: 0;
+  border-radius: 100px;
+  padding: 0.55em 1em;
+}
+.tv-computer-menu,
+.tv-computer-inputs,
+.tv-computer-tasks {
+  position: absolute;
+  z-index: 2;
+  padding: 0.9em;
+  border: 1px solid #ffffff35;
+  border-radius: 1em;
+  background: #1e2a3bf2;
+  box-shadow: 0 1em 3em #10243a30;
+  color: #f5f7fa;
+}
+.tv-computer-menu {
+  right: 0;
+  top: 0;
+  width: 14em;
+  display: grid;
+  gap: 0.3em;
+}
+.echo-tv .tv-computer-menu button {
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+.tv-computer-menu button:hover {
+  background: #ffffff12;
+}
+.tv-computer-inputs,
+.tv-computer-tasks {
+  left: calc(100% + 1vw);
+  top: 0;
+  width: clamp(14em, 20vw, 28rem);
+  max-height: 58vh;
+  overflow: auto;
+}
+.tv-computer-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45em;
+  align-items: end;
+}
+.tv-computer-drawer-title {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5em;
+  margin-bottom: 0.3em;
+}
+.tv-computer-drawer-title h3 {
+  flex: 1;
+  font-size: 1em;
+  font-weight: 550;
+  margin: 0;
+}
+.tv-computer-drawer-title button svg {
+  width: 1em;
+  height: 1em;
+}
+.tv-computer-inputs .tv-field {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+.tv-computer-window .tv-field label {
+  font-size: 0.8em;
+}
+.tv-computer-window .tv-field input {
+  font-size: 0.9em;
+  min-height: 2.2em;
+  padding: 0.4em 0.6em;
+}
+.tv-computer-tasks > button {
+  width: 100%;
+  text-align: left;
+  margin-top: 0.6em;
+}
+.tv-computer-task strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tv-computer-task small {
+  display: block;
+  color: #c4d0df;
+  margin-top: 0.3em;
+}
+.tv-computer-activity {
+  max-height: 5.5em;
+  overflow: auto;
+  font-size: 0.8em;
+  color: #c8d7e2;
+}
+.tv-computer-tasks > .tv-muted {
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+.tv-computer-window footer {
+  position: absolute;
+  top: calc(100% + 0.4em);
+  left: 0;
+  right: 0;
+  padding: 0.4em 0.8em;
+  border-radius: 0.7em;
+  background: #1e2a3bf2;
+  color: white;
+  font-size: 0.8em;
+  text-align: center;
+  max-height: 4em;
+  overflow: auto;
+}
+.echo-tv .tv-computer-mini {
+  position: fixed;
+  right: 4vw;
+  top: 10vh;
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.7em 1em;
+  border: 1px solid #ffffff66;
+  border-radius: 1em;
+  background: #1e2a3bf0;
+  color: white;
+  box-shadow: 0 0.5em 2em #0003;
+  font-size: 1em;
+}
+.tv-computer-mini svg {
+  width: 1.4em;
+}
+.tv-computer-mini small {
+  display: block;
+  font-size: 0.7em;
+  opacity: 0.7;
+  margin-top: 0.25em;
+}

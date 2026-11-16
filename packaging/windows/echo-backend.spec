@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from pathlib import Path
+import ssl
 
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
 
@@ -46,6 +47,13 @@ hiddenimports += collect_submodules("pyaudiowpatch")
 hiddenimports += ["pylibsrtp", "_cffi_backend", "pyautogui._pyautogui_win"]
 
 datas = collect_data_files("runtime", include_py_files=False)
+# Some managed Python distributions load an additional CA policy file from
+# beside ssl.py on every SSLContext construction. Preserve that policy in the
+# frozen module directory; omitting it breaks even HTTP clients that eagerly
+# create a TLS context. Never work around it by disabling certificate checks.
+runtime_ca_policy = Path(ssl.__file__).with_name("codex-rejected-cas.pem")
+if runtime_ca_policy.is_file():
+    datas.append((str(runtime_ca_policy), "."))
 reflex_rules = repo_root / "data" / "reflex_rules.yaml"
 if reflex_rules.exists():
     datas.append((str(reflex_rules), "data"))

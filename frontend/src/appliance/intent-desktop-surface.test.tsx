@@ -1,6 +1,6 @@
 import {
   fireEvent,
-  render,
+  render as renderRTL,
   screen,
   waitFor,
   within,
@@ -14,6 +14,16 @@ import {
 import { selectDesktopTasks, taskStatusView } from "./task-presentation";
 import type { EchoTaskProjection } from "./task-space";
 import { toast } from "sonner";
+import type { ReactElement } from "react";
+import { I18nProvider } from "@/core/i18n/context";
+import { zhCN } from "@/core/i18n/locales/zh-CN";
+import { DEFAULT_LOCAL_SETTINGS, saveLocalSettings } from "@/core/settings/local";
+
+function render(ui: ReactElement) {
+  return renderRTL(ui, { wrapper: ({ children }) => (
+    <I18nProvider initialLocale="zh-CN" initialTranslations={zhCN}>{children}</I18nProvider>
+  ) });
+}
 
 vi.mock("sonner", () => ({
   toast: {
@@ -202,6 +212,14 @@ describe("IntentDesktopSurface", () => {
     // 每个用例从确定的身份起步，避免作用域用例之间互相串账号
     authState.actor = "anonymous";
     vi.clearAllMocks();
+  });
+
+  it("shows the same saved permission as the workbench before dispatch", () => {
+    saveLocalSettings({ ...DEFAULT_LOCAL_SETTINGS, context: {
+      ...DEFAULT_LOCAL_SETTINGS.context, permission_mode: "bypassPermissions",
+    } });
+    render(<IntentDesktopSurface onDispatchIntent={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "权限: 完全访问" })).toBeVisible();
   });
 
   it("renders only real tasks and never falls back to demo content", () => {

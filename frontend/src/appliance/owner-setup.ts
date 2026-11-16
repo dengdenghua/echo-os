@@ -13,7 +13,7 @@ export type OwnerSetupStatus = {
   username: string;
 };
 
-export const OWNER_PASSWORD_MIN_CHARACTERS = 12;
+export const OWNER_PASSWORD_MIN_CHARACTERS = 8;
 export const OWNER_PASSWORD_MAX_BYTES = 72;
 
 export type OwnerPasswordCheck = {

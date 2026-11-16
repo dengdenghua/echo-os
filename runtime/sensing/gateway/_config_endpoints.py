@@ -77,6 +77,8 @@ def _build_endpoints(ctx: _ConfigCtx) -> None:
     _register_local_models(router, ctx)
     _register_system(router, ctx)
     _register_coder_codex(router, ctx)
+    from runtime.sensing.gateway._config_endpoints_codebuddy import _register_codebuddy
+    _register_codebuddy(router, ctx)
 
 
 __all__ = ["_ConfigCtx", "_build_endpoints"]
