@@ -45,7 +45,7 @@ it("blocks an unconfigured model, then admits a task after readiness recovers", 
   api.start.mockResolvedValue({ thread_id: "tv-task" });
   renderWithProviders(<TVAgentPanel onClose={() => {}} />);
   expect(
-    await screen.findByText(/请先在大屏模型设置中接入可用模型/),
+    await screen.findByText(/请先在娱乐模式的模型设置中接入可用模型/),
   ).toBeInTheDocument();
   fireEvent.change(screen.getByRole("textbox"), {
     target: { value: "检索中文资料" },

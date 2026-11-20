@@ -9,6 +9,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { readDesktopWallpaperUrl } from "@/appliance/use-desktop-appearance";
 import { useTVDialogFocus } from "./use-tv-focus";
 import { TVModelSettings } from "./model-settings";
 import { TVLibrarySettings } from "./library-settings";
@@ -261,15 +262,19 @@ function TVDeviceSettings() {
 export function TVSettings({
   onClose,
   initialSection = "general",
+  direct = false,
 }: {
   onClose: () => void;
   initialSection?: TVSettingsSection;
+  direct?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   useTVDialogFocus(root);
   const [section, setSection] = useState<TVSettingsSection>(initialSection),
     [preferences, setPreferences] = useState(readTVPreferences);
-  const [overview, setOverview] = useState(initialSection === "general");
+  const [overview, setOverview] = useState(
+    initialSection === "general" && !direct,
+  );
   const selected = sections.find((s) => s.id === section)!;
   const SectionIcon = overview ? Settings : selected.icon;
   const openSection = (id: TVSettingsSection) => {
@@ -282,7 +287,7 @@ export function TVSettings({
     );
   };
   const back = () => {
-    if (overview) onClose();
+    if (overview || direct) onClose();
     else {
       setOverview(true);
       requestAnimationFrame(() =>
@@ -300,13 +305,13 @@ export function TVSettings({
         data-tv-dialog
         role="dialog"
         aria-modal="true"
-        aria-label="大屏设置"
+        aria-label="娱乐模式设置"
         className="tv-settings"
         data-overview={overview}
       >
         <header className="tv-panel-header">
           <button data-tv-focus data-tv-back onClick={back}>
-            {overview ? "返回大屏" : "返回设置"}
+            {overview || direct ? "返回娱乐模式" : "返回设置"}
           </button>
         </header>
         <div className="tv-settings-layout">
@@ -356,7 +361,10 @@ export function TVSettings({
                         })
                       }
                     >
-                      <img src={wallpaper.image} alt="" />
+                      <img
+                        src={wallpaper.image ?? readDesktopWallpaperUrl()}
+                        alt=""
+                      />
                       <span>{wallpaper.label}</span>
                     </button>
                   ))}

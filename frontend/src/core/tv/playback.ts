@@ -112,20 +112,31 @@ export function createBrowserPlayback(
 
 export type WatchProgress = {
   id: string;
+  title?: string;
   position: number;
   duration: number;
   updatedAt: number;
 };
-const progressKey = (actor: string) =>
+export const progressKey = (actor: string) =>
   `echo:tv:progress:v1:${encodeURIComponent(actor)}`;
+
+export const CONTINUITY_CHANGED = "echo:continuity-changed";
+
+export function hasHistoryActor(actor: string) {
+  return (
+    Boolean(actor.trim()) &&
+    !["anonymous", "__anonymous__", "__guest__"].includes(actor)
+  );
+}
 
 export function readWatchProgress(
   actor: string,
-  storage: Pick<Storage, "getItem"> = localStorage,
+  storage?: Pick<Storage, "getItem">,
 ): WatchProgress[] {
+  if (!hasHistoryActor(actor)) return [];
   try {
     const data: unknown = JSON.parse(
-      storage.getItem(progressKey(actor)) ?? "[]",
+      (storage ?? localStorage).getItem(progressKey(actor)) ?? "[]",
     );
     if (!Array.isArray(data)) return [];
     return data
@@ -133,6 +144,7 @@ export function readWatchProgress(
         (row): row is WatchProgress =>
           row &&
           typeof row.id === "string" &&
+          row.id.length > 0 &&
           row.id.length <= 2048 &&
           [row.position, row.duration, row.updatedAt].every(
             (value) => typeof value === "number" && Number.isFinite(value),
@@ -146,12 +158,25 @@ export function readWatchProgress(
   }
 }
 
+export function forgetWatchProgress(actor: string, id: string) {
+  const rows = readWatchProgress(actor);
+  const remaining = rows.filter((row) => row.id !== id);
+  if (remaining.length === rows.length) return;
+  try {
+    localStorage.setItem(progressKey(actor), JSON.stringify(remaining));
+    window.dispatchEvent(new Event(CONTINUITY_CHANGED));
+  } catch {
+    /* Storage may be disabled. */
+  }
+}
+
 export function saveWatchProgress(
   actor: string,
   entry: WatchProgress,
-  storage: Pick<Storage, "getItem" | "setItem"> = localStorage,
+  storage?: Pick<Storage, "getItem" | "setItem">,
 ) {
   if (
+    !hasHistoryActor(actor) ||
     !entry.id ||
     entry.id.length > 2048 ||
     ![entry.position, entry.duration, entry.updatedAt].every(Number.isFinite) ||
@@ -165,13 +190,61 @@ export function saveWatchProgress(
   const complete =
     entry.position >= entry.duration - Math.min(10, entry.duration * 0.05);
   try {
-    storage.setItem(
+    (storage ?? localStorage).setItem(
       progressKey(actor),
       JSON.stringify(
         (complete ? remaining : [entry, ...remaining]).slice(0, 50),
       ),
     );
+    if (typeof window !== "undefined")
+      window.dispatchEvent(new Event(CONTINUITY_CHANGED));
   } catch {
     /* Playback still works with storage disabled. */
   }
+}
+
+/** Start an authorized video and keep its resumable position for both shells. */
+export function loadTrackedVideo(
+  player: PlaybackAdapter,
+  actor: string,
+  media: { id: string; title: string; url: string },
+) {
+  const resumeAt =
+    readWatchProgress(actor).find((entry) => entry.id === media.id)?.position ??
+    0;
+  let latest: PlaybackState | null = null;
+  let lastSaved = 0;
+  let savedPosition = resumeAt;
+  const persist = () => {
+    if (!latest || latest.duration <= 0) return;
+    const position =
+      latest.status === "ended" ? latest.duration : latest.position;
+    if (position <= 0 || position === savedPosition) return;
+    saveWatchProgress(actor, {
+      id: media.id,
+      title: media.title.slice(0, 255),
+      position,
+      duration: latest.duration,
+      updatedAt: Date.now(),
+    });
+    savedPosition = position;
+  };
+  const unsubscribe = player.subscribe((next) => {
+    latest = next;
+    if (
+      Date.now() - lastSaved > 5000 ||
+      next.status === "paused" ||
+      next.status === "ended"
+    ) {
+      persist();
+      lastSaved = Date.now();
+    }
+  });
+  player.load(media.url, resumeAt);
+  window.addEventListener("pagehide", persist);
+  return () => {
+    persist();
+    window.removeEventListener("pagehide", persist);
+    unsubscribe();
+  };
 }

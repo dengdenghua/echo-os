@@ -22,9 +22,6 @@
 .echo-tv[data-wallpaper="beach"] .tv-home-status .tv-status-dot[data-ready="true"] {
   background: #136850;
 }
-.echo-tv[data-wallpaper="beach"] .tv-app-name {
-  text-shadow: 0 1px 3px #082b39, 0 0 8px #082b3980;
-}
 .echo-tv[data-wallpaper="coast"] {
   --tv-wallpaper: url("/tv/wallpapers/coast.png");
 }
@@ -41,8 +38,7 @@
   background-image:
     linear-gradient(90deg, #e9f8ff1a, transparent 65%), var(--tv-wallpaper);
 }
-.echo-tv[data-wallpaper="lake"]
-  :is(.tv-shelf-copy, .tv-app-name, .tv-home-status) {
+.echo-tv[data-wallpaper="lake"] :is(.tv-shelf-copy, .tv-home-status) {
   color: #173842;
   text-shadow: none;
 }

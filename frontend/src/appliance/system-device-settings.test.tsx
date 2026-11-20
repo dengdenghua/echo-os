@@ -119,10 +119,15 @@ describe("SystemDeviceSettings", () => {
         image.getAttribute("src"),
       ),
     ).toEqual([
+      "/echo/wallpaper-lakeshore.webp",
       "/echo/wallpaper-echo-2560.webp",
       "/echo/wallpaper-aurora-2560.webp",
       "/echo/wallpaper-sunset-2560.webp",
       "/echo/wallpaper-midnight-2560.webp",
+      "/echo/wallpaper-daylight.png",
+      "/echo/wallpaper-ocean-glass.png",
+      "/echo/wallpaper-violet-ribbon.png",
+      "/echo/wallpaper-amber-dusk.png",
     ]);
   });
 

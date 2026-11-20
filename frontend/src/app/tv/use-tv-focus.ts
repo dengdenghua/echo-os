@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import {
   isRemoteBack,
   nextFocusIndex,
@@ -21,7 +21,7 @@ export function useTVFocus(
   onBack: () => void,
 ) {
   const back = useRef(onBack);
-  useEffect(() => {
+  useLayoutEffect(() => {
     back.current = onBack;
   }, [onBack]);
   useEffect(() => {
@@ -37,7 +37,9 @@ export function useTVFocus(
         items.find((item) => item.hasAttribute("data-tv-initial")) ?? items[0]
       );
     };
-    const frame = requestAnimationFrame(() => initial()?.focus());
+    const frame = requestAnimationFrame(() => {
+      if (!element.contains(document.activeElement)) initial()?.focus();
+    });
     const onKey = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
@@ -152,6 +154,13 @@ export function useTVDialogFocus(
     return () => {
       cancelAnimationFrame(frame);
       requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          active.matches("[data-home-id]") &&
+          !active.closest("[inert],[hidden]")
+        )
+          return;
         if (
           !restoreLabel &&
           previous?.isConnected &&

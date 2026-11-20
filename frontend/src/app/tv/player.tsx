@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bot, Pause, Play, RotateCcw, RotateCw } from "lucide-react";
 import {
   createBrowserPlayback,
-  readWatchProgress,
-  saveWatchProgress,
+  loadTrackedVideo,
   type PlaybackAdapter,
   type PlaybackState,
 } from "@/core/tv/playback";
@@ -42,43 +41,30 @@ export function TVPlayer({
     if (!video.current) return;
     const player = createBrowserPlayback(video.current);
     adapter.current = player;
-    let latest: PlaybackState | null = null,
-      lastSaved = 0;
-    const persist = () => {
-      if (latest)
-        saveWatchProgress(actor, {
-          id: media.id,
-          position: latest.position,
-          duration: latest.duration,
-          updatedAt: Date.now(),
-        });
-    };
-    const unsubscribe = player.subscribe((next) => {
-      latest = next;
-      setState(next);
-      if (Date.now() - lastSaved > 5000 || next.status === "ended") {
-        persist();
-        lastSaved = Date.now();
-      }
+    const unsubscribe = player.subscribe(setState);
+    const stopTracking = loadTrackedVideo(player, actor, {
+      id: media.id,
+      title: media.title,
+      url: media.url,
     });
-    player.load(
-      media.url,
-      readWatchProgress(actor).find((item) => item.id === media.id)?.position ??
-        0,
-    );
     void player.play();
-    window.addEventListener("pagehide", persist);
     return () => {
-      persist();
-      window.removeEventListener("pagehide", persist);
+      stopTracking();
       unsubscribe();
       player.dispose();
       adapter.current = null;
     };
-  }, [actor, media.id, media.url]);
+  }, [actor, media.id, media.title, media.url]);
   useEffect(() => {
     if (covered) return;
     const handler = (event: KeyboardEvent) => {
+      // Space activates the focused Back, seek or Agent button on a keyboard.
+      if (
+        event.code === "Space" &&
+        event.target instanceof Element &&
+        event.target.closest("button")
+      )
+        return;
       if (event.key === "MediaPlayPause" || event.code === "Space") {
         event.preventDefault();
         if (video.current?.paused) void adapter.current?.play();

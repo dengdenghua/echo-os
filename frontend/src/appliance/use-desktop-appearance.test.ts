@@ -2,13 +2,27 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
 import { LIQUID_GLASS_TUNING_STORAGE_KEY } from "./liquid-glass-settings";
-import { useDesktopAppearance } from "./use-desktop-appearance";
+import {
+  readDesktopWallpaperUrl,
+  useDesktopAppearance,
+} from "./use-desktop-appearance";
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
 const APPEARANCE_KEY = "echo:desktop-appearance";
+
+it("uses the desktop wallpaper and theme tone for a following TV", () => {
+  expect(readDesktopWallpaperUrl()).toBe("/echo/wallpaper-lakeshore.webp");
+  localStorage.setItem(
+    APPEARANCE_KEY,
+    JSON.stringify({ theme: "theme-white", wallpaper: "aurora" }),
+  );
+  expect(readDesktopWallpaperUrl()).toBe(
+    "/echo/wallpaper-aurora-snow-2560.webp",
+  );
+});
 
 beforeEach(() => {
   localStorage.clear();
@@ -21,10 +35,19 @@ beforeEach(() => {
 
 it("falls back to the default appearance when storage is empty", () => {
   const { result } = renderHook(useDesktopAppearance);
-  expect(result.current.theme).toBe("theme-dark");
-  expect(result.current.liquidGlassStyle).toBe("crystal");
-  expect(result.current.liquidGlassIntensity).toBe("balanced");
-  expect(result.current.wallpaper).toBe("orbit");
+  expect(result.current.theme).toBe("theme-white");
+  expect(result.current.liquidGlassStyle).toBe("softlight");
+  expect(result.current.liquidGlassIntensity).toBe("weak");
+  expect(result.current.wallpaper).toBe("lakeshore");
+});
+
+it("persists and restores the new wallpaper choice", () => {
+  const { result, unmount } = renderHook(useDesktopAppearance);
+  act(() => result.current.setWallpaper("violet-ribbon"));
+  unmount();
+  expect(renderHook(useDesktopAppearance).result.current.wallpaper).toBe(
+    "violet-ribbon",
+  );
 });
 
 it("migrates the four legacy keys so an existing user keeps their preferences", () => {
@@ -103,11 +126,21 @@ it("writes the unified key and mirrors the legacy keys for existing readers", ()
 it("cycles wallpapers in a stable order", () => {
   const { result } = renderHook(useDesktopAppearance);
   const seen: string[] = [];
-  for (let step = 0; step < 4; step += 1) {
+  for (let step = 0; step < 9; step += 1) {
     act(() => result.current.cycleWallpaper());
     seen.push(result.current.wallpaper);
   }
-  expect(seen).toEqual(["aurora", "sunset", "midnight", "orbit"]);
+  expect(seen).toEqual([
+    "daylight",
+    "orbit",
+    "aurora",
+    "sunset",
+    "midnight",
+    "ocean-glass",
+    "violet-ribbon",
+    "amber-dusk",
+    "lakeshore",
+  ]);
 });
 
 it("normalizes an out-of-range tuning patch instead of persisting it raw", () => {
@@ -133,8 +166,8 @@ it("restores the stock glass look on reset", () => {
 it("survives a corrupt unified payload without throwing", () => {
   localStorage.setItem(APPEARANCE_KEY, "{not json");
   const { result } = renderHook(useDesktopAppearance);
-  expect(result.current.theme).toBe("theme-dark");
-  expect(result.current.wallpaper).toBe("orbit");
+  expect(result.current.theme).toBe("theme-white");
+  expect(result.current.wallpaper).toBe("lakeshore");
 });
 
 it("keeps the graphite Echo wallpaper under the dark theme", () => {

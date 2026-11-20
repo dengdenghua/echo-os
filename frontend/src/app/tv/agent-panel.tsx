@@ -194,7 +194,7 @@ export function TVAgentPanel({
             <>
               <header className="tv-panel-header">
                 <button data-tv-focus data-tv-back onClick={onClose}>
-                  返回大屏
+                  返回娱乐模式
                 </button>
                 <h2>有什么想做的？</h2>
                 <button data-tv-focus onClick={() => setHistory(true)}>
@@ -214,7 +214,7 @@ export function TVAgentPanel({
                       ? "正在检查助手…"
                       : readiness.isError
                         ? "暂时无法检查助手状态，请重试。"
-                        : "请先在大屏模型设置中接入可用模型。"}
+                        : "请先在娱乐模式的模型设置中接入可用模型。"}
                   </p>
                   <button
                     data-tv-focus

@@ -5,6 +5,17 @@ export type DesktopAction =
   | { type: "files.open"; path: string }
   | { type: "files.reveal"; path: string };
 
+function isRelativeDesktopPath(path: string): boolean {
+  return path.length <= 2048 && !/[\\:\x00-\x1f]/.test(path) &&
+    !path.startsWith("/") &&
+    !path.split("/").some((part) => part === ".." || part === ".");
+}
+
+export function isRelativeFilePath(path: unknown): path is string {
+  return typeof path === "string" && Boolean(path) && isRelativeDesktopPath(path) &&
+    !path.split("/").includes("");
+}
+
 export function parseDesktopAction(search: string): DesktopAction | null {
   const params = new URLSearchParams(search);
   const type = params.get("desktopAction");

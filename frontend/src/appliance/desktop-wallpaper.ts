@@ -1,8 +1,8 @@
 /**
  * Shared desktop wallpaper URLs.
  *
- * Every wallpaper is ECHO OS's own (no third-party licence), drawn by
- * scripts/generate-echo-wallpaper.mjs in the ECHO palette: 轨道 (orbit, the
+ * The original ECHO palette wallpapers are drawn by
+ * scripts/generate-echo-wallpaper.mjs: 轨道 (orbit, the
  * default "Echo" ripples), 极光 (aurora), 日落 (sunset) and 午夜 (midnight).
  * The renderer uses the WebP variants (2560 wide, 3840 for high-DPI panels)
  * through a shared srcset; the default also has a 2560-wide JPEG for the
@@ -12,7 +12,8 @@
  * The 雪白 (snow) desktop uses the snow variant of the same composition; the
  * graphite and neural-glass desktops and the lock screen use the graphite one.
  *
- * Regenerate with: node scripts/generate-echo-wallpaper.mjs
+ * The added image wallpapers retain their original resolution and appearance
+ * in both tones. Regenerate the original set with the script above.
  */
 
 import { createContext, useContext } from "react";
@@ -20,14 +21,26 @@ import { createContext, useContext } from "react";
 export type DesktopWallpaperTone = "graphite" | "snow";
 
 export type DesktopWallpaperVariant =
+  | "lakeshore"
+  | "daylight"
   | "orbit"
   | "aurora"
   | "sunset"
-  | "midnight";
+  | "midnight"
+  | "ocean-glass"
+  | "violet-ribbon"
+  | "amber-dusk";
 
-const WALLPAPER_STEMS: Record<
-  DesktopWallpaperVariant,
-  Readonly<{ graphite: string; snow: string }>
+const CUSTOM_WALLPAPERS: Partial<Record<DesktopWallpaperVariant, string>> = {
+  lakeshore: "/echo/wallpaper-lakeshore.webp",
+  daylight: "/echo/wallpaper-daylight.png",
+  "ocean-glass": "/echo/wallpaper-ocean-glass.png",
+  "violet-ribbon": "/echo/wallpaper-violet-ribbon.png",
+  "amber-dusk": "/echo/wallpaper-amber-dusk.png",
+};
+
+const WALLPAPER_STEMS: Partial<
+  Record<DesktopWallpaperVariant, Readonly<{ graphite: string; snow: string }>>
 > = {
   orbit: {
     graphite: "/echo/wallpaper-echo",
@@ -51,7 +64,7 @@ function wallpaperBase(
   tone: DesktopWallpaperTone,
   variant: DesktopWallpaperVariant,
 ): string {
-  const stems = WALLPAPER_STEMS[variant] ?? WALLPAPER_STEMS.orbit;
+  const stems = WALLPAPER_STEMS[variant] ?? WALLPAPER_STEMS.orbit!;
   return tone === "snow" ? stems.snow : stems.graphite;
 }
 
@@ -65,6 +78,10 @@ export function desktopWallpaperSources(
   tone: DesktopWallpaperTone,
   variant: DesktopWallpaperVariant = "orbit",
 ): DesktopWallpaperSources {
+  const custom = CUSTOM_WALLPAPERS[variant];
+  if (custom) {
+    return { url: custom, srcSet: "", sizes: "100vw" };
+  }
   const base = wallpaperBase(tone, variant);
   return {
     // Primary source: 2560 wide, matches the common full-screen desktop case.

@@ -499,6 +499,15 @@ export interface EchoElectronAPI {
     deactivate: () => Promise<{ ok: boolean; error?: string }>;
   };
 
+  desktopCompanion?: {
+    getEnabled: () => Promise<boolean | null>;
+    setEnabled: (enabled: boolean) => Promise<boolean | null>;
+    setCovered: (covered: boolean) => Promise<null>;
+    setTVHomeRegion?: (region: {
+      x: number; y: number; width: number; height: number;
+    } | null) => Promise<null>;
+  };
+
   system?: {
     getCapabilities: () => Promise<SystemActionCapabilities>;
     runAction: (

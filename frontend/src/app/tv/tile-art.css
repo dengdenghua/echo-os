@@ -1,0 +1,86 @@
+.tv-tile-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--tv-art-surface);
+  box-shadow:
+    inset 0 1px 0 #ffffff70,
+    inset 0 -1px 0 #10223e33;
+}
+
+.tv-tone-echo {
+  --tv-art-surface: linear-gradient(150deg, #454549 0%, #212124 49%, #08080a 100%);
+}
+.tv-tone-library {
+  --tv-art-surface: linear-gradient(165deg, #ff7148, #ff3438 60%, #ec1636);
+}
+.tv-tone-knowledge {
+  --tv-art-surface: linear-gradient(160deg, #fffaf0, #f5e8c9);
+}
+.tv-tone-apps {
+  --tv-art-surface: linear-gradient(165deg, #22c9ff, #0989fc 57%, #1761ee);
+}
+.tv-tone-computer {
+  --tv-art-surface: linear-gradient(165deg, #63e779, #22cd60 70%, #15ae56);
+}
+.tv-tone-settings {
+  --tv-art-surface: linear-gradient(155deg, #cad0da, #939aa8 75%, #858d9b);
+}
+
+/* Pack the whole illustration inside the card, including its optical edges. */
+.echo-tv .tv-tile-art .tv-tile-object {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.tv-shortcut-art:has(.tv-tile-art) { position: relative; }
+.tv-shortcut-art .tv-tile-art { background: linear-gradient(145deg, var(--art-top), var(--art-base)); }
+
+.tv-tile-art .tv-art-outline {
+  display: none;
+  color: currentColor;
+  width: 52%;
+  height: 68%;
+  position: relative;
+  stroke-width: 1.7;
+}
+.tv-tile-art .tv-art-brand {
+  background: currentColor;
+  mask: url("/images/echo.svg") center / contain no-repeat;
+}
+.tv-tile-art[data-art-unavailable] .tv-art-outline {
+  display: block;
+}
+.tv-tile-art[data-art-unavailable] .tv-tile-object {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .echo-tv[data-reduce-motion="false"] .tv-tile-object {
+    transition: transform 190ms ease-out;
+  }
+  .echo-tv[data-reduce-motion="false"] button:focus .tv-tile-object {
+    transform: scale(1.025);
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-tv .tv-tile-art {
+    forced-color-adjust: none;
+    background: ButtonFace;
+    color: ButtonText;
+    box-shadow: none;
+  }
+  .echo-tv .tv-tile-art .tv-tile-object {
+    display: none;
+  }
+  .tv-tile-art .tv-art-outline {
+    display: block;
+  }
+}

@@ -38,6 +38,22 @@ describe("desktop wallpaper tone", () => {
 });
 
 describe("desktop wallpaper choices", () => {
+  it("uses the original generated image for both desktop tones", () => {
+    for (const tone of ["graphite", "snow"] as const) {
+      expect(desktopWallpaperSources(tone, "daylight").url).toBe(
+        "/echo/wallpaper-daylight.png",
+      );
+      expect(desktopWallpaperSources(tone, "ocean-glass").url).toBe(
+        "/echo/wallpaper-ocean-glass.png",
+      );
+      expect(desktopWallpaperSources(tone, "violet-ribbon").url).toBe(
+        "/echo/wallpaper-violet-ribbon.png",
+      );
+      expect(desktopWallpaperSources(tone, "amber-dusk").url).toBe(
+        "/echo/wallpaper-amber-dusk.png",
+      );
+    }
+  });
   it("serves each choice's own ECHO raster in the desktop's tone", () => {
     expect(desktopWallpaperSources("graphite", "aurora").url).toBe(
       "/echo/wallpaper-aurora-2560.webp",

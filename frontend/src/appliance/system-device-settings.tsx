@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import {
   DesktopWallpaperToneContext,
   desktopWallpaperSources,
+  type DesktopWallpaperVariant,
 } from "./desktop-wallpaper";
 import {
   BatteryChargingIcon,
@@ -52,7 +53,7 @@ export const SYSTEM_DEVICE_SETTINGS_ITEMS = [
   icon: typeof WifiIcon;
 }>;
 
-type Wallpaper = "orbit" | "aurora" | "sunset" | "midnight";
+type Wallpaper = DesktopWallpaperVariant;
 
 export interface SystemDeviceSettingsProps {
   section: SystemDeviceSettingsSection;
@@ -185,6 +186,7 @@ const WALLPAPERS: Array<{
   id: Wallpaper;
   label: string;
 }> = [
+  { id: "lakeshore", label: "湖岸晨光" },
   {
     id: "orbit",
     label: "轨道",
@@ -201,6 +203,10 @@ const WALLPAPERS: Array<{
     id: "midnight",
     label: "午夜",
   },
+  { id: "daylight", label: "晴空" },
+  { id: "ocean-glass", label: "深海蓝" },
+  { id: "violet-ribbon", label: "紫色流光" },
+  { id: "amber-dusk", label: "暖色暮景" },
 ];
 
 function updateStateLabel(status?: SystemUpdateStatus | null) {

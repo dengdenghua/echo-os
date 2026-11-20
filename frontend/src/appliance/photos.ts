@@ -1,5 +1,6 @@
 import { approvalHeader } from "@/appliance/approval";
 import { authHeader } from "@/appliance/auth";
+import { isRelativeFilePath } from "@/appliance/desktop-actions";
 
 export type PhotoItem = {
   path: string;
@@ -221,6 +222,23 @@ export function photoThumbnailUrl(path: string, size = 320) {
 export function photoOriginalUrl(path: string) {
   const params = new URLSearchParams({ path });
   return `/api/appliance/photos/original?${params.toString()}`;
+}
+
+/** Ask the current session for one byte, including for photos outside the first library page. */
+export async function checkPhotoAvailable(
+  path: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (!isRelativeFilePath(path)) return false;
+  const response = await fetch(photoOriginalUrl(path), {
+    headers: { ...authHeader(), Range: "bytes=0-0" },
+    cache: "no-store",
+    signal,
+  });
+  void response.body?.cancel().catch(() => undefined);
+  if ([400, 403, 404, 410].includes(response.status)) return false;
+  if (!response.ok) throw new Error("暂时无法读取照片，请稍后重试。");
+  return true;
 }
 
 export async function fetchPhotoLibrary(

@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import type { CSSProperties } from "react";
 
 import type { DesktopTheme } from "./intent-desktop-surface";
+import type { DesktopWallpaperVariant } from "./desktop-wallpaper";
+import { desktopWallpaperSources } from "./desktop-wallpaper";
 import {
   DEFAULT_LIQUID_GLASS_TUNING,
   isDefaultLiquidGlassTuning,
@@ -28,7 +30,7 @@ import type {
   MacLiquidGlassStyle,
 } from "./macos-shell";
 
-export type WallpaperVariant = "orbit" | "aurora" | "sunset" | "midnight";
+export type WallpaperVariant = DesktopWallpaperVariant;
 
 export type DesktopAppearance = {
   theme: DesktopTheme;
@@ -41,12 +43,12 @@ export type DesktopAppearance = {
 const APPEARANCE_STORAGE_KEY = "echo:desktop-appearance";
 
 const DEFAULT_APPEARANCE: DesktopAppearance = {
-  // ECHO family default: graphite desktop over the Echo wallpaper.
-  theme: "theme-dark",
-  liquidGlassStyle: "crystal",
-  liquidGlassIntensity: "balanced",
+  // Daylight is the new-install default; saved choices remain explicit.
+  theme: "theme-white",
+  liquidGlassStyle: "softlight",
+  liquidGlassIntensity: "weak",
   liquidGlassTuning: DEFAULT_LIQUID_GLASS_TUNING,
-  wallpaper: "orbit",
+  wallpaper: "lakeshore",
 };
 
 const THEME_NAMES: Record<DesktopTheme, string> = {
@@ -66,7 +68,7 @@ const THEME_GLASS_PRESETS: Record<
   "theme-white": {
     liquidGlassStyle: "softlight",
     liquidGlassIntensity: "weak",
-    wallpaper: "orbit",
+    wallpaper: "lakeshore",
   },
   "theme-glass": {
     liquidGlassStyle: "crystal",
@@ -80,17 +82,25 @@ const THEME_GLASS_PRESETS: Record<
   },
 };
 
-function normalizeWallpaper(value: string | null): WallpaperVariant {
+function normalizeWallpaper(
+  value: string | null,
+  theme: DesktopTheme,
+): WallpaperVariant {
   // 旧值迁移：tahoe→orbit, sequoia→aurora, sonoma→sunset
   if (value === "tahoe") return "orbit";
   if (value === "sequoia") return "aurora";
   if (value === "sonoma") return "sunset";
-  return value === "orbit" ||
+  return value === "lakeshore" ||
+    value === "daylight" ||
+    value === "orbit" ||
     value === "aurora" ||
     value === "sunset" ||
-    value === "midnight"
+    value === "midnight" ||
+    value === "ocean-glass" ||
+    value === "violet-ribbon" ||
+    value === "amber-dusk"
     ? value
-    : "orbit";
+    : THEME_GLASS_PRESETS[theme].wallpaper;
 }
 
 function normalizeTheme(value: string | null): DesktopTheme {
@@ -98,7 +108,7 @@ function normalizeTheme(value: string | null): DesktopTheme {
     value === "theme-glass" ||
     value === "theme-dark"
     ? value
-    : "theme-dark";
+    : "theme-white";
 }
 
 function normalizeStyle(value: string | null): MacLiquidGlassStyle {
@@ -117,12 +127,16 @@ function loadAppearance(): DesktopAppearance {
       const parsed = JSON.parse(raw) as Partial<DesktopAppearance>;
       const theme = normalizeTheme(parsed.theme ?? null);
       // orbit 是 ECHO 石墨回响壁纸，深浅主题都直接使用，不再改写为 midnight。
-      const wallpaper = normalizeWallpaper(parsed.wallpaper ?? null);
+      const wallpaper = normalizeWallpaper(parsed.wallpaper ?? null, theme);
       return {
         theme,
-        liquidGlassStyle: normalizeStyle(parsed.liquidGlassStyle ?? null),
+        liquidGlassStyle: normalizeStyle(
+          parsed.liquidGlassStyle ??
+            THEME_GLASS_PRESETS[theme].liquidGlassStyle,
+        ),
         liquidGlassIntensity: normalizeIntensity(
-          parsed.liquidGlassIntensity ?? null,
+          parsed.liquidGlassIntensity ??
+            THEME_GLASS_PRESETS[theme].liquidGlassIntensity,
         ),
         liquidGlassTuning: parsed.liquidGlassTuning
           ? normalizeLiquidGlassTuning(parsed.liquidGlassTuning)
@@ -131,17 +145,31 @@ function loadAppearance(): DesktopAppearance {
       };
     }
     // 旧四键迁移
+    if (
+      ![
+        "echo-desktop-theme",
+        "echo:desktop-wallpaper",
+        "echo:liquid-glass-style",
+        "echo:liquid-glass-intensity",
+        LIQUID_GLASS_TUNING_STORAGE_KEY,
+      ].some((key) => localStorage.getItem(key) !== null)
+    ) {
+      return DEFAULT_APPEARANCE;
+    }
     const theme = normalizeTheme(localStorage.getItem("echo-desktop-theme"));
     const wallpaper = normalizeWallpaper(
       localStorage.getItem("echo:desktop-wallpaper"),
+      theme,
     );
     const migrated: DesktopAppearance = {
       theme,
       liquidGlassStyle: normalizeStyle(
-        localStorage.getItem("echo:liquid-glass-style"),
+        localStorage.getItem("echo:liquid-glass-style") ??
+          THEME_GLASS_PRESETS[theme].liquidGlassStyle,
       ),
       liquidGlassIntensity: normalizeIntensity(
-        localStorage.getItem("echo:liquid-glass-intensity"),
+        localStorage.getItem("echo:liquid-glass-intensity") ??
+          THEME_GLASS_PRESETS[theme].liquidGlassIntensity,
       ),
       liquidGlassTuning: parseLiquidGlassTuning(
         localStorage.getItem(LIQUID_GLASS_TUNING_STORAGE_KEY),
@@ -152,6 +180,14 @@ function loadAppearance(): DesktopAppearance {
   } catch {
     return DEFAULT_APPEARANCE;
   }
+}
+
+export function readDesktopWallpaperUrl(): string {
+  const { theme, wallpaper } = loadAppearance();
+  return desktopWallpaperSources(
+    theme === "theme-white" ? "snow" : "graphite",
+    wallpaper,
+  ).url;
 }
 
 function persistAppearance(appearance: DesktopAppearance) {
@@ -265,7 +301,17 @@ export function useDesktopAppearance() {
   );
 
   const cycleWallpaper = useCallback(() => {
-    const order: WallpaperVariant[] = ["orbit", "aurora", "sunset", "midnight"];
+    const order: WallpaperVariant[] = [
+      "lakeshore",
+      "daylight",
+      "orbit",
+      "aurora",
+      "sunset",
+      "midnight",
+      "ocean-glass",
+      "violet-ribbon",
+      "amber-dusk",
+    ];
     const index = order.indexOf(appearance.wallpaper);
     setWallpaper(order[(index + 1) % order.length] ?? "orbit");
   }, [appearance.wallpaper, setWallpaper]);

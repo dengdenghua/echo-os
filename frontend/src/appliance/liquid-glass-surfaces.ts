@@ -1,10 +1,7 @@
 export const MAX_LIQUID_GLASS_SURFACES = 8;
 
 export type NativeLiquidGlassWallpaper =
-  | "orbit"
-  | "aurora"
-  | "sunset"
-  | "midnight";
+  import("./desktop-wallpaper").DesktopWallpaperVariant;
 
 export type NativeLiquidGlassMaterial =
   | "ultra-thin"

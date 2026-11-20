@@ -145,7 +145,7 @@ export function TVThread({
           data-tv-back
           onClick={() => (details ? setDetails(false) : onBack())}
         >
-          {details ? "返回对话" : "返回大屏"}
+          {details ? "返回对话" : "返回娱乐模式"}
         </button>
         <h2>{details ? "任务详情" : "Echo 对话"}</h2>
         <button data-tv-focus onClick={onHistory}>
